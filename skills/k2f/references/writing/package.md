@@ -49,7 +49,7 @@ There is **no** `canvas_mode: "slide"`. Use paged pages as slides:
 
 1. `python scripts/init_package.py --dir ./out/deck --title "Deck" --page widescreen --margin 0` → `960000×540000`, zero page margin.
 2. Under `root`, each top-level sibling is one slide.
-3. Each slide: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json) — `break_inside: "avoid"` + page-size grid (`width`/`height` `960000×540000`). Rows: `{pt}` header, `{fr:1}` body (the grower), `{pt}` footer. Do **not** use a vertical stack as the slide shell.
+3. Each slide: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json) — `break_inside: "avoid"` + page-size grid (`width`/`height` `960000×540000`). Rows: `{auto:true}` header, `{fr:1}` body (the grower), `{auto:true}` footer. Do **not** use a vertical stack as the slide shell.
 4. Safe inset = **inner** role `box_decoration.padding_pt` (not page margin). Keep **root** padding at 0 — root padding is added into `page_config.margin` and shrinks the content box.
 5. Do not nest another full-page-height child inside a padded slide shell (see box model below).
 
@@ -58,8 +58,8 @@ Two-column body: nested grid `{fr:1},{fr:1}` **inside** the grower row (already 
 ### Single-page poster / flyer
 
 1. Pick a canvas: `--page a4` (or letter / a4-landscape), or `--page a4 --width W --height H` for non-standard sizes; full-bleed `--margin 0`.
-2. Under `root`, **one** child: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json). Set `layout.height` = page height − margins (A4 / margin 0 → `842000`). Same grid as slides: `pt` + `{fr:1}` + `pt`.
-3. Header/footer `pt` rows can be small guesses — leftover height goes to `{fr:1}`. Do not use a vertical stack as the page shell; no empty spacer containers.
+2. Under `root`, **one** child: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json). Set `layout.height` = page height − margins (A4 / margin 0 → `842000`). Same grid as slides: `{auto:true}` + `{fr:1}` + `{auto:true}`.
+3. Header/footer are measured; leftover height goes to `{fr:1}`. Do not use a vertical stack as the page shell; no empty spacer containers.
 4. Full-bleed background: wrap the shell in `overlay` with the background child first (`ex_overlay.json`).
 5. Verify with `python scripts/pack_verify.py <dir> -o out.K2F --expect-pages 1 --expect-fill --render preview.png`. `compile`/`verify` print `pages=N`; `LAYOUT_SLACK` means the shell is not filled. `preview.png` is **only page 0**.
 
@@ -71,13 +71,13 @@ Allowed layout types and fields: `schema/nodes.schema.json` → `layout`. Copy f
 |------|-----|
 | Continuous article columns | `columns` — `ex_columns.json` |
 | Fixed side-by-side (sidebar, header bar) | horizontal `stack` or 2-col `grid` |
-| Poster / slide page shell | `ex_poster_shell.json` — pinned height + `{fr:1}` grower; nested 2-col grid in that row |
+| Poster / slide page shell | `ex_poster_shell.json` — pinned height + `{auto:true}` header/footer + `{fr:1}` grower |
 | Poster / dashboard cells | `grid` with `pt` tracks, or `fr` **after** a finite outer height — `ex_grid.json` |
 | Full-page background + content | `overlay` (background child first) — `ex_overlay.json` |
 
-- Grid tracks: `{ "pt": N }` or `{ "fr": N }` only — never bare integers.
+- Grid tracks: `{ "pt": N }`, `{ "fr": N }`, or `{ "auto": true }` — never bare integers. `{auto:true}` is layout-grid only (not table `column_widths`).
 - Do **not** put `grid` directly on the root node (awkward cross-page behavior). Nest grid under a child container, e.g. `root` → `root.grid`.
-- **`fr` rows need a finite outer height.** In a vertical flow with unbounded height, `rows: [{fr:1}]` fails with `Cannot resolve fr tracks with infinite available size`. `fr` divides a **known** outer size — it is **not** content-auto height. Fix: set the grid's own `height`, use fixed `pt` rows, nest under a fixed-height stack/overlay, or prefer `stack` / native `table`.
+- **`fr` rows need a finite outer height.** In a vertical flow with unbounded height, `rows: [{fr:1}]` fails with `Cannot resolve fr tracks with infinite available size`. `fr` divides a **known** outer size — it is **not** content-auto height (`{auto:true}` is). Fix: set the grid's own `height`, use `pt`/`auto` rows, nest under a fixed-height stack/overlay, or prefer `stack` / native `table`.
 - **Pin content to column bottom** (footnotes / correspondence): fixed-height 2-row grid — `height` + `rows: [{"fr": 1}, {"pt": N}]` with body in row 0 and footer text in row 1. No footnote node and no `space-between`.
 - Titles for multi-column flow: keep outside a `columns` container; use `column_span: "all"` for full-width figures inside.
 - **Overlay is in-flow stacking**, not absolute positioning: children share one origin; height = max(children); later children paint on top (no `z-index`). The block is unsplittable across pages. Optional `width`/`height` pin the box; full-page backgrounds use content height (page height minus margins). Overlay has **no** `align_items` / `justify_content` — to center a layer, nest a **fixed-height** stack inside that child with `justify_content: "center"` and `align_items: "center"`.

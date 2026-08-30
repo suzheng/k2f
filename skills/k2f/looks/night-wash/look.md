@@ -78,7 +78,7 @@ python scripts/init_package.py --dir ./out/poster --title "…" --page a4 --marg
 2. Copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json): single `shell`, fixed height, `break_inside: "avoid"`, `{fr:1}` grower. Do not use a vertical stack as the page shell.
 3. Header row: `kicker` (accent) → `display` variant `poster`. Grower: optional one `body` line (`ink_soft`) and/or `metric` variant `poster`.
 4. Supporting points in the grower: max 3 `card` variant `glass` — 3-column grid, or two cells for 1–2 items.
-5. Footer `pt` row: `caption` in `muted`.
+5. Footer `{auto:true}` row: `caption` in `muted`.
 6. Photo hero: wrap the shell in `overlay` with full-bleed `image`; keep text high contrast (`card` variant `glass` behind text if needed).
 
 ### Slide deck

@@ -203,7 +203,7 @@ Use with `role: "math"`. Inline math stays on a text node as U+FFFC plus modifie
 ```
 
 **Constraints (enforced by engine validation):**
-- `column_widths` must be non-empty
+- `column_widths` must be non-empty (`{pt}` / `{fr}` only — no `{auto:true}`)
 - Every row must have exactly `column_widths.length` cells (after asset expand)
 - `header_rows <= rows.length`
 
@@ -230,10 +230,10 @@ Use with `role: "math"`. Inline math stays on a text node as U+FFFC plus modifie
   "layout": {
     "type": "grid",            // Required
     "columns": [               // Required: Array of track definitions
-      { "pt": integer } | { "fr": integer }
+      { "pt": integer } | { "fr": integer } | { "auto": true }
     ],
     "rows": [                  // Required: Array of track definitions
-      { "pt": integer } | { "fr": integer }
+      { "pt": integer } | { "fr": integer } | { "auto": true }
     ],
     "gap": integer,            // Optional, default: 0 (Pt in 1/1000 units)
     "row_gap": integer,        // Optional: row axis gap (millipt); null/omit → use gap
@@ -248,7 +248,8 @@ Use with `role: "math"`. Inline math stays on a text node as U+FFFC plus modifie
 
 **Grid Track:**
 - `{pt: integer}` - Fixed size in Pt (1/1000 pt units)
-- `{fr: integer}` - Fractional unit (distributes remaining space)
+- `{fr: integer}` - Fractional unit (distributes remaining space after `pt` and `auto`)
+- `{auto: true}` - Content-sized: max measured min-size of cells in that track, then leftover goes to `fr`. Not CSS `auto-fit`. Layout grids only — table `column_widths` stay `{pt}` / `{fr}`.
 
 ### Overlay Layout
 ```json

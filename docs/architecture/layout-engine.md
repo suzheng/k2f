@@ -100,7 +100,8 @@ Converts `SemanticNode` tree + theme → geometry + visual composition plan.
 
 **Grid rules (Level 1):**
 
-- Only explicit row/column sizes (fixed pt or `fr` units)
+- Track sizes: fixed `pt`, `fr` (share leftover), or `{auto:true}` (max measured cell min-size, then leftover to `fr`)
+- `{auto:true}` is not CSS `auto-fit` / `minmax` / `repeat()` / `subgrid`
 - No `minmax`, `auto-fit`, `subgrid`, or `repeat()`
 - No auto-placement beyond strict document order
 - Alignment is constraint-based only (`start` / `center` / `end` / `stretch`); no manual x/y nudges
@@ -408,7 +409,7 @@ width_pt = Pt(1234) + Pt(5678)  # always Pt(7912)
 
 **Stack** — items flow vertically or horizontally with gaps; alignment within parent width.
 
-**Grid** — explicit rows and columns; no auto-fit.
+**Grid** — explicit tracks (`pt` / `fr` / `{auto:true}` content size); not CSS `auto-fit`.
 
 **Overlay** — items can overlap; explicit z-order for glass effects and badges.
 

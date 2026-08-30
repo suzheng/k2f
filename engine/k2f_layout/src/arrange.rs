@@ -570,8 +570,16 @@ fn arrange_container(
     }) = &node.layout
     {
         let (row_gap_pt, col_gap_pt) = crate::grid::grid_axis_gaps(*gap, *row_gap, *column_gap);
-        let col_sizes = resolve_tracks(columns, col_gap_pt, inner_size_for_children.width)?;
-        let row_sizes = resolve_tracks(rows, row_gap_pt, inner_size_for_children.height)?;
+        let (col_sizes, row_sizes) = crate::measure::grid_track_sizes(
+            columns,
+            rows,
+            col_gap_pt,
+            row_gap_pt,
+            inner_size_for_children.width,
+            inner_size_for_children.height,
+            children,
+            ctx,
+        )?;
 
         let mut composed_children = Vec::new();
         for (idx, child) in children.iter().enumerate() {

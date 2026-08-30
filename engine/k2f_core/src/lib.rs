@@ -310,7 +310,7 @@ impl Default for StackDirection {
     }
 }
 
-/// Explicit deterministic track sizes only (no auto/minmax/repeat).
+/// Explicit deterministic track sizes (`pt`, `fr`, or content-sized `auto`).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum GridTrack {
@@ -318,6 +318,14 @@ pub enum GridTrack {
     Pt { pt: i64 },
     /// Fractional track size (fr units). Distributed from remaining space.
     Fr { fr: i64 },
+    /// Content-sized track. `{ "auto": true }` only. Measure cells, then give leftover to `fr`.
+    Auto { auto: bool },
+}
+
+impl GridTrack {
+    pub fn is_auto(&self) -> bool {
+        matches!(self, GridTrack::Auto { auto: true })
+    }
 }
 
 /// Strict table payload for `content.type = "table"` (State A).
@@ -734,6 +742,45 @@ mod tests {
     }
 
     #[test]
+    fn grid_track_auto_roundtrips_json() {
+        let t: GridTrack = serde_json::from_str(r#"{"auto":true}"#).unwrap();
+        assert!(t.is_auto());
+        let back = serde_json::to_string(&t).unwrap();
+        assert!(back.contains("auto"));
+        let pt: GridTrack = serde_json::from_str(r#"{"pt":1000}"#).unwrap();
+        assert_eq!(pt, GridTrack::Pt { pt: 1000 });
+    }
+
+    #[test]
+    fn test_validate_semantic_tree_rejects_table_auto_column() {
+        let node = SemanticNode {
+            id: "t".to_string(),
+            role: "table".to_string(),
+            variant: None,
+            preserve_whitespace: None,
+            list_id: None,
+            depth: None,
+            marker_type: None,
+            content: NodeContent::Table(TableSpec {
+                column_widths: vec![GridTrack::Auto { auto: true }],
+                header_rows: 0,
+                gap: 0,
+                data: TableDataSource::Inline {
+                    rows: vec![vec![make_cell_text("c0")]],
+                },
+            }),
+            modifiers: vec![],
+            layout: None,
+            ..Default::default()
+        };
+        let err = validate_semantic_tree(&node).unwrap_err();
+        match err {
+            K2FError::TableAutoTrack { .. } => {}
+            other => panic!("expected TableAutoTrack, got {other:?}"),
+        }
+    }
+
+    #[test]
     fn test_validate_semantic_tree_rejects_table_row_len_mismatch() {
         let node = SemanticNode {
             id: "t".to_string(),
@@ -968,6 +1015,8 @@ pub enum K2FError {
     InvalidTableGap { node_id: String, gap: i64 },
     #[error("table node '{node_id}' must have at least 1 column_widths track")]
     TableRequiresColumns { node_id: String },
+    #[error("table node '{node_id}' column_widths do not support auto tracks; use pt or fr")]
+    TableAutoTrack { node_id: String },
     #[error("table node '{node_id}' has header_rows={header_rows} but only {rows} rows")]
     TableHeaderRowsTooLarge {
         node_id: String,
@@ -1148,6 +1197,11 @@ fn validate_node(node: &SemanticNode) -> Result<(), K2FError> {
             }
             if spec.column_widths.is_empty() {
                 return Err(K2FError::TableRequiresColumns {
+                    node_id: node.id.clone(),
+                });
+            }
+            if spec.column_widths.iter().any(|t| matches!(t, GridTrack::Auto { .. })) {
+                return Err(K2FError::TableAutoTrack {
                     node_id: node.id.clone(),
                 });
             }

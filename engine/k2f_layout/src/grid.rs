@@ -10,24 +10,44 @@ pub fn grid_axis_gaps(gap: i64, row_gap: Option<i64>, column_gap: Option<i64>) -
 
 /// Resolve grid track sizes for a single axis (columns or rows).
 ///
-/// - `available` is the total available size for the whole axis, **including gaps**.
-/// - `gap` is the gap inserted between tracks (there are `tracks.len() - 1` gaps).
-/// - `Pt` tracks are always honored as-is.
-/// - `Fr` tracks share the remaining space after fixed tracks and gaps.
-///
-/// Remainder distribution is deterministic: any leftover units are assigned to
-/// earlier `Fr` tracks in order.
+/// Auto tracks are not allowed here — call [`resolve_tracks_with_intrinsics`] after measuring.
 pub fn resolve_tracks(tracks: &[GridTrack], gap: Pt, available: Pt) -> Result<Vec<Pt>, String> {
+    if tracks.iter().any(GridTrack::is_auto) {
+        return Err(
+            "Cannot resolve auto tracks without content measure; give the grid a finite size and auto+fr rows"
+                .to_string(),
+        );
+    }
+    resolve_tracks_with_intrinsics(tracks, gap, available, &[])
+}
+
+/// Like [`resolve_tracks`], but `auto` tracks use `auto_sizes[i]` as their fixed size.
+///
+/// - `available` includes gaps.
+/// - `Fr` tracks share leftover after `pt`, `auto`, and gaps.
+/// - Remainder millipt go to earlier `Fr` tracks.
+pub fn resolve_tracks_with_intrinsics(
+    tracks: &[GridTrack],
+    gap: Pt,
+    available: Pt,
+    auto_sizes: &[Pt],
+) -> Result<Vec<Pt>, String> {
     if tracks.is_empty() {
         return Ok(vec![]);
     }
 
     let mut fixed_sum = Pt::ZERO;
     let mut fr_sum: i128 = 0;
-    for t in tracks {
+    for (i, t) in tracks.iter().enumerate() {
         match t {
             GridTrack::Pt { pt } => fixed_sum += Pt(*pt as i128),
             GridTrack::Fr { fr } => fr_sum += *fr as i128,
+            GridTrack::Auto { auto } => {
+                if !*auto {
+                    return Err("grid auto track must be {\"auto\": true}".to_string());
+                }
+                fixed_sum += auto_sizes.get(i).copied().unwrap_or(Pt::ZERO);
+            }
         }
     }
 
@@ -44,8 +64,6 @@ pub fn resolve_tracks(tracks: &[GridTrack], gap: Pt, available: Pt) -> Result<Ve
         Pt::ZERO
     };
 
-    // `available_for_tracks` excludes gaps (since gaps are not part of the tracks themselves).
-    // If available is finite, we subtract gaps; if it's infinite, fr_sum must be 0 (handled above).
     let mut available_for_tracks = if available.0 == i128::MAX {
         available
     } else {
@@ -62,9 +80,12 @@ pub fn resolve_tracks(tracks: &[GridTrack], gap: Pt, available: Pt) -> Result<Ve
 
     let mut out: Vec<Pt> = Vec::with_capacity(tracks.len());
     let mut remainder = remaining.0;
-    for t in tracks {
+    for (i, t) in tracks.iter().enumerate() {
         match t {
             GridTrack::Pt { pt } => out.push(Pt(*pt as i128)),
+            GridTrack::Auto { .. } => {
+                out.push(auto_sizes.get(i).copied().unwrap_or(Pt::ZERO));
+            }
             GridTrack::Fr { fr } => {
                 if fr_sum == 0 {
                     out.push(Pt::ZERO);
@@ -77,7 +98,6 @@ pub fn resolve_tracks(tracks: &[GridTrack], gap: Pt, available: Pt) -> Result<Ve
         }
     }
 
-    // Deterministically distribute any remainder to earlier fr tracks.
     if remainder > 0 {
         for (i, t) in tracks.iter().enumerate() {
             if remainder == 0 {
@@ -105,9 +125,6 @@ pub fn sum_with_gaps(items: &[Pt], gap: Pt) -> Pt {
 }
 
 /// Sum the prefix distance for `count` tracks, including gaps.
-///
-/// This is used to compute the offset to the start of the `count`-th track
-/// (i.e. number of preceding tracks).
 pub fn sum_prefix(items: &[Pt], count: usize, gap: Pt) -> Pt {
     let mut sum = Pt::ZERO;
     for i in 0..count {

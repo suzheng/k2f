@@ -64,7 +64,8 @@ impl From<K2FError> for AgentError {
             K2FError::EmptyNodeId | K2FError::InvalidNodeId { .. } => INVALID_ID,
             K2FError::TableRowLengthMismatch { .. }
             | K2FError::TableRequiresColumns { .. }
-            | K2FError::TableHeaderRowsTooLarge { .. } => TABLE_ROW_MISMATCH,
+            | K2FError::TableHeaderRowsTooLarge { .. }
+            | K2FError::TableAutoTrack { .. } => TABLE_ROW_MISMATCH,
             K2FError::InvalidImageSize { .. } => IMAGE_SIZE,
             K2FError::InvalidModifierRange { .. }
             | K2FError::ModifierRangeNotOnCharBoundary { .. } => INVALID_MODIFIER,
