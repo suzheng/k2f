@@ -9,10 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - `k2f compile` prints `LAYOUT_SLACK` when a page-height shell is empty at the bottom (warning, lock unchanged). `pack_verify.py --expect-fill` fails on that line.
+- Grid tracks `{ "auto": true }` — content-sized from measured cells; leftover space goes to `fr`. Table `column_widths` stay `{pt}` / `{fr}` only.
 
 ### Changed
 
-- Agent skill: poster/slide page shell is a pinned-height **grid** with a `{fr:1}` grower ([`ex_poster_shell.json`](skills/k2f/catalog/content/ex_poster_shell.json)); do not stack content inside a fixed-height shell
+- Agent skill: poster/slide page shell is a pinned-height **grid** with `{auto:true}` header/footer and a `{fr:1}` grower ([`ex_poster_shell.json`](skills/k2f/catalog/content/ex_poster_shell.json)); do not stack content inside a fixed-height shell
 
 ## [0.1.2] - 2026-08-30
 

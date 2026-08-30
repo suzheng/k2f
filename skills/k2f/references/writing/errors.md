@@ -9,7 +9,7 @@ Fix the **semantic tree** or **theme**. Shapes: [`catalog/content/ex_*.json`](..
 | `UNKNOWN_ROLE` | Add role (and variant if used) to `styles/theme.json` |
 | `DUPLICATE_ID` | Rename; ids must be globally unique |
 | `INVALID_ID` | Pattern `segment.segment` — alphanumeric + underscore |
-| `TABLE_ROW_MISMATCH` | Every row same length as columns; header_rows ≤ rows |
+| `TABLE_ROW_MISMATCH` | Every row same length as columns; header_rows ≤ rows; table `column_widths` cannot be `{auto:true}` |
 | `IMAGE_SIZE` | Provide image bytes + declared width/height millipt. Formats: PNG, WebP, SVG — not JPEG |
 | `FONT_MISSING` | Embed TTF/OTF under `assets/fonts/`; map role `font_family` via `font_aliases` to the file **stem** (e.g. `"DejaVuSans"`). One font auto-registers as `"default"`; with two+ fonts you must alias explicitly. No CSS generic families. |
 | `INVALID_MODIFIER` | Range on UTF-8 **byte** boundaries (`python scripts/modifier_range.py --text … --find …`); max 50 modifiers. For multi-line titles, pass the full `value` including `\n` (`\n` = 1 byte). |
@@ -43,7 +43,7 @@ Inline math in author JSON: U+FFFC placeholder + `{ "type": "math", "intent": "<
 - **Symbols:** `\infty`, `\partial`, `\nabla`, `\pm`, `\times`, `\cdot`, `\leq`, `\geq`, `\neq`, `\approx`, `\equiv`, `\in`, `\rightarrow`, `\Rightarrow`, `\ldots`, `\cdots`, etc.
 - **Spacing:** `\,` `;` `\quad` `\qquad`
 
-Grid `fr` rows in unbounded height fail with `Cannot resolve fr tracks with infinite available size` — set the grid's own `layout.height`, use `pt` rows, or nest under a fixed-height stack/overlay. `fr` is **not** content-auto sizing. See `ex_grid.json`. Poster/slide page shell: copy `ex_poster_shell.json` (`pt` + `{fr:1}` + `pt`), not a stack.
+Grid `fr` rows in unbounded height fail with `Cannot resolve fr tracks with infinite available size` — set the grid's own `layout.height`, use `pt`/`auto` rows, or nest under a fixed-height stack/overlay. `fr` is **not** content-auto sizing (`auto` is). See `ex_grid.json` / `ex_poster_shell.json`. Table `column_widths` cannot use `auto`.
 
 ## Integrity after pack
 

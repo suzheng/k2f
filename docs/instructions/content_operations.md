@@ -307,8 +307,8 @@ There is no `font-size`, `font-family`, or `color` modifier type.
 ```
 
 **Grid rules:**
-- Columns/rows: Array of `{pt: integer}` or `{fr: integer}`
-- `fr` units distribute remaining space proportionally
+- Columns/rows: Array of `{pt: integer}`, `{fr: integer}`, or `{auto: true}`
+- `auto` tracks take the max measured min-size of cells in that track; `fr` units then distribute remaining space proportionally (`auto` is not CSS `auto-fit`)
 - Children placed in document order (no auto-placement)
 
 ### Overlay Layout

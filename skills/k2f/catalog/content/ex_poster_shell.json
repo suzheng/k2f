@@ -9,7 +9,7 @@
         {
           "id": "ex.poster_shell.header",
           "role": "h1",
-          "content": { "type": "text", "value": "Header band (pt row)." }
+          "content": { "type": "text", "value": "Header band ({auto:true} row)." }
         },
         {
           "id": "ex.poster_shell.body",
@@ -66,7 +66,7 @@
         {
           "id": "ex.poster_shell.footer",
           "role": "body",
-          "content": { "type": "text", "value": "Footer band (pt row)." }
+          "content": { "type": "text", "value": "Footer band ({auto:true} row)." }
         }
       ]
     }
@@ -74,7 +74,7 @@
   "layout": {
     "type": "grid",
     "columns": [{ "fr": 1 }],
-    "rows": [{ "pt": 40000 }, { "fr": 1 }, { "pt": 32000 }],
+    "rows": [{ "auto": true }, { "fr": 1 }, { "auto": true }],
     "gap": 8000,
     "height": 240000,
     "cell_align": { "x": "stretch", "y": "stretch" }

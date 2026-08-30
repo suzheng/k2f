@@ -77,7 +77,7 @@ python scripts/init_package.py --dir ./out/poster --title "…" --page a4 --marg
 ```
 
 1. Under `root`, **one** child: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json), `role: "shell"`, `break_inside: "avoid"`, `layout.height` = page height (842000 for A4).
-2. Put `kicker` / `display` in the first `pt` row; feature cards in the `{fr:1}` grower (nested grid); `caption` in the last `pt` row. Do not use a vertical stack as the page shell.
+2. Put `kicker` / `display` in the first `{auto:true}` row; feature cards in the `{fr:1}` grower (nested grid); `caption` in the last `{auto:true}` row. Do not use a vertical stack as the page shell.
 3. **Points in the grower** (pick by count):
    - 1–2 points: two cells in the nested 2-col grid, or one column.
    - 3 or 6 points: 3-column grid in the grower — [`ex_grid.json`](../../catalog/content/ex_grid.json).

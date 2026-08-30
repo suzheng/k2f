@@ -148,7 +148,7 @@ If the PNG looks wrong, edit JSON or theme and run `pack_verify.py --render` aga
 | `self_align` (or any theme field) on a node | Put `self_align`, `text_align`, fonts, padding in `styles/theme.json` roles only |
 | `$...$` inline math in author JSON | U+FFFC + `{ "type": "math", "intent": "<tex>" }` modifier — see `catalog/content/ex_modifiers.json`; `$` works Markdown only |
 | Multiple fonts but `"default":"default"` only | Map `font_aliases` to each file stem; two+ fonts have no auto-`default` |
-| `fr` rows without fixed grid height | Fails: `Cannot resolve fr tracks with infinite available size`. `fr` ≠ content-auto height — set grid `layout.height`, use `pt` rows, or nest under a fixed-height stack (`ex_grid.json`) |
+| `fr` rows without fixed grid height | Fails: `Cannot resolve fr tracks with infinite available size`. `fr` ≠ content-auto height — set grid `layout.height`, use `pt`/`auto` rows, or nest under a fixed-height stack (`ex_grid.json`) |
 | Poster/slide shell is a vertical stack | Content piles at the top. Copy `ex_poster_shell.json`: pinned `height` + `{fr:1}` body row |
 | Expect a native `Divider` node | Use `role: "rule"` + small `layout.height` + surface fill (or bottom border) |
 | Noise / vignette / radial glow / dot matrix | Not in core — SVG under `assets/images/` (labels as `<path>`); size in millipt |

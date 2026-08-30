@@ -227,3 +227,112 @@ fn test_grid_own_height_resolves_fr_rows_in_unbounded_flow() {
     assert_eq!(geo.children[1].y, Pt(160_000));
     assert_eq!(geo.children[1].height, Pt(40_000));
 }
+
+#[test]
+fn test_grid_auto_fr_auto_rows_fill_fixed_height() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+
+    let header = make_image("h");
+    let body = make_image("b");
+    let footer = make_image("f");
+    let container = SemanticNode {
+        id: "g".to_string(),
+        role: "section".to_string(),
+        content: NodeContent::Container {
+            children: vec![header, body, footer],
+        },
+        layout: Some(LayoutHint::Grid {
+            columns: vec![GridTrack::Fr { fr: 1 }],
+            rows: vec![
+                GridTrack::Auto { auto: true },
+                GridTrack::Fr { fr: 1 },
+                GridTrack::Auto { auto: true },
+            ],
+            gap: 0,
+            row_gap: None,
+            column_gap: None,
+            cell_align: Some(CellAlign::default()),
+            size: FixedSizeHint {
+                width: Some(Pt(100_000)),
+                height: Some(Pt(400_000)),
+            },
+        }),
+        ..Default::default()
+    };
+
+    let measured = measure_node(&container, SizeConstraint::infinite(), &ctx).unwrap();
+    assert_eq!(measured.height, Pt(400_000));
+    let geo = arrange_node(&container, Point::ZERO, measured, &ctx).unwrap();
+    assert_eq!(geo.children.len(), 3);
+    // images are 100000 tall; auto rows take that; fr gets 200000
+    assert_eq!(geo.children[0].height, Pt(100_000));
+    assert_eq!(geo.children[1].height, Pt(200_000));
+    assert_eq!(geo.children[2].height, Pt(100_000));
+    assert_eq!(geo.children[2].y, Pt(300_000));
+}
+
+#[test]
+fn test_resolve_tracks_rejects_auto_without_intrinsics() {
+    let err = resolve_tracks(&[GridTrack::Auto { auto: true }], Pt::ZERO, Pt(100)).unwrap_err();
+    assert!(err.contains("auto"));
+}
+
+#[test]
+fn test_grid_auto_rows_sum_when_height_unbounded() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let container = SemanticNode {
+        id: "g".to_string(),
+        role: "section".to_string(),
+        content: NodeContent::Container {
+            children: vec![make_image("a"), make_image("b")],
+        },
+        layout: Some(LayoutHint::Grid {
+            columns: vec![GridTrack::Fr { fr: 1 }],
+            rows: vec![
+                GridTrack::Auto { auto: true },
+                GridTrack::Auto { auto: true },
+            ],
+            gap: 0,
+            row_gap: None,
+            column_gap: None,
+            cell_align: Some(CellAlign::default()),
+            size: FixedSizeHint {
+                width: Some(Pt(100_000)),
+                height: None,
+            },
+        }),
+        ..Default::default()
+    };
+    let measured = measure_node(&container, SizeConstraint::infinite(), &ctx).unwrap();
+    assert_eq!(measured.height, Pt(200_000));
+}
+
+#[test]
+fn test_grid_auto_plus_fr_fails_when_height_unbounded() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let container = SemanticNode {
+        id: "g".to_string(),
+        role: "section".to_string(),
+        content: NodeContent::Container {
+            children: vec![make_image("a"), make_image("b")],
+        },
+        layout: Some(LayoutHint::Grid {
+            columns: vec![GridTrack::Pt { pt: 100_000 }],
+            rows: vec![GridTrack::Auto { auto: true }, GridTrack::Fr { fr: 1 }],
+            gap: 0,
+            row_gap: None,
+            column_gap: None,
+            cell_align: Some(CellAlign::default()),
+            size: Default::default(),
+        }),
+        ..Default::default()
+    };
+    let err = measure_node(&container, SizeConstraint::infinite(), &ctx).unwrap_err();
+    assert!(err.contains("infinite available size"));
+}

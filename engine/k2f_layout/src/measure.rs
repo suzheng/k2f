@@ -1,12 +1,12 @@
 use crate::fixed_size::subtract_if_bounded;
 use crate::fixed_size::{apply_fixed_min_outer, fixed_size_hint, inner_max_for_children};
-use crate::grid::{resolve_tracks, sum_with_gaps};
+use crate::grid::{resolve_tracks, resolve_tracks_with_intrinsics, sum_with_gaps};
 use crate::list_item_measure::list_item_measure_spec;
 use crate::resolved_style::padding_for_role_variant;
 use crate::text_layout::layout_code_block;
 use crate::text_layout::layout_text;
 use crate::{LayoutContext, Size, SizeConstraint};
-use k2f_core::{LayoutHint, NodeContent, Pt, SemanticNode, StackDirection};
+use k2f_core::{GridTrack, LayoutHint, NodeContent, Pt, SemanticNode, StackDirection};
 
 pub fn measure_node(
     node: &SemanticNode,
@@ -189,7 +189,7 @@ fn measure_container(
         return Ok(apply_fixed_min_outer(measured, fixed, constraint));
     }
 
-    // Grid container (explicit tracks only)
+    // Grid container (pt / fr / auto tracks)
     if let Some(LayoutHint::Grid {
         columns,
         rows,
@@ -202,8 +202,16 @@ fn measure_container(
         let available_w = inner_max_w;
         let available_h = inner_max_h;
         let (row_gap_pt, col_gap_pt) = crate::grid::grid_axis_gaps(*gap, *row_gap, *column_gap);
-        let col_sizes = resolve_tracks(columns, col_gap_pt, available_w)?;
-        let row_sizes = resolve_tracks(rows, row_gap_pt, available_h)?;
+        let (col_sizes, row_sizes) = grid_track_sizes(
+            columns,
+            rows,
+            col_gap_pt,
+            row_gap_pt,
+            available_w,
+            available_h,
+            children,
+            ctx,
+        )?;
 
         let total_w = sum_with_gaps(&col_sizes, col_gap_pt);
         let total_h = sum_with_gaps(&row_sizes, row_gap_pt);
@@ -317,4 +325,68 @@ fn measure_container(
             Ok(apply_fixed_min_outer(measured, fixed, constraint))
         }
     }
+}
+
+pub(crate) fn grid_track_sizes(
+    columns: &[GridTrack],
+    rows: &[GridTrack],
+    col_gap: Pt,
+    row_gap: Pt,
+    available_w: Pt,
+    available_h: Pt,
+    children: &[SemanticNode],
+    ctx: &LayoutContext,
+) -> Result<(Vec<Pt>, Vec<Pt>), String> {
+    let n_cols = columns.len();
+    let n_rows = rows.len();
+    if n_cols == 0 || n_rows == 0 {
+        return Err("grid requires at least one column and one row".to_string());
+    }
+
+    let mut col_auto = vec![Pt::ZERO; n_cols];
+    if columns.iter().any(GridTrack::is_auto) {
+        for (idx, child) in children.iter().enumerate() {
+            let c = idx % n_cols;
+            let r = idx / n_cols;
+            if r >= n_rows {
+                break;
+            }
+            if !columns[c].is_auto() {
+                continue;
+            }
+            let measured = measure_node(
+                child,
+                SizeConstraint::new(Size::ZERO, Size::new(available_w, Pt(i128::MAX))),
+                ctx,
+            )?;
+            if measured.width > col_auto[c] {
+                col_auto[c] = measured.width;
+            }
+        }
+    }
+    let col_sizes = resolve_tracks_with_intrinsics(columns, col_gap, available_w, &col_auto)?;
+
+    let mut row_auto = vec![Pt::ZERO; n_rows];
+    if rows.iter().any(GridTrack::is_auto) {
+        for (idx, child) in children.iter().enumerate() {
+            let c = idx % n_cols;
+            let r = idx / n_cols;
+            if r >= n_rows {
+                break;
+            }
+            if !rows[r].is_auto() {
+                continue;
+            }
+            let measured = measure_node(
+                child,
+                SizeConstraint::new(Size::ZERO, Size::new(col_sizes[c], Pt(i128::MAX))),
+                ctx,
+            )?;
+            if measured.height > row_auto[r] {
+                row_auto[r] = measured.height;
+            }
+        }
+    }
+    let row_sizes = resolve_tracks_with_intrinsics(rows, row_gap, available_h, &row_auto)?;
+    Ok((col_sizes, row_sizes))
 }

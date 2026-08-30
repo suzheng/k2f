@@ -73,10 +73,10 @@ python scripts/init_package.py --dir ./out/poster --title "…" --page a4 --marg
 ```
 
 1. Copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json): `shell` + page height + `break_inside: "avoid"` + `{fr:1}` grower. Do not stack the whole page.
-2. Header `pt` row: optional 2-col `kicker` / `caption`; or `display` variant `poster` (white, or inside `card` variant `block_c`).
+2. Header `{auto:true}` row: optional 2-col `kicker` / `caption`; or `display` variant `poster` (white, or inside `card` variant `block_c`).
 3. **Feature grid in the `{fr:1}` row:** 3 or 6 items in 3-column grid. Each cell: `card` with rotating `block_a` / `block_b` / `block_c`, one bold `body` line (≤8 words).
 4. **Stat row:** 2–3 `metric` variant `poster` in that grower (or a nested row), or one coral metric.
-5. Footer `pt` row: `caption` on white — never on coral without checking contrast.
+5. Footer `{auto:true}` row: `caption` on white — never on coral without checking contrast.
 
 For 4 equal tiles: 2×2 grid, variants A/B/C/A.
 
@@ -86,8 +86,8 @@ For 4 equal tiles: 2×2 grid, variants A/B/C/A.
 python scripts/init_package.py --dir ./out/deck --title "…" --page widescreen --margin 0
 ```
 
-1. **Title / content / KPI slides:** copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json) per slide (`960000×540000`). Put bands in `pt` rows and the main cards/metric in `{fr:1}`.
-2. **Title slide:** navy full-width top `pt` row — `card` variant `block_c` with white `display` + `kicker`; subtitle `body` in the grower.
+1. **Title / content / KPI slides:** copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json) per slide (`960000×540000`). Put bands in `{auto:true}` rows and the main cards/metric in `{fr:1}`.
+2. **Title slide:** navy full-width top `{auto:true}` row — `card` variant `block_c` with white `display` + `kicker`; subtitle `body` in the grower.
 3. **Content slide:** 2-column grid of `block_a` / `block_b` cards **in the grower**, with bullet `list_item` children.
 4. **KPI slide:** `metric` + `caption` in the grower.
 5. Avoid more than two block colors on one slide.
