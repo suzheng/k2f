@@ -74,13 +74,12 @@ python scripts/init_package.py --dir ./out/poster --title "…" --page a4 --marg
 # rewrite styles/theme.json from this look's theme.json (adapt — do not ship unchanged)
 ```
 
-1. Page background comes from `document`/`shell` `canvas_wash` — no extra background node needed unless layering a photo.
-2. Single `shell`, fixed height, `break_inside: "avoid"`.
-3. Vertical stack, `gap` 28000, often `justify_content: "center"` for optical vertical centering on short copy.
-4. Stack order: `kicker` (accent) → `display` variant `poster` → optional one `body` line (`ink_soft`) → optional `metric` variant `poster`.
-5. Supporting points: max 3 `card` variant `glass` with single-line `body` each — horizontal row via 3-column grid, or vertical stack for 1–2 items.
-6. `caption` at bottom in `muted`.
-7. Photo hero: `overlay` with full-bleed `image`, then dark content stack on top — text must stay high contrast; add `card` variant `glass` behind text block if needed.
+1. Page background comes from `document`/`shell` `canvas_wash` — no extra background node unless layering a photo.
+2. Copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json): single `shell`, fixed height, `break_inside: "avoid"`, `{fr:1}` grower. Do not use a vertical stack as the page shell.
+3. Header row: `kicker` (accent) → `display` variant `poster`. Grower: optional one `body` line (`ink_soft`) and/or `metric` variant `poster`.
+4. Supporting points in the grower: max 3 `card` variant `glass` — 3-column grid, or two cells for 1–2 items.
+5. Footer `pt` row: `caption` in `muted`.
+6. Photo hero: wrap the shell in `overlay` with full-bleed `image`; keep text high contrast (`card` variant `glass` behind text if needed).
 
 ### Slide deck
 
@@ -88,11 +87,11 @@ python scripts/init_package.py --dir ./out/poster --title "…" --page a4 --marg
 python scripts/init_package.py --dir ./out/deck --title "…" --page widescreen --margin 0
 ```
 
-1. Each slide: `shell` 960000×540000, gradient background inherited.
-2. **Title slide:** centered stack — `kicker`, `display`, `caption` date.
-3. **Statement slide:** one `display` line only, vertically centered.
-4. **Detail slide:** `display` top-left + 3 `list_item` in `ink_soft` — no walls of text.
-5. **Metric slide:** centered `metric` + `caption` label.
+1. Each slide: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json), `shell` `960000×540000`, gradient inherited. Main idea in `{fr:1}`.
+2. **Title slide:** `kicker`, `display` in the header row; `caption` date in the footer row.
+3. **Statement slide:** one `display` line in the grower (or header); keep copy short.
+4. **Detail slide:** `display` in the header row + 3 `list_item` in `ink_soft` in the grower — no walls of text.
+5. **Metric slide:** `metric` + `caption` in the grower.
 6. Max ~12 words of `body` per slide besides bullets.
 
 ### Report (short)

@@ -8,6 +8,7 @@
         { "include": "content/ex_heading.json" },
         { "include": "content/ex_stack.json" },
         { "include": "content/ex_grid.json" },
+        { "include": "content/ex_poster_shell.json" },
         { "include": "content/ex_overlay.json" },
         { "include": "content/ex_columns.json" },
         { "include": "content/ex_table.json" },

@@ -1,0 +1,82 @@
+{
+  "id": "ex.poster_shell",
+  "role": "section",
+  "break_inside": "avoid",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.poster_shell.header",
+          "role": "h1",
+          "content": { "type": "text", "value": "Header band (pt row)." }
+        },
+        {
+          "id": "ex.poster_shell.body",
+          "role": "section",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.poster_shell.body.left",
+                  "role": "card",
+                  "content": {
+                    "type": "container",
+                    "value": {
+                      "children": [
+                        {
+                          "id": "ex.poster_shell.body.left.text",
+                          "role": "body",
+                          "content": { "type": "text", "value": "Left column in the {fr:1} grower." }
+                        }
+                      ]
+                    }
+                  },
+                  "layout": { "type": "stack", "gap": 0 }
+                },
+                {
+                  "id": "ex.poster_shell.body.right",
+                  "role": "card",
+                  "content": {
+                    "type": "container",
+                    "value": {
+                      "children": [
+                        {
+                          "id": "ex.poster_shell.body.right.text",
+                          "role": "body",
+                          "content": { "type": "text", "value": "Right column shares the same grower row." }
+                        }
+                      ]
+                    }
+                  },
+                  "layout": { "type": "stack", "gap": 0 }
+                }
+              ]
+            }
+          },
+          "layout": {
+            "type": "grid",
+            "columns": [{ "fr": 1 }, { "fr": 1 }],
+            "rows": [{ "fr": 1 }],
+            "gap": 8000,
+            "cell_align": { "x": "stretch", "y": "stretch" }
+          }
+        },
+        {
+          "id": "ex.poster_shell.footer",
+          "role": "body",
+          "content": { "type": "text", "value": "Footer band (pt row)." }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "grid",
+    "columns": [{ "fr": 1 }],
+    "rows": [{ "pt": 40000 }, { "fr": 1 }, { "pt": 32000 }],
+    "gap": 8000,
+    "height": 240000,
+    "cell_align": { "x": "stretch", "y": "stretch" }
+  }
+}

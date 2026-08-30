@@ -76,17 +76,15 @@ python scripts/init_package.py --dir ./out/poster --title "…" --page a4 --marg
 # rewrite styles/theme.json from this look's theme.json (adapt — do not ship unchanged)
 ```
 
-1. Under `root`, **one** child: `role: "shell"`, `break_inside: "avoid"`, fixed `layout.height` = page height (842000 for A4).
-2. Inside `shell`, vertical `stack` with `gap` 24000.
-3. **Hero block:** `kicker` (optional) → `display` variant `poster` → one `body` subtitle line max.
-4. **Points grid** (pick by count):
-   - 1–2 points: vertical stack, `align_items: "center"`, `text_align: "center"` on text roles via centered parent stack — see [`ex_stack.json`](../../catalog/content/ex_stack.json).
-   - 3 or 6 points: 3-column grid — [`ex_grid.json`](../../catalog/content/ex_grid.json).
-   - 4 points: 2×2 grid.
-5. Each point: optional `card` variant `flat` wrapping a short `body` line, or plain `body` with a bold lead word via emphasis modifier.
-6. **Footer:** `caption` for date, URL, or credit.
-7. Full-bleed photo: wrap `shell` content in `overlay` — background `image` child first, then a semi-opaque `card` variant `flat` if text must sit on photo — [`ex_overlay.json`](../../catalog/content/ex_overlay.json).
-8. Pack with `--expect-pages 1 --render preview.png`.
+1. Under `root`, **one** child: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json), `role: "shell"`, `break_inside: "avoid"`, `layout.height` = page height (842000 for A4).
+2. Put `kicker` / `display` in the first `pt` row; feature cards in the `{fr:1}` grower (nested grid); `caption` in the last `pt` row. Do not use a vertical stack as the page shell.
+3. **Points in the grower** (pick by count):
+   - 1–2 points: two cells in the nested 2-col grid, or one column.
+   - 3 or 6 points: 3-column grid in the grower — [`ex_grid.json`](../../catalog/content/ex_grid.json).
+   - 4 points: 2×2 grid in the grower.
+4. Each point: optional `card` variant `flat` wrapping a short `body` line, or plain `body` with a bold lead word via emphasis modifier.
+5. Full-bleed photo: wrap the shell in `overlay` — background `image` child first — [`ex_overlay.json`](../../catalog/content/ex_overlay.json).
+6. Pack with `--expect-pages 1 --render preview.png`.
 
 ### Slide deck (multi-page)
 
@@ -95,9 +93,9 @@ python scripts/init_package.py --dir ./out/deck --title "…" --page widescreen 
 ```
 
 1. Each top-level child under `root` = one slide.
-2. Slide container: `role: "shell"`, `break_inside: "avoid"`, `layout: { "type": "stack", "width": 960000, "height": 540000, "direction": "vertical", "gap": 16000 }`.
-3. Slide anatomy: optional `kicker` → `display` → 3–5 `list_item` or short `body` nodes. One idea per slide.
-4. Closing slide: centered `display` + `caption` only.
+2. Slide container: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json), `role: "shell"`, `width`/`height` `960000×540000`. `{fr:1}` row holds the main idea — not a vertical stack shell.
+3. Slide anatomy: optional `kicker` → `display` in the header row; 3–5 `list_item` or short `body` in the grower. One idea per slide.
+4. Closing slide: `display` + `caption` in header/footer rows (grower may be empty of extra blocks).
 5. Render page 0..N with `k2f render … --page N`.
 
 ### Report (multi-page article)

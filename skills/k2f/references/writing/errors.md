@@ -39,7 +39,7 @@ Inline math in author JSON: U+FFFC placeholder + `{ "type": "math", "intent": "<
 - **Symbols:** `\infty`, `\partial`, `\nabla`, `\pm`, `\times`, `\cdot`, `\leq`, `\geq`, `\neq`, `\approx`, `\equiv`, `\in`, `\rightarrow`, `\Rightarrow`, `\ldots`, `\cdots`, etc.
 - **Spacing:** `\,` `;` `\quad` `\qquad`
 
-Grid `fr` rows in unbounded height fail with `Cannot resolve fr tracks with infinite available size` — set the grid's own `layout.height`, use `pt` rows, or nest under a fixed-height stack/overlay. `fr` is **not** content-auto sizing. See `ex_grid.json`.
+Grid `fr` rows in unbounded height fail with `Cannot resolve fr tracks with infinite available size` — set the grid's own `layout.height`, use `pt` rows, or nest under a fixed-height stack/overlay. `fr` is **not** content-auto sizing. See `ex_grid.json`. Poster/slide page shell: copy `ex_poster_shell.json` (`pt` + `{fr:1}` + `pt`), not a stack.
 
 ## Integrity after pack
 
