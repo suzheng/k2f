@@ -1,0 +1,28 @@
+name: K2F Golden Nightly
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  golden-nightly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Golden suite (5x determinism)
+        run: cargo run -p k2f-test-runner -- run --dataset-runs 5
+
+      - name: Paint goldens
+        run: cargo test -p k2f_paint
+
+      - name: PNG appearance gate
+        run: cargo run -p k2f-test-runner -- run --check-png --dataset-runs 1
+
+      - name: Package and SDK
+        run: cargo test -p k2f_sdk -p k2f_package -p k2f -p k2f_mcp

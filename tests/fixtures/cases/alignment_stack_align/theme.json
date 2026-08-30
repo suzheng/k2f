@@ -1,0 +1,56 @@
+{
+  "palette": {},
+  "primitives": {
+    "surfaces": {
+      "surf_77dcc434": {
+        "type": "solid",
+        "color": "#F3F4F6"
+      },
+      "surf_23b98494": {
+        "type": "solid",
+        "color": "#3B82F6"
+      }
+    },
+    "borders": {
+      "br_1dd72dcb": {
+        "color": "#D1D5DB",
+        "width_pt": 1000
+      }
+    }
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "box_decoration": null
+    },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "box_decoration": null
+    },
+    "box_container": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "box_decoration": {
+        "background": "surf_77dcc434",
+        "border": "br_1dd72dcb"
+      }
+    },
+    "box_item": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "box_decoration": {
+        "background": "surf_23b98494"
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+            "palette": {
+                "black": "#000000",
+                "white": "#FFFFFF",
+                "gray": "#888888"
+            },
+            "roles": {
+                "default": {
+                    "font_family": "default",
+                    "font_size": 12000,
+                    "line_height_mult": 1200,
+                    "color": "black"
+                },
+                "document": {
+                     "font_family": "default",
+                     "font_size": 12000,
+                     "line_height_mult": 1200,
+                     "color": "black"
+                },
+                "math": {
+                     "font_family": "default",
+                     "font_size": 12000,
+                     "line_height_mult": 1200,
+                     "color": "black",
+                     "text_align": "center"
+                }
+            }
+        }

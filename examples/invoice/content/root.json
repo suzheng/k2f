@@ -1,0 +1,83 @@
+{
+  "id": "invoice_root",
+  "role": "document",
+  "layout": {
+    "type": "stack",
+    "direction": "vertical",
+    "gap": 16000
+  },
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "invoice.logo",
+          "role": "body",
+          "break_inside": "avoid",
+          "content": {
+            "type": "image",
+            "value": {
+              "src": "assets/images/logo.png",
+              "width": 90000,
+              "height": 28000
+            }
+          }
+        },
+        {
+          "id": "invoice.header",
+          "role": "h1",
+          "keep_with_next": true,
+          "content": {
+            "type": "text",
+            "value": "STATEMENT #2025-001"
+          }
+        },
+        {
+          "id": "invoice.details",
+          "role": "body",
+          "content": {
+            "type": "text",
+            "value": "Date: 15 Dec 2025\nBill To: TechInnovate Inc.\nCurrency: USD"
+          }
+        },
+        {
+          "id": "invoice.table",
+          "role": "body",
+          "content": {
+            "type": "table",
+            "value": {
+              "column_widths": [
+                { "fr": 3 },
+                { "fr": 1 },
+                { "fr": 1 },
+                { "fr": 1 }
+              ],
+              "header_rows": 1,
+              "gap": 4000,
+              "data": {
+                "type": "asset",
+                "source": "assets/data/invoice_data.json"
+              }
+            }
+          }
+        },
+        {
+          "id": "invoice.total",
+          "role": "body",
+          "break_inside": "avoid",
+          "content": {
+            "type": "text",
+            "value": "Grand Total: $7,047.00"
+          },
+          "modifiers": [
+            {
+              "range": [13, 22],
+              "type": "emphasis",
+              "intent": "total"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "title": "Text: Whitespace + Newlines Matrix",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "ws_grid",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "leading_ws",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "   Leading spaces should be trimmed: hello world"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "trailing_ws",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Trailing spaces should be trimmed: hello world   "
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "multiple_spaces",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Multiple    spaces    between    words    should    be    preserved    as    rendered"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "newlines_blank",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Line 1\nLine 2\n\nLine 4 after blank line\nLine 5"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "mixed_ws",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Mixed whitespace:    Tab here\nNewline here\n\nBlank line above\n  Leading spaces on this line"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "wrap_ws",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "   This line has leading spaces and will wrap.   Trailing spaces here   "
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "grid",
+              "columns": [
+                {
+                  "pt": 200000
+                },
+                {
+                  "pt": 200000
+                },
+                {
+                  "pt": 200000
+                }
+              ],
+              "rows": [
+                {
+                  "pt": 120000
+                },
+                {
+                  "pt": 200000
+                },
+                {
+                  "pt": 120000
+                }
+              ],
+              "gap": 8000,
+              "cell_align": {
+                "x": "stretch",
+                "y": "stretch"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

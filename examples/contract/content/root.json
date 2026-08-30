@@ -1,0 +1,71 @@
+{
+  "id": "root",
+  "role": "document",
+  "variant": "minimal",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "contract.logo",
+          "role": "body",
+          "break_inside": "avoid",
+          "content": {
+            "type": "image",
+            "value": {
+              "src": "assets/images/logo.png",
+              "width": 72000,
+              "height": 24000
+            }
+          },
+          "modifiers": []
+        },
+        {
+          "id": "contract.title",
+          "role": "heading",
+          "variant": "title",
+          "keep_with_next": true,
+          "content": { "type": "text", "value": "独立顾问协议" },
+          "modifiers": []
+        },
+        {
+          "id": "contract.warning",
+          "role": "critical_warning",
+          "break_inside": "avoid",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "contract.warning.text",
+                  "role": "body",
+                  "content": {
+                    "type": "text",
+                    "value": "机密。本文件含专有信息，仅供签署人阅读，不得对外披露。"
+                  },
+                  "modifiers": []
+                }
+              ]
+            }
+          },
+          "modifiers": [],
+          "layout": {
+            "type": "stack",
+            "direction": "vertical",
+            "gap": 8000,
+            "align_items": "stretch"
+          }
+        },
+        { "include": "content/clauses_1_3.json" },
+        { "include": "content/clauses_4_7.json" },
+        { "include": "content/signatures.json" }
+      ]
+    }
+  },
+  "layout": {
+    "type": "stack",
+    "direction": "vertical",
+    "gap": 16000,
+    "align_items": "stretch"
+  }
+}

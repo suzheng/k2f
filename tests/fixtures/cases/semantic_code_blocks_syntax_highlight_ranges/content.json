@@ -1,0 +1,77 @@
+{
+  "title": "Semantic Code Blocks: Syntax Highlight Ranges",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "code.syntax",
+            "role": "code_block",
+            "preserve_whitespace": true,
+            "content": {
+              "type": "code_block",
+              "value": "let x: i32 = 1;\n// comment\nprintln!(\"hi\");\n"
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  3
+                ],
+                "type": "syntax_highlight",
+                "intent": "keyword"
+              },
+              {
+                "range": [
+                  7,
+                  10
+                ],
+                "type": "syntax_highlight",
+                "intent": "type"
+              },
+              {
+                "range": [
+                  16,
+                  26
+                ],
+                "type": "syntax_highlight",
+                "intent": "comment"
+              },
+              {
+                "range": [
+                  36,
+                  40
+                ],
+                "type": "syntax_highlight",
+                "intent": "string"
+              }
+            ],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": {
+      "type": "stack",
+      "direction": "vertical",
+      "gap": 12000,
+      "align_items": "stretch",
+      "justify_content": "start"
+    }
+  }
+}

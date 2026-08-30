@@ -1,0 +1,41 @@
+{
+  "title": "Modifier Precedence Matrix (Theme-Patched Font Sizes)",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "body",
+    "content": {
+      "type": "text",
+      "value": "Modifier precedence check: underline vs emphasis."
+    },
+    "modifiers": [
+      {
+        "range": [
+          0,
+          49
+        ],
+        "type": "emphasis",
+        "intent": "critical"
+      },
+      {
+        "range": [
+          0,
+          49
+        ],
+        "type": "underline",
+        "intent": "on"
+      }
+    ],
+    "layout": null
+  }
+}

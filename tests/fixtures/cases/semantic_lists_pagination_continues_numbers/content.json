@@ -1,0 +1,547 @@
+{
+  "title": "Semantic Lists: Pagination Continues Numbers",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "p.li.1",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.2",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.3",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.4",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.5",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.6",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.7",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.8",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.9",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.10",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.11",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.12",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.13",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.14",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.15",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.16",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.17",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.18",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.19",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.20",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.21",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.22",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.23",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.24",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.25",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.26",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.27",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.28",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.29",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.30",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.31",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.32",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.33",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.34",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.35",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.36",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.37",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.38",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.39",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p.li.40",
+            "role": "list_item",
+            "list_id": "paged_numbers",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "This is a long list item designed to consume vertical space and force page breaks. The numbering should remain consistent across pages."
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

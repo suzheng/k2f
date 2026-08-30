@@ -1,0 +1,49 @@
+{
+  "title": "Text: Line Height Modifier (Theme-Patched)",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "body",
+    "content": {
+      "type": "text",
+      "value": "Line 1 normal\nLine 2 tall\nLine 3 tight"
+    },
+    "modifiers": [
+      {
+        "range": [
+          14,
+          25
+        ],
+        "type": "emphasis",
+        "intent": "tall"
+      },
+      {
+        "range": [
+          26,
+          38
+        ],
+        "type": "emphasis",
+        "intent": "tight"
+      },
+      {
+        "range": [
+          0,
+          13
+        ],
+        "type": "emphasis",
+        "intent": "black"
+      }
+    ],
+    "layout": null
+  }
+}

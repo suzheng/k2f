@@ -1,0 +1,177 @@
+{
+  "title": "Grid + Stack Nesting",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "body",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "cell_1",
+            "role": "body",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "c1_t1",
+                    "role": "body",
+                    "content": {
+                      "type": "text",
+                      "value": "Cell(1,1) line 1"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "c1_t2",
+                    "role": "body",
+                    "content": {
+                      "type": "text",
+                      "value": "Cell(1,1) line 2"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "stack",
+              "direction": "vertical",
+              "gap": 4000,
+              "align_items": "stretch",
+              "justify_content": "start"
+            }
+          },
+          {
+            "id": "cell_2",
+            "role": "body",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "c2_a",
+                    "role": "body",
+                    "content": {
+                      "type": "text",
+                      "value": "A"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "c2_b",
+                    "role": "body",
+                    "content": {
+                      "type": "text",
+                      "value": "B"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "c2_c",
+                    "role": "body",
+                    "content": {
+                      "type": "text",
+                      "value": "C"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "stack",
+              "direction": "horizontal",
+              "gap": 8000,
+              "align_items": "stretch",
+              "justify_content": "start"
+            }
+          },
+          {
+            "id": "cell_3",
+            "role": "body",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "c3_inner",
+                    "role": "body",
+                    "content": {
+                      "type": "text",
+                      "value": "Nested stack inside grid"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "stack",
+              "direction": "vertical",
+              "gap": 0,
+              "align_items": "stretch",
+              "justify_content": "start"
+            }
+          },
+          {
+            "id": "cell_4",
+            "role": "body",
+            "content": {
+              "type": "text",
+              "value": "Bottom-right"
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": {
+      "type": "grid",
+      "columns": [
+        {
+          "fr": 1
+        },
+        {
+          "fr": 2
+        }
+      ],
+      "rows": [
+        {
+          "pt": 100000
+        },
+        {
+          "pt": 120000
+        }
+      ],
+      "gap": 12000,
+      "cell_align": {
+        "x": "stretch",
+        "y": "stretch"
+      }
+    }
+  }
+}

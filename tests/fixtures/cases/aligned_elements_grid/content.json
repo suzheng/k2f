@@ -1,0 +1,62 @@
+{
+  "title": "Aligned Elements (Grid)",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [72000, 72000, 72000, 72000]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "grid",
+            "role": "grid_frame",
+            "layout": {
+              "type": "grid",
+              "gap": 12000,
+              "cell_align": { "x": "end", "y": "center" },
+              "columns": [{ "pt": 160000 }, { "pt": 160000 }, { "pt": 160000 }],
+              "rows": [{ "pt": 120000 }]
+            },
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "g_text",
+                    "role": "body",
+                    "content": { "type": "text", "value": "Text" }
+                  },
+                  {
+                    "id": "g_img",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": { "src": "asset://missing_ok_3.png", "width": 60000, "height": 40000 }
+                    }
+                  },
+                  {
+                    "id": "g_shape",
+                    "role": "shape",
+                    "layout": { "type": "overlay", "width": 90000, "height": 30000 },
+                    "content": { "type": "container", "value": { "children": [] } }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}
+
+
+

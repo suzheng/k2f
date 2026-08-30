@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>k2f wide scroll check</title></head>
+<body>
+<div id="host" style="height:640px;width:400px"></div>
+<pre id="out">loading</pre>
+<script type="module">
+  import "/sdk/js/viewer.js";
+  const out = document.getElementById("out");
+  const host = document.getElementById("host");
+  const el = document.createElement("k2f-viewer");
+  el.setAttribute("src", "/examples/invoice.K2F");
+  el.style.height = "100%";
+  el.style.display = "block";
+  try {
+    const opened = new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error("k2f-open timed out")), 25000);
+      el.addEventListener(
+        "k2f-open",
+        (e) => {
+          clearTimeout(t);
+          resolve(e.detail);
+        },
+        { once: true },
+      );
+    });
+    host.append(el);
+    const detail = await opened;
+    const root = el.shadowRoot;
+    const stage = root.querySelector(".k2f-stage");
+    const wrap = root.querySelector(".k2f-page-wrap");
+    const zoomLabel = [...root.querySelectorAll(".k2f-toolbar span")].find(
+      (s) => /^\d+%$/.test(s.textContent.trim()),
+    );
+    const fullscreenBtn = root.querySelector('[data-act="fullscreen"]');
+    const stageBox = stage.getBoundingClientRect();
+    const fitLeft = wrap.getBoundingClientRect().left;
+    const fitRight = wrap.getBoundingClientRect().right;
+    const initialZoom = zoomLabel?.textContent?.trim() ?? "";
+    const zoomIn = root.querySelector('[data-act="zoom-in"]');
+    for (let i = 0; i < 3 && !zoomIn.disabled; i++) zoomIn.click();
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const zoomedLabel = zoomLabel?.textContent?.trim() ?? "";
+    const maxScroll = stage.scrollWidth - stage.clientWidth;
+    stage.scrollLeft = maxScroll;
+    await new Promise((r) => requestAnimationFrame(r));
+    const rightEdge = wrap.getBoundingClientRect().right;
+    stage.scrollLeft = 0;
+    await new Promise((r) => requestAnimationFrame(r));
+    const leftEdge = wrap.getBoundingClientRect().left;
+    const result = {
+      initialZoom,
+      zoomedLabel,
+      fitLeftOk: fitLeft >= stageBox.left - 1,
+      fitRightOk: fitRight <= stageBox.right + 1,
+      needsScroll: maxScroll > 0,
+      leftOk: leftEdge >= stageBox.left - 1,
+      rightOk: rightEdge <= stageBox.right + 1,
+      fullscreenVisible: fullscreenBtn && !fullscreenBtn.hidden,
+    };
+    out.textContent = JSON.stringify(result);
+    await fetch("/__result", { method: "POST", body: JSON.stringify(result) });
+  } catch (err) {
+    const msg = String(err && err.stack ? err.stack : err);
+    out.textContent = msg;
+    await fetch("/__result", { method: "POST", body: JSON.stringify({ error: msg }) });
+  }
+</script>
+</body>
+</html>

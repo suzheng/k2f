@@ -1,0 +1,675 @@
+{
+  "title": "Typography Stress Test",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "Helvetica_10",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Helvetica 10pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "Helvetica"
+              },
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "size_10"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Helvetica_12",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Helvetica 12pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "Helvetica"
+              },
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "size_12"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Helvetica_14",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Helvetica 14pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "Helvetica"
+              },
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "size_14"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Helvetica_18",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Helvetica 18pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "Helvetica"
+              },
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "size_18"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Helvetica_24",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Helvetica 24pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "Helvetica"
+              },
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "size_24"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Helvetica_36",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Helvetica 36pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "Helvetica"
+              },
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "size_36"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Helvetica_48",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Helvetica 48pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "Helvetica"
+              },
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "size_48"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Helvetica_72",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Helvetica 72pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "Helvetica"
+              },
+              {
+                "range": [
+                  0,
+                  61
+                ],
+                "type": "emphasis",
+                "intent": "size_72"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Times_New_Roman_10",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Times New Roman 10pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "Times New Roman"
+              },
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "size_10"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Times_New_Roman_12",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Times New Roman 12pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "Times New Roman"
+              },
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "size_12"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Times_New_Roman_14",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Times New Roman 14pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "Times New Roman"
+              },
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "size_14"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Times_New_Roman_18",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Times New Roman 18pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "Times New Roman"
+              },
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "size_18"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Times_New_Roman_24",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Times New Roman 24pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "Times New Roman"
+              },
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "size_24"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Times_New_Roman_36",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Times New Roman 36pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "Times New Roman"
+              },
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "size_36"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Times_New_Roman_48",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Times New Roman 48pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "Times New Roman"
+              },
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "size_48"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Times_New_Roman_72",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Times New Roman 72pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "Times New Roman"
+              },
+              {
+                "range": [
+                  0,
+                  67
+                ],
+                "type": "emphasis",
+                "intent": "size_72"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Courier_10",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Courier 10pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "Courier"
+              },
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "size_10"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Courier_12",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Courier 12pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "Courier"
+              },
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "size_12"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Courier_14",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Courier 14pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "Courier"
+              },
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "size_14"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Courier_18",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Courier 18pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "Courier"
+              },
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "size_18"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Courier_24",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Courier 24pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "Courier"
+              },
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "size_24"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Courier_36",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Courier 36pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "Courier"
+              },
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "size_36"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Courier_48",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Courier 48pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "Courier"
+              },
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "size_48"
+              }
+            ],
+            "layout": null
+          },
+          {
+            "id": "Courier_72",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Courier 72pt - The quick brown fox jumps over the lazy dog."
+            },
+            "modifiers": [
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "Courier"
+              },
+              {
+                "range": [
+                  0,
+                  59
+                ],
+                "type": "emphasis",
+                "intent": "size_72"
+              }
+            ],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

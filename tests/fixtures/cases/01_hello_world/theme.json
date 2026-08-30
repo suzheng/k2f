@@ -1,0 +1,28 @@
+{
+  "palette": {
+    "text": "#000000",
+    "background": "#FFFFFF",
+    "primary": "#0000FF",
+    "secondary": "#FF0000"
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1500,
+      "color": "text"
+    },
+    "h1": {
+      "font_family": "default",
+      "font_size": 24000,
+      "line_height_mult": 1200,
+      "color": "primary"
+    },
+    "body": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1500,
+      "color": "text"
+    }
+  }
+}

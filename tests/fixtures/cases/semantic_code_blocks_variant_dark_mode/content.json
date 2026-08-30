@@ -1,0 +1,45 @@
+{
+  "title": "Semantic Code Blocks: Variant Dark Mode",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "code.dark",
+            "role": "code_block",
+            "variant": "dark_mode",
+            "preserve_whitespace": true,
+            "content": {
+              "type": "code_block",
+              "value": "fn add(a: i32, b: i32) -> i32 {\n    a + b\n}\n"
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": {
+      "type": "stack",
+      "direction": "vertical",
+      "gap": 12000,
+      "align_items": "stretch",
+      "justify_content": "start"
+    }
+  }
+}

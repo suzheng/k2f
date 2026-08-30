@@ -1,0 +1,38 @@
+{
+  "title": "Canvas Background Gradient",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "variant": "notes",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "body_1",
+            "role": "body",
+            "content": {
+              "type": "text",
+              "value": "This page should paint a global background before content."
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

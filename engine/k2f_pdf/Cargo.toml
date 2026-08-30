@@ -1,0 +1,28 @@
+[package]
+name = "k2f_pdf"
+version = "0.1.1"
+edition = "2021"
+description = "K2F lock to PDF export"
+license = "Apache-2.0"
+repository = "https://github.com/suzheng/k2f"
+homepage = "https://github.com/suzheng/k2f"
+documentation = "https://docs.rs/k2f_pdf"
+authors = ["K2F Contributors"]
+keywords = ["k2f", "pdf", "export"]
+categories = ["rendering::engine"]
+
+[dependencies]
+k2f_core = { path = "../k2f_core", version = "0.1.1" }
+k2f_paint = { path = "../k2f_paint", version = "0.1.1" }
+k2f_package = { path = "../k2f_package", version = "0.1.1" }
+thiserror = { workspace = true }
+pdf-writer = "0.13"
+ttf-parser = "0.21.1"
+miniz_oxide = "0.8"
+image = { version = "=0.25.6", default-features = false, features = ["png", "webp"] }
+
+[dev-dependencies]
+k2f_sdk = { path = "../k2f_sdk", version = "0.1.1" }
+k2f_layout = { path = "../k2f_layout", version = "0.1.1" }
+serde_json = { workspace = true }
+lopdf = "0.34"

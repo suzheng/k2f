@@ -1,0 +1,42 @@
+{
+  "id": "ex.overlay",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.overlay.bg",
+          "role": "card",
+          "variant": "raised",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.overlay.bg.pad",
+                  "role": "body",
+                  "content": { "type": "text", "value": " " }
+                }
+              ]
+            }
+          },
+          "layout": { "type": "stack", "height": 80000 }
+        },
+        {
+          "id": "ex.overlay.fg",
+          "role": "body",
+          "content": {
+            "type": "text",
+            "value": "Foreground text paints on top of the background layer."
+          }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "overlay",
+    "height": 80000
+  },
+  "break_inside": "avoid"
+}

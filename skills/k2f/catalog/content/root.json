@@ -1,0 +1,27 @@
+{
+  "id": "root",
+  "role": "document",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        { "include": "content/ex_heading.json" },
+        { "include": "content/ex_stack.json" },
+        { "include": "content/ex_grid.json" },
+        { "include": "content/ex_overlay.json" },
+        { "include": "content/ex_columns.json" },
+        { "include": "content/ex_table.json" },
+        { "include": "content/ex_list.json" },
+        { "include": "content/ex_modifiers.json" },
+        { "include": "content/ex_code.json" },
+        { "include": "content/ex_math.json" },
+        { "include": "content/ex_image.json" }
+      ]
+    }
+  },
+  "layout": {
+    "type": "stack",
+    "direction": "vertical",
+    "gap": 16000
+  }
+}

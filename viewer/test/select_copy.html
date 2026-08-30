@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>k2f select copy</title></head>
+<body>
+<pre id="out">loading</pre>
+<script type="module">
+  import { clipboardFromSelection } from "/sdk/js/viewer/copy.js";
+  import "/sdk/js/viewer.js";
+  const out = document.getElementById("out");
+  const el = document.createElement("k2f-viewer");
+  el.setAttribute("src", "/examples/invoice.K2F");
+  el.style.height = "800px";
+  try {
+    const opened = new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error("k2f-open timed out")), 20000);
+      el.addEventListener("k2f-open", (e) => { clearTimeout(t); resolve(e.detail); }, { once: true });
+    });
+    document.body.append(el);
+    await opened;
+    const layer = el.shadowRoot.querySelector(".k2f-text-layer");
+    if (!layer) throw new Error("missing text layer");
+    const spans = [...layer.querySelectorAll("span")].filter((s) => (s.textContent || "").trim().length > 3);
+    if (spans.length < 2) throw new Error("need two text spans");
+    const span = spans[0];
+    if (!span.style.fontSize) throw new Error("span missing font-size for PNG alignment");
+    if (!span.style.transform) throw new Error("span missing scaleX fit");
+
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    const one = document.createRange();
+    one.selectNodeContents(span);
+    sel.addRange(one);
+    const payload = clipboardFromSelection(sel);
+    if (!payload) throw new Error("clipboardFromSelection returned null");
+
+    const copied = {};
+    const dt = new DataTransfer();
+    const evt = new Event("copy", { bubbles: true, cancelable: true, composed: true });
+    Object.defineProperty(evt, "clipboardData", { value: dt });
+    const origSet = dt.setData.bind(dt);
+    dt.setData = (type, value) => {
+      copied[type] = value;
+      return origSet(type, value);
+    };
+    el.shadowRoot.dispatchEvent(evt);
+    document.dispatchEvent(evt);
+
+    sel.removeAllRanges();
+    const two = document.createRange();
+    two.setStartBefore(spans[0]);
+    two.setEndAfter(spans[1]);
+    sel.addRange(two);
+    const multi = clipboardFromSelection(sel);
+
+    const result = {
+      spanCount: layer.querySelectorAll("span").length,
+      brCount: layer.querySelectorAll("br").length,
+      plain: payload.plain,
+      nodes: payload.nodes,
+      firstNodeId: payload.nodes[0]?.node_id || null,
+      copyPlain: copied["text/plain"] || null,
+      copyNodes: copied["application/x-k2f-nodes+json"] || null,
+      multiPlain: multi && multi.plain,
+    };
+    out.textContent = JSON.stringify(result);
+    await fetch("/__result", { method: "POST", body: JSON.stringify(result) });
+  } catch (err) {
+    const msg = String(err && err.stack ? err.stack : err);
+    out.textContent = msg;
+    await fetch("/__result", { method: "POST", body: JSON.stringify({ error: msg }) });
+  }
+</script>
+</body>
+</html>

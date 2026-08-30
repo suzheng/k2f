@@ -1,0 +1,433 @@
+{
+  "title": "Error: Modifier Limit Exceeded",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "text",
+    "content": {
+      "type": "text",
+      "value": "hello"
+    },
+    "modifiers": [
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c0"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c1"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c2"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c3"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c4"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c5"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c6"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c7"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c8"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c9"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c10"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c11"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c12"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c13"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c14"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c15"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c16"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c17"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c18"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c19"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c20"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c21"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c22"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c23"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c24"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c25"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c26"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c27"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c28"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c29"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c30"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c31"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c32"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c33"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c34"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c35"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c36"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c37"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c38"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c39"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c40"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c41"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c42"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c43"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c44"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c45"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c46"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c47"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c48"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c49"
+      },
+      {
+        "range": [
+          0,
+          1
+        ],
+        "type": "emphasis",
+        "intent": "c50"
+      }
+    ],
+    "layout": null
+  }
+}

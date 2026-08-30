@@ -1,0 +1,106 @@
+{
+  "title": "Leaf: TableReference Constrained by Height (Bounded Row)",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "grid",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "inner",
+                    "role": "box",
+                    "content": {
+                      "type": "container",
+                      "value": {
+                        "children": [
+                          {
+                            "id": "tbl_big",
+                            "role": "table",
+                            "content": {
+                              "type": "table_reference",
+                              "value": {
+                                "source": "asset://tbl_big",
+                                "view_mode": "full",
+                                "width": 280000,
+                                "height": 200000
+                              }
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          },
+                          {
+                            "id": "tbl_ok",
+                            "role": "table",
+                            "content": {
+                              "type": "table_reference",
+                              "value": {
+                                "source": "asset://tbl_ok",
+                                "view_mode": "full",
+                                "width": 80000,
+                                "height": 40000
+                              }
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          }
+                        ]
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": {
+                      "type": "stack",
+                      "direction": "horizontal",
+                      "gap": 12000,
+                      "align_items": "stretch",
+                      "justify_content": "start"
+                    }
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "grid",
+              "columns": [
+                {
+                  "pt": 420000
+                }
+              ],
+              "rows": [
+                {
+                  "pt": 70000
+                }
+              ],
+              "gap": 0,
+              "cell_align": {
+                "x": "stretch",
+                "y": "stretch"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

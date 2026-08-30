@@ -1,0 +1,727 @@
+{
+  "title": "Pagination: Large Page Count Stress Test",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "img_0",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_0",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_1",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_1",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_2",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_2",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_3",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_3",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_4",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_4",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_5",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_5",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_6",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_6",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_7",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_7",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_8",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_8",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_9",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_9",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_10",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_10",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_11",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_11",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_12",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_12",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_13",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_13",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_14",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_14",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_15",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_15",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_16",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_16",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_17",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_17",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_18",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_18",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_19",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_19",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_20",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_20",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_21",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_21",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_22",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_22",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_23",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_23",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_24",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_24",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_25",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_25",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_26",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_26",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_27",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_27",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_28",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_28",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_29",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_29",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_30",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_30",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_31",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_31",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_32",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_32",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_33",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_33",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_34",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_34",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_35",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_35",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_36",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_36",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_37",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_37",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_38",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_38",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_39",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_39",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_40",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_40",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_41",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_41",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_42",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_42",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_43",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_43",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_44",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_44",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_45",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_45",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_46",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_46",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_47",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_47",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_48",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_48",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_49",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_49",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

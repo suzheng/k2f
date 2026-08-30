@@ -1,0 +1,121 @@
+{
+  "palette": {
+    "black": "#000000",
+    "text": "#111827"
+  },
+  "primitives": {
+    "surfaces": {
+      "shape_indigo": {
+        "type": "solid",
+        "color": "#4F46E5"
+      },
+      "shape_blue": {
+        "type": "solid",
+        "color": "#2563EB"
+      },
+      "shape_green": {
+        "type": "solid",
+        "color": "#10B981"
+      },
+      "shape_pink": {
+        "type": "solid",
+        "color": "#EC4899"
+      }
+    },
+    "shadows": {
+      "shape_soft": {
+        "layers": [
+          {
+            "offset_x_pt": 0,
+            "offset_y_pt": 6000,
+            "blur_radius_pt": 14000,
+            "spread_radius_pt": 0,
+            "color": "#0000001A"
+          }
+        ]
+      }
+    },
+    "borders": {
+      "br_0a9d157e": {
+        "color": "#111827",
+        "width_pt": 2000
+      }
+    },
+    "corners": {
+      "none": 0,
+      "medium": 12000,
+      "r999000": 999000
+    }
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "text",
+      "box_decoration": null,
+      "variants": {}
+    },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "text",
+      "box_decoration": null,
+      "variants": {}
+    },
+    "body": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "text",
+      "box_decoration": null,
+      "variants": {}
+    },
+    "shape": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "text",
+      "box_decoration": {
+        "background": "shape_indigo",
+        "border": "br_0a9d157e",
+        "padding_pt": 0,
+        "corner_radius": "none"
+      },
+      "variants": {
+        "rectangle": {
+          "box_decoration": {
+            "background": "shape_indigo",
+            "corner_radius": "none"
+          }
+        },
+        "rounded": {
+          "box_decoration": {
+            "background": "shape_blue",
+            "corner_radius": "medium"
+          }
+        },
+        "pill": {
+          "box_decoration": {
+            "background": "shape_pink",
+            "shadow": "shape_soft",
+            "corner_radius": "r999000"
+          }
+        },
+        "circle": {
+          "box_decoration": {
+            "background": "shape_green",
+            "shadow": "shape_soft",
+            "corner_radius": "r999000"
+          }
+        }
+      }
+    }
+  },
+  "modifiers": {
+    "precedence": [],
+    "styles": {}
+  },
+  "font_aliases": {}
+}

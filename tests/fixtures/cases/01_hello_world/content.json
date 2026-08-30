@@ -1,0 +1,19 @@
+{
+    "id": "root",
+    "role": "body",
+    "content": {
+        "type": "container",
+        "value": {
+            "children": [
+                {
+                    "id": "text_1",
+                    "role": "body",
+                    "content": {
+                        "type": "text",
+                        "value": "Hello world"
+                    }
+                }
+            ]
+        }
+    }
+}

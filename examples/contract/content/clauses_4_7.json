@@ -1,0 +1,72 @@
+{
+  "id": "contract.clauses_4_7",
+  "role": "document",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "contract.section_4",
+          "role": "heading",
+          "variant": "section",
+          "keep_with_next": true,
+          "content": { "type": "text", "value": "4. 期限与终止" },
+          "modifiers": []
+        },
+        {
+          "id": "contract.clause_4",
+          "role": "contract_clause",
+          "content": {
+            "type": "text",
+            "value": "本协议自双方签署之日起生效，至全部服务完成或一方书面终止之日止。任何一方终止前，应完成已确认工作并结清对应发票。终止不影响本文件中机密、报酬与签署栏条款的效力。"
+          },
+          "modifiers": []
+        },
+        {
+          "id": "contract.section_5",
+          "role": "heading",
+          "variant": "section",
+          "keep_with_next": true,
+          "content": { "type": "text", "value": "5. 适用文本" },
+          "modifiers": []
+        },
+        {
+          "id": "contract.clause_5",
+          "role": "contract_clause",
+          "content": {
+            "type": "text",
+            "value": "本合同以中文文本为准。译本仅供阅读，不构成独立协议。页眉机密字样与页脚页码为本文件不可分割的一部分。签署人确认已完整阅读全部条款，并同意按锁定版面执行。"
+          },
+          "modifiers": []
+        },
+        {
+          "id": "contract.section_6",
+          "role": "heading",
+          "variant": "section",
+          "keep_with_next": true,
+          "content": { "type": "text", "value": "6. 其他条款" },
+          "modifiers": []
+        },
+        {
+          "id": "contract.clause_6",
+          "role": "contract_clause",
+          "content": {
+            "type": "text",
+            "value": "未在本文件载明的事项，双方应另行签署书面补充协议。补充协议与本文件冲突时，以日期在后且已重新锁定的文本为准。本条与第 1 条至第 5 条共同构成完整协议。"
+          },
+          "modifiers": []
+        },
+        {
+          "id": "contract.clause_7",
+          "role": "contract_clause",
+          "keep_with_next": true,
+          "content": {
+            "type": "text",
+            "value": "签署栏不得单独留在页首。双方应在同一签名块内完成签署与日期填写。以下签署栏为不可分割单元。"
+          },
+          "modifiers": []
+        }
+      ]
+    }
+  }
+}

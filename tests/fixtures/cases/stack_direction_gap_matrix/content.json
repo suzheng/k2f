@@ -1,0 +1,311 @@
+{
+  "title": "Stack: Direction + Gap Matrix",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "label_v0",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Vertical stack, gap=0"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "v_gap_0",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "v0_a",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://v0_a",
+                        "width": 100000,
+                        "height": 40000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "v0_b",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://v0_b",
+                        "width": 120000,
+                        "height": 50000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "v0_c",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://v0_c",
+                        "width": 140000,
+                        "height": 60000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "stack",
+              "direction": "vertical",
+              "gap": 0,
+              "align_items": "stretch",
+              "justify_content": "start"
+            }
+          },
+          {
+            "id": "label_v12",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Vertical stack, gap=12pt"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "v_gap_12pt",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "v12_a",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://v12_a",
+                        "width": 100000,
+                        "height": 40000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "v12_b",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://v12_b",
+                        "width": 120000,
+                        "height": 50000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "v12_c",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://v12_c",
+                        "width": 140000,
+                        "height": 60000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "stack",
+              "direction": "vertical",
+              "gap": 12000,
+              "align_items": "stretch",
+              "justify_content": "start"
+            }
+          },
+          {
+            "id": "label_h0",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Horizontal stack, gap=0"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "h_gap_0",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "h0_a",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://h0_a",
+                        "width": 80000,
+                        "height": 50000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "h0_b",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://h0_b",
+                        "width": 90000,
+                        "height": 60000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "h0_c",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://h0_c",
+                        "width": 70000,
+                        "height": 40000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "stack",
+              "direction": "horizontal",
+              "gap": 0,
+              "align_items": "stretch",
+              "justify_content": "start"
+            }
+          },
+          {
+            "id": "label_h8",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Horizontal stack, gap=8pt"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "h_gap_8pt",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "h8_a",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://h8_a",
+                        "width": 80000,
+                        "height": 50000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "h8_b",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://h8_b",
+                        "width": 90000,
+                        "height": 60000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "h8_c",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://h8_c",
+                        "width": 70000,
+                        "height": 40000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "stack",
+              "direction": "horizontal",
+              "gap": 8000,
+              "align_items": "stretch",
+              "justify_content": "start"
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

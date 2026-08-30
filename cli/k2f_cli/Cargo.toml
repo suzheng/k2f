@@ -1,0 +1,30 @@
+[package]
+name = "k2f"
+version = "0.1.1"
+edition = "2021"
+description = "K2F command-line tool"
+license = "Apache-2.0"
+repository = "https://github.com/suzheng/k2f"
+homepage = "https://github.com/suzheng/k2f"
+documentation = "https://docs.rs/k2f"
+readme = "README.md"
+authors = ["K2F Contributors"]
+keywords = ["k2f", "cli", "document", "pdf"]
+categories = ["command-line-utilities"]
+
+[lib]
+name = "k2f_cli"
+path = "src/lib.rs"
+
+[dependencies]
+k2f_layout = { path = "../../engine/k2f_layout", version = "0.1.1" }
+k2f_package = { path = "../../engine/k2f_package", version = "0.1.1" }
+k2f_paint = { path = "../../engine/k2f_paint", version = "0.1.1" }
+k2f_pdf = { path = "../../engine/k2f_pdf", version = "0.1.1" }
+k2f_sdk = { path = "../../engine/k2f_sdk", version = "0.1.1" }
+clap = { version = "4.4", features = ["derive"] }
+anyhow = "1.0"
+
+[[bin]]
+name = "k2f"
+path = "src/main.rs"

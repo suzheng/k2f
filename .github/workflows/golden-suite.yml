@@ -1,0 +1,129 @@
+name: K2F Golden Suite
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  golden-suite:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Public doc and spec checks
+        run: |
+          bash scripts/check-spec-paths.sh
+          bash scripts/check-doc-links.sh
+          bash scripts/check-js-contracts.sh
+          bash scripts/check-vendored-schema.sh
+          ! rg 'MIT OR Apache' --glob '!target/**' .
+
+      - name: Rust crate packaging (publish-ready)
+        run: bash scripts/check-cargo-package.sh
+
+      - name: Python SDK wheel (publish-ready)
+        run: |
+          pip install maturin pytest
+          cd sdk/python
+          maturin build --release
+          pip install ../../target/wheels/k2f-*.whl
+          k2f --help
+          pytest -q
+          python3 ../../skills/k2f/scripts/pack_verify.py ../../skills/k2f/catalog -o /tmp/k2f-skill-catalog.K2F
+          python3 ../../skills/k2f/scripts/verify_looks.py
+
+      - name: Run golden suite (5x determinism)
+        run: cargo run -p k2f-test-runner -- run --dataset-runs 5
+
+      - name: Paint goldens (signing scenes)
+        run: cargo test -p k2f_paint
+
+      - name: PNG appearance gate
+        run: cargo run -p k2f-test-runner -- run --check-png --dataset-runs 1
+
+      - name: Agent SDK
+        run: cargo test -p k2f_sdk -p k2f_package -p k2f
+
+      - name: MCP stdio server
+        run: cargo test -p k2f_mcp
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+        id: chrome
+
+      - name: JS SDK viewer (wasm paint + exportPdf)
+        env:
+          CHROME: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          rustup target add wasm32-unknown-unknown
+          cargo build -p k2f_wasm --target wasm32-unknown-unknown --no-default-features --features viewer
+          cargo build -p k2f_wasm --target wasm32-unknown-unknown --no-default-features --features sdk
+          bash scripts/measure-viewer-wasm.sh
+          cargo install wasm-bindgen-cli --version 0.2.106 --locked
+          bash scripts/build-sdk-js.sh
+          bash scripts/build-viewer-only-js.sh
+          scripts/build-viewer.sh
+          node scripts/materialize-js-public.mjs
+          node sdk/js/test/public-exports.mjs
+          npm pack --dry-run --prefix sdk/js
+          node scripts/restore-js-public-symlinks.mjs
+          node sdk/js/test/banner.mjs
+          node sdk/js/test/coords.mjs
+          node sdk/js/test/no-fill-text.mjs
+          node sdk/js/test/copy.mjs
+          node sdk/js/test/smoke.mjs
+          node sdk/js/test/document.mjs
+          node sdk/js/test/editor-p0.mjs
+          node sdk/js/test/viewer-only.mjs
+          node sdk/js/test/viewer-api.mjs
+          node sdk/js/test/text-layer.mjs
+          node sdk/js/test/selection-markdown.mjs
+          node sdk/js/test/browser-embed.mjs
+          node sdk/js/test/web-embed.mjs
+          node viewer/test/open_contract.mjs
+          node viewer/test/hit_edit.mjs
+          node viewer/test/export_pdf.mjs
+          node viewer/test/select_copy.mjs
+          node viewer/test/popover_edit.mjs
+
+  lock-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Example locks must match git on macOS
+        run: cargo test -p k2f_package --test examples
+
+      - name: Text/layout/paint tests
+        run: cargo test -p k2f_text -p k2f_layout -p k2f_paint
+
+  # Not a default-member (GUI crates). Tests are headless; do not --verify a
+  # committed published lock (it can already be ENGINE_MISMATCH). Timeout so a
+  # stray Save dialog cannot occupy a runner until the 6h default.
+  desktop-reader:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux windowing headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev libx11-dev libx11-xcb-dev libxcursor-dev libxrandr-dev libxi-dev
+
+      - name: Desktop reader tests
+        run: cargo test -p k2f_reader

@@ -1,0 +1,14 @@
+{
+  "palette": { "black": "#000000" },
+  "roles": {
+    "default": { "font_family": "default", "font_size": 12000, "line_height_mult": 1200, "color": "black" },
+    "body": { "font_family": "default", "font_size": 12000, "line_height_mult": 1200, "color": "black" }
+  },
+  "modifiers": {
+    "precedence": ["emphasis", "underline"],
+    "styles": {
+      "emphasis": { "x": { "font_size": 10000 } },
+      "underline": { "x": { "font_size": 20000 } }
+    }
+  }
+}

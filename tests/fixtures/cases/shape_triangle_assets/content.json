@@ -1,0 +1,82 @@
+{
+  "title": "Triangle + Arrow as Image Assets",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "scene",
+            "role": "document",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "label",
+                    "role": "body",
+                    "content": {
+                      "type": "text",
+                      "value": "Triangles/arrows should be represented as image assets (SVG/PNG), not as new vector node types."
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "triangle",
+                    "role": "default",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://triangle.svg",
+                        "width": 90000,
+                        "height": 90000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "arrow_right",
+                    "role": "default",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://arrow_right.svg",
+                        "width": 140000,
+                        "height": 60000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "stack",
+              "direction": "vertical",
+              "gap": 12000
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

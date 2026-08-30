@@ -1,0 +1,11 @@
+{
+  "palette": {},
+  "roles": {
+    "body": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black"
+    }
+  }
+}

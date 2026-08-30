@@ -1,0 +1,262 @@
+{
+  "title": "Financial Report",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "title",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Q3 Financial Report"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "subtitle",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Fiscal Year 2025"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "row_1",
+            "role": "row",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "cell_1_1",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Item 1"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "cell_1_2",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "$1,000.00"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "cell_1_3",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "+5.0%"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "row_2",
+            "role": "row",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "cell_2_1",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Item 2"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "cell_2_2",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "$1,000.00"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "cell_2_3",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "+5.0%"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "row_3",
+            "role": "row",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "cell_3_1",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Item 3"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "cell_3_2",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "$1,000.00"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "cell_3_3",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "+5.0%"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "row_4",
+            "role": "row",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "cell_4_1",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Item 4"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "cell_4_2",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "$1,000.00"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "cell_4_3",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "+5.0%"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "row_5",
+            "role": "row",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "cell_5_1",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Item 5"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "cell_5_2",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "$1,000.00"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "cell_5_3",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "+5.0%"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

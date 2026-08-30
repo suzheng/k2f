@@ -1,0 +1,31 @@
+{
+  "palette": {
+    "ink": "#111111"
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1400,
+      "color": "ink"
+    },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1400,
+      "color": "ink"
+    },
+    "indented_body": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1400,
+      "color": "ink",
+      "first_line_indent_pt": 24000
+    }
+  },
+  "modifiers": {
+    "precedence": [],
+    "styles": {}
+  },
+  "font_aliases": {}
+}

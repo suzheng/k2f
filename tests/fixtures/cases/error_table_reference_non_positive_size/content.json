@@ -1,0 +1,29 @@
+{
+  "title": "Error: TableReference Non-Positive Size",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "tbl",
+    "role": "table",
+    "content": {
+      "type": "table_reference",
+      "value": {
+        "source": "asset://bad",
+        "view_mode": "full",
+        "width": 1000,
+        "height": 0
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

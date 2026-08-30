@@ -1,0 +1,169 @@
+{
+    "title": "Alignment Stack Align",
+    "canvas_mode": "paged",
+    "page_config": {
+        "width": 595000,
+        "height": 842000,
+        "margin": [
+            36000,
+            36000,
+            36000,
+            36000
+        ]
+    },
+    "root": {
+        "id": "root",
+        "role": "document",
+        "content": {
+            "type": "container",
+            "value": {
+                "children": [
+                    {
+                        "id": "section_start",
+                        "role": "box_container",
+                        "modifiers": [],
+                        "layout": {
+                            "type": "stack",
+                            "direction": "vertical",
+                            "align_items": "start",
+                            "width": 150000,
+                            "height": 100000,
+                            "gap": 10000
+                        },
+                        "content": {
+                            "type": "container",
+                            "value": {
+                                "children": [
+                                    {
+                                        "id": "s1",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 40000,
+                                            "height": 40000
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "id": "section_center",
+                        "role": "box_container",
+                        "modifiers": [],
+                        "layout": {
+                            "type": "stack",
+                            "direction": "vertical",
+                            "align_items": "center",
+                            "width": 150000,
+                            "height": 100000,
+                            "gap": 10000
+                        },
+                        "content": {
+                            "type": "container",
+                            "value": {
+                                "children": [
+                                    {
+                                        "id": "c1",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 40000,
+                                            "height": 40000
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "id": "section_end",
+                        "role": "box_container",
+                        "modifiers": [],
+                        "layout": {
+                            "type": "stack",
+                            "direction": "vertical",
+                            "align_items": "end",
+                            "width": 150000,
+                            "height": 100000,
+                            "gap": 10000
+                        },
+                        "content": {
+                            "type": "container",
+                            "value": {
+                                "children": [
+                                    {
+                                        "id": "e1",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 40000,
+                                            "height": 40000
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "id": "section_stretch",
+                        "role": "box_container",
+                        "modifiers": [],
+                        "layout": {
+                            "type": "stack",
+                            "direction": "vertical",
+                            "align_items": "stretch",
+                            "width": 150000,
+                            "height": 100000,
+                            "gap": 10000
+                        },
+                        "content": {
+                            "type": "container",
+                            "value": {
+                                "children": [
+                                    {
+                                        "id": "st1",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "height": 40000
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "layout": {
+            "type": "stack",
+            "direction": "vertical",
+            "gap": 20000
+        }
+    }
+}

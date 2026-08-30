@@ -1,0 +1,61 @@
+{
+  "title": "PageConfig: Near-Zero Content Height (1 unit)",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 40001,
+    "margin": [
+      20000,
+      72000,
+      20000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "t1",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Minimal content height: items should paginate immediately."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img1",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img1",
+                "width": 200000,
+                "height": 50000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "t2",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "This should appear on a later page."
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

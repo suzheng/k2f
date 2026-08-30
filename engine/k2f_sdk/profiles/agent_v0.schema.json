@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "k2f://sdk/profiles/agent_v0.schema.json",
+  "title": "K2F agent profile v0",
+  "description": "Narrow semantic tree for agents. No layout, no geometry, no unknown fields.",
+  "$ref": "#/$defs/node",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_]*(\\.[A-Za-z0-9][A-Za-z0-9_]*)*$"
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "content"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "role": {
+          "type": "string",
+          "enum": [
+            "document",
+            "section",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "body",
+            "warning",
+            "card",
+            "table",
+            "table_header_cell",
+            "table_row_cell",
+            "list_item",
+            "code",
+            "quote",
+            "rule",
+            "math",
+            "running_header",
+            "running_footer",
+            "signature_block"
+          ]
+        },
+        "variant": { "type": ["string", "null"] },
+        "list_id": { "type": ["string", "null"] },
+        "depth": { "type": ["integer", "null"], "minimum": 0 },
+        "marker_type": { "type": ["string", "null"], "enum": ["bullet", "number", null] },
+        "break_inside": { "enum": ["auto", "avoid"] },
+        "keep_with_next": { "type": "boolean" },
+        "column_span": { "enum": ["none", "all"] },
+        "layout": {
+          "description": "Agent-facing layout is limited to continuous columns.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "columns" },
+            "count": { "type": "integer", "minimum": 2, "maximum": 4 },
+            "gap": { "type": "integer", "minimum": 0 }
+          },
+          "required": ["type", "count"]
+        },
+        "modifiers": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["range", "type", "intent"],
+            "properties": {
+              "range": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": { "type": "integer", "minimum": 0 }
+              },
+              "type": {
+                "enum": [
+                  "emphasis",
+                  "link",
+                  "underline",
+                  "strikethrough",
+                  "subscript",
+                  "superscript",
+                  "math",
+                  "syntax_highlight"
+                ]
+              },
+              "intent": { "type": "string" }
+            }
+          }
+        },
+        "content": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "value"],
+              "properties": {
+                "type": { "const": "text" },
+                "value": { "type": "string" }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "value"],
+              "properties": {
+                "type": { "const": "container" },
+                "value": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["children"],
+                  "properties": {
+                    "children": {
+                      "type": "array",
+                      "items": { "$ref": "#/$defs/node" }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "value"],
+              "properties": {
+                "type": { "const": "image" },
+                "value": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["src", "width", "height"],
+                  "properties": {
+                    "src": { "type": "string" },
+                    "width": { "type": "integer", "minimum": 1 },
+                    "height": { "type": "integer", "minimum": 1 }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "value"],
+              "properties": {
+                "type": { "const": "math" },
+                "value": { "type": "string", "minLength": 1 }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "value"],
+              "properties": {
+                "type": { "const": "table" },
+                "value": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["column_widths", "data"],
+                  "properties": {
+                    "column_widths": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["pt"],
+                            "properties": { "pt": { "type": "integer" } }
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["fr"],
+                            "properties": { "fr": { "type": "integer", "minimum": 0 } }
+                          }
+                        ]
+                      }
+                    },
+                    "header_rows": { "type": "integer", "minimum": 0 },
+                    "gap": { "type": "integer" },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["type", "rows"],
+                      "properties": {
+                        "type": { "const": "inline" },
+                        "rows": {
+                          "type": "array",
+                          "items": {
+                            "type": "array",
+                            "items": { "$ref": "#/$defs/node" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

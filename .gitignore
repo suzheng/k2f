@@ -1,0 +1,172 @@
+# ==========================================
+# Rust & Build Artifacts
+# ==========================================
+# Local template dirs (commercial templates live in k2f-private).
+templates/**
+downloads
+/target
+target/
+/debug
+debug/
+**/*.rs.bk
+golden.json
+/manifest.json
+
+# ==========================================
+# Binaries, Libraries & Compiled Outputs
+# ==========================================
+*.bin
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.o
+*.obj
+*.wasm
+*.pdb
+*.dSYM/
+*.node
+
+# K2F Package Binaries (compiled zip containers)
+*.K2F
+*.k2f
+
+# ==========================================
+# Lock Files
+# ==========================================
+# Ignore all locks except Cargo.lock
+*.lock
+!Cargo.lock
+!tests/fixtures/**/golden.geometry.K2F.lock
+
+# ==========================================
+# Images, Visual Assets & Render Outputs
+# ==========================================
+*.png
+# Visual-gate pages only (geometry locks are the full regression).
+!tests/fixtures/paint/**/*.png
+!tests/fixtures/cases/elevation_shadows/page_*.png
+!tests/fixtures/cases/card_variants/page_*.png
+!tests/fixtures/cases/running_footer_page_numbers/page_*.png
+!tests/fixtures/**/assets/**/*.png
+!examples/**/assets/**/*.png
+!skills/k2f/**/*.png
+!skills/k2f/**/*.ttf
+!skills/k2f/**/*.otf
+*.jpg
+*.jpeg
+*.gif
+*.svg
+!tests/fixtures/**/*.svg
+*.webp
+!tests/fixtures/**/*.webp
+*.ico
+*.bmp
+*.tiff
+*.avif
+*.pdf
+*.ps
+*.eps
+
+# ==========================================
+# Temporary & Log Files
+# ==========================================
+tmp/
+temp/
+*.tmp
+*.temp
+*.log
+*~
+*.bak
+*.orig
+*.rej
+*.patch
+
+# ==========================================
+# Python Artifacts & Virtual Environments
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+sdk/python/.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# ==========================================
+# Node, JavaScript & Web Viewer Artifacts
+# ==========================================
+node_modules/
+viewer/pkg/
+**/pkg/
+sdk/js/wasm/*
+!sdk/js/wasm/.gitkeep
+sdk/js/wasm-viewer/*
+!sdk/js/wasm-viewer/.gitkeep
+sdk/js/wasm-measure/*
+!sdk/js/wasm-measure/.gitkeep
+sdk/js/wasm-viewer-measure/*
+!sdk/js/wasm-viewer-measure/.gitkeep
+sdk/js/public/contracts/*.json
+!sdk/js/public/contracts/.gitkeep
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.parcel-cache/
+.next/
+.nuxt/
+
+# ==========================================
+# OS Files
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# ==========================================
+# IDEs & Editors
+# ==========================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*.iml
+.fleet/
+*.sublime-workspace
+*.sublime-project
+
+# ==========================================
+# Environment & Secrets
+# ==========================================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Allow committed demo packages for OSS
+!examples/published/
+!examples/published/**
+!examples/published/*.K2F
+!docs/guide/images/
+!docs/guide/images/**
+!docs/guide/images/*.png
+*.tsbuildinfo

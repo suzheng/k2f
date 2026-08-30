@@ -1,0 +1,183 @@
+{
+  "title": "Semantic Lists: Digit Boundary No Reflow",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "b.li.1",
+            "role": "list_item",
+            "list_id": "boundary",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "A moderately long sentence that should wrap the same way for items 9 and 10, regardless of the marker string width."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "b.li.2",
+            "role": "list_item",
+            "list_id": "boundary",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "A moderately long sentence that should wrap the same way for items 9 and 10, regardless of the marker string width."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "b.li.3",
+            "role": "list_item",
+            "list_id": "boundary",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "A moderately long sentence that should wrap the same way for items 9 and 10, regardless of the marker string width."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "b.li.4",
+            "role": "list_item",
+            "list_id": "boundary",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "A moderately long sentence that should wrap the same way for items 9 and 10, regardless of the marker string width."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "b.li.5",
+            "role": "list_item",
+            "list_id": "boundary",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "A moderately long sentence that should wrap the same way for items 9 and 10, regardless of the marker string width."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "b.li.6",
+            "role": "list_item",
+            "list_id": "boundary",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "A moderately long sentence that should wrap the same way for items 9 and 10, regardless of the marker string width."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "b.li.7",
+            "role": "list_item",
+            "list_id": "boundary",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "A moderately long sentence that should wrap the same way for items 9 and 10, regardless of the marker string width."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "b.li.8",
+            "role": "list_item",
+            "list_id": "boundary",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "A moderately long sentence that should wrap the same way for items 9 and 10, regardless of the marker string width."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "b.li.9",
+            "role": "list_item",
+            "list_id": "boundary",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "A moderately long sentence that should wrap the same way for items 9 and 10, regardless of the marker string width."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "b.li.10",
+            "role": "list_item",
+            "list_id": "boundary",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "A moderately long sentence that should wrap the same way for items 9 and 10, regardless of the marker string width."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "b.li.11",
+            "role": "list_item",
+            "list_id": "boundary",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "A moderately long sentence that should wrap the same way for items 9 and 10, regardless of the marker string width."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "b.li.12",
+            "role": "list_item",
+            "list_id": "boundary",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "A moderately long sentence that should wrap the same way for items 9 and 10, regardless of the marker string width."
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

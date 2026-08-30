@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>k2f browser check</title></head>
+<body>
+<pre id="out">loading</pre>
+<script type="module">
+  import "/sdk/js/viewer.js";
+  const out = document.getElementById("out");
+  const el = document.createElement("k2f-viewer");
+  el.setAttribute("src", "/examples/invoice.K2F");
+  el.setAttribute("editable", "");
+  try {
+    const opened = new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error("k2f-open timed out")), 20000);
+      el.addEventListener(
+        "k2f-open",
+        (e) => {
+          clearTimeout(t);
+          resolve(e.detail);
+        },
+        { once: true },
+      );
+    });
+    document.body.append(el);
+    const detail = await opened;
+    const handle = detail.handle;
+    const { bytes: pdf } = handle.export("pdf");
+    const img = el.shadowRoot.querySelector("img.k2f-page");
+    handle.goPage(1);
+    const pageLabel = el.shadowRoot.querySelector(".k2f-toolbar span").textContent;
+    const result = {
+      pages: detail.pageCount,
+      pageLabel,
+      pdf: String.fromCharCode(pdf[0], pdf[1], pdf[2], pdf[3], pdf[4]),
+      png: Boolean(img && img.src.startsWith("blob:")),
+      banner: detail.banner,
+    };
+    out.textContent = JSON.stringify(result);
+    await fetch("/__result", { method: "POST", body: JSON.stringify(result) });
+  } catch (err) {
+    const msg = String(err && err.stack ? err.stack : err);
+    out.textContent = msg;
+    await fetch("/__result", { method: "POST", body: JSON.stringify({ error: msg }) });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+[package]
+name = "k2f_wasm"
+version = "0.1.1"
+edition = "2021"
+description = "K2F WASM bindings (not published to crates.io)"
+license = "Apache-2.0"
+repository = "https://github.com/suzheng/k2f"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+default = ["compile", "viewer", "sdk"]
+compile = ["dep:k2f_layout", "dep:serde_json"]
+viewer = ["dep:k2f_paint", "dep:k2f_pdf", "dep:serde_json", "dep:console_error_panic_hook"]
+sdk = ["dep:k2f_sdk", "dep:serde_json"]
+
+[dependencies]
+k2f_layout = { path = "../k2f_layout", version = "0.1.1", optional = true }
+k2f_paint = { path = "../k2f_paint", version = "0.1.1", optional = true }
+k2f_pdf = { path = "../k2f_pdf", version = "0.1.1", optional = true }
+k2f_sdk = { path = "../k2f_sdk", version = "0.1.1", optional = true }
+wasm-bindgen = "=0.2.106"
+js-sys = "0.3"
+console_error_panic_hook = { version = "0.1", optional = true }
+serde_json = { workspace = true, optional = true }
+getrandom = { version = "0.3", features = ["wasm_js"] }

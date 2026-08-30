@@ -1,0 +1,66 @@
+{
+    "title": "Elegant Borders",
+    "canvas_mode": "paged",
+    "page_config": {
+        "width": 595000,
+        "height": 842000,
+        "margin": [
+            36000,
+            36000,
+            36000,
+            36000
+        ]
+    },
+    "root": {
+        "id": "root",
+        "role": "document",
+        "content": {
+            "type": "container",
+            "value": {
+                "children": [
+                    {
+                        "id": "thin_border_box",
+                        "role": "box",
+                        "variant": "thin",
+                        "content": {
+                            "type": "text",
+                            "value": "Thin Border"
+                        },
+                        "modifiers": []
+                    },
+                    {
+                        "id": "thick_border_box",
+                        "role": "box",
+                        "variant": "thick_colored",
+                        "content": {
+                            "type": "text",
+                            "value": "Thick Red Border"
+                        },
+                        "modifiers": []
+                    },
+                    {
+                        "id": "rounded_border_box",
+                        "role": "box",
+                        "variant": "rounded",
+                        "content": {
+                            "type": "text",
+                            "value": "Rounded Corners"
+                        },
+                        "modifiers": []
+                    },
+                    {
+                        "id": "pill_border_box",
+                        "role": "box",
+                        "variant": "pill",
+                        "content": {
+                            "type": "text",
+                            "value": "Pill Shape"
+                        },
+                        "modifiers": []
+                    }
+                ]
+            }
+        },
+        "modifiers": []
+    }
+}

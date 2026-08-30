@@ -1,0 +1,31 @@
+[package]
+name = "k2f_reader"
+version = "0.1.1"
+edition = "2021"
+description = "Native K2F desktop reader (source crate)"
+license = "Apache-2.0"
+repository = "https://github.com/suzheng/k2f"
+publish = false
+
+[[bin]]
+name = "k2f-reader"
+path = "src/main.rs"
+
+[dependencies]
+k2f_paint = { path = "../../engine/k2f_paint" }
+k2f_package = { path = "../../engine/k2f_package" }
+k2f_pdf = { path = "../../engine/k2f_pdf" }
+k2f_markdown = { path = "../../engine/k2f_markdown" }
+clap = { version = "4.4", features = ["derive"] }
+anyhow = "1.0"
+serde = { workspace = true }
+serde_json = { workspace = true }
+winit = "0.30"
+softbuffer = "0.4"
+arboard = "3.4"
+image = { version = "=0.25.6", default-features = false, features = ["png"] }
+rfd = "0.15"
+
+[dev-dependencies]
+k2f_sdk = { path = "../../engine/k2f_sdk" }
+k2f_core = { path = "../../engine/k2f_core" }

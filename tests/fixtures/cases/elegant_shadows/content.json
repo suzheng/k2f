@@ -1,0 +1,56 @@
+{
+    "title": "Elegant Shadows",
+    "canvas_mode": "paged",
+    "page_config": {
+        "width": 595000,
+        "height": 842000,
+        "margin": [
+            36000,
+            36000,
+            36000,
+            36000
+        ]
+    },
+    "root": {
+        "id": "root",
+        "role": "document",
+        "content": {
+            "type": "container",
+            "value": {
+                "children": [
+                    {
+                        "id": "shadow_low_box",
+                        "role": "card",
+                        "variant": "low",
+                        "content": {
+                            "type": "text",
+                            "value": "Elevation Low"
+                        },
+                        "modifiers": []
+                    },
+                    {
+                        "id": "shadow_medium_box",
+                        "role": "card",
+                        "variant": "medium",
+                        "content": {
+                            "type": "text",
+                            "value": "Elevation Medium"
+                        },
+                        "modifiers": []
+                    },
+                    {
+                        "id": "shadow_high_box",
+                        "role": "card",
+                        "variant": "high",
+                        "content": {
+                            "type": "text",
+                            "value": "Elevation High"
+                        },
+                        "modifiers": []
+                    }
+                ]
+            }
+        },
+        "modifiers": []
+    }
+}

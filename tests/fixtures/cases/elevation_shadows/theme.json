@@ -1,0 +1,84 @@
+{
+  "palette": {
+    "black": "#000000",
+    "white": "#FFFFFF"
+  },
+  "primitives": {
+    "surfaces": {
+      "card_solid": { "type": "solid", "color": "#FFFFFF" },
+      "warning_surface": { "type": "solid", "color": "#FFF7DB" },
+      "glass_surface": { "type": "solid", "color": "#FFFFFFCC" }
+    },
+    "shadows": {
+      "elevation_low": {
+        "layers": [
+          {
+            "offset_x_pt": 0,
+            "offset_y_pt": 4000,
+            "blur_radius_pt": 12000,
+            "spread_radius_pt": 0,
+            "color": "#0000001A"
+          }
+        ]
+      },
+      "elevation_high": {
+        "layers": [
+          {
+            "offset_x_pt": 0,
+            "offset_y_pt": 10000,
+            "blur_radius_pt": 24000,
+            "spread_radius_pt": 2000,
+            "color": "#00000026"
+          }
+        ]
+      }
+    },
+    "blurs": {
+      "heavy": { "radius_pt": 8000 }
+    },
+    "corners": { "medium": 12000 },
+    "borders": {
+      "subtle": { "width_pt": 1000, "color": "#00000014" },
+      "warning": { "width_pt": 1000, "color": "#00000026" },
+      "glass": { "width_pt": 1000, "color": "#FFFFFF80" }
+    }
+  },
+  "roles": {
+    "default": { "font_family": "default", "font_size": 12000, "line_height_mult": 1200, "color": "black" },
+    "body": { "font_family": "default", "font_size": 12000, "line_height_mult": 1200, "color": "black" },
+    "document": { "font_family": "default", "font_size": 12000, "line_height_mult": 1200, "color": "black" },
+    "card": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "box_decoration": {
+        "background": "card_solid",
+        "corner_radius": "medium",
+        "padding_pt": 12000,
+        "border": "subtle",
+        "shadow": "elevation_low"
+      },
+      "variants": {
+        "warning": {
+          "box_decoration": {
+            "background": "warning_surface",
+            "border": "warning",
+            "shadow": "elevation_low"
+          }
+        },
+        "glass": {
+          "box_decoration": {
+            "background": "glass_surface",
+            "border": "glass",
+            "shadow": "elevation_low",
+            "blur": "heavy"
+          }
+        },
+        "elevation_high": {
+          "box_decoration": { "shadow": "elevation_high" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "title": "Strict Table Asset Backed",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [72000, 72000, 72000, 72000]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "t1",
+            "role": "shape",
+            "content": {
+              "type": "table",
+              "value": {
+                "column_widths": [{ "pt": 100000 }, { "pt": 100000 }],
+                "header_rows": 0,
+                "gap": 0,
+                "data": { "type": "asset", "source": "assets/data/table.json" }
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}
+
+
+
+

@@ -1,0 +1,31 @@
+{
+  "title": "独立顾问协议",
+  "created_at": 0,
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [56000, 56000, 56000, 56000]
+  },
+  "engine_version": "0.1.0",
+  "running_blocks": [
+    {
+      "position": "header",
+      "node": {
+        "id": "running.header.confidential",
+        "role": "running_header",
+        "content": { "type": "text", "value": "机密 · 仅供签署人阅读" },
+        "modifiers": []
+      }
+    },
+    {
+      "position": "footer",
+      "node": {
+        "id": "running.footer.pages",
+        "role": "running_footer",
+        "content": { "type": "text", "value": "第 {{page_current}} 页 / 共 {{page_total}} 页" },
+        "modifiers": []
+      }
+    }
+  ]
+}

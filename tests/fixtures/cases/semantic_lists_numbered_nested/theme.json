@@ -1,0 +1,27 @@
+{
+  "palette": { "black": "#000000" },
+  "roles": {
+    "default": { "font_family": "default", "font_size": 12000, "line_height_mult": 1200, "color": "black" },
+    "document": { "font_family": "default", "font_size": 12000, "line_height_mult": 1200, "color": "black" },
+    "list_item": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "list_style": {
+        "marker_box_width_pt": 18000,
+        "marker_gap_pt": 4000,
+        "depth_indent_pt": 18000,
+        "bullet_glyph": "•",
+        "number_suffix": "."
+      },
+      "variants": {
+        "compact": {
+          "list_style": {
+            "marker_gap_pt": 2000
+          }
+        }
+      }
+    }
+  }
+}

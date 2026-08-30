@@ -1,0 +1,66 @@
+{
+  "title": "Grid Row Column Gap",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [72000, 72000, 72000, 72000]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "root.grid",
+            "role": "default",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "a",
+                    "role": "cell",
+                    "content": { "type": "text", "value": "A" },
+                    "modifiers": []
+                  },
+                  {
+                    "id": "b",
+                    "role": "cell",
+                    "content": { "type": "text", "value": "B" },
+                    "modifiers": []
+                  },
+                  {
+                    "id": "c",
+                    "role": "cell",
+                    "content": { "type": "text", "value": "C" },
+                    "modifiers": []
+                  },
+                  {
+                    "id": "d",
+                    "role": "cell",
+                    "content": { "type": "text", "value": "D" },
+                    "modifiers": []
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "grid",
+              "columns": [{ "pt": 100000 }, { "pt": 100000 }],
+              "rows": [{ "pt": 40000 }, { "pt": 40000 }],
+              "gap": 5000,
+              "row_gap": 20000,
+              "column_gap": 8000
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

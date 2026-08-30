@@ -1,0 +1,59 @@
+{
+  "palette": {
+    "gray_100": "#F3F4F6"
+  },
+  "primitives": {
+    "surfaces": {
+      "surf_77dcc434": {
+        "type": "solid",
+        "color": "#F3F4F6"
+      }
+    }
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "box_decoration": null
+    },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "box_decoration": null
+    },
+    "text_start": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1400,
+      "color": "black",
+      "text_align": "start",
+      "box_decoration": {
+        "background": "surf_77dcc434"
+      }
+    },
+    "text_center": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1400,
+      "color": "black",
+      "text_align": "center",
+      "box_decoration": {
+        "background": "surf_77dcc434"
+      }
+    },
+    "text_end": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1400,
+      "color": "black",
+      "text_align": "end",
+      "box_decoration": {
+        "background": "surf_77dcc434"
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "contract.signatures",
+  "role": "signature_block",
+  "variant": "default",
+  "break_inside": "avoid",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "contract.signatures.label",
+          "role": "body",
+          "content": { "type": "text", "value": "签署栏" },
+          "modifiers": []
+        },
+        {
+          "id": "contract.signatures.client",
+          "role": "body",
+          "content": { "type": "text", "value": "客户：____________________    日期：________" },
+          "modifiers": []
+        },
+        {
+          "id": "contract.signatures.contractor",
+          "role": "body",
+          "content": { "type": "text", "value": "承包方：____________________    日期：________" },
+          "modifiers": []
+        }
+      ]
+    }
+  },
+  "modifiers": [],
+  "layout": {
+    "type": "stack",
+    "direction": "vertical",
+    "gap": 24000
+  }
+}

@@ -1,0 +1,144 @@
+{
+    "id": "root",
+    "role": "body",
+    "content": {
+        "type": "table",
+        "value": {
+            "column_widths": [
+                { "fr": 1 },
+                { "fr": 1 },
+                { "fr": 1 }
+            ],
+            "header_rows": 1,
+            "gap": 6000,
+            "data": {
+                "type": "inline",
+                "rows": [
+                    [
+                        {
+                            "id": "header_0",
+                            "role": "body",
+                            "content": { "type": "text", "value": "ID" },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "header_1",
+                            "role": "body",
+                            "content": { "type": "text", "value": "Name" },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "header_2",
+                            "role": "body",
+                            "content": { "type": "text", "value": "Value" },
+                            "modifiers": []
+                        }
+                    ],
+                    [
+                        {
+                            "id": "row1_0",
+                            "role": "body",
+                            "content": { "type": "text", "value": "001" },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "row1_1",
+                            "role": "body",
+                            "content": { "type": "text", "value": "Item One" },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "row1_2",
+                            "role": "body",
+                            "content": { "type": "text", "value": "$100.00" },
+                            "modifiers": []
+                        }
+                    ],
+                    [
+                        {
+                            "id": "row2_0",
+                            "role": "body",
+                            "content": { "type": "text", "value": "002" },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "row2_1",
+                            "role": "body",
+                            "content": { "type": "text", "value": "Item Two" },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "row2_2",
+                            "role": "body",
+                            "content": { "type": "text", "value": "$200.00" },
+                            "modifiers": []
+                        }
+                    ],
+                    [
+                        {
+                            "id": "row3_0",
+                            "role": "body",
+                            "content": { "type": "text", "value": "003" },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "row3_1",
+                            "role": "body",
+                            "content": { "type": "text", "value": "Item Three" },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "row3_2",
+                            "role": "body",
+                            "content": { "type": "text", "value": "$300.00" },
+                            "modifiers": []
+                        }
+                    ],
+                    [
+                        {
+                            "id": "row4_0",
+                            "role": "body",
+                            "content": { "type": "text", "value": "004" },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "row4_1",
+                            "role": "body",
+                            "content": { "type": "text", "value": "Item Four" },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "row4_2",
+                            "role": "body",
+                            "content": { "type": "text", "value": "$400.00" },
+                            "modifiers": []
+                        }
+                    ],
+                    [
+                        {
+                            "id": "row5_0",
+                            "role": "body",
+                            "content": { "type": "text", "value": "005" },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "row5_1",
+                            "role": "body",
+                            "content": { "type": "text", "value": "Item Five" },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "row5_2",
+                            "role": "body",
+                            "content": { "type": "text", "value": "$500.00" },
+                            "modifiers": []
+                        }
+                    ]
+                ]
+            }
+        }
+    },
+    "modifiers": []
+}
+
+

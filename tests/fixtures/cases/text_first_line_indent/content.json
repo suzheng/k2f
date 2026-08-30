@@ -1,0 +1,31 @@
+{
+  "title": "Text First Line Indent",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [72000, 72000, 72000, 72000]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "para",
+            "role": "indented_body",
+            "content": {
+              "type": "text",
+              "value": "The first line of this paragraph should indent while the second wrapped line aligns to the left margin of the text box."
+            },
+            "modifiers": []
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

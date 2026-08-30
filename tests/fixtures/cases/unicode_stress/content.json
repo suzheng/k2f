@@ -1,0 +1,53 @@
+{
+  "title": "Unicode Stress",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "body",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "combining",
+            "role": "body",
+            "content": {
+              "type": "text",
+              "value": "Combining marks: é ä ô (accent sequences)"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "whitespace",
+            "role": "body",
+            "content": {
+              "type": "text",
+              "value": "Whitespace + newlines:\nLine1  with   multiple spaces\nLine2"
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": {
+      "type": "stack",
+      "direction": "vertical",
+      "gap": 6000,
+      "align_items": "stretch",
+      "justify_content": "start"
+    }
+  }
+}

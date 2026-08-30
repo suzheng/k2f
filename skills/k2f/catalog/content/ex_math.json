@@ -1,0 +1,8 @@
+{
+  "id": "ex.math",
+  "role": "math",
+  "content": {
+    "type": "math",
+    "value": "\\frac{a}{b}"
+  }
+}

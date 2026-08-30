@@ -1,0 +1,43 @@
+{
+  "palette": {
+    "ink": "#111111",
+    "frame": "#CCCCCC"
+  },
+  "primitives": {
+    "surfaces": {
+      "frame_surface": {
+        "type": "solid",
+        "color": "frame"
+      }
+    }
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "ink"
+    },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "ink"
+    },
+    "padded_image": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "ink",
+      "box_decoration": {
+        "background": "frame_surface",
+        "padding_pt": 10000
+      }
+    }
+  },
+  "modifiers": {
+    "precedence": [],
+    "styles": {}
+  },
+  "font_aliases": {}
+}

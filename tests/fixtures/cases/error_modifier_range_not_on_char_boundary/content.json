@@ -1,0 +1,33 @@
+{
+  "title": "Error: Modifier Range Not on Char Boundary",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "text",
+    "content": {
+      "type": "text",
+      "value": "a🙂b"
+    },
+    "modifiers": [
+      {
+        "range": [
+          1,
+          2
+        ],
+        "type": "emphasis",
+        "intent": "red"
+      }
+    ],
+    "layout": null
+  }
+}

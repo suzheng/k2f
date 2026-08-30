@@ -1,0 +1,104 @@
+{
+  "title": "Leaf: Image Scale-Down by Height (Bounded Row)",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "grid",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "inner",
+                    "role": "box",
+                    "content": {
+                      "type": "container",
+                      "value": {
+                        "children": [
+                          {
+                            "id": "img_tall",
+                            "role": "body",
+                            "content": {
+                              "type": "image",
+                              "value": {
+                                "src": "asset://img_tall",
+                                "width": 200000,
+                                "height": 200000
+                              }
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          },
+                          {
+                            "id": "img_ok",
+                            "role": "body",
+                            "content": {
+                              "type": "image",
+                              "value": {
+                                "src": "asset://img_ok",
+                                "width": 60000,
+                                "height": 60000
+                              }
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          }
+                        ]
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": {
+                      "type": "stack",
+                      "direction": "horizontal",
+                      "gap": 12000,
+                      "align_items": "stretch",
+                      "justify_content": "start"
+                    }
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "grid",
+              "columns": [
+                {
+                  "pt": 420000
+                }
+              ],
+              "rows": [
+                {
+                  "pt": 80000
+                }
+              ],
+              "gap": 0,
+              "cell_align": {
+                "x": "stretch",
+                "y": "stretch"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

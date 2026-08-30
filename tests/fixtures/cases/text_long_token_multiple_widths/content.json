@@ -1,0 +1,192 @@
+{
+  "title": "Text: Long Unbreakable Token at Multiple Widths",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "long_token_grid",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "narrow_before",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Short words before long token: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "medium_before",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Short words before long token: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "wide_before",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Short words before long token: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "narrow_after",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA and more text after the long token."
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "medium_after",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA and more text after the long token."
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "wide_after",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA and more text after the long token."
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "narrow_middle",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Text before AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA and text after."
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "medium_middle",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Text before AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA and text after."
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "wide_middle",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Text before AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA and text after."
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "narrow_only",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "medium_only",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "wide_only",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "grid",
+              "columns": [
+                {
+                  "pt": 80000
+                },
+                {
+                  "pt": 150000
+                },
+                {
+                  "pt": 300000
+                }
+              ],
+              "rows": [
+                {
+                  "pt": 200000
+                },
+                {
+                  "pt": 200000
+                },
+                {
+                  "pt": 200000
+                },
+                {
+                  "pt": 150000
+                }
+              ],
+              "gap": 12000,
+              "cell_align": {
+                "x": "stretch",
+                "y": "stretch"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

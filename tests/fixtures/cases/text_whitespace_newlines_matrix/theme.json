@@ -1,0 +1,131 @@
+{
+            "palette": {
+                "black": "#000000",
+                "white": "#FFFFFF",
+                "gray": "#888888"
+            },
+            "primitives": {
+                "surfaces": {
+                    "code_bg": { "type": "solid", "color": "#F6F8FA" },
+                    "code_dark": { "type": "solid", "color": "#0B0F14" }
+                },
+                "corners": { "code": 6000 },
+                "borders": {
+                    "code": { "width_pt": 1000, "color": "#00000014" },
+                    "code_dark": { "width_pt": 1000, "color": "#FFFFFF14" }
+                }
+            },
+            "roles": {
+                "default": {
+                    "font_family": "default",
+                    "font_size": 12000,
+                    "line_height_mult": 1200,
+                    "color": "black"
+                },
+                "body": {
+                     "font_family": "default",
+                     "font_size": 12000,
+                     "line_height_mult": 1200,
+                     "color": "black"
+                },
+                "code_block": {
+                     "font_family": "default",
+                     "font_size": 12000,
+                     "line_height_mult": 1200,
+                     "color": "black",
+                     "box_decoration": {
+                          "padding_pt": 6000,
+                          "corner_radius": "code",
+                          "border": "code",
+                          "background": "code_bg"
+                     },
+                     "variants": {
+                          "dark_mode": {
+                               "box_decoration": {
+                                    "padding_pt": 6000,
+                                    "corner_radius": "code",
+                                    "border": "code_dark",
+                                    "background": "code_dark"
+                               },
+                               "text_overrides": { "color": "#E6EDF3" }
+                          }
+                     }
+                },
+                "document": {
+                     "font_family": "default",
+                     "font_size": 12000,
+                     "line_height_mult": 1200,
+                     "color": "black"
+                },
+                "text": {
+                     "font_family": "default",
+                     "font_size": 12000,
+                     "line_height_mult": 1200,
+                     "color": "black"
+                },
+                "row": {
+                     "font_family": "default",
+                     "font_size": 12000,
+                     "line_height_mult": 1200,
+                     "color": "black"
+                },
+                "cell": {
+                     "font_family": "default",
+                     "font_size": 12000,
+                     "line_height_mult": 1200,
+                     "color": "black"
+                },
+                "box": {
+                     "font_family": "default",
+                     "font_size": 12000,
+                     "line_height_mult": 1200,
+                     "color": "black"
+                },
+                "canvas": {
+                     "font_family": "default",
+                     "font_size": 12000,
+                     "line_height_mult": 1200,
+                     "color": "black"
+                },
+                "table": {
+                     "font_family": "default",
+                     "font_size": 12000,
+                     "line_height_mult": 1200,
+                     "color": "black"
+                },
+                "header": {
+                     "font_family": "default",
+                     "font_size": 18000,
+                     "line_height_mult": 1200,
+                     "color": "black"
+                }
+            },
+            "modifiers": {
+                 "styles": {
+                      "syntax_highlight": {
+                           "keyword": { "color": "#0550AE" },
+                           "string": { "color": "#0A3069" },
+                           "comment": { "color": "#6E7781" },
+                           "type": { "color": "#8250DF" }
+                      },
+                      "emphasis": {
+                           "Helvetica": { "font_family": "Helvetica" },
+                           "Times New Roman": { "font_family": "Times New Roman" },
+                           "Courier": { "font_family": "Courier" },
+                           "size_10": { "font_size": 10000 },
+                           "size_12": { "font_size": 12000 },
+                           "size_14": { "font_size": 14000 },
+                           "size_18": { "font_size": 18000 },
+                           "size_24": { "font_size": 24000 },
+                           "size_36": { "font_size": 36000 },
+                           "size_48": { "font_size": 48000 },
+                           "size_72": { "font_size": 72000 }
+                      }
+                 }
+            },
+            "font_aliases": {
+                "Helvetica": "default",
+                "Times New Roman": "default",
+                "Courier": "default"
+            }
+        }

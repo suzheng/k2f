@@ -1,0 +1,44 @@
+{
+  "palette": {
+    "ink": "#111111",
+    "line": "#334155"
+  },
+  "primitives": {
+    "borders": {
+      "dashed_all": {
+        "width_pt": 1000,
+        "color": "line",
+        "style": "dashed"
+      }
+    }
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "ink"
+    },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "ink"
+    },
+    "dashed_card": {
+      "font_family": "default",
+      "font_size": 14000,
+      "line_height_mult": 1200,
+      "color": "ink",
+      "box_decoration": {
+        "border": "dashed_all",
+        "padding_pt": 8000
+      }
+    }
+  },
+  "modifiers": {
+    "precedence": [],
+    "styles": {}
+  },
+  "font_aliases": {}
+}

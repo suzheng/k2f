@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>K2F Viewer</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <nav class="host-toolbar">
+    <label class="open">
+      Open
+      <input id="file" type="file" accept=".K2F,.k2f,application/zip" />
+    </label>
+    <label class="search">
+      Search
+      <input id="search" type="search" placeholder="id or text, Enter" />
+    </label>
+    <span id="hint">Drop a .K2F. The SDK paints the lock; Save relocks. UI zoom is CSS; official pixels are the 2× raster.</span>
+  </nav>
+  <ul id="search-hits"></ul>
+  <div id="viewer-root"></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

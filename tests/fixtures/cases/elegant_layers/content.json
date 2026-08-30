@@ -1,0 +1,49 @@
+{
+    "title": "Elegant Layers",
+    "canvas_mode": "paged",
+    "page_config": {
+        "width": 595000,
+        "height": 842000,
+        "margin": [
+            36000,
+            36000,
+            36000,
+            36000
+        ]
+    },
+    "root": {
+        "id": "root",
+        "role": "document",
+        "content": {
+            "type": "container",
+            "value": {
+                "children": [
+                    {
+                        "id": "base_layer",
+                        "role": "box",
+                        "variant": "base_image",
+                        "content": {
+                            "type": "container",
+                            "value": {
+                                "children": [
+                                    {
+                                        "id": "overlay_layer",
+                                        "role": "box",
+                                        "variant": "glass_overlay",
+                                        "content": {
+                                            "type": "text",
+                                            "value": "Glass Overlay"
+                                        },
+                                        "modifiers": []
+                                    }
+                                ]
+                            }
+                        },
+                        "modifiers": []
+                    }
+                ]
+            }
+        },
+        "modifiers": []
+    }
+}

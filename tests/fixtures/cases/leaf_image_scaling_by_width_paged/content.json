@@ -1,0 +1,85 @@
+{
+  "title": "Leaf: Image Scaling by Width (Paged Content Width)",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "label1",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Image wider than page content width (600pt x 200pt natural size)."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "label2",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Expected: Scales down to fit 451pt content width, maintaining 3:1 aspect ratio."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_wide",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_wide",
+                "width": 600000,
+                "height": 200000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "label3",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Image that fits within content width (300pt x 100pt)."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_fits",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_fits",
+                "width": 300000,
+                "height": 100000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

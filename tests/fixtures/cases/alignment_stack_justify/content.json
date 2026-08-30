@@ -1,0 +1,180 @@
+{
+    "title": "Alignment Stack Justify",
+    "canvas_mode": "paged",
+    "page_config": {
+        "width": 595000,
+        "height": 842000,
+        "margin": [
+            36000,
+            36000,
+            36000,
+            36000
+        ]
+    },
+    "root": {
+        "id": "root",
+        "role": "document",
+        "content": {
+            "type": "container",
+            "value": {
+                "children": [
+                    {
+                        "id": "section_start",
+                        "role": "box_container",
+                        "modifiers": [],
+                        "layout": {
+                            "type": "stack",
+                            "direction": "horizontal",
+                            "justify_content": "start",
+                            "width": 400000,
+                            "height": 60000,
+                            "gap": 10000
+                        },
+                        "content": {
+                            "type": "container",
+                            "value": {
+                                "children": [
+                                    {
+                                        "id": "s1",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 40000,
+                                            "height": 40000
+                                        }
+                                    },
+                                    {
+                                        "id": "s2",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 40000,
+                                            "height": 40000
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "id": "section_center",
+                        "role": "box_container",
+                        "modifiers": [],
+                        "layout": {
+                            "type": "stack",
+                            "direction": "horizontal",
+                            "justify_content": "center",
+                            "width": 400000,
+                            "height": 60000,
+                            "gap": 10000
+                        },
+                        "content": {
+                            "type": "container",
+                            "value": {
+                                "children": [
+                                    {
+                                        "id": "c1",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 40000,
+                                            "height": 40000
+                                        }
+                                    },
+                                    {
+                                        "id": "c2",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 40000,
+                                            "height": 40000
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "id": "section_end",
+                        "role": "box_container",
+                        "modifiers": [],
+                        "layout": {
+                            "type": "stack",
+                            "direction": "horizontal",
+                            "justify_content": "end",
+                            "width": 400000,
+                            "height": 60000,
+                            "gap": 10000
+                        },
+                        "content": {
+                            "type": "container",
+                            "value": {
+                                "children": [
+                                    {
+                                        "id": "e1",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 40000,
+                                            "height": 40000
+                                        }
+                                    },
+                                    {
+                                        "id": "e2",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 40000,
+                                            "height": 40000
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "layout": {
+            "type": "stack",
+            "direction": "vertical",
+            "gap": 20000
+        }
+    }
+}

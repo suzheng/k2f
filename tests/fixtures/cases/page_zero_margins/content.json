@@ -1,0 +1,61 @@
+{
+  "title": "PageConfig: Zero Margins",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "t1",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "No margins: top-left origin should be (0,0)."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img",
+                "width": 200000,
+                "height": 120000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "t2",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Second block after image."
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

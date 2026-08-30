@@ -1,0 +1,39 @@
+{
+  "title": "Math Greek zeta",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [72000, 72000, 72000, 72000]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "eq.zeta",
+            "role": "math",
+            "content": {
+              "type": "math",
+              "value": "\\zeta(s)=\\sum_{n=1}^{\\infty} n^{-s}"
+            },
+            "modifiers": [],
+            "layout": null,
+            "break_inside": "avoid"
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": {
+      "type": "stack",
+      "direction": "vertical",
+      "gap": 12000,
+      "align_items": "stretch",
+      "justify_content": "start"
+    }
+  }
+}

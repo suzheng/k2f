@@ -1,0 +1,28 @@
+{
+  "title": "Error: Image Non-Positive Size",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "img",
+    "role": "body",
+    "content": {
+      "type": "image",
+      "value": {
+        "src": "asset://bad",
+        "width": 0,
+        "height": 1000
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

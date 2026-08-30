@@ -1,0 +1,93 @@
+{
+  "palette": {
+    "white": "#FFFFFF",
+    "shadow_color": "#000000",
+    "black": "#000000"
+  },
+  "primitives": {
+    "shadows": {
+      "elevation_low": {
+        "layers": [
+          {
+            "offset_x_pt": 0,
+            "offset_y_pt": 2000,
+            "blur_radius_pt": 4000,
+            "spread_radius_pt": 0,
+            "color": "#0000001A"
+          }
+        ]
+      },
+      "elevation_medium": {
+        "layers": [
+          {
+            "offset_x_pt": 0,
+            "offset_y_pt": 4000,
+            "blur_radius_pt": 8000,
+            "spread_radius_pt": 0,
+            "color": "#0000001F"
+          }
+        ]
+      },
+      "elevation_high": {
+        "layers": [
+          {
+            "offset_x_pt": 0,
+            "offset_y_pt": 8000,
+            "blur_radius_pt": 16000,
+            "spread_radius_pt": 2000,
+            "color": "#00000026"
+          }
+        ]
+      }
+    },
+    "surfaces": {
+      "surf_f17d049a": {
+        "type": "solid",
+        "color": "white"
+      }
+    }
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black"
+    },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black"
+    },
+    "card": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "variants": {
+        "low": {
+          "box_decoration": {
+            "shadow": "elevation_low",
+            "padding_pt": 10000,
+            "background": "surf_f17d049a"
+          }
+        },
+        "medium": {
+          "box_decoration": {
+            "shadow": "elevation_medium",
+            "padding_pt": 10000,
+            "background": "surf_f17d049a"
+          }
+        },
+        "high": {
+          "box_decoration": {
+            "shadow": "elevation_high",
+            "padding_pt": 10000,
+            "background": "surf_f17d049a"
+          }
+        }
+      }
+    }
+  }
+}

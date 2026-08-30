@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>k2f web-embed check</title></head>
+<body>
+<iframe id="f" src="/examples/web-embed/" style="width:100%;height:900px;border:0"></iframe>
+<pre id="out">loading</pre>
+<script type="module">
+  const out = document.getElementById("out");
+  const frame = document.getElementById("f");
+  try {
+    await new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error("iframe load timed out")), 20000);
+      frame.addEventListener(
+        "load",
+        () => {
+          clearTimeout(t);
+          resolve();
+        },
+        { once: true },
+      );
+    });
+    const doc = frame.contentDocument;
+    const start = Date.now();
+    let handle;
+    while (Date.now() - start < 20000) {
+      handle = doc.querySelector("k2f-viewer")?.handle;
+      if (handle?.viewer && handle.viewer.page_count() > 0) break;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    if (!handle?.viewer || handle.viewer.page_count() < 1) {
+      throw new Error("web-embed did not open a lock");
+    }
+    const { bytes: pdf } = handle.export("pdf");
+    handle.goPage(1);
+    const pageLabel = doc.querySelector("k2f-viewer").shadowRoot.querySelector(
+      ".k2f-toolbar span",
+    ).textContent;
+    const img = doc.querySelector("k2f-viewer").shadowRoot.querySelector("img.k2f-page");
+    const result = {
+      pages: handle.viewer.page_count(),
+      pageLabel,
+      pdf: String.fromCharCode(pdf[0], pdf[1], pdf[2], pdf[3], pdf[4]),
+      png: Boolean(img && img.src.startsWith("blob:")),
+      banner: handle.viewer.banner(),
+    };
+    if (!(result.pages > 1)) throw new Error(`pages ${result.pages}`);
+    out.textContent = JSON.stringify(result);
+    await fetch("/__result", { method: "POST", body: JSON.stringify(result) });
+  } catch (err) {
+    const msg = String(err && err.stack ? err.stack : err);
+    out.textContent = msg;
+    await fetch("/__result", { method: "POST", body: JSON.stringify({ error: msg }) });
+  }
+</script>
+</body>
+</html>

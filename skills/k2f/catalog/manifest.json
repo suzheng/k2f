@@ -1,0 +1,35 @@
+{
+  "title": "K2F skill catalog",
+  "created_at": 0,
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [56000, 56000, 56000, 56000]
+  },
+  "engine_version": "0.1.0",
+  "running_blocks": [
+    {
+      "position": "header",
+      "node": {
+        "id": "catalog.running.header",
+        "role": "running_header",
+        "content": {
+          "type": "text",
+          "value": "Catalog — page {{page_current}}"
+        }
+      }
+    },
+    {
+      "position": "footer",
+      "node": {
+        "id": "catalog.running.footer",
+        "role": "running_footer",
+        "content": {
+          "type": "text",
+          "value": "Page {{page_current}} of {{page_total}}"
+        }
+      }
+    }
+  ]
+}

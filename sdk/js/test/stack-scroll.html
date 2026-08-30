@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>k2f stack scroll check</title></head>
+<body>
+<div id="host" style="height:640px;width:800px"></div>
+<pre id="out">loading</pre>
+<script type="module">
+  import "/sdk/js/viewer.js";
+  const out = document.getElementById("out");
+  const host = document.getElementById("host");
+  const el = document.createElement("k2f-viewer");
+  el.setAttribute("src", "/examples/invoice.K2F");
+  el.style.height = "100%";
+  el.style.display = "block";
+  try {
+    const opened = new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error("k2f-open timed out")), 25000);
+      el.addEventListener(
+        "k2f-open",
+        (e) => {
+          clearTimeout(t);
+          resolve(e.detail);
+        },
+        { once: true },
+      );
+    });
+    host.append(el);
+    const detail = await opened;
+    const handle = detail.handle;
+    const root = el.shadowRoot;
+    const stage = root.querySelector(".k2f-stage");
+    const wraps = [...root.querySelectorAll(".k2f-page-wrap")];
+    const imgs = [...root.querySelectorAll("img.k2f-page")];
+    const label = root.querySelector(".k2f-toolbar span");
+    const firstH = wraps[0]?.getBoundingClientRect().height ?? 0;
+    if (wraps.length < 2) throw new Error(`wraps ${wraps.length}`);
+    if (imgs.filter((img) => img.src.startsWith("blob:")).length < 2) {
+      throw new Error("need at least two lock PNGs");
+    }
+    if (!(stage.scrollHeight > firstH)) {
+      throw new Error(`scrollHeight ${stage.scrollHeight} firstH ${firstH}`);
+    }
+    if (label.textContent !== `1 / ${detail.pageCount}`) {
+      throw new Error(`open label ${label.textContent}`);
+    }
+    wraps[1].scrollIntoView({ block: "start" });
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const afterScroll = label.textContent;
+    handle.goPage(0);
+    handle.goPage(1);
+    const afterGo = label.textContent;
+    const result = {
+      pages: detail.pageCount,
+      wraps: wraps.length,
+      pngs: imgs.filter((img) => img.src.startsWith("blob:")).length,
+      scrollHeight: stage.scrollHeight,
+      firstH,
+      afterScroll,
+      afterGo,
+    };
+    out.textContent = JSON.stringify(result);
+    await fetch("/__result", { method: "POST", body: JSON.stringify(result) });
+  } catch (err) {
+    const msg = String(err && err.stack ? err.stack : err);
+    out.textContent = msg;
+    await fetch("/__result", { method: "POST", body: JSON.stringify({ error: msg }) });
+  }
+</script>
+</body>
+</html>

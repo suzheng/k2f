@@ -1,0 +1,20 @@
+{
+  "palette": { "black": "#000000" },
+  "roles": {
+    "default": { "font_family": "default", "font_size": 12000, "line_height_mult": 1200, "color": "black" },
+    "body": { "font_family": "default", "font_size": 12000, "line_height_mult": 1200, "color": "black" },
+    "header": { "font_family": "default", "font_size": 18000, "line_height_mult": 1200, "color": "black" }
+  },
+  "modifiers": {
+    "precedence": ["underline", "emphasis"],
+    "styles": {
+      "emphasis": {
+        "critical": { "font_size": 30000, "line_height_mult": 1200 },
+        "strong": { "font_size": 50000, "line_height_mult": 1100 }
+      },
+      "underline": {
+        "on": { "font_size": 10000, "line_height_mult": 1200 }
+      }
+    }
+  }
+}

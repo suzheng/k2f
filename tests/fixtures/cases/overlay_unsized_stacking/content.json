@@ -1,0 +1,75 @@
+{
+  "title": "Overlay Unsized Stacking",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [72000, 72000, 72000, 72000]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "stack.overlay",
+            "role": "document",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "layer.back",
+                    "role": "back",
+                    "content": {
+                      "type": "container",
+                      "value": { "children": [] }
+                    },
+                    "modifiers": [],
+                    "layout": {
+                      "type": "overlay",
+                      "width": 200000,
+                      "height": 100000
+                    }
+                  },
+                  {
+                    "id": "layer.front",
+                    "role": "front",
+                    "content": {
+                      "type": "text",
+                      "value": "Front"
+                    },
+                    "modifiers": []
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "overlay"
+            }
+          },
+          {
+            "id": "after",
+            "role": "default",
+            "content": {
+              "type": "text",
+              "value": "After overlay"
+            },
+            "modifiers": []
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": {
+      "type": "stack",
+      "direction": "vertical",
+      "gap": 12000,
+      "align_items": "stretch",
+      "justify_content": "start"
+    }
+  }
+}

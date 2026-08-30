@@ -1,0 +1,29 @@
+[package]
+name = "k2f_mcp"
+version = "0.1.1"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/suzheng/k2f"
+publish = false
+description = "stdio MCP server wrapping k2f_sdk (killer-loop Phase 2)"
+
+[[bin]]
+name = "k2f_mcp"
+path = "src/main.rs"
+
+[dependencies]
+k2f_sdk = { path = "../k2f_sdk", version = "0.1.1" }
+k2f_paint = { path = "../k2f_paint", version = "0.1.1" }
+rmcp = { version = "3.1", features = ["server", "transport-io", "schemars"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+schemars = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+anyhow = "1"
+
+[dev-dependencies]
+wiremock = "0.6"
+rmcp = { version = "3.1", features = ["client"] }
+anyhow = "1"

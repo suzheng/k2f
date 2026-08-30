@@ -1,0 +1,93 @@
+{
+  "title": "Grid: Fr Remainder Distribution",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "grid",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "c1",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "FR1"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "c2",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "FR2"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "c3",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "FR3"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "grid",
+              "columns": [
+                {
+                  "fr": 1
+                },
+                {
+                  "fr": 1
+                },
+                {
+                  "fr": 1
+                }
+              ],
+              "rows": [
+                {
+                  "pt": 90000
+                }
+              ],
+              "gap": 0,
+              "cell_align": {
+                "x": "stretch",
+                "y": "stretch"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

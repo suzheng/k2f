@@ -1,0 +1,56 @@
+{
+  "palette": {},
+  "primitives": {
+    "surfaces": {
+      "surf_98e6d136": {
+        "type": "solid",
+        "color": "#4F46E5"
+      }
+    },
+    "borders": {
+      "br_2507c15b": {
+        "color": "#1F2937",
+        "width_pt": 2000
+      }
+    },
+    "corners": {
+      "medium": 12000
+    }
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "box_decoration": null,
+      "variants": {}
+    },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "box_decoration": null,
+      "variants": {}
+    },
+    "shape": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "box_decoration": {
+        "background": "surf_98e6d136",
+        "border": "br_2507c15b",
+        "padding_pt": 0,
+        "corner_radius": "medium"
+      },
+      "variants": {}
+    }
+  },
+  "modifiers": {
+    "precedence": [],
+    "styles": {}
+  },
+  "font_aliases": {}
+}

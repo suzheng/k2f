@@ -1,0 +1,422 @@
+{
+  "version": 1,
+  "forbidden": ["sign"],
+  "instructions": "K2F MCP: copy template (create) or open/markdown_to_k2f → Editor. insert_node/replace_text/set_role on Editor. save writes .K2F (relock); save_dir writes author source. export_pdf requires path. sign is not a tool.",
+  "rules": [
+    {
+      "id": "no_lock_json",
+      "title": "No full lock JSON in context",
+      "body": "Return node JSON, banners, and file paths — never document.K2F.lock geometry or paint ops."
+    },
+    {
+      "id": "sign_human_gated",
+      "title": "sign is human-gated",
+      "body": "sign is not an MCP tool. save writes UNSIGNED. Signing stays a separate human/org step."
+    },
+    {
+      "id": "idempotent_writes",
+      "title": "Idempotent writes",
+      "body": "replace_text, save, and validate are safe to retry. The same (id, text) write must not append a second node."
+    }
+  ],
+  "tools": [
+    {
+      "name": "create",
+      "description": "Copy an official template to dest_dir and open an Editor session. dest_dir must not exist.",
+      "skill": "k2f",
+      "mapsTo": "copy_template + Editor.open_dir",
+      "shipped": true,
+      "mcp": true,
+      "op": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "dest_dir": {
+            "type": "string",
+            "description": "Output directory for author source (must not exist)"
+          },
+          "template": {
+            "type": "string",
+            "enum": ["blank", "invoice", "legal", "clinical_summary", "report"],
+            "default": "blank"
+          },
+          "page_size": { "type": "string", "enum": ["A4", "Letter"], "default": "A4" }
+        },
+        "required": ["title", "dest_dir"]
+      },
+      "output": {
+        "session_id": "string",
+        "kind": "editor",
+        "outline": "array",
+        "dest_dir": "string"
+      }
+    },
+    {
+      "name": "open",
+      "description": "Open a local .K2F into an Editor session. Returns session_id + outline — never lock JSON.",
+      "skill": "k2f",
+      "mapsTo": "Editor.open(bytes)",
+      "shipped": true,
+      "mcp": true,
+      "op": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "Absolute or relative path to a .K2F package" }
+        },
+        "required": ["path"]
+      },
+      "output": { "session_id": "string", "kind": "editor", "outline": "array" }
+    },
+    {
+      "name": "outline",
+      "description": "Editor tree summary: id, role, ~80 char preview, children ids. Requires Editor session.",
+      "skill": "k2f",
+      "mapsTo": "Editor.outline()",
+      "shipped": true,
+      "mcp": true,
+      "op": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": { "session_id": { "type": "string" } },
+        "required": ["session_id"]
+      }
+    },
+    {
+      "name": "get_node",
+      "description": "Fetch one semantic node by stable id (agent JSON, no layout coordinates).",
+      "skill": "k2f",
+      "mapsTo": "getNode(id)",
+      "shipped": true,
+      "mcp": true,
+      "op": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string" },
+          "node_id": { "type": "string" }
+        },
+        "required": ["session_id", "node_id"]
+      }
+    },
+    {
+      "name": "search",
+      "description": "Search node text; returns matching node ids. Requires Editor session.",
+      "skill": "k2f",
+      "mapsTo": "search(query)",
+      "shipped": true,
+      "mcp": true,
+      "op": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string" },
+          "query": { "type": "string" }
+        },
+        "required": ["session_id", "query"]
+      }
+    },
+    {
+      "name": "replace_text",
+      "description": "Replace text on a Text/Math node (idempotent for same id+text). Requires Editor session.",
+      "skill": "k2f",
+      "mapsTo": "replaceText(id, text)",
+      "shipped": true,
+      "mcp": true,
+      "op": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string" },
+          "node_id": { "type": "string" },
+          "text": { "type": "string" }
+        },
+        "required": ["session_id", "node_id", "text"]
+      }
+    },
+    {
+      "name": "set_role",
+      "description": "Set semantic role (and optional variant) on a node. Role must exist in the package theme.",
+      "skill": "k2f",
+      "mapsTo": "setRole(id, role, variant?)",
+      "shipped": true,
+      "mcp": true,
+      "op": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string" },
+          "node_id": { "type": "string" },
+          "role": { "type": "string" },
+          "variant": { "type": "string" }
+        },
+        "required": ["session_id", "node_id", "role"]
+      }
+    },
+    {
+      "name": "insert_node",
+      "description": "Insert a child under parent_id at index. node is a JSON object (not a string) with no x/y. Requires Editor session — not create().",
+      "skill": "k2f",
+      "mapsTo": "insertNode(parentId, index, node)",
+      "shipped": true,
+      "mcp": true,
+      "op": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string" },
+          "parent_id": { "type": "string" },
+          "index": { "type": "integer", "minimum": 0 },
+          "node": {
+            "type": "object",
+            "description": "Semantic node object without x/y geometry"
+          }
+        },
+        "required": ["session_id", "parent_id", "index", "node"]
+      }
+    },
+    {
+      "name": "delete_node",
+      "description": "Delete a node by id (cannot delete root). Requires Editor session.",
+      "skill": "k2f",
+      "mapsTo": "deleteNode(id)",
+      "shipped": true,
+      "mcp": true,
+      "op": "destructive",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string" },
+          "node_id": { "type": "string" }
+        },
+        "required": ["session_id", "node_id"]
+      }
+    },
+    {
+      "name": "validate",
+      "description": "Validate author source (semantic tree + theme vocab). Requires Editor session — use diff + save + verify before export.",
+      "skill": "k2f",
+      "mapsTo": "Editor.validate_package()",
+      "shipped": true,
+      "mcp": true,
+      "op": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": { "session_id": { "type": "string" } },
+        "required": ["session_id"]
+      }
+    },
+    {
+      "name": "diff",
+      "description": "Semantic diff vs baseline at open/create time. Requires Editor session.",
+      "skill": "k2f",
+      "mapsTo": "diff()",
+      "shipped": true,
+      "mcp": true,
+      "op": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": { "session_id": { "type": "string" } },
+        "required": ["session_id"]
+      }
+    },
+    {
+      "name": "save",
+      "description": "Relock the session to an UNSIGNED .K2F at path (required). Strips signatures; appends changelog if diff is non-empty. Returns {path,size,banner} — never package bytes. Pass expected_content_hash for optimistic lock vs the hash at open.",
+      "skill": "k2f",
+      "mapsTo": "save()",
+      "shipped": true,
+      "mcp": true,
+      "op": "destructive",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string" },
+          "expected_content_hash": { "type": "string" },
+          "path": {
+            "type": "string",
+            "description": "Required local path to write the .K2F package"
+          }
+        },
+        "required": ["session_id", "path"]
+      },
+      "output": { "path": "string", "size": "number", "banner": "string" }
+    },
+    {
+      "name": "markdown_to_k2f",
+      "description": "Convert Markdown to an Editor session (mutable). Returns session_id, outline, and report.warnings.",
+      "skill": "k2f",
+      "mapsTo": "markdownToK2f(md, opts)",
+      "shipped": true,
+      "mcp": true,
+      "op": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "markdown": { "type": "string" },
+          "title": { "type": "string" },
+          "template": {
+            "type": "string",
+            "enum": ["blank", "invoice", "legal", "clinical_summary", "report"],
+            "default": "report"
+          },
+          "page_size": { "type": "string", "enum": ["A4", "Letter"], "default": "A4" }
+        },
+        "required": ["markdown", "title"]
+      }
+    },
+    {
+      "name": "export_pdf",
+      "description": "Export PDF from current lock to path (required). Unsaved Editor draws the old lock — save first. Returns {path,size} — never PDF bytes.",
+      "skill": "k2f",
+      "mapsTo": "exportPdf(bytes)",
+      "shipped": true,
+      "mcp": true,
+      "op": "destructive",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string" },
+          "path": { "type": "string", "description": "Required local path to write the PDF" },
+          "scale": {
+            "type": "number",
+            "description": "Raster stamp scale for gradient/shadow/blur pages: 2, 3, or 4 (default 2)"
+          }
+        },
+        "required": ["session_id", "path"]
+      },
+      "output": { "path": "string", "size": "number" }
+    },
+    {
+      "name": "verify",
+      "description": "Integrity banner and trust metadata for a .K2F path or open session with source_path.",
+      "skill": null,
+      "mapsTo": "Viewer.banner() / status_code()",
+      "shipped": true,
+      "mcp": true,
+      "op": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "session_id": { "type": "string" }
+        }
+      }
+    },
+    {
+      "name": "publish",
+      "description": "Relock session and POST to K2F publish API; returns /v/{appearance_hash}. Set dry_run=true to preview hashes without POST. Env K2F_PUBLISH_ORIGIN.",
+      "skill": "k2f",
+      "mapsTo": "POST /api/publish → /v/{appearance_hash}",
+      "shipped": true,
+      "mcp": true,
+      "op": "destructive",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string" },
+          "expected_content_hash": { "type": "string" },
+          "dry_run": { "type": "boolean", "default": false }
+        },
+        "required": ["session_id"]
+      }
+    }
+  ]
+}

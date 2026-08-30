@@ -1,0 +1,152 @@
+{
+  "title": "Shape Variants",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "gallery",
+            "role": "document",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "label_rectangle",
+                    "role": "body",
+                    "content": {
+                      "type": "text",
+                      "value": "shape / rectangle"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "shape_rectangle",
+                    "role": "shape",
+                    "variant": "rectangle",
+                    "content": {
+                      "type": "container",
+                      "value": {
+                        "children": []
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": {
+                      "type": "overlay",
+                      "width": 220000,
+                      "height": 90000
+                    }
+                  },
+                  {
+                    "id": "label_rounded",
+                    "role": "body",
+                    "content": {
+                      "type": "text",
+                      "value": "shape / rounded"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "shape_rounded",
+                    "role": "shape",
+                    "variant": "rounded",
+                    "content": {
+                      "type": "container",
+                      "value": {
+                        "children": []
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": {
+                      "type": "overlay",
+                      "width": 220000,
+                      "height": 90000
+                    }
+                  },
+                  {
+                    "id": "label_pill",
+                    "role": "body",
+                    "content": {
+                      "type": "text",
+                      "value": "shape / pill (rounded rect with large corner radius)"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "shape_pill",
+                    "role": "shape",
+                    "variant": "pill",
+                    "content": {
+                      "type": "container",
+                      "value": {
+                        "children": []
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": {
+                      "type": "overlay",
+                      "width": 220000,
+                      "height": 90000
+                    }
+                  },
+                  {
+                    "id": "label_circle",
+                    "role": "body",
+                    "content": {
+                      "type": "text",
+                      "value": "shape / circle (square + large corner radius)"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "shape_circle",
+                    "role": "shape",
+                    "variant": "circle",
+                    "content": {
+                      "type": "container",
+                      "value": {
+                        "children": []
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": {
+                      "type": "overlay",
+                      "width": 90000,
+                      "height": 90000
+                    }
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "stack",
+              "direction": "vertical",
+              "gap": 12000
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

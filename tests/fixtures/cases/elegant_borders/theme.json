@@ -1,0 +1,71 @@
+{
+  "palette": {
+    "black": "#000000",
+    "red": "#FF0000",
+    "white": "#FFFFFF"
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black"
+    },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black"
+    },
+    "box": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "variants": {
+        "thin": {
+          "box_decoration": {
+            "border": "br_93e2b3b3",
+            "padding_pt": 8000
+          }
+        },
+        "thick_colored": {
+          "box_decoration": {
+            "border": "br_ce2d0279",
+            "padding_pt": 8000
+          }
+        },
+        "rounded": {
+          "box_decoration": {
+            "border": "br_93e2b3b3",
+            "padding_pt": 8000,
+            "corner_radius": "r8000"
+          }
+        },
+        "pill": {
+          "box_decoration": {
+            "border": "br_93e2b3b3",
+            "padding_pt": 8000,
+            "corner_radius": "r999000"
+          }
+        }
+      }
+    }
+  },
+  "primitives": {
+    "borders": {
+      "br_93e2b3b3": {
+        "width_pt": 1000,
+        "color": "black"
+      },
+      "br_ce2d0279": {
+        "width_pt": 4000,
+        "color": "red"
+      }
+    },
+    "corners": {
+      "r8000": 8000,
+      "r999000": 999000
+    }
+  }
+}

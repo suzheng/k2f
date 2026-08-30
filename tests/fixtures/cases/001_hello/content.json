@@ -1,0 +1,9 @@
+{
+    "id": "root",
+    "role": "body",
+    "content": {
+        "type": "text",
+        "value": "Hello Golden World"
+    },
+    "modifiers": []
+}

@@ -1,0 +1,922 @@
+{
+  "rows": [
+    [
+      {
+        "id": "invoice.th.item",
+        "role": "table_header_cell",
+        "content": {
+          "type": "text",
+          "value": "Item"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.th.qty",
+        "role": "table_header_cell",
+        "content": {
+          "type": "text",
+          "value": "Qty"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.th.rate",
+        "role": "table_header_cell",
+        "content": {
+          "type": "text",
+          "value": "Rate"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.th.amount",
+        "role": "table_header_cell",
+        "content": {
+          "type": "text",
+          "value": "Amount"
+        },
+        "modifiers": []
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_1.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Consulting Services"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_1.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "10"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_1.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$150.00"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_1.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$1500.00"
+        },
+        "modifiers": []
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_2.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Data Analysis"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_2.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "5"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_2.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$200.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_2.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$1000.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_3.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "System Integration"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_3.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "20"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_3.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$120.00"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_3.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$2400.00"
+        },
+        "modifiers": []
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_4.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 04"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_4.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_4.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$104.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_4.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$104.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_5.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 05"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_5.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_5.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$105.00"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_5.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$105.00"
+        },
+        "modifiers": []
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_6.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 06"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_6.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_6.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$106.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_6.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$106.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_7.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 07"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_7.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_7.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$107.00"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_7.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$107.00"
+        },
+        "modifiers": []
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_8.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 08"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_8.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_8.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$108.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_8.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$108.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_9.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 09"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_9.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_9.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$109.00"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_9.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$109.00"
+        },
+        "modifiers": []
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_10.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 10"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_10.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_10.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$110.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_10.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$110.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_11.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 11"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_11.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_11.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$111.00"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_11.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$111.00"
+        },
+        "modifiers": []
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_12.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 12"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_12.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_12.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$112.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_12.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$112.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_13.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 13"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_13.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_13.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$113.00"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_13.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$113.00"
+        },
+        "modifiers": []
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_14.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 14"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_14.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_14.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$114.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_14.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$114.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_15.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 15"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_15.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_15.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$115.00"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_15.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$115.00"
+        },
+        "modifiers": []
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_16.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 16"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_16.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_16.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$116.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_16.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$116.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_17.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 17"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_17.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_17.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$117.00"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_17.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$117.00"
+        },
+        "modifiers": []
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_18.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 18"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_18.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_18.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$118.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_18.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$118.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_19.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 19"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_19.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_19.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$119.00"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_19.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$119.00"
+        },
+        "modifiers": []
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_20.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 20"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_20.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_20.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$120.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_20.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$120.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_21.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 21"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_21.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_21.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$121.00"
+        },
+        "modifiers": []
+      },
+      {
+        "id": "invoice.row_21.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$121.00"
+        },
+        "modifiers": []
+      }
+    ],
+    [
+      {
+        "id": "invoice.row_22.item",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "Line item 22"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_22.qty",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "1"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_22.rate",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$122.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      },
+      {
+        "id": "invoice.row_22.amount",
+        "role": "table_row_cell",
+        "content": {
+          "type": "text",
+          "value": "$122.00"
+        },
+        "modifiers": [],
+        "variant": "alt"
+      }
+    ]
+  ]
+}

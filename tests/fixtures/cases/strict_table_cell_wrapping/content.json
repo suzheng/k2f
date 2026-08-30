@@ -1,0 +1,72 @@
+{
+    "id": "root",
+    "role": "body",
+    "content": {
+        "type": "table",
+        "value": {
+            "column_widths": [
+                { "pt": 90000 },
+                { "fr": 1 }
+            ],
+            "gap": 6000,
+            "data": {
+                "type": "inline",
+                "rows": [
+                    [
+                        {
+                            "id": "cell_0_0",
+                            "role": "body",
+                            "content": { "type": "text", "value": "Narrow" },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "cell_0_1",
+                            "role": "body",
+                            "content": { "type": "text", "value": "Wide" },
+                            "modifiers": []
+                        }
+                    ],
+                    [
+                        {
+                            "id": "cell_1_0",
+                            "role": "body",
+                            "content": {
+                                "type": "text",
+                                "value": "This is a long piece of text intended to wrap across multiple lines in a narrow column."
+                            },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "cell_1_1",
+                            "role": "body",
+                            "content": { "type": "text", "value": "Short" },
+                            "modifiers": []
+                        }
+                    ],
+                    [
+                        {
+                            "id": "cell_2_0",
+                            "role": "body",
+                            "content": { "type": "text", "value": "Tiny" },
+                            "modifiers": []
+                        },
+                        {
+                            "id": "cell_2_1",
+                            "role": "body",
+                            "content": {
+                                "type": "text",
+                                "value": "This is another sentence, but it should generally require fewer wraps because this column is wider."
+                            },
+                            "modifiers": []
+                        }
+                    ]
+                ]
+            }
+        }
+    },
+    "modifiers": []
+}
+
+
+
+

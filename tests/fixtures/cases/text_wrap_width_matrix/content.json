@@ -1,0 +1,93 @@
+{
+  "title": "Text: Wrap Width Matrix (via Grid Cells)",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "wrap_grid",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "narrow",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "The quick brown fox jumps over the lazy dog. This sentence contains multiple words that will wrap differently depending on the available width constraint. When the width is narrow, words will break more frequently. When the width is wider, fewer line breaks occur and text flows more naturally."
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "medium",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "The quick brown fox jumps over the lazy dog. This sentence contains multiple words that will wrap differently depending on the available width constraint. When the width is narrow, words will break more frequently. When the width is wider, fewer line breaks occur and text flows more naturally."
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "wide",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "The quick brown fox jumps over the lazy dog. This sentence contains multiple words that will wrap differently depending on the available width constraint. When the width is narrow, words will break more frequently. When the width is wider, fewer line breaks occur and text flows more naturally."
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "grid",
+              "columns": [
+                {
+                  "pt": 80000
+                },
+                {
+                  "pt": 180000
+                },
+                {
+                  "pt": 300000
+                }
+              ],
+              "rows": [
+                {
+                  "pt": 400000
+                }
+              ],
+              "gap": 12000,
+              "cell_align": {
+                "x": "stretch",
+                "y": "stretch"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "title": "Leaf: TableReference Clamping Under Bounded Height",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "grid",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "inner",
+                    "role": "box",
+                    "content": {
+                      "type": "container",
+                      "value": {
+                        "children": [
+                          {
+                            "id": "label1",
+                            "role": "text",
+                            "content": {
+                              "type": "text",
+                              "value": "Bounded row (80pt height) with tall table reference (120pt x 200pt)."
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          },
+                          {
+                            "id": "label2",
+                            "role": "text",
+                            "content": {
+                              "type": "text",
+                              "value": "Expected: Table reference height clamped to 80pt (no scaling, just clamping)."
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          },
+                          {
+                            "id": "tbl_tall",
+                            "role": "table",
+                            "content": {
+                              "type": "table_reference",
+                              "value": {
+                                "source": "asset://tbl_tall",
+                                "view_mode": "full",
+                                "width": 200000,
+                                "height": 120000
+                              }
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          },
+                          {
+                            "id": "tbl_fits",
+                            "role": "table",
+                            "content": {
+                              "type": "table_reference",
+                              "value": {
+                                "source": "asset://tbl_fits",
+                                "view_mode": "full",
+                                "width": 100000,
+                                "height": 50000
+                              }
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          }
+                        ]
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": {
+                      "type": "stack",
+                      "direction": "horizontal",
+                      "gap": 12000,
+                      "align_items": "stretch",
+                      "justify_content": "start"
+                    }
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "grid",
+              "columns": [
+                {
+                  "pt": 450000
+                }
+              ],
+              "rows": [
+                {
+                  "pt": 80000
+                }
+              ],
+              "gap": 0,
+              "cell_align": {
+                "x": "stretch",
+                "y": "stretch"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

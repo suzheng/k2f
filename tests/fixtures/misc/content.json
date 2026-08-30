@@ -1,0 +1,39 @@
+{
+    "id": "doc.root",
+    "role": "document",
+    "content": {
+        "type": "container",
+        "value": {
+            "children": [
+                {
+                    "id": "doc.header",
+                    "role": "header",
+                    "content": {
+                        "type": "text",
+                        "value": "Hello K2F World"
+                    },
+                    "modifiers": []
+                },
+                {
+                    "id": "doc.body.p1",
+                    "role": "body_text",
+                    "content": {
+                        "type": "text",
+                        "value": "This is a deterministic document."
+                    },
+                    "modifiers": [
+                        {
+                            "range": [
+                                10,
+                                23
+                            ],
+                            "type": "emphasis",
+                            "intent": "highlight"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "modifiers": []
+}

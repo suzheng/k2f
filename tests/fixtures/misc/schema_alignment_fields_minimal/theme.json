@@ -1,0 +1,43 @@
+{
+  "palette": {
+    "text": "#000000",
+    "bg": "#FFFFFF"
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1400,
+      "color": "text",
+      "text_align": "start"
+    },
+    "body": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1400,
+      "color": "text",
+      "text_align": "center",
+      "variants": {
+        "right": {
+          "text_overrides": { "text_align": "end" }
+        }
+      }
+    },
+    "title": {
+      "font_family": "default",
+      "font_size": 18000,
+      "line_height_mult": 1200,
+      "color": "text",
+      "text_align": "start"
+    },
+    "card": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1400,
+      "color": "text"
+    }
+  }
+}
+
+
+

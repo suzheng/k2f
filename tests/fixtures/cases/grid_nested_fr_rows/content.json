@@ -1,0 +1,173 @@
+{
+  "title": "Grid: Nested Fr Rows (Finite Cell)",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "parent_grid",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "nested_grid",
+                    "role": "box",
+                    "content": {
+                      "type": "container",
+                      "value": {
+                        "children": [
+                          {
+                            "id": "n11",
+                            "role": "text",
+                            "content": {
+                              "type": "text",
+                              "value": "n(1,1)"
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          },
+                          {
+                            "id": "n12",
+                            "role": "text",
+                            "content": {
+                              "type": "text",
+                              "value": "n(1,2)"
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          },
+                          {
+                            "id": "n21",
+                            "role": "text",
+                            "content": {
+                              "type": "text",
+                              "value": "n(2,1)"
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          },
+                          {
+                            "id": "n22",
+                            "role": "text",
+                            "content": {
+                              "type": "text",
+                              "value": "n(2,2)"
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          }
+                        ]
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": {
+                      "type": "grid",
+                      "columns": [
+                        {
+                          "fr": 1
+                        },
+                        {
+                          "fr": 1
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "fr": 1
+                        },
+                        {
+                          "fr": 2
+                        }
+                      ],
+                      "gap": 6000,
+                      "cell_align": {
+                        "x": "stretch",
+                        "y": "stretch"
+                      }
+                    }
+                  },
+                  {
+                    "id": "p12",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Sibling cell"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "p21_img",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://p21_img",
+                        "width": 100000,
+                        "height": 90000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "p22",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Bottom-right"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "grid",
+              "columns": [
+                {
+                  "pt": 220000
+                },
+                {
+                  "pt": 220000
+                }
+              ],
+              "rows": [
+                {
+                  "pt": 180000
+                },
+                {
+                  "pt": 140000
+                }
+              ],
+              "gap": 12000,
+              "cell_align": {
+                "x": "stretch",
+                "y": "stretch"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "title": "RTL/LTR Mixed",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "body",
+    "content": {
+      "type": "text",
+      "value": "LTR + RTL mix: English שלום 123 مرحبا world (end)"
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

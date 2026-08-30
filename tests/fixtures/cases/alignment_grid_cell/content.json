@@ -1,0 +1,219 @@
+{
+    "title": "Alignment Grid Cell",
+    "canvas_mode": "paged",
+    "page_config": {
+        "width": 595000,
+        "height": 842000,
+        "margin": [
+            36000,
+            36000,
+            36000,
+            36000
+        ]
+    },
+    "root": {
+        "id": "root",
+        "role": "document",
+        "content": {
+            "type": "container",
+            "value": {
+                "children": [
+                    {
+                        "id": "section_center",
+                        "role": "box_container",
+                        "modifiers": [],
+                        "layout": {
+                            "type": "grid",
+                            "cell_align": {
+                                "x": "center",
+                                "y": "center"
+                            },
+                            "columns": [
+                                {
+                                    "pt": 50000
+                                },
+                                {
+                                    "pt": 50000
+                                }
+                            ],
+                            "rows": [
+                                {
+                                    "pt": 50000
+                                }
+                            ],
+                            "gap": 10000
+                        },
+                        "content": {
+                            "type": "container",
+                            "value": {
+                                "children": [
+                                    {
+                                        "id": "c1",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 20000,
+                                            "height": 20000
+                                        }
+                                    },
+                                    {
+                                        "id": "c2",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 30000,
+                                            "height": 30000
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "id": "section_start",
+                        "role": "box_container",
+                        "modifiers": [],
+                        "layout": {
+                            "type": "grid",
+                            "cell_align": {
+                                "x": "start",
+                                "y": "start"
+                            },
+                            "columns": [
+                                {
+                                    "pt": 50000
+                                },
+                                {
+                                    "pt": 50000
+                                }
+                            ],
+                            "rows": [
+                                {
+                                    "pt": 50000
+                                }
+                            ],
+                            "gap": 10000
+                        },
+                        "content": {
+                            "type": "container",
+                            "value": {
+                                "children": [
+                                    {
+                                        "id": "s1",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 20000,
+                                            "height": 20000
+                                        }
+                                    },
+                                    {
+                                        "id": "s2",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 30000,
+                                            "height": 30000
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "id": "section_end",
+                        "role": "box_container",
+                        "modifiers": [],
+                        "layout": {
+                            "type": "grid",
+                            "cell_align": {
+                                "x": "end",
+                                "y": "end"
+                            },
+                            "columns": [
+                                {
+                                    "pt": 50000
+                                },
+                                {
+                                    "pt": 50000
+                                }
+                            ],
+                            "rows": [
+                                {
+                                    "pt": 50000
+                                }
+                            ],
+                            "gap": 10000
+                        },
+                        "content": {
+                            "type": "container",
+                            "value": {
+                                "children": [
+                                    {
+                                        "id": "e1",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 20000,
+                                            "height": 20000
+                                        }
+                                    },
+                                    {
+                                        "id": "e2",
+                                        "role": "box_item",
+                                        "content": {
+                                            "type": "container",
+                                            "value": {
+                                                "children": []
+                                            }
+                                        },
+                                        "layout": {
+                                            "type": "overlay",
+                                            "width": 30000,
+                                            "height": 30000
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "layout": {
+            "type": "stack",
+            "direction": "vertical",
+            "gap": 20000
+        }
+    }
+}

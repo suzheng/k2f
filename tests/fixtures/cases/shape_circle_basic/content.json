@@ -1,0 +1,70 @@
+{
+    "title": "Shape Circle Basic",
+    "canvas_mode": "paged",
+    "page_config": {
+        "width": 595000,
+        "height": 842000,
+        "margin": [
+            72000,
+            72000,
+            72000,
+            72000
+        ]
+    },
+    "root": {
+        "id": "root",
+        "role": "document",
+        "content": {
+            "type": "container",
+            "value": {
+                "children": [
+                    {
+                        "id": "circle_1",
+                        "role": "shape_circle",
+                        "content": {
+                            "type": "container",
+                            "value": {
+                                "children": []
+                            }
+                        },
+                        "layout": {
+                            "type": "overlay",
+                            "width": 100000,
+                            "height": 100000
+                        }
+                    },
+                    {
+                        "id": "pill_1",
+                        "role": "shape_circle",
+                        "content": {
+                            "type": "container",
+                            "value": {
+                                "children": []
+                            }
+                        },
+                        "layout": {
+                            "type": "overlay",
+                            "width": 200000,
+                            "height": 100000
+                        },
+                        "modifiers": [
+                            {
+                                "type": "margin_top",
+                                "intent": "small",
+                                "range": [
+                                    0,
+                                    0
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "layout": {
+            "type": "stack",
+            "direction": "vertical",
+            "gap": 20000
+        }
+    }
+}

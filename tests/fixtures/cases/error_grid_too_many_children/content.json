@@ -1,0 +1,64 @@
+{
+  "title": "Error: Grid Too Many Children",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "grid",
+    "role": "box",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "a",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "A"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "b",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "B"
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": {
+      "type": "grid",
+      "columns": [
+        {
+          "pt": 100000
+        }
+      ],
+      "rows": [
+        {
+          "pt": 100000
+        }
+      ],
+      "gap": 0,
+      "cell_align": {
+        "x": "stretch",
+        "y": "stretch"
+      }
+    }
+  }
+}

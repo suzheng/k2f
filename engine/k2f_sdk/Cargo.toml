@@ -1,0 +1,38 @@
+[package]
+name = "k2f_sdk"
+version = "0.1.1"
+edition = "2021"
+description = "K2F agent Editor SDK"
+license = "Apache-2.0"
+repository = "https://github.com/suzheng/k2f"
+homepage = "https://github.com/suzheng/k2f"
+documentation = "https://docs.rs/k2f_sdk"
+readme = "README.md"
+authors = ["K2F Contributors"]
+keywords = ["k2f", "document", "agent", "editor", "sdk"]
+categories = ["text-processing"]
+
+[dependencies]
+k2f_core = { path = "../k2f_core", version = "0.1.1" }
+k2f_layout = { path = "../k2f_layout", version = "0.1.1" }
+k2f_markdown = { path = "../k2f_markdown", version = "0.1.1" }
+k2f_package = { path = "../k2f_package", version = "0.1.1" }
+k2f_pdf = { path = "../k2f_pdf", version = "0.1.1" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+boon = "0.6"
+image = { version = "=0.25.6", default-features = false, features = ["png", "webp"] }
+resvg = { version = "0.43.0", default-features = false }
+pulldown-cmark = "0.13"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+include_dir = "0.7"
+js-sys = "0.3"
+
+[dev-dependencies]
+k2f_paint = { path = "../k2f_paint", version = "0.1.1" }
+k2f_package = { path = "../k2f_package", version = "0.1.1" }
+k2f_core = { path = "../k2f_core", version = "0.1.1" }
+serde_json = { workspace = true }
+lopdf = "0.34"

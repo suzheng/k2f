@@ -1,0 +1,32 @@
+{
+  "palette": {
+    "ink": "#111111"
+  },
+  "primitives": {},
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1400,
+      "color": "ink"
+    },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1400,
+      "color": "ink"
+    },
+    "body": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1400,
+      "color": "ink",
+      "text_align": "justify"
+    }
+  },
+  "modifiers": {
+    "precedence": [],
+    "styles": {}
+  },
+  "font_aliases": {}
+}

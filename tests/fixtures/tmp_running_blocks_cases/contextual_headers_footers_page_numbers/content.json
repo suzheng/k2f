@@ -1,0 +1,81 @@
+{
+  "title": "Running footer page numbers (3 pages)",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [72000, 72000, 72000, 72000]
+  },
+  "running_blocks": [
+    {
+      "position": "footer",
+      "node": {
+        "id": "running.footer.page_numbers",
+        "role": "footer",
+        "content": {
+          "type": "text",
+          "value": "Page {{page_current}} of {{page_total}}"
+        },
+        "modifiers": []
+      }
+    }
+  ],
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "img_0",
+            "role": "body",
+            "content": { "type": "image", "value": { "src": "asset://img_0", "width": 400000, "height": 349000 } },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_1",
+            "role": "body",
+            "content": { "type": "image", "value": { "src": "asset://img_1", "width": 400000, "height": 349000 } },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_2",
+            "role": "body",
+            "content": { "type": "image", "value": { "src": "asset://img_2", "width": 400000, "height": 349000 } },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_3",
+            "role": "body",
+            "content": { "type": "image", "value": { "src": "asset://img_3", "width": 400000, "height": 349000 } },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_4",
+            "role": "body",
+            "content": { "type": "image", "value": { "src": "asset://img_4", "width": 400000, "height": 349000 } },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_5",
+            "role": "body",
+            "content": { "type": "image", "value": { "src": "asset://img_5", "width": 400000, "height": 349000 } },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": []
+  }
+}
+
+
+
+

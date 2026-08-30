@@ -1,0 +1,65 @@
+{
+  "id": "root",
+  "role": "body",
+  "layout": {
+    "type": "stack",
+    "direction": "vertical",
+    "gap": 8000,
+    "align_items": "center",
+    "justify_content": "end",
+    "width": 360000,
+    "height": 180000
+  },
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "overlay_card",
+          "role": "card",
+          "layout": { "type": "overlay" },
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "title",
+                  "role": "title",
+                  "content": { "type": "text", "value": "Overlay title" }
+                },
+                {
+                  "id": "subtitle",
+                  "role": "body",
+                  "content": { "type": "text", "value": "Overlay subtitle" }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "grid_demo",
+          "role": "body",
+          "layout": {
+            "type": "grid",
+            "gap": 6000,
+            "cell_align": { "x": "end", "y": "center" },
+            "columns": [{ "fr": 1 }, { "fr": 1 }],
+            "rows": [{ "pt": 70000 }]
+          },
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                { "id": "cell_a", "role": "body", "content": { "type": "text", "value": "A" } },
+                { "id": "cell_b", "role": "body", "content": { "type": "text", "value": "B" } }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+

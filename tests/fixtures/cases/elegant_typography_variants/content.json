@@ -1,0 +1,56 @@
+{
+    "title": "Elegant Typography Variants",
+    "canvas_mode": "paged",
+    "page_config": {
+        "width": 595000,
+        "height": 842000,
+        "margin": [
+            36000,
+            36000,
+            36000,
+            36000
+        ]
+    },
+    "root": {
+        "id": "root",
+        "role": "document",
+        "content": {
+            "type": "container",
+            "value": {
+                "children": [
+                    {
+                        "id": "heading_1",
+                        "role": "heading",
+                        "variant": "primary",
+                        "content": {
+                            "type": "text",
+                            "value": "Big Bold Heading"
+                        },
+                        "modifiers": []
+                    },
+                    {
+                        "id": "heading_2",
+                        "role": "heading",
+                        "variant": "accent",
+                        "content": {
+                            "type": "text",
+                            "value": "Accent Color Heading"
+                        },
+                        "modifiers": []
+                    },
+                    {
+                        "id": "body_1",
+                        "role": "body",
+                        "variant": "subtle",
+                        "content": {
+                            "type": "text",
+                            "value": "Subtle gray text for metadata or captions."
+                        },
+                        "modifiers": []
+                    }
+                ]
+            }
+        },
+        "modifiers": []
+    }
+}

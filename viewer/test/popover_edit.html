@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>k2f popover edit</title></head>
+<body>
+<pre id="out">loading</pre>
+<script type="module">
+  import "/sdk/js/viewer.js";
+  const out = document.getElementById("out");
+  const el = document.createElement("k2f-viewer");
+  el.setAttribute("src", "/examples/invoice.K2F");
+  el.setAttribute("editable", "");
+  el.style.height = "800px";
+
+  function clickNode(wrap, boxes, zoom) {
+    const x = (boxes[0].x / 1000) * zoom + (boxes[0].width / 1000) * zoom / 2;
+    const y = (boxes[0].y / 1000) * zoom + (boxes[0].height / 1000) * zoom / 2;
+    const rect = wrap.getBoundingClientRect();
+    wrap.dispatchEvent(new MouseEvent("click", {
+      bubbles: true,
+      clientX: rect.left + x,
+      clientY: rect.top + y,
+    }));
+  }
+
+  try {
+    const opened = new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error("k2f-open timed out")), 20000);
+      el.addEventListener("k2f-open", (e) => { clearTimeout(t); resolve(e.detail); }, { once: true });
+    });
+    document.body.append(el);
+    const detail = await opened;
+    const handle = detail.handle;
+    if (detail.banner !== "SIGNED") throw new Error(`expected SIGNED, got ${detail.banner} ${detail.statusCode}`);
+    if (handle.editing) throw new Error("must open in view mode");
+    if (el.shadowRoot.querySelector(".side")) throw new Error("sidebar must not exist");
+    const boxes = JSON.parse(handle.viewer.boxes_for("invoice.total"));
+    if (!boxes.length) throw new Error("no invoice.total box");
+    handle.goPage(boxes[0].page);
+    await new Promise((r) => requestAnimationFrame(r));
+    await new Promise((r) => requestAnimationFrame(r));
+    const wrap = el.shadowRoot.querySelector(`.k2f-page-wrap[data-page="${boxes[0].page}"]`);
+    if (!wrap) throw new Error(`page wrap ${boxes[0].page} missing`);
+    const zoom = 1;
+    clickNode(wrap, boxes, zoom);
+    let pop = el.shadowRoot.querySelector(".k2f-popover");
+    if (pop && !pop.hidden) throw new Error("popover must not show in view mode");
+
+    const editBtn = el.shadowRoot.querySelector('[data-act="edit"]');
+    if (!editBtn || editBtn.hidden) throw new Error("edit button missing");
+    editBtn.click();
+    if (!handle.editing) throw new Error("edit mode not active");
+
+    clickNode(wrap, boxes, zoom);
+    pop = el.shadowRoot.querySelector(".k2f-popover");
+    if (!pop || pop.hidden) throw new Error("popover not shown after Edit");
+    if (!wrap.contains(pop)) throw new Error("popover must be on the page, not a sidebar");
+    if (pop.querySelector("p")) throw new Error("popover must not show node id");
+    const textarea = pop.querySelector("textarea");
+    if (!textarea) throw new Error("textarea missing");
+    if (pop.firstElementChild !== textarea.closest(".k2f-popover-text")) {
+      throw new Error("text field must be first in popover");
+    }
+    const rect = wrap.getBoundingClientRect();
+    const popBox = pop.getBoundingClientRect();
+    const nodeBox = {
+      left: rect.left + (boxes[0].x / 1000) * zoom,
+      top: rect.top + (boxes[0].y / 1000) * zoom,
+      bottom: rect.top + (boxes[0].y / 1000) * zoom + (boxes[0].height / 1000) * zoom,
+    };
+    if (Math.abs(popBox.left - nodeBox.left) > 8) {
+      throw new Error(`popover left ${popBox.left} vs box ${nodeBox.left}`);
+    }
+    if (popBox.top + 1 < nodeBox.bottom) {
+      throw new Error(`popover should sit under the box (${popBox.top} vs ${nodeBox.bottom})`);
+    }
+    textarea.value = "Grand Total: $110.00";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    const saved = new Promise((resolve) => {
+      el.addEventListener("k2f-open", (e) => resolve(e.detail), { once: true });
+    });
+    pop.querySelector("[data-act=save]").click();
+    const after = await Promise.race([
+      saved,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("save timed out")), 20000)),
+    ]);
+    const sel = JSON.parse(after.handle.viewer.selection("invoice.total"));
+    const result = {
+      popover: true,
+      viewModeNoPopover: true,
+      bannerBefore: detail.banner,
+      bannerAfter: after.banner,
+      statusAfter: after.statusCode,
+      textAfter: sel.text,
+    };
+    out.textContent = JSON.stringify(result);
+    await fetch("/__result", { method: "POST", body: JSON.stringify(result) });
+  } catch (err) {
+    const msg = String(err && err.stack ? err.stack : err);
+    out.textContent = msg;
+    await fetch("/__result", { method: "POST", body: JSON.stringify({ error: msg }) });
+  }
+</script>
+</body>
+</html>

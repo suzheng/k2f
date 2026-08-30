@@ -1,0 +1,46 @@
+{
+    "title": "Elegant Backgrounds",
+    "canvas_mode": "paged",
+    "page_config": {
+        "width": 595000,
+        "height": 842000,
+        "margin": [
+            36000,
+            36000,
+            36000,
+            36000
+        ]
+    },
+    "root": {
+        "id": "root",
+        "role": "document",
+        "content": {
+            "type": "container",
+            "value": {
+                "children": [
+                    {
+                        "id": "solid_bg_container",
+                        "role": "box",
+                        "variant": "solid_blue",
+                        "content": {
+                            "type": "text",
+                            "value": "Solid Blue Background"
+                        },
+                        "modifiers": []
+                    },
+                    {
+                        "id": "gradient_bg_container",
+                        "role": "box",
+                        "variant": "gradient_sunset",
+                        "content": {
+                            "type": "text",
+                            "value": "Linear Gradient Background"
+                        },
+                        "modifiers": []
+                    }
+                ]
+            }
+        },
+        "modifiers": []
+    }
+}

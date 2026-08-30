@@ -1,0 +1,24 @@
+{
+  "title": "Error: PageConfig Negative Content Height",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 200000,
+    "height": 100000,
+    "margin": [
+      60000,
+      0,
+      60000,
+      0
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "text",
+    "content": {
+      "type": "text",
+      "value": "Bad content height"
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "id": "contract.clauses_1_3",
+  "role": "document",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "contract.section_1",
+          "role": "heading",
+          "variant": "section",
+          "keep_with_next": true,
+          "content": { "type": "text", "value": "1. 服务内容" },
+          "modifiers": []
+        },
+        {
+          "id": "contract.clause_1",
+          "role": "contract_clause",
+          "content": {
+            "type": "text",
+            "value": "承包方应按附件所述专业标准提供服务，并以本文件条款为准。服务应在约定日期内完成，质量不得低于行业通常要求。双方确认：纸面以本协议锁定版为准，口头承诺不构成变更。"
+          },
+          "modifiers": []
+        },
+        {
+          "id": "contract.section_2",
+          "role": "heading",
+          "variant": "section",
+          "keep_with_next": true,
+          "content": { "type": "text", "value": "2. 报酬与发票" },
+          "modifiers": []
+        },
+        {
+          "id": "contract.clause_2",
+          "role": "contract_clause",
+          "content": {
+            "type": "text",
+            "value": "客户应于收到发票后三十日内支付约定金额。对账单与发票金额如有差异，以本协议签署栏所确认数字为准。延迟支付不免除客户的付款义务。"
+          },
+          "modifiers": []
+        },
+        {
+          "id": "contract.section_3",
+          "role": "heading",
+          "variant": "section",
+          "keep_with_next": true,
+          "content": { "type": "text", "value": "3. 机密与阅读范围" },
+          "modifiers": []
+        },
+        {
+          "id": "contract.clause_3",
+          "role": "contract_clause",
+          "content": {
+            "type": "text",
+            "value": "本协议仅供签署人阅读。接收方不得将摘要、条款、金额或附件转交未获书面准许的第三方。违反本条视为重大违约，守约方可立即终止本文件项下服务并要求赔偿。"
+          },
+          "modifiers": []
+        }
+      ]
+    }
+  }
+}

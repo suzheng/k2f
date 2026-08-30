@@ -1,0 +1,36 @@
+{
+  "palette": {
+    "text": "#111827"
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "text",
+      "box_decoration": null,
+      "variants": {}
+    },
+    "body": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "text",
+      "box_decoration": null,
+      "variants": {}
+    },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "text",
+      "box_decoration": null,
+      "variants": {}
+    }
+  },
+  "modifiers": {
+    "precedence": [],
+    "styles": {}
+  },
+  "font_aliases": {}
+}

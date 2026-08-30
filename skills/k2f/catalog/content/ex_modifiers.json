@@ -1,0 +1,61 @@
+{
+  "id": "ex.modifiers",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.modifiers.text",
+          "role": "body",
+          "content": {
+            "type": "text",
+            "value": "Bold link E=\uFFFC underline strike H2O super kw"
+          },
+          "modifiers": [
+            {
+              "range": [0, 4],
+              "type": "emphasis",
+              "intent": "strong"
+            },
+            {
+              "range": [5, 9],
+              "type": "link",
+              "intent": "https://example.com"
+            },
+            {
+              "range": [12, 15],
+              "type": "math",
+              "intent": "mc^2"
+            },
+            {
+              "range": [16, 25],
+              "type": "underline",
+              "intent": "default"
+            },
+            {
+              "range": [26, 32],
+              "type": "strikethrough",
+              "intent": "default"
+            },
+            {
+              "range": [34, 35],
+              "type": "subscript",
+              "intent": "default"
+            },
+            {
+              "range": [37, 42],
+              "type": "superscript",
+              "intent": "default"
+            },
+            {
+              "range": [43, 45],
+              "type": "syntax_highlight",
+              "intent": "keyword"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

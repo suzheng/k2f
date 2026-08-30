@@ -1,0 +1,24 @@
+{
+  "id": "ex.code",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.code.block",
+          "role": "code",
+          "content": {
+            "type": "text",
+            "value": "fn main() {\n    println!(\"Hello\");\n}"
+          }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "stack",
+    "direction": "vertical",
+    "gap": 8000
+  }
+}

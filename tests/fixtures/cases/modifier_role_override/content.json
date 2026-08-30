@@ -1,0 +1,33 @@
+{
+  "title": "Modifier: Role Override Fallback",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "body",
+    "content": {
+      "type": "text",
+      "value": "Role override via unknown modifier type."
+    },
+    "modifiers": [
+      {
+        "range": [
+          0,
+          40
+        ],
+        "type": "emphasis",
+        "intent": "strong"
+      }
+    ],
+    "layout": null
+  }
+}

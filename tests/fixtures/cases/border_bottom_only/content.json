@@ -1,0 +1,37 @@
+{
+  "title": "Border Bottom Only",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [72000, 72000, 72000, 72000]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "heading",
+            "role": "underlined",
+            "content": {
+              "type": "text",
+              "value": "Section Title"
+            },
+            "modifiers": []
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": {
+      "type": "stack",
+      "direction": "vertical",
+      "gap": 12000,
+      "align_items": "stretch",
+      "justify_content": "start"
+    }
+  }
+}

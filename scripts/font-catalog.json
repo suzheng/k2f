@@ -1,0 +1,25 @@
+{
+  "comment": "Pinned OFL Noto faces cached under target/font-src/. Add a row (JP/KR/Arabic) when a document needs that script. Emoji uses the committed assets/fonts/NotoEmoji-Regular.ttf companion.",
+  "fonts": [
+    {
+      "id": "noto-sans-sc",
+      "family": "NotoSansSC-Regular",
+      "cache": "target/font-src/NotoSansSC-Regular-full.otf",
+      "url": "https://github.com/notofonts/noto-cjk/releases/download/Sans2.004/18_NotoSansSC.zip",
+      "zip_member_suffix": ["NotoSansSC-Regular.otf", "NotoSansCJKsc-Regular.otf"]
+    },
+    {
+      "id": "noto-emoji",
+      "family": "NotoEmoji-Regular",
+      "cache": "target/font-src/NotoEmoji-Regular-full.ttf",
+      "url": "https://fonts.gstatic.com/s/notoemoji/v39/bMrnmSyK7YY-MEu6aWjPDs-ar6uWaGWuob-r0jwvS-FGJCMY.ttf"
+    },
+    {
+      "id": "noto-sans-math",
+      "family": "NotoSansMath-Regular",
+      "cache": "target/font-src/NotoSansMath-Regular.ttf",
+      "url": "https://github.com/notofonts/math/releases/download/NotoSansMath-v3.000/NotoSansMath-v3.000.zip",
+      "zip_member_suffix": ["NotoSansMath-Regular.ttf"]
+    }
+  ]
+}

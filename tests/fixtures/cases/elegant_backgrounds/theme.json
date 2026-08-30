@@ -1,0 +1,67 @@
+{
+  "palette": {
+    "white": "#FFFFFF",
+    "blue": "#0000FF",
+    "orange": "#FFA500",
+    "purple": "#800080"
+  },
+  "primitives": {
+    "surfaces": {
+      "ocean_blue": {
+        "type": "solid",
+        "color": "blue"
+      },
+      "sunset_gradient": {
+        "type": "linear_gradient",
+        "value": {
+          "type": "linear",
+          "angle_degrees": 45,
+          "stops": [
+            {
+              "pos": 0,
+              "color": "orange"
+            },
+            {
+              "pos": 1000,
+              "color": "purple"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black"
+    },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black"
+    },
+    "box": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "white",
+      "variants": {
+        "solid_blue": {
+          "box_decoration": {
+            "background": "ocean_blue",
+            "padding_pt": 12000
+          }
+        },
+        "gradient_sunset": {
+          "box_decoration": {
+            "background": "sunset_gradient",
+            "padding_pt": 12000
+          }
+        }
+      }
+    }
+  }
+}

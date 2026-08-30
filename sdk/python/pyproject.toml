@@ -1,0 +1,30 @@
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+[project]
+name = "k2f"
+version = "0.1.2"
+description = "Restricted K2F document SDK for agents"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "K2F Contributors" }]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Rust",
+  "Topic :: Text Processing",
+]
+urls = { Homepage = "https://github.com/suzheng/k2f", Repository = "https://github.com/suzheng/k2f" }
+
+[project.scripts]
+k2f = "k2f:_cli_main"
+
+[tool.maturin]
+manifest-path = "../../engine/k2f_py/Cargo.toml"
+module-name = "k2f"
+include = ["k2f.pyi", "py.typed"]

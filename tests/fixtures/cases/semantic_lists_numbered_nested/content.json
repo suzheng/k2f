@@ -1,0 +1,79 @@
+{
+  "title": "Semantic Lists: Numbered + Nested",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "steps.1",
+            "role": "list_item",
+            "list_id": "steps",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "Install Rust"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "steps.2",
+            "role": "list_item",
+            "list_id": "steps",
+            "depth": 1,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "Install wasm-pack"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "steps.3",
+            "role": "list_item",
+            "list_id": "steps",
+            "depth": 1,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "Build the project"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "steps.4",
+            "role": "list_item",
+            "list_id": "steps",
+            "depth": 0,
+            "marker_type": "number",
+            "content": {
+              "type": "text",
+              "value": "Run tests"
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

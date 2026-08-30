@@ -1,0 +1,46 @@
+{
+  "title": "Shape Rectangle Basic",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "shape",
+            "role": "shape",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": []
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "overlay",
+              "width": 180000,
+              "height": 120000
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}
+
+
+

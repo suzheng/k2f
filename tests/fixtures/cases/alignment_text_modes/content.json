@@ -1,0 +1,69 @@
+{
+    "title": "Alignment Text Modes",
+    "canvas_mode": "paged",
+    "page_config": {
+        "width": 595000,
+        "height": 842000,
+        "margin": [
+            36000,
+            36000,
+            36000,
+            36000
+        ]
+    },
+    "root": {
+        "id": "root",
+        "role": "document",
+        "content": {
+            "type": "container",
+            "value": {
+                "children": [
+                    {
+                        "id": "txt_start",
+                        "role": "text_start",
+                        "content": {
+                            "type": "text",
+                            "value": "Start Aligned Text\nThis paragraph should be aligned to the start (left for LTR).\nIt demonstrates the default behavior."
+                        },
+                        "modifiers": [],
+                        "layout": {
+                            "type": "stack",
+                            "width": 300000
+                        }
+                    },
+                    {
+                        "id": "txt_center",
+                        "role": "text_center",
+                        "content": {
+                            "type": "text",
+                            "value": "Center Aligned Text\nThis paragraph should be centered.\nNotice how each line is centered within the box."
+                        },
+                        "modifiers": [],
+                        "layout": {
+                            "type": "stack",
+                            "width": 300000
+                        }
+                    },
+                    {
+                        "id": "txt_end",
+                        "role": "text_end",
+                        "content": {
+                            "type": "text",
+                            "value": "End Aligned Text\nThis paragraph should be aligned to the end (right for LTR).\nCommonly used for numeric data or special callouts."
+                        },
+                        "modifiers": [],
+                        "layout": {
+                            "type": "stack",
+                            "width": 300000
+                        }
+                    }
+                ]
+            }
+        },
+        "layout": {
+            "type": "stack",
+            "direction": "vertical",
+            "gap": 20000
+        }
+    }
+}

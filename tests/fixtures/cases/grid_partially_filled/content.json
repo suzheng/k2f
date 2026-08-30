@@ -1,0 +1,119 @@
+{
+  "title": "Grid: Partially Filled (Fewer Children Than Cells)",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "grid",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "c1",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Cell (1,1)"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "c2",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Cell (1,2)"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "c3",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Cell (1,3)"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "c4",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Cell (2,1)"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "c5",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Cell (2,2)"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "grid",
+              "columns": [
+                {
+                  "pt": 120000
+                },
+                {
+                  "pt": 120000
+                },
+                {
+                  "pt": 120000
+                }
+              ],
+              "rows": [
+                {
+                  "pt": 80000
+                },
+                {
+                  "pt": 80000
+                },
+                {
+                  "pt": 80000
+                }
+              ],
+              "gap": 10000,
+              "cell_align": {
+                "x": "stretch",
+                "y": "stretch"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

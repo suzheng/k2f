@@ -1,0 +1,73 @@
+{
+  "title": "Semantic Code Blocks: Lines vs String Equivalence",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "grid",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "code.text",
+            "role": "code_block",
+            "preserve_whitespace": true,
+            "content": {
+              "type": "code_block",
+              "value": "let x = 1;\nlet y = x + 2;\nprintln!(\"{y}\");"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "code.lines",
+            "role": "code_block",
+            "preserve_whitespace": true,
+            "content": {
+              "type": "code_block",
+              "value": [
+                "let x = 1;",
+                "let y = x + 2;",
+                "println!(\"{y}\");"
+              ]
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": {
+      "type": "grid",
+      "columns": [
+        {
+          "pt": 220000
+        },
+        {
+          "pt": 220000
+        }
+      ],
+      "rows": [
+        {
+          "fr": 1
+        }
+      ],
+      "gap": 12000,
+      "cell_align": {
+        "x": "stretch",
+        "y": "stretch"
+      }
+    }
+  }
+}

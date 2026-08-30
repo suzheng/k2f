@@ -1,0 +1,75 @@
+{
+  "title": "Text Alignment Matrix",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [72000, 72000, 72000, 72000]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "grid",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "start",
+                    "role": "body",
+                    "content": {
+                      "type": "text",
+                      "value": "First line\nSecond line is longer\nThird"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "center",
+                    "role": "body",
+                    "variant": "center",
+                    "content": {
+                      "type": "text",
+                      "value": "First line\nSecond line is longer\nThird"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "end",
+                    "role": "body",
+                    "variant": "end",
+                    "content": {
+                      "type": "text",
+                      "value": "First line\nSecond line is longer\nThird"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "grid",
+              "columns": [{ "pt": 150000 }, { "pt": 150000 }, { "pt": 150000 }],
+              "rows": [{ "pt": 120000 }],
+              "gap": 12000
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}
+
+
+

@@ -1,0 +1,55 @@
+{
+  "title": "Pagination: Exact Fit (Images)",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "img_1",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_1",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_2",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_2",
+                "width": 400000,
+                "height": 349000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

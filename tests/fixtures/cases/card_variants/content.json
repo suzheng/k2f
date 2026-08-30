@@ -1,0 +1,117 @@
+{
+  "title": "Card Variants",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "cards",
+            "role": "document",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "card_default",
+                    "role": "card",
+                    "content": {
+                      "type": "container",
+                      "value": {
+                        "children": [
+                          {
+                            "id": "card_default_text",
+                            "role": "body",
+                            "content": {
+                              "type": "text",
+                              "value": "Default card (base role decoration)."
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          }
+                        ]
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "card_warning",
+                    "role": "card",
+                    "variant": "warning",
+                    "content": {
+                      "type": "container",
+                      "value": {
+                        "children": [
+                          {
+                            "id": "card_warning_text",
+                            "role": "body",
+                            "content": {
+                              "type": "text",
+                              "value": "Warning card variant."
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          }
+                        ]
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "card_glass",
+                    "role": "card",
+                    "variant": "glass",
+                    "content": {
+                      "type": "container",
+                      "value": {
+                        "children": [
+                          {
+                            "id": "card_glass_text",
+                            "role": "body",
+                            "content": {
+                              "type": "text",
+                              "value": "Glass card variant (backdrop blur + border)."
+                            },
+                            "modifiers": [],
+                            "layout": null
+                          }
+                        ]
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "stack",
+              "direction": "vertical",
+              "gap": 18000,
+              "align_items": "stretch",
+              "justify_content": "start"
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

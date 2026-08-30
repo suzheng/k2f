@@ -1,0 +1,9 @@
+SIL OPEN FONT LICENSE Version 1.1
+
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/noto-emoji)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+https://scripts.sil.org/OFL
+
+See assets/fonts/licenses/NotoSansSC-OFL.txt for the full OFL text.

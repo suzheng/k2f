@@ -1,0 +1,100 @@
+{
+  "title": "Leaf: Image + TableReference",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "label_img",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Image (fits width)"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_fit",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_fit",
+                "width": 200000,
+                "height": 80000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "label_tbl",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "TableReference (explicit size)"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "tbl_ref",
+            "role": "table",
+            "content": {
+              "type": "table_reference",
+              "value": {
+                "source": "asset://tbl_ref",
+                "view_mode": "full",
+                "width": 300000,
+                "height": 90000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "label_scale",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Image (too wide -> deterministic scale-down)"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img_too_wide",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img_too_wide",
+                "width": 700000,
+                "height": 140000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

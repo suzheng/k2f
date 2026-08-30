@@ -1,0 +1,55 @@
+{
+  "title": "PageConfig: Near-Zero Content Width (1 unit)",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 200001,
+    "height": 300000,
+    "margin": [
+      20000,
+      100000,
+      20000,
+      100000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "img1",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img1",
+                "width": 50000,
+                "height": 40000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img2",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img2",
+                "width": 60000,
+                "height": 50000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

@@ -1,0 +1,19 @@
+[package]
+name = "k2f_core"
+version = "0.1.1"
+edition = "2021"
+description = "K2F semantic tree, lock types, and hashes"
+license = "Apache-2.0"
+repository = "https://github.com/suzheng/k2f"
+homepage = "https://github.com/suzheng/k2f"
+documentation = "https://docs.rs/k2f_core"
+authors = ["K2F Contributors"]
+keywords = ["k2f", "document", "layout", "semantic"]
+categories = ["data-structures", "parser-implementations"]
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = "0.10.9"
+thiserror = { workspace = true }
+unicode-normalization = "0.1"

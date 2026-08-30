@@ -1,0 +1,130 @@
+{
+  "title": "Grid: Basic Track Matrix (Pt + Fr Columns, Pt Rows)",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "grid",
+            "role": "box",
+            "content": {
+              "type": "container",
+              "value": {
+                "children": [
+                  {
+                    "id": "c1",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Pt col"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "c2",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Fr=1 col"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "c3",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Fr=2 col"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "c4_img",
+                    "role": "body",
+                    "content": {
+                      "type": "image",
+                      "value": {
+                        "src": "asset://c4_img",
+                        "width": 60000,
+                        "height": 60000
+                      }
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "c5",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Row2-Col2"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  },
+                  {
+                    "id": "c6",
+                    "role": "text",
+                    "content": {
+                      "type": "text",
+                      "value": "Row2-Col3"
+                    },
+                    "modifiers": [],
+                    "layout": null
+                  }
+                ]
+              }
+            },
+            "modifiers": [],
+            "layout": {
+              "type": "grid",
+              "columns": [
+                {
+                  "pt": 140000
+                },
+                {
+                  "fr": 1
+                },
+                {
+                  "fr": 2
+                }
+              ],
+              "rows": [
+                {
+                  "pt": 80000
+                },
+                {
+                  "pt": 90000
+                }
+              ],
+              "gap": 8000,
+              "cell_align": {
+                "x": "stretch",
+                "y": "stretch"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

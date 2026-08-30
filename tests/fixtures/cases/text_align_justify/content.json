@@ -1,0 +1,37 @@
+{
+  "title": "Text Align Justify",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [72000, 72000, 72000, 72000]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "body.justified",
+            "role": "body",
+            "content": {
+              "type": "text",
+              "value": "The quick brown fox jumps over the lazy dog again and again so that this paragraph wraps across multiple lines for justify testing."
+            },
+            "modifiers": []
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": {
+      "type": "stack",
+      "direction": "vertical",
+      "gap": 12000,
+      "align_items": "stretch",
+      "justify_content": "start"
+    }
+  }
+}

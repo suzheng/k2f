@@ -1,0 +1,57 @@
+{
+  "title": "1-Page Letter",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "p1",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Dear Valued Customer,\n\nWe are writing to inform you about the recent updates to our terms of service. We believe these changes will improve your experience with our platform and provide greater transparency regarding your data privacy."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "p2",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Please take a moment to review the attached document. If you have any questions, do not hesitate to contact our support team, available 24/7 to assist you."
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "signature",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Sincerely,\nThe K2F Team"
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

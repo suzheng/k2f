@@ -1,0 +1,25 @@
+[package]
+name = "k2f_package"
+version = "0.1.1"
+edition = "2021"
+description = "K2F ZIP package pack/verify/sign"
+license = "Apache-2.0"
+repository = "https://github.com/suzheng/k2f"
+homepage = "https://github.com/suzheng/k2f"
+documentation = "https://docs.rs/k2f_package"
+authors = ["K2F Contributors"]
+keywords = ["k2f", "zip", "package", "signatures"]
+categories = ["parser-implementations"]
+
+[dependencies]
+k2f_core = { path = "../k2f_core", version = "0.1.1" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+zip = { version = "2", default-features = false, features = ["deflate"] }
+boon = "0.6"
+ed25519-dalek = { version = "2", default-features = false, features = ["std", "alloc", "zeroize"] }
+getrandom = "0.3"
+
+[dev-dependencies]
+k2f_layout = { path = "../k2f_layout", version = "0.1.1" }

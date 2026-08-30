@@ -1,0 +1,46 @@
+{
+  "palette": {
+    "black": "#000000",
+    "white": "#FFFFFF"
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "text_align": "start"
+    },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black"
+    },
+    "box": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black"
+    },
+    "body": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "text_align": "start",
+      "variants": {
+        "center": {
+          "text_overrides": {
+            "text_align": "center"
+          }
+        },
+        "end": {
+          "text_overrides": {
+            "text_align": "end"
+          }
+        }
+      }
+    }
+  }
+}

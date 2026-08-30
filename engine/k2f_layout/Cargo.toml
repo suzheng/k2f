@@ -1,0 +1,19 @@
+[package]
+name = "k2f_layout"
+version = "0.1.1"
+edition = "2021"
+description = "K2F deterministic layout compiler"
+license = "Apache-2.0"
+repository = "https://github.com/suzheng/k2f"
+homepage = "https://github.com/suzheng/k2f"
+documentation = "https://docs.rs/k2f_layout"
+authors = ["K2F Contributors"]
+keywords = ["k2f", "layout", "document"]
+categories = ["text-processing"]
+
+[dependencies]
+k2f_core = { path = "../k2f_core", version = "0.1.1" }
+k2f_math = { path = "../k2f_math", version = "0.1.1" }
+k2f_text = { path = "../k2f_text", version = "0.1.1" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json.workspace = true

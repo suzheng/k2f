@@ -1,0 +1,145 @@
+{
+  "title": "Infinite Canvas",
+  "canvas_mode": "infinite",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "canvas",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "node1",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Start Here"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "node2",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Process A"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "node3",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Process B"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "node4",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Process C"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "node5",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Process D"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "node6",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "End"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img1",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img1",
+                "width": 200000,
+                "height": 150000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "node7",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "After image 1"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "img2",
+            "role": "body",
+            "content": {
+              "type": "image",
+              "value": {
+                "src": "asset://img2",
+                "width": 180000,
+                "height": 120000
+              }
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "node8",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "After image 2"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "node9",
+            "role": "text",
+            "content": {
+              "type": "text",
+              "value": "Final node - canvas should expand to fit all content"
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": null
+  }
+}

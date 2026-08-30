@@ -1,0 +1,36 @@
+{
+  "palette": {
+    "black": "#000000",
+    "white": "#FFFFFF"
+  },
+  "primitives": {
+    "surfaces": {
+      "global_background": {
+        "type": "linear_gradient",
+        "value": {
+          "type": "linear",
+          "angle_degrees": 180,
+          "stops": [
+            { "pos": 0, "color": "#F7F8FA" },
+            { "pos": 1000, "color": "#EEF1F6" }
+          ]
+        }
+      }
+    }
+  },
+  "roles": {
+    "default": { "font_family": "default", "font_size": 12000, "line_height_mult": 1200, "color": "black" },
+    "body": { "font_family": "default", "font_size": 12000, "line_height_mult": 1200, "color": "black" },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "variants": {
+        "notes": {
+          "box_decoration": { "background": "global_background" }
+        }
+      }
+    }
+  }
+}

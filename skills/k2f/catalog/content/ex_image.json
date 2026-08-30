@@ -1,0 +1,37 @@
+{
+  "id": "ex.image",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.image.pic",
+          "role": "image",
+          "content": {
+            "type": "image",
+            "value": {
+              "src": "assets/images/dot.png",
+              "width": 24000,
+              "height": 24000
+            }
+          }
+        },
+        {
+          "id": "ex.image.caption",
+          "role": "body",
+          "content": {
+            "type": "text",
+            "value": "PNG under assets/images/ with declared millipt size."
+          }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "stack",
+    "direction": "vertical",
+    "gap": 8000,
+    "align_items": "start"
+  }
+}

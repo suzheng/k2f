@@ -1,0 +1,55 @@
+{
+  "title": "Semantic Code Blocks: No Soft Wrap Long Line",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "grid",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "code.long",
+            "role": "code_block",
+            "preserve_whitespace": true,
+            "content": {
+              "type": "code_block",
+              "value": "let extremely_long_identifier_name_that_should_not_soft_wrap_even_in_a_narrow_column = 1234567890; // end"
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": {
+      "type": "grid",
+      "columns": [
+        {
+          "pt": 180000
+        }
+      ],
+      "rows": [
+        {
+          "fr": 1
+        }
+      ],
+      "gap": 0,
+      "cell_align": {
+        "x": "stretch",
+        "y": "stretch"
+      }
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "palette": {
+    "white": "#FFFFFF",
+    "blue": "#0000FF",
+    "black": "#000000"
+  },
+  "primitives": {
+    "surfaces": {
+      "base_blue": {
+        "type": "solid",
+        "color": "blue"
+      },
+      "glass_semi": {
+        "type": "solid",
+        "color": "#FFFFFF80"
+      }
+    },
+    "blurs": {
+      "frosted": {
+        "radius_pt": 8000
+      }
+    },
+    "corners": {
+      "r8000": 8000
+    }
+  },
+  "roles": {
+    "default": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black"
+    },
+    "document": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black"
+    },
+    "box": {
+      "font_family": "default",
+      "font_size": 12000,
+      "line_height_mult": 1200,
+      "color": "black",
+      "variants": {
+        "base_image": {
+          "box_decoration": {
+            "background": "base_blue",
+            "padding_pt": 20000
+          }
+        },
+        "glass_overlay": {
+          "box_decoration": {
+            "background": "glass_semi",
+            "blur": "frosted",
+            "padding_pt": 12000,
+            "corner_radius": "r8000"
+          }
+        }
+      }
+    }
+  }
+}
