@@ -25,7 +25,7 @@ Do not load all three `look.md` files in the same task.
 2. Read **only** `looks/<name>/look.md` and that look's `theme.json`.
 3. **Rewrite** `styles/theme.json` in the author package: copy the example as a starting point, then change palette, type, and variants to fit this document. Do not treat the bundled file as finished output.
 4. If you use extension roles (`display`, `kicker`, `caption`, `metric`, `shell`), they **must** exist in the package theme (starter does not define them) — copy those role blocks from the example, then adapt.
-5. Author `content/root.json` from catalog shapes + that look's composition recipes.
+5. Author `content/root.json` from catalog shapes + that look's composition recipes. Posters/slides: start from [`catalog/content/ex_poster_shell.json`](../catalog/content/ex_poster_shell.json).
 6. `pack_verify.py --render preview.png` and open the PNG; check the look's **Don'ts**.
 
 A whole-file overwrite of `styles/theme.json` is allowed when the rewrite is complete. Do **not** merge a few fields into starter — partial themes cause `UNKNOWN_ROLE`.

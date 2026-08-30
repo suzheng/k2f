@@ -8,6 +8,7 @@ Golden, packable examples for unpacked authoring. Copy nodes into your author pa
 | Heading + `keep_with_next` | `content/ex_heading.json` | `h1`, body, vertical stack |
 | Vertical / horizontal stack | `content/ex_stack.json` | `layout.type: stack`, `gap`, `align_items`, `justify_content` |
 | Fixed-height grid + `fr` | `content/ex_grid.json` | `columns`/`rows` tracks, `height`, `cell_align`, `row_gap`, `column_gap` |
+| Poster/slide page shell | `content/ex_poster_shell.json` | Page-height grid: `pt` header/footer + `{fr:1}` body; nested 2-col grid in the grower. Set `height` to page height − margins. |
 | Layered overlay | `content/ex_overlay.json` | `layout.type: overlay`, `break_inside: avoid` |
 | Flowing columns | `content/ex_columns.json` | `column_span: "all"`, multi-column flow |
 | Inline table | `content/ex_table.json` | `content.type: table`, inline `data.rows` |

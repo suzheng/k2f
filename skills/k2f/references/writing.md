@@ -46,7 +46,7 @@ Page presets: `a4` | `letter` | `a4-landscape` | `widescreen` | `widescreen-43`.
 ```bash
 python scripts/init_package.py --dir ./out/report --title "Q3 Report" --page a4
 # slides: --page widescreen --margin 0 | widescreen-43
-# posters: --page a4 --margin 0   or custom: --page a4 --width 1984252 --height 2834646 --margin 0
+# posters: --page a4 --margin 0; copy catalog/content/ex_poster_shell.json; set height to page
 # --margin 36000  or  --margin 36000,48000,36000,48000
 # edit content/root.json — copy nodes from catalog/content/ex_*.json
 # edit styles/theme.json — if the user gave no design, rewrite from looks/<name>/ (see looks/README.md)
@@ -97,7 +97,8 @@ k2f render ./out/doc.K2F --page 1 -o preview-1.png
 
 Inspect every page. In particular:
 
-- **Vertical whitespace** — large empty bands at the top or bottom. Shrink `page_config.margin`, role `padding_pt`, or stack `gap`. Do not invent spacer nodes.
+- **Poster/slide empty bottom** — copy [`catalog/content/ex_poster_shell.json`](../catalog/content/ex_poster_shell.json) (`pt` header/footer + `{fr:1}` body). Do not use a vertical stack as the page shell; do not invent spacer nodes.
+- **Report empty bands** — shrink `page_config.margin`, role `padding_pt`, or stack `gap`.
 - **Type size** — body text too large or headings too small for the canvas. Change `font_size` on the **role** in `styles/theme.json`, never on the node.
 
 If the PNG looks wrong, edit JSON or theme and run `pack_verify.py --render` again.
@@ -148,6 +149,7 @@ If the PNG looks wrong, edit JSON or theme and run `pack_verify.py --render` aga
 | `$...$` inline math in author JSON | U+FFFC + `{ "type": "math", "intent": "<tex>" }` modifier — see `catalog/content/ex_modifiers.json`; `$` works Markdown only |
 | Multiple fonts but `"default":"default"` only | Map `font_aliases` to each file stem; two+ fonts have no auto-`default` |
 | `fr` rows without fixed grid height | Fails: `Cannot resolve fr tracks with infinite available size`. `fr` ≠ content-auto height — set grid `layout.height`, use `pt` rows, or nest under a fixed-height stack (`ex_grid.json`) |
+| Poster/slide shell is a vertical stack | Content piles at the top. Copy `ex_poster_shell.json`: pinned `height` + `{fr:1}` body row |
 | Expect a native `Divider` node | Use `role: "rule"` + small `layout.height` + surface fill (or bottom border) |
 | Noise / vignette / radial glow / dot matrix | Not in core — SVG under `assets/images/` (labels as `<path>`); size in millipt |
 | Require `row_gap`/`column_gap`/`cell_align` | Optional — see `schema/nodes.schema.json`; omit unused keys (`null` ok) |

@@ -178,11 +178,11 @@ def main() -> int:
     if args.page in ("widescreen", "widescreen-43") and applied_margin != [0, 0, 0, 0]:
         print(
             "  tip: for full-bleed slide decks use --margin 0, then inner role padding_pt "
-            "+ per-slide layout height + break_inside avoid (see writing/package.md)"
+            "+ per-slide grid shell from catalog/content/ex_poster_shell.json (see writing/package.md)"
         )
     if args.width is not None and applied_margin != [0, 0, 0, 0]:
         print(
-            "  tip: full-bleed posters often use --margin 0 + one fixed-height child "
+            "  tip: full-bleed posters often use --margin 0 + catalog/content/ex_poster_shell.json "
             "(see single-page poster recipe in writing/package.md)"
         )
     print(

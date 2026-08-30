@@ -49,18 +49,18 @@ There is **no** `canvas_mode: "slide"`. Use paged pages as slides:
 
 1. `python scripts/init_package.py --dir ./out/deck --title "Deck" --page widescreen --margin 0` → `960000×540000`, zero page margin.
 2. Under `root`, each top-level sibling is one slide.
-3. Each slide container: `break_inside: "avoid"` + `layout: { "type": "stack"|"overlay", "width": 960000, "height": 540000, … }`.
+3. Each slide: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json) — `break_inside: "avoid"` + page-size grid (`width`/`height` `960000×540000`). Rows: `{pt}` header, `{fr:1}` body (the grower), `{pt}` footer. Do **not** use a vertical stack as the slide shell.
 4. Safe inset = **inner** role `box_decoration.padding_pt` (not page margin). Keep **root** padding at 0 — root padding is added into `page_config.margin` and shrinks the content box.
 5. Do not nest another full-page-height child inside a padded slide shell (see box model below).
 
-Stack/grid/overlay shapes: `catalog/content/ex_stack.json`, `ex_grid.json`, `ex_overlay.json`.
+Two-column body: nested grid `{fr:1},{fr:1}` **inside** the grower row (already in `ex_poster_shell.json`). Overlay backgrounds: `ex_overlay.json` wrapping that shell.
 
 ### Single-page poster / flyer
 
 1. Pick a canvas: `--page a4` (or letter / a4-landscape), or `--page a4 --width W --height H` for non-standard sizes; full-bleed `--margin 0`.
-2. Under `root`, **one** child container (stack/overlay/grid) with `break_inside: "avoid"` and fixed `layout.height` = page height − margins (same box-model rules as slides).
-3. Full-bleed background: `overlay` with the background child first, then content.
-4. Vertical rhythm: inner stack `gap` + role `padding_pt` only — no empty spacer containers; no `fr` rows unless the grid itself has a finite `height`.
+2. Under `root`, **one** child: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json). Set `layout.height` = page height − margins (A4 / margin 0 → `842000`). Same grid as slides: `pt` + `{fr:1}` + `pt`.
+3. Header/footer `pt` rows can be small guesses — leftover height goes to `{fr:1}`. Do not use a vertical stack as the page shell; no empty spacer containers.
+4. Full-bleed background: wrap the shell in `overlay` with the background child first (`ex_overlay.json`).
 5. Verify with `python scripts/pack_verify.py <dir> -o out.K2F --expect-pages 1 --render preview.png`. `compile`/`verify` print `pages=N`; `preview.png` is **only page 0** — if content spilled to page 1, `--expect-pages 1` fails.
 
 ## Layout
@@ -71,6 +71,7 @@ Allowed layout types and fields: `schema/nodes.schema.json` → `layout`. Copy f
 |------|-----|
 | Continuous article columns | `columns` — `ex_columns.json` |
 | Fixed side-by-side (sidebar, header bar) | horizontal `stack` or 2-col `grid` |
+| Poster / slide page shell | `ex_poster_shell.json` — pinned height + `{fr:1}` grower; nested 2-col grid in that row |
 | Poster / dashboard cells | `grid` with `pt` tracks, or `fr` **after** a finite outer height — `ex_grid.json` |
 | Full-page background + content | `overlay` (background child first) — `ex_overlay.json` |
 
@@ -83,7 +84,7 @@ Allowed layout types and fields: `schema/nodes.schema.json` → `layout`. Copy f
 - **No `justify_content: space-between`.** For left/right split use a two-column grid (`columns: [{fr:1},{fr:1}]` + `cell_align`). Cover vertical centering: fixed-height stack + `justify_content: center`.
 - **No empty spacer containers.** Do not insert a child whose only job is `layout.height` to invent gaps — that is geometry, not semantics. Uneven rhythm: nest stacks with different `gap`, or put `padding_pt` on section roles. `role: "rule"` with a small height is a semantic divider, not a spacer.
 - **Box model (`layout.height` + `padding_pt`):** `layout.height` / `width` is a **minimum outer** size. Children are laid out in the **inner** box (`outer − padding`). Measured outer is `max(content+padding, hint)`. If an inner child is also set to full page height, outer grows to `content + padding` and with `break_inside: "avoid"` → `UNSPLITTABLE_OVERFLOW`. Recipe: outer shell = page size; padding on that role (or an inner wrapper); children size to the **remaining** inner area — do not re-declare full page height on padded descendants. **Root** `padding_pt` inflates page margins (see slide recipe).
-- **Paged flow splits at sibling boundaries.** A node's measured height **includes** role `padding_pt` (nested padding stacks). If content + padding exceeds remaining page space, that sibling moves to the next page — shrink padding/gap or split into siblings. Multiple top-level children under `root` become separate pages when they overflow. Single-page posters: one child container (stack/overlay/grid) with fixed height.
+- **Paged flow splits at sibling boundaries.** A node's measured height **includes** role `padding_pt` (nested padding stacks). If content + padding exceeds remaining page space, that sibling moves to the next page — shrink padding/gap or split into siblings. Multiple top-level children under `root` become separate pages when they overflow. Single-page posters: one child from `ex_poster_shell.json`.
 - **`manifest.running_blocks`:** repeating header/footer nodes (`position: "header"|"footer"`). Each `node` is a normal semantic node — `stack` / `grid` / text all work. Horizontal alignment: role `self_align` in theme (`start`/`center`/`end`). Placeholders `{{page_current}}` / `{{page_total}}` only. Overflow past the margin band fails compile — keep running blocks short. Example: `catalog/manifest.json`.
 
 ## Theme
