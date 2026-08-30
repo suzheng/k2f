@@ -34,16 +34,30 @@ pub fn compile_chunk_with_fonts(
     assets: Option<&AssetsMap>,
 ) -> Result<String, String> {
     let manifest = parse_content_json(content_json)?;
-    let lock = compile_manifest(manifest, theme_json, fonts, assets)?;
+    let lock = compile_outcome(manifest, theme_json, fonts, assets)?.lock;
     canonical_json_string(&lock).map_err(|e| format!("Serialization error: {e}"))
 }
 
+pub struct CompileOutcome {
+    pub lock: LockFile,
+    pub diags: Vec<crate::slack::LayoutDiag>,
+}
+
 pub fn compile_manifest(
-    mut manifest: Manifest,
+    manifest: Manifest,
     theme_json: &str,
     fonts: &BTreeMap<String, Vec<u8>>,
     assets: Option<&AssetsMap>,
 ) -> Result<LockFile, String> {
+    Ok(compile_outcome(manifest, theme_json, fonts, assets)?.lock)
+}
+
+pub fn compile_outcome(
+    mut manifest: Manifest,
+    theme_json: &str,
+    fonts: &BTreeMap<String, Vec<u8>>,
+    assets: Option<&AssetsMap>,
+) -> Result<CompileOutcome, String> {
     if fonts.is_empty() {
         return Err("FONT_MISSING: package has no embedded fonts under assets/fonts/".to_string());
     }
@@ -78,6 +92,7 @@ pub fn compile_manifest(
 
     let ctx = LayoutContext::new(&font_lib, &theme);
     let layout_result = LayoutEngine::layout(&manifest, &ctx)?;
+    let diags = crate::slack::layout_slack_diags(&manifest, &layout_result, &theme);
     let render_plan = crate::render_plan::build_render_plan(&manifest, &layout_result, &theme)?;
 
     let content_hash = hash_manifest_semantic(&manifest);
@@ -90,13 +105,16 @@ pub fn compile_manifest(
         engine_commit_sha: engine_commit_sha(),
     })?;
 
-    Ok(LockFile {
-        engine_version: engine_version().to_string(),
-        engine_commit_sha: engine_commit_sha().to_string(),
-        content_hash,
-        appearance_hash,
-        geometry: layout_result,
-        render_plan,
+    Ok(CompileOutcome {
+        lock: LockFile {
+            engine_version: engine_version().to_string(),
+            engine_commit_sha: engine_commit_sha().to_string(),
+            content_hash,
+            appearance_hash,
+            geometry: layout_result,
+            render_plan,
+        },
+        diags,
     })
 }
 

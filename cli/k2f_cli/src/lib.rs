@@ -4,7 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use k2f_layout::compile_manifest;
+use k2f_layout::compile_outcome;
 use k2f_package::{
     bundled_schema_files, generate_secret_key, inspect_package, load_dir, pack_bytes,
     sign_package, unpack_bytes, utc_unix_seconds, write_dir, SecretKey, WriteDirOpts,
@@ -157,7 +157,7 @@ fn dispatch(command: Commands) -> anyhow::Result<()> {
             let mut pkg = unpack_bytes(&fs::read(&package)?)?;
             let assets: std::collections::HashMap<String, Vec<u8>> =
                 pkg.assets.clone().into_iter().collect();
-            let lock = compile_manifest(
+            let outcome = compile_outcome(
                 pkg.engine_manifest(),
                 &pkg.theme_json,
                 &pkg.fonts,
@@ -168,13 +168,16 @@ fn dispatch(command: Commands) -> anyhow::Result<()> {
                 },
             )
             .map_err(|e| anyhow::anyhow!(e))?;
-            pkg.set_lock(&lock)?;
+            pkg.set_lock(&outcome.lock)?;
             fs::write(&package, pack_bytes(&pkg)?)?;
             eprintln!(
                 "compiled {} pages={}",
                 package.display(),
-                lock.geometry.pages.len()
+                outcome.lock.geometry.pages.len()
             );
+            for diag in &outcome.diags {
+                eprintln!("{diag}");
+            }
         }
         Commands::Verify { package } => {
             let bytes = fs::read(&package)?;

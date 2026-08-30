@@ -49,7 +49,7 @@ The engine — not the agent — turns A into C by running `pack` / `compile`. O
 3. **PDF is a one-way rendering of the lock, not a second source.** (`PDF_IS_NOT_A_SOURCE`)
 4. **Signing is a separate human/org step.** Agent output is `UNSIGNED` by design.
 5. **Validate after every edit.** Fix from error codes in [writing/errors.md](references/writing/errors.md); do not patch the lock.
-6. **Look at the pixels.** `verify` only checks hashes. After pack, render a PNG and open the image. Poster/slide empty bottom: copy [`catalog/content/ex_poster_shell.json`](catalog/content/ex_poster_shell.json) (grid + `{fr:1}` row), not a vertical stack. Type too large/small: role styles in `theme.json`. Commands: [writing.md](references/writing.md#visual-check).
+6. **Look at the pixels.** `verify` only checks hashes. After pack, render a PNG and open the image. Poster/slide empty bottom: copy [`catalog/content/ex_poster_shell.json`](catalog/content/ex_poster_shell.json); compile may print `LAYOUT_SLACK` → [writing/errors.md](references/writing/errors.md). Type too large/small: role styles in `theme.json`. Commands: [writing.md](references/writing.md#visual-check).
 
 ## Schema
 

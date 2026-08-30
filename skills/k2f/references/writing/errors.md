@@ -23,6 +23,10 @@ Fix the **semantic tree** or **theme**. Shapes: [`catalog/content/ex_*.json`](..
 | `PDF_IS_NOT_A_SOURCE` | Do not import PDF as K2F source |
 | `UNSPLITTABLE_OVERFLOW` | Unsplittable node (e.g. `break_inside: avoid`, overlay, grid) taller than one page content box. Often `layout.height` shell + role padding + a child also sized to full page — shrink padding/gap or size children to the inner box |
 
+## Compile stderr (not AgentError)
+
+`k2f compile` may print `LAYOUT_SLACK id=… unused_below=… (%) … after=…`. Warning only (exit 0). A height-pinned box ≥40% of the page content box is empty at the bottom. Copy `ex_poster_shell.json` (`{fr:1}` grower); do not add spacer nodes. `pack_verify.py --expect-fill` fails when this line appears. Not stored in the lock. Reports without a page-height shell are not flagged.
+
 ## Math messages (not separate codes)
 
 Compile may include `MATH_UNSUPPORTED:`, `MATH_PARSE:`, or `MATH_MISSING_GLYPH:` in the **message**. The mapped `code` is usually `INVALID_ARGUMENT`.
