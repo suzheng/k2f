@@ -97,7 +97,7 @@ k2f render ./out/doc.K2F --page 1 -o preview-1.png
 
 Inspect every page. In particular:
 
-- **Poster/slide empty bottom** — copy [`catalog/content/ex_poster_shell.json`](../catalog/content/ex_poster_shell.json) (`pt` header/footer + `{fr:1}` body). Do not use a vertical stack as the page shell; do not invent spacer nodes.
+- **Poster/slide empty bottom** — copy [`catalog/content/ex_poster_shell.json`](../catalog/content/ex_poster_shell.json). Compile may print `LAYOUT_SLACK` → [errors.md](writing/errors.md). Do not invent spacer nodes.
 - **Report empty bands** — shrink `page_config.margin`, role `padding_pt`, or stack `gap`.
 - **Type size** — body text too large or headings too small for the canvas. Change `font_size` on the **role** in `styles/theme.json`, never on the node.
 

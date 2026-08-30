@@ -61,7 +61,7 @@ Two-column body: nested grid `{fr:1},{fr:1}` **inside** the grower row (already 
 2. Under `root`, **one** child: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json). Set `layout.height` = page height − margins (A4 / margin 0 → `842000`). Same grid as slides: `pt` + `{fr:1}` + `pt`.
 3. Header/footer `pt` rows can be small guesses — leftover height goes to `{fr:1}`. Do not use a vertical stack as the page shell; no empty spacer containers.
 4. Full-bleed background: wrap the shell in `overlay` with the background child first (`ex_overlay.json`).
-5. Verify with `python scripts/pack_verify.py <dir> -o out.K2F --expect-pages 1 --render preview.png`. `compile`/`verify` print `pages=N`; `preview.png` is **only page 0** — if content spilled to page 1, `--expect-pages 1` fails.
+5. Verify with `python scripts/pack_verify.py <dir> -o out.K2F --expect-pages 1 --expect-fill --render preview.png`. `compile`/`verify` print `pages=N`; `LAYOUT_SLACK` means the shell is not filled. `preview.png` is **only page 0**.
 
 ## Layout
 

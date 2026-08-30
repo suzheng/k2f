@@ -382,6 +382,8 @@ LockFile {
 
 Respects `page_config` width/height/margin. Header/footer repetition uses `running_blocks`. Node-level `break_inside` / `keep_with_next` exist on the semantic tree.
 
+Compile may print `LAYOUT_SLACK` on stderr when a height-pinned container occupying ≥40% of the page content box is empty at the bottom (asymmetric vs the top inset). Diagnostics are not stored in the lock. `pack_verify.py --expect-fill` treats that line as a failure.
+
 ## Modifier limits
 
 Schema-enforced max 50 modifiers per node.

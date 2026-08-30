@@ -16,6 +16,7 @@ pub mod pagination;
 mod render_plan;
 pub mod resolved_style;
 mod running_blocks;
+mod slack;
 pub mod style;
 mod table;
 mod table_pagination;
@@ -26,9 +27,12 @@ pub mod visual_primitives;
 
 #[cfg(test)]
 mod alignment_tests;
+#[cfg(test)]
+mod slack_tests;
 
 pub use arrange::arrange_node;
-pub use compile::{compile_chunk_with_fonts, compile_manifest};
+pub use compile::{compile_chunk_with_fonts, compile_manifest, compile_outcome, CompileOutcome};
+pub use slack::LayoutDiag;
 pub use k2f_core::AssetsMap;
 pub use layout_context::{LayoutContext, Point, Size, SizeConstraint};
 pub use list_style::*;

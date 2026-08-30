@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- `k2f compile` prints `LAYOUT_SLACK` when a page-height shell is empty at the bottom (warning, lock unchanged). `pack_verify.py --expect-fill` fails on that line.
+
 ### Changed
 
 - Agent skill: poster/slide page shell is a pinned-height **grid** with a `{fr:1}` grower ([`ex_poster_shell.json`](skills/k2f/catalog/content/ex_poster_shell.json)); do not stack content inside a fixed-height shell
