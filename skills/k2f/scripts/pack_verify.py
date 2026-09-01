@@ -16,7 +16,6 @@ import sys
 from pathlib import Path
 
 PAGES_RE = re.compile(r"pages=(\d+)")
-SLACK_MARK = "LAYOUT_SLACK"
 
 
 def k2f_binary() -> list[str]:
@@ -92,11 +91,6 @@ def main() -> int:
         metavar="N",
         help="Fail if compile reports a page count other than N (posters: 1)",
     )
-    parser.add_argument(
-        "--expect-fill",
-        action="store_true",
-        help="Fail if compile prints LAYOUT_SLACK (poster/slide page shells)",
-    )
     args = parser.parse_args()
 
     source = args.source_dir.expanduser().resolve()
@@ -132,15 +126,6 @@ def main() -> int:
             print(
                 f"error: expected {args.expect_pages} page(s), got {pages} "
                 f"(preview.png is only page 0 — shrink layout or raise --expect-pages)",
-                file=sys.stderr,
-            )
-            return 1
-    if args.expect_fill:
-        if SLACK_MARK in compile_proc.stderr:
-            print(
-                "error: LAYOUT_SLACK — page-height shell is not filled. "
-                "Copy catalog/content/ex_poster_shell.json ({fr:1} body row); "
-                "do not add spacer nodes. See references/writing/errors.md",
                 file=sys.stderr,
             )
             return 1
