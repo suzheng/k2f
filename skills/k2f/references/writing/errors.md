@@ -25,7 +25,7 @@ Fix the **semantic tree** or **theme**. Shapes: [`catalog/content/ex_*.json`](..
 
 ## Compile stderr (not AgentError)
 
-`k2f compile` may print `LAYOUT_SLACK id=… unused_below=… (%) … after=…`. Warning only (exit 0). A height-pinned box ≥40% of the page content box is empty at the bottom. Copy `ex_poster_shell.json` (`{fr:1}` grower); do not add spacer nodes. `pack_verify.py --expect-fill` fails when this line appears. Not stored in the lock. Reports without a page-height shell are not flagged.
+`k2f compile` may print `LAYOUT_SLACK id=… unused_below=… (%) … after=…`. Warning only (exit 0) — compile, verify, and `pack_verify.py` do **not** fail. A height-pinned box ≥40% of the page content box is empty at the bottom. If that was not intended, copy `ex_poster_shell.json` (`{fr:1}` grower); do not add spacer nodes. Not stored in the lock. Reports without a page-height shell are not flagged.
 
 ## Math messages (not separate codes)
 

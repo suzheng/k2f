@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- `k2f compile` prints `LAYOUT_SLACK` when a page-height shell is empty at the bottom (warning, lock unchanged). `pack_verify.py --expect-fill` fails on that line.
+- `k2f compile` prints `LAYOUT_SLACK` when a page-height shell is empty at the bottom (warning, exit 0, lock unchanged). Intentional whitespace is allowed; compile/verify/`pack_verify.py` do not fail on this line.
 - Grid tracks `{ "auto": true }` — content-sized from measured cells; leftover space goes to `fr`. Table `column_widths` stay `{pt}` / `{fr}` only.
 
 ### Changed
