@@ -2134,6 +2134,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "k2f_pptx"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "image 0.25.6",
+ "k2f_core",
+ "k2f_paint",
+ "roxmltree",
+ "thiserror 1.0.69",
+ "ttf-parser 0.21.1",
+ "zip",
+]
+
+[[package]]
 name = "k2f_py"
 version = "0.1.2"
 dependencies = [
