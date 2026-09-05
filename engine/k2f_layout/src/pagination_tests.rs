@@ -525,3 +525,99 @@ fn avoid_signature_moves_as_one_block() {
     assert_eq!(p1, vec!["signatures"]);
     assert_eq!(result.pages[1].root.children[0].children.len(), 2);
 }
+
+#[test]
+fn splittable_body_text_uses_remaining_page_space() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+
+    let sample = make_text("sample", "Line");
+    let margins = [Pt(10_000), Pt(7_000), Pt(15_000), Pt(11_000)];
+    let width = Pt(200_000);
+    let tmp = PageConfig {
+        width,
+        height: Pt(1_000_000),
+        margin: margins,
+    };
+    let cw = crate::pagination::content_width(&tmp);
+    let line_h = measure_node(
+        &sample,
+        SizeConstraint::new(Size::ZERO, Size::new(cw, Pt(i128::MAX))),
+        &ctx,
+    )
+    .unwrap()
+    .height;
+
+    // Five body lines fit on one page; filler consumes four.
+    let page_config = PageConfig {
+        width,
+        height: margins[0] + margins[2] + (line_h * 5),
+        margin: margins,
+    };
+
+    let filler = make_text("f", "A\nB\nC\nD");
+    let long_body = make_text(
+        "para",
+        "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word",
+    );
+    let root = SemanticNode {
+        id: "root".to_string(),
+        role: "section".to_string(),
+        content: NodeContent::Container {
+            children: vec![filler, long_body],
+        },
+        ..Default::default()
+    };
+    let manifest = Manifest {
+        title: "split".to_string(),
+        canvas_mode: CanvasMode::Paged,
+        page_config,
+        root,
+        running_blocks: vec![],
+    };
+    let result = LayoutEngine::layout(&manifest, &ctx).unwrap();
+    assert_eq!(result.pages.len(), 2, "paragraph should split across pages");
+    assert!(
+        !result.pages[0].root.children.is_empty(),
+        "page 0 should contain filler and/or paragraph fragment"
+    );
+    assert!(
+        !result.pages[1].root.children.is_empty(),
+        "page 1 should contain paragraph continuation"
+    );
+}
+
+#[test]
+fn break_before_page_starts_on_fresh_page() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let page_config = PageConfig {
+        width: Pt(200_000),
+        height: Pt(400_000),
+        margin: [Pt(10_000); 4],
+    };
+    let mut second = make_text("b", "Second");
+    second.break_before = k2f_core::BreakBefore::Page;
+    let root = SemanticNode {
+        id: "root".to_string(),
+        role: "section".to_string(),
+        content: NodeContent::Container {
+            children: vec![make_text("a", "First"), second],
+        },
+        ..Default::default()
+    };
+    let manifest = Manifest {
+        title: "bb".to_string(),
+        canvas_mode: CanvasMode::Paged,
+        page_config,
+        root,
+        running_blocks: vec![],
+    };
+    let result = LayoutEngine::layout(&manifest, &ctx).unwrap();
+    assert_eq!(result.pages.len(), 2);
+    assert_eq!(result.pages[0].root.children.len(), 1);
+    assert_eq!(result.pages[0].root.children[0].id, "a");
+    assert_eq!(result.pages[1].root.children[0].id, "b");
+}

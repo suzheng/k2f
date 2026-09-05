@@ -1,8 +1,8 @@
-# k2f_pptx (experimental)
+# k2f_pptx
 
-Isolated K2F lock → PPTX exporter. This crate is **not** part of `k2f export-pdf` and is **not** wired into `k2f_cli`.
+K2F lock → PPTX exporter. Official entry is `k2f export-pptx`. The crate binary `k2f-pptx` remains for crate development.
 
-PPTX is a one-way dump of an already-locked package. It is not a K2F source (`PPTX_IS_NOT_A_SOURCE`). Coordinates come from the published lock; this is not a second layout engine.
+PPTX is a one-way dump of an already-locked package. It is not a K2F source (`PPTX_IS_NOT_A_SOURCE`). Coordinates come from the published lock; this is not a second layout engine. Slight text reflow vs K2F is expected.
 
 ## Capability table
 
@@ -23,19 +23,18 @@ Do **not** stamp a full-slide PNG and overlay invisible text. That is the PDF-br
 - Nested / image / still-Asset table cells are not native `a:tbl` (they stay box+text+pic).
 - Partial borders are drawn on all four sides. SVG embeds as `image/svg+xml`.
 - No PPT master, animation, OMML, or pptx → K2F import.
-- No `k2f export-pptx` CLI flag. Use this crate's binary only.
 
-## Test
+## Official CLI
 
-From the `k2f/` workspace root:
+From the `k2f/` workspace root (or any `k2f` on PATH):
 
 ```bash
-cargo test -p k2f_pptx
+k2f export-pptx examples/published/invoice.K2F -o /tmp/invoice.pptx
 ```
 
-Do not use bare `cargo test`; this crate is not in `default-members`.
+No `--scale` / `--trust-pack`. Failures print to stderr and exit `1` without writing output.
 
-## CLI
+## Crate binary (development)
 
 ```bash
 cargo run -p k2f_pptx -- export examples/published/invoice.K2F -o /tmp/invoice.pptx
@@ -45,10 +44,21 @@ cargo run -p k2f_pptx -- export examples/published/invoice.K2F -o /tmp/invoice.p
 k2f-pptx export <in.K2F> -o <out.pptx>
 ```
 
-`--help` states this is experimental, does not modify the source package, and is not a second layout engine. Failures print to stderr and exit `1`.
+`--help` states this is experimental, does not modify the source package, and is not a second layout engine.
+
+## Test
+
+From the `k2f/` workspace root:
+
+```bash
+cargo test -p k2f_pptx
+cargo test -p k2f --test export_pptx
+```
+
+Do not use bare `cargo test` for this crate; it is not in `default-members`.
 
 ## Delete this module
 
 1. Remove the directory `k2f/export/k2f_pptx/`
 2. Remove `"export/k2f_pptx"` from the `members` list in `k2f/Cargo.toml` (do not touch `default-members`)
-3. No other crate should mention `k2f_pptx`
+3. Revert `k2f export-pptx` wiring in `cli/k2f_cli`, this README, `CHANGELOG.md`, and `skills/k2f` (`export-pptx` / `exporting-pptx.md`)

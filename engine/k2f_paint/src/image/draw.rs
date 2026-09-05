@@ -39,8 +39,12 @@ pub fn lookup_image<'a>(images: &'a BTreeMap<String, Vec<u8>>, src: &'a str) -> 
         format!("assets/images/{stripped}"),
         format!("assets/images/{stripped}.png"),
         format!("assets/images/{stripped}.webp"),
+        format!("assets/images/{stripped}.jpg"),
+        format!("assets/images/{stripped}.jpeg"),
         format!("assets/images/{stripped}.svg"),
         format!("{stripped}.png"),
+        format!("{stripped}.jpg"),
+        format!("{stripped}.jpeg"),
         format!("{stripped}.svg"),
     ];
     for key in std::iter::once(src)

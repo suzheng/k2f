@@ -18,6 +18,7 @@
 
 mod agent_json;
 mod builder;
+mod docx;
 mod editor;
 mod error;
 mod lock;
@@ -25,6 +26,7 @@ mod markdown;
 mod nodes;
 mod page;
 mod pdf;
+mod pptx;
 mod profile;
 mod raster;
 mod sign;
@@ -32,18 +34,21 @@ mod templates;
 mod units;
 mod vocab;
 
+pub use docx::export_docx;
 pub use editor::{Change, ChangeOp, ChangelogEntry, ChangelogFile, Editor, OutlineNode};
 pub use error::{
-    AgentError, CONTENT_HASH_MISMATCH, DUPLICATE_ID, FONT_MISSING, IMAGE_SIZE, INVALID_ARGUMENT,
-    INVALID_ID, INVALID_MODIFIER, PDF_IS_NOT_A_SOURCE, SCHEMA_INVALID, TABLE_ROW_MISMATCH,
-    UNKNOWN_ID, UNKNOWN_ROLE, WRONG_CONTENT,
+    AgentError, CONTENT_HASH_MISMATCH, DOCX_IS_NOT_A_SOURCE, DUPLICATE_ID, FONT_MISSING,
+    IMAGE_SIZE, INVALID_ARGUMENT, INVALID_ID, INVALID_MODIFIER, PDF_IS_NOT_A_SOURCE,
+    PPTX_IS_NOT_A_SOURCE, SCHEMA_INVALID, TABLE_ROW_MISMATCH, UNKNOWN_ID, UNKNOWN_ROLE,
+    WRONG_CONTENT,
 };
+pub use k2f_pdf::PdfScale;
 pub use markdown::{
     k2f_to_markdown, markdown_to_k2f, ConversionReport, MarkdownOptions, MarkdownResult,
 };
 pub use page::PageSize;
 pub use pdf::{export_pdf, export_pdf_at, parse_pdf_scale};
-pub use k2f_pdf::PdfScale;
+pub use pptx::export_pptx;
 pub use sign::{generate_key, sign, GeneratedKey};
 pub use templates::{bundled_root, copy_to, load_package, resolve, OFFICIAL_IDS};
 

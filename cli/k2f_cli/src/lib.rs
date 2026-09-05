@@ -91,6 +91,18 @@ enum Commands {
         #[arg(long)]
         trust_pack: bool,
     },
+    /// Draw the published lock into a PowerPoint .pptx. Not a second layout engine.
+    ExportPptx {
+        package: PathBuf,
+        #[arg(short, long)]
+        output: PathBuf,
+    },
+    /// Draw the published lock into a Word .docx. Not a second layout engine.
+    ExportDocx {
+        package: PathBuf,
+        #[arg(short, long)]
+        output: PathBuf,
+    },
     /// Compile Markdown to a .K2F package (report template by default).
     Markdown {
         source: PathBuf,
@@ -294,6 +306,16 @@ fn dispatch(command: Commands) -> anyhow::Result<()> {
             }
             let pdf = export_opened(&doc, options)?;
             fs::write(&output, pdf)?;
+            eprintln!("wrote {}", output.display());
+        }
+        Commands::ExportPptx { package, output } => {
+            let bytes = k2f_pptx::export_bytes(&fs::read(&package)?)?;
+            fs::write(&output, bytes)?;
+            eprintln!("wrote {}", output.display());
+        }
+        Commands::ExportDocx { package, output } => {
+            let bytes = k2f_docx::export_bytes(&fs::read(&package)?)?;
+            fs::write(&output, bytes)?;
             eprintln!("wrote {}", output.display());
         }
         Commands::Markdown {

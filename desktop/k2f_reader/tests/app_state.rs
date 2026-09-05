@@ -38,6 +38,44 @@ fn pdf_is_not_a_source() {
 }
 
 #[test]
+fn export_docx_magic() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let docx = app.export_docx_bytes().unwrap();
+    assert!(docx.starts_with(b"PK"));
+}
+
+#[test]
+fn docx_is_not_a_source() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let docx = app.export_docx_bytes().unwrap();
+    let err = AppState::open(&docx).unwrap_err();
+    let msg = format!("{err}");
+    assert!(
+        msg.contains("UNEXPECTED_PATH") || msg.contains("DOCX_IS_NOT_A_SOURCE"),
+        "exported DOCX must not open as K2F, got {msg}"
+    );
+}
+
+#[test]
+fn export_pptx_magic() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let pptx = app.export_pptx_bytes().unwrap();
+    assert!(pptx.starts_with(b"PK"));
+}
+
+#[test]
+fn pptx_is_not_a_source() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let pptx = app.export_pptx_bytes().unwrap();
+    let err = AppState::open(&pptx).unwrap_err();
+    let msg = format!("{err}");
+    assert!(
+        msg.contains("PPTX_IS_NOT_A_SOURCE") || msg.contains("UNEXPECTED_PATH"),
+        "exported PPTX must not open as K2F, got {msg}"
+    );
+}
+
+#[test]
 fn rejects_non_package_bytes() {
     let err = AppState::open(b"not-a-k2f-package").unwrap_err();
     let msg = format!("{err}");

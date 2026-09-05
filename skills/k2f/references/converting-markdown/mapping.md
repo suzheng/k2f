@@ -67,6 +67,7 @@ MDX is not parsed as MDX; treat as ordinary MD + raw HTML skips.
 | `footer=…` | `set_running_footer` |
 | `variant=…` | Pending variant on next node |
 | `keep_with_next=true` | Pending keep_with_next |
+| `break_before=page` | Pending `break_before: page` on next node |
 | `column_span=all` | Pending full column span |
 | `role=warning` | Role + `break_inside: avoid` |
 | `role=signature_block` \| `code` \| `quote` \| `body` \| `h4` \| `rule` | Role override |

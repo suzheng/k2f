@@ -29,6 +29,7 @@ MCP is not published on registries; this skill does not depend on MCP.
 | [writing](k2f/references/writing.md) | Create or update `.K2F` (JSON + pack; starter + catalog + schema lookup) |
 | [converting-markdown](k2f/references/converting-markdown.md) | Convert Markdown ↔ K2F |
 | [exporting-pdf](k2f/references/exporting-pdf.md) | Export PDF from the published lock |
+| [exporting-pptx](k2f/references/exporting-pptx.md) | Export PPTX from the published lock |
 | [embedding-viewer](k2f/references/embedding-viewer.md) | Embed `<k2f-viewer>` in a web app |
 | [publishing](k2f/references/publishing.md) | Publish permanent `/v/{appearance_hash}` (requires your site origin) |
 

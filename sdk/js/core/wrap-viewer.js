@@ -17,6 +17,12 @@ export function wrapViewerWasm(wasm) {
       export_pdf() {
         return call(() => super.export_pdf());
       }
+      export_pptx() {
+        return call(() => super.export_pptx());
+      }
+      export_docx() {
+        return call(() => super.export_docx());
+      }
     },
   };
 }

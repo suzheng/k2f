@@ -108,7 +108,7 @@ If the PNG looks wrong, edit JSON or theme and run `pack_verify.py --render` aga
 1. **Stable dotted ids** on every line, clause, party, and total you may edit later. **Never guess ids** — read the tree or grep `content/`.
 2. **Roles must exist** in **this package's** `styles/theme.json` (legal/contract packs often use `critical_warning`, not the SDK catalog name `warning`).
 3. **Theme-only styling** — no inline colors/font sizes on nodes.
-4. Image width only via declared millipt on image nodes; files under `assets/images/` (PNG/WebP/SVG, not JPEG). To swap an image, replace bytes under `assets/images/` and update the node path — there is no in-place byte swap API.
+4. Image width only via declared millipt on image nodes; files under `assets/images/` (PNG/JPEG/WebP/SVG). To swap an image, replace bytes under `assets/images/` and update the node path — there is no in-place byte swap API.
 5. **Tables:** edit **cell** text node ids, never the table root id.
 6. **Text with modifiers:** after changing `content.value`, recompute modifier `range` with `modifier_range.py` — stale byte ranges fail compile or render wrong.
 7. Do not use system `unzip` on the ZIP and edit in place — use `k2f unpack` so lock/schema are omitted and includes stay on disk.
@@ -143,9 +143,13 @@ If the PNG looks wrong, edit JSON or theme and run `pack_verify.py --render` aga
 | `set_role(..., "warning")` on a custom legal theme | Inspect package theme — it may use `critical_warning` |
 | Edit table root id for cell text | Edit **cell** text node ids |
 | Expect signature after pack | Pack/relock strips signatures; human re-signs |
-| SVG or images in `assets/` root | Move to `assets/images/` (PNG/WebP/SVG, **not JPEG**); root files → `UNEXPECTED_PATH` |
-| JPEG / `.jpg` image | Unsupported — convert to PNG/WebP, or embed SVG |
+| SVG or images in `assets/` root | Move to `assets/images/` (PNG/JPEG/WebP/SVG); root files → `UNEXPECTED_PATH` |
+| GIF / BMP / TIFF image | Unsupported — convert to PNG/JPEG/WebP, or embed SVG |
 | `self_align` (or any theme field) on a node | Put `self_align`, `text_align`, fonts, padding in `styles/theme.json` roles only |
+| `text_align: center` on `running_footer` for page-number centering | Running block **box** position uses role `self_align`; glyph alignment inside the box uses `text_align` |
+| `^22^` or Unicode superscript for citations | Use `superscript` modifier + `modifier_range.py`; see `ex_modifiers.json` — Markdown `^` is not parsed |
+| `---` thematic break for a new chapter page | Renders as `role: "rule"` — use `break_before: "page"` on the next node, or `<!-- k2f: break_before=page -->` in Markdown |
+| Expect whole paragraphs to jump to next page | `break_inside: auto` splits **by line** when the page remainder is too small — shrink padding/gap or split into sibling nodes |
 | `$...$` inline math in author JSON | U+FFFC + `{ "type": "math", "intent": "<tex>" }` modifier — see `catalog/content/ex_modifiers.json`; `$` works Markdown only |
 | Multiple fonts but `"default":"default"` only | Map `font_aliases` to each file stem; two+ fonts have no auto-`default` |
 | `fr` rows without fixed grid height | Fails: `Cannot resolve fr tracks with infinite available size`. `fr` ≠ content-auto height — set grid `layout.height`, use `pt`/`auto` rows, or nest under a fixed-height stack (`ex_grid.json`) |

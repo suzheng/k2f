@@ -13,13 +13,15 @@ crate-type = ["cdylib"]
 [features]
 default = ["compile", "viewer", "sdk"]
 compile = ["dep:k2f_layout", "dep:serde_json"]
-viewer = ["dep:k2f_paint", "dep:k2f_pdf", "dep:serde_json", "dep:console_error_panic_hook"]
+viewer = ["dep:k2f_paint", "dep:k2f_pdf", "dep:k2f_pptx", "dep:k2f_docx", "dep:serde_json", "dep:console_error_panic_hook"]
 sdk = ["dep:k2f_sdk", "dep:serde_json"]
 
 [dependencies]
 k2f_layout = { path = "../k2f_layout", version = "0.1.1", optional = true }
 k2f_paint = { path = "../k2f_paint", version = "0.1.1", optional = true }
 k2f_pdf = { path = "../k2f_pdf", version = "0.1.1", optional = true }
+k2f_pptx = { path = "../../export/k2f_pptx", optional = true }
+k2f_docx = { path = "../../export/k2f_docx", optional = true }
 k2f_sdk = { path = "../k2f_sdk", version = "0.1.1", optional = true }
 wasm-bindgen = "=0.2.106"
 js-sys = "0.3"

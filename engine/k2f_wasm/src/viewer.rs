@@ -155,6 +155,16 @@ impl K2fViewer {
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
         k2f_pdf::export_opened(&self.doc, scale).map_err(|e| JsValue::from_str(&e.to_string()))
     }
+
+    /// Draw the published lock into a PowerPoint deck. Not a second layout engine.
+    pub fn export_pptx(&self) -> Result<Vec<u8>, JsValue> {
+        k2f_pptx::export_opened(&self.doc).map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    /// Draw the published lock into a Word document. Not a second layout engine.
+    pub fn export_docx(&self) -> Result<Vec<u8>, JsValue> {
+        k2f_docx::export_opened(&self.doc).map_err(|e| JsValue::from_str(&e.to_string()))
+    }
 }
 
 fn milli(pt: f64) -> i64 {

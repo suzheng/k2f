@@ -31,6 +31,8 @@ for (const [format, check] of [
   }],
   ["png", (b) => b[0] === 0x50 && b[1] === 0x4b],
   ["jpg", (b) => b[0] === 0x50 && b[1] === 0x4b],
+  ["pptx", (b) => b[0] === 0x50 && b[1] === 0x4b],
+  ["docx", (b) => b[0] === 0x50 && b[1] === 0x4b],
 ]) {
   const v = new viewerOnly.Viewer(published);
   let out;
@@ -42,6 +44,10 @@ for (const [format, check] of [
     out = new TextEncoder().encode(v.document_markdown());
   } else if (format === "png") {
     out = v.export_pages_png_zip(scale);
+  } else if (format === "pptx") {
+    out = v.export_pptx();
+  } else if (format === "docx") {
+    out = v.export_docx();
   } else {
     out = v.export_pages_jpeg_zip(scale);
   }

@@ -2,7 +2,8 @@ use crate::alignment::align_offset_and_size;
 use crate::resolved_style::resolve_self_align;
 use crate::{LayoutContext, Paginator, Point, Size, SizeConstraint};
 use k2f_core::{
-    Align, BreakInside, CanvasMode, LayoutHint, NodeContent, Pt, SemanticNode, StackDirection,
+    Align, BreakBefore, BreakInside, CanvasMode, LayoutHint, NodeContent, Pt, SemanticNode,
+    StackDirection,
 };
 
 use super::columns;
@@ -167,6 +168,9 @@ pub(crate) fn place_item(
     let align_mode = self_align.unwrap_or(align_items);
 
     if canvas_mode == CanvasMode::Paged {
+        if node.break_before == BreakBefore::Page && !paginator.at_content_top() {
+            region_break(paginator)?;
+        }
         if matches!(node.layout, Some(LayoutHint::Columns { .. })) {
             return columns::place_columns(node, paginator, content_width, align_mode, ctx);
         }
@@ -244,27 +248,7 @@ fn place_splittable_text(
         child_w
     };
 
-    // In a column band, never take the "move whole block" shortcuts — always pack by
-    // line fragments so a paragraph can split across columns without duplicating glyphs.
-    let in_band = paginator.in_column_band();
-
     if full_h <= paginator.remaining_height() {
-        let pos = paginator.allocate_space(full_h);
-        let geo = text_frag::arrange_fragment(
-            node,
-            &prep,
-            0,
-            prep.layout.lines.len(),
-            Point::new(pos.x + dx, pos.y),
-            child_w,
-            ctx,
-        )?;
-        paginator.add_item(geo);
-        return Ok(());
-    }
-
-    if !in_band && !paginator.at_content_top() && full_h <= paginator.page_content_height() {
-        region_break(paginator)?;
         let pos = paginator.allocate_space(full_h);
         let geo = text_frag::arrange_fragment(
             node,

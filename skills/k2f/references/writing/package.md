@@ -13,7 +13,7 @@ Domain conventions for fixed layouts (CV, flyer, cheatsheet). **Allowed JSON key
 | `content/**/*.json` | Optional; one node per file, referenced from root (see below) |
 | `styles/theme.json` | Roles, palette, named primitives (do not split across files) |
 | `assets/fonts/*` | At least one font (starter ships Roboto-Regular) |
-| `assets/images/*` | Optional PNG/WebP/SVG (not `assets/` root; not JPEG) |
+| `assets/images/*` | Optional PNG/JPEG/WebP/SVG (not `assets/` root; not GIF) |
 | `changelog.json` | Optional; pack fills `{"entries":[]}` if missing |
 
 **`k2f pack` injects the five format schemas** from the engine. Do **not** put files under `schema/` in the author directory (`UNEXPECTED_PATH`).
@@ -84,12 +84,12 @@ Allowed layout types and fields: `schema/nodes.schema.json` → `layout`. Copy f
 - **No `justify_content: space-between`.** For left/right split use a two-column grid (`columns: [{fr:1},{fr:1}]` + `cell_align`). Cover vertical centering: fixed-height stack + `justify_content: center`.
 - **No empty spacer containers.** Do not insert a child whose only job is `layout.height` to invent gaps — that is geometry, not semantics. Uneven rhythm: nest stacks with different `gap`, or put `padding_pt` on section roles. `role: "rule"` with a small height is a semantic divider, not a spacer.
 - **Box model (`layout.height` + `padding_pt`):** `layout.height` / `width` is a **minimum outer** size. Children are laid out in the **inner** box (`outer − padding`). Measured outer is `max(content+padding, hint)`. If an inner child is also set to full page height, outer grows to `content + padding` and with `break_inside: "avoid"` → `UNSPLITTABLE_OVERFLOW`. Recipe: outer shell = page size; padding on that role (or an inner wrapper); children size to the **remaining** inner area — do not re-declare full page height on padded descendants. **Root** `padding_pt` inflates page margins (see slide recipe).
-- **Paged flow splits at sibling boundaries.** A node's measured height **includes** role `padding_pt` (nested padding stacks). If content + padding exceeds remaining page space, that sibling moves to the next page — shrink padding/gap or split into siblings. Multiple top-level children under `root` become separate pages when they overflow. Single-page posters: one child from `ex_poster_shell.json`.
-- **`manifest.running_blocks`:** repeating header/footer nodes (`position: "header"|"footer"`). Each `node` is a normal semantic node — `stack` / `grid` / text all work. Horizontal alignment: role `self_align` in theme (`start`/`center`/`end`). Placeholders `{{page_current}}` / `{{page_total}}` only. Overflow past the margin band fails compile — keep running blocks short. Example: `catalog/manifest.json`.
+- **Paged flow:** `break_inside: auto` (default) splits text **by wrapped line** and stacks **by child** when the page remainder is too small. `break_inside: avoid` never splits. `break_before: "page"` starts the node on a new page. `keep_with_next` keeps this node with the next sibling when both fit. Unsplittable siblings (overlay, `avoid`, padded card) move whole to the next page.
+- **`manifest.running_blocks`:** repeating header/footer on **every** page including page 1 (no skip-first / odd-even). Each `node` is a normal semantic node. **Box** position in the margin band: role `self_align` (`start`/`center`/`end`). **Text** inside the box: role `text_align`. Placeholders `{{page_current}}` / `{{page_total}}` only. Keep running blocks short. Example: `catalog/manifest.json`.
 
 ## Theme
 
-**Theme-only styling.** Style fields live in `styles/theme.json` roles/variants only — never on nodes in `root.json`. Nodes may set `role`, `variant`, `layout`, `modifiers`, `break_inside`, `keep_with_next`, `column_span`. Allowed role/theme keys: `schema/styles.schema.json` + `schema/visual_primitives.schema.json`.
+**Theme-only styling.** Style fields live in `styles/theme.json` roles/variants only — never on nodes in `root.json`. Nodes may set `role`, `variant`, `layout`, `modifiers`, `break_inside`, `break_before`, `keep_with_next`, `column_span`. Allowed role/theme keys: `schema/styles.schema.json` + `schema/visual_primitives.schema.json`.
 
 **Looks (optional, posters / slides / styled reports):** bundled **examples** under [`looks/`](../../looks/) — a complete `theme.json` plus a composition guide. Use **only when the user did not specify a style**. If they named a design, ignore bundled looks and author `styles/theme.json` to match. When you do use a look: read **one** `look.md`, then **rewrite** the package theme from that example (adapt tokens and roles; do not ship the file unchanged). Shared extension roles: `display`, `kicker`, `caption`, `metric`, `shell` — see [`looks/README.md`](../../looks/README.md). Starter does not define those roles.
 
@@ -105,7 +105,7 @@ Allowed layout types and fields: `schema/nodes.schema.json` → `layout`. Copy f
 - **Dividers:** `role: "rule"` on a container with a small `layout.height` and a surface fill, or a content box whose border uses `edges: ["bottom"]` / dashed style.
 - **Fills / glass:** `primitives.gradients` support **linear** fills only (no radial). Named `box_decoration.blur` + `primitives.blurs` give backdrop blur / glass on boxes. Radial glow or soft vignettes → SVG under `assets/images/`. `box_decoration.shadow` is **box** elevation only — there is no text-shadow on glyphs.
 - **Native table (inline):** each cell is a full semantic node. Minimal shape: `catalog/content/ex_table.json`.
-- **Composite table cells:** a cell may be a `container` + `stack` holding text / `list_item` children. `list_item` must be **text** content with a non-empty `list_id` (not a nested list container).
+- **Composite table cells:** a cell may be a `container` + `stack` holding text / `list_item` children. `list_item` must be **text** content with a non-empty `list_id` (not a nested list container). `list_style` on `list_item` is optional — omit for starter defaults; set only to override marker width/gap/indent.
 - **`font_aliases`:** maps role `font_family` names to embedded font **keys** (filename stems under `assets/fonts/`). One font file also registers as `"default"`. **Two or more fonts:** no auto-`default` — set `font_aliases` and role `font_family` to each stem. CSS generic families fail compile.
 - Format `role` is an open string but **must exist** in `theme.roles`. Custom roles are expected.
 
@@ -115,7 +115,7 @@ Default published trees should avoid shadow/blur unless PDF export with stamp is
 
 ## Images
 
-Embed **PNG, WebP, or SVG** under `assets/images/` only (not `assets/` root, **not JPEG/GIF**). SVG is rasterized at paint time **without system fonts**: any SVG `<text>` is dropped or invisible — convert labels to `<path>` (or use a K2F text node beside the image). Declare width/height in millipt on the image node.
+Embed **PNG, JPEG, WebP, or SVG** under `assets/images/` only (not `assets/` root, **not GIF**). SVG is rasterized at paint time **without system fonts**: any SVG `<text>` is dropped or invisible — convert labels to `<path>` (or use a K2F text node beside the image). Declare width/height in millipt on the image node.
 
 Default stack `align_items` is `stretch`: the image **box** fills the cross axis and paint letterboxes (contain, centered) inside it. Left/right: set the image role's `self_align` to `start`/`end` in `theme.json` (never on the node). See `catalog/content/ex_image.json`.
 

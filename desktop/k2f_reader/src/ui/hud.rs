@@ -35,14 +35,8 @@ pub fn export_hit(win_w: u32, win_h: u32, x: f64, y: f64) -> bool {
     x >= f64::from(export_label_x(win_w)) && x < f64::from(win_w)
 }
 
-/// Cycle export format (K2F / PDF / MD / PNG / JPG), left of Export.
-pub fn export_format_hit(
-    win_w: u32,
-    win_h: u32,
-    format_label: &str,
-    x: f64,
-    y: f64,
-) -> bool {
+/// Cycle export format (K2F / PDF / PPTX / DOCX / MD / PNG / JPG), left of Export.
+pub fn export_format_hit(win_w: u32, win_h: u32, format_label: &str, x: f64, y: f64) -> bool {
     let h = f64::from(HUD_HEIGHT.min(win_h));
     if y < 0.0 || y >= h {
         return false;
@@ -93,5 +87,13 @@ pub fn draw_hud(buf: &mut [u32], width: u32, height: u32, app: &AppState) {
     draw_text(buf, width, height, HUD_PAD as i32, 8, &label, HUD_FG);
     draw_text(buf, width, height, copy_x as i32, 8, copy_label, HUD_FG);
     draw_text(buf, width, height, format_x as i32, 8, format_label, HUD_FG);
-    draw_text(buf, width, height, export_x as i32, 8, EXPORT_ACTION_LABEL, HUD_FG);
+    draw_text(
+        buf,
+        width,
+        height,
+        export_x as i32,
+        8,
+        EXPORT_ACTION_LABEL,
+        HUD_FG,
+    );
 }

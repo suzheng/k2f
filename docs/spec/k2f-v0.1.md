@@ -33,7 +33,7 @@ A `.K2F` file is a ZIP archive. Canonical paths (from `engine/k2f_package/src/pa
 | `signatures/v1.json` | no | Ed25519 signature record |
 | `schema/*.json` | yes | Embedded JSON schemas |
 | `assets/fonts/*` | yes | Embedded font binaries |
-| `assets/images/*` | no | PNG, WebP, or SVG (engine rasterizes SVG at paint time) |
+| `assets/images/*` | no | PNG, JPEG, WebP, or SVG (engine rasterizes SVG at paint time) |
 | `assets/data/*` | no | Structured data (e.g. table rows) |
 
 Unexpected paths are rejected (`UNEXPECTED_PATH`).
@@ -48,7 +48,7 @@ Nodes have:
 - **Roles** — strings defined by this package's `styles/theme.json` (`theme.roles`). Official SDK themes share a common set (`document`, `section`, `h1`–`h4`, `body`, `warning`, `card`, `table`, `table_header_cell`, `table_row_cell`, `list_item`, `code`, `code_block`, `quote`, `rule`, `math`, `running_header`, `running_footer`, `signature_block`). `card` is optional; SDK `Document` helpers do not emit it. Agent authoring uses a narrower dialect in `engine/k2f_sdk/profiles/agent_v0.schema.json` (not embedded in the package). Nodes have no `font_variant`; monospace is `role: "code"` / `role: "code_block"` plus `font_aliases`.
 - **Modifiers** — closed `type` enum: `emphasis`, `link`, `underline`, `strikethrough`, `subscript`, `superscript`, `math`, `syntax_highlight`. `intent` is a free string (URL, TeX, highlight token). `range` is UTF-8 **byte** offsets `[start, end)` on character boundaries (not character indices). There are no built-in `font-size` / `font-family` / `color` modifier types. For `superscript` / `subscript`, the engine applies script sizing (7/10 of the surrounding run) and a deterministic baseline shift (raise/lower); theme patches may change color/bold on those types but not absolute `font_size`.
 - **Content** — text, code blocks, display math (TeX subset), native tables (`inline` or `asset` data), table references, containers, or images; no inline geometry
-- **Pagination hints** — optional `break_inside` (`auto` | `avoid`) and `keep_with_next` (boolean). `avoid` refuses to split a node across pages; `keep_with_next` keeps this node with the following sibling when both fit.
+- **Pagination hints** — optional `break_inside` (`auto` | `avoid`), `keep_with_next` (boolean), and `break_before` (`auto` | `page`). `auto` splits at line or child boundaries when the remainder of the page is too small; `avoid` refuses to split a node across pages; `keep_with_next` keeps this node with the following sibling when both fit; `break_before: page` starts the node on a new page.
 
 `manifest.json` may include `running_blocks`: an array of `{ "position": "header" | "footer", "node": <SemanticNode> }` repeated on each page. Valid only with `canvas_mode: "paged"`.
 

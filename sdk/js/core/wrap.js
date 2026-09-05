@@ -99,6 +99,18 @@ export function wrapWasm(wasm) {
       saveWith(expectedContentHash) {
         return call(() => this._ed.save_with(expectedContentHash ?? null));
       }
+      exportPptx() {
+        return call(() => this._ed.export_pptx());
+      }
+      export_pptx() {
+        return this.exportPptx();
+      }
+      exportDocx() {
+        return call(() => this._ed.export_docx());
+      }
+      export_docx() {
+        return this.exportDocx();
+      }
       free() {
         this._ed.free();
       }
@@ -116,6 +128,12 @@ export function wrapWasm(wasm) {
       }
       export_pdf() {
         return call(() => super.export_pdf());
+      }
+      export_pptx() {
+        return call(() => super.export_pptx());
+      }
+      export_docx() {
+        return call(() => super.export_docx());
       }
     },
     generateSigningKey() {

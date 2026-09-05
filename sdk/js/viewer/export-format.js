@@ -1,8 +1,10 @@
-/** Persist export format. Order: K2F, PDF, Markdown, PNG, JPG. */
+/** Persist export format. Order: K2F, PDF, PPTX, DOCX, Markdown, PNG, JPG. */
 
 export const EXPORT_FORMATS = [
   { value: "k2f", label: "Export: K2F" },
   { value: "pdf", label: "Export: PDF" },
+  { value: "pptx", label: "Export: PowerPoint" },
+  { value: "docx", label: "Export: Word" },
   { value: "markdown", label: "Export: Markdown" },
   { value: "png", label: "Export: PNG" },
   { value: "jpg", label: "Export: JPG" },

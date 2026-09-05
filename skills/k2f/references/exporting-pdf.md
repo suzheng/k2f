@@ -80,4 +80,6 @@ JS `Editor` has **no** export. `save()` then `exportPdf(bytes)`.
 ## See also
 
 - [writing.md](writing.md) — create or update K2F first
+- [exporting-pptx.md](exporting-pptx.md) — PowerPoint of the same lock
+- [exporting-docx.md](exporting-docx.md) — Word of the same lock
 - [embedding-viewer.md](embedding-viewer.md) — in-browser export button

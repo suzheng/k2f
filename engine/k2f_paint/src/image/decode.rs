@@ -6,10 +6,11 @@ use crate::error::PaintError;
 
 pub fn decode_raster(bytes: &[u8]) -> Result<DynamicImage, PaintError> {
     match image::guess_format(bytes) {
-        Ok(ImageFormat::Png) | Ok(ImageFormat::WebP) => image::load_from_memory(bytes)
-            .map_err(|e| PaintError::Image(e.to_string())),
+        Ok(ImageFormat::Png) | Ok(ImageFormat::WebP) | Ok(ImageFormat::Jpeg) => {
+            image::load_from_memory(bytes).map_err(|e| PaintError::Image(e.to_string()))
+        }
         Ok(other) => Err(PaintError::Image(format!(
-            "unsupported image format {other:?}; embed PNG, WebP, or SVG"
+            "unsupported image format {other:?}; embed PNG, JPEG, WebP, or SVG"
         ))),
         Err(_) if looks_like_svg(bytes) => decode_svg(bytes),
         Err(e) => Err(PaintError::Image(e.to_string())),

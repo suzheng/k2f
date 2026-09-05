@@ -3,15 +3,19 @@ pub enum ExportFormat {
     #[default]
     K2f,
     Pdf,
+    Pptx,
+    Docx,
     Markdown,
     Png,
     Jpg,
 }
 
 impl ExportFormat {
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 7] = [
         Self::K2f,
         Self::Pdf,
+        Self::Pptx,
+        Self::Docx,
         Self::Markdown,
         Self::Png,
         Self::Jpg,
@@ -26,6 +30,8 @@ impl ExportFormat {
         match self {
             Self::K2f => "K2F",
             Self::Pdf => "PDF",
+            Self::Pptx => "PPTX",
+            Self::Docx => "DOCX",
             Self::Markdown => "MD",
             Self::Png => "PNG",
             Self::Jpg => "JPG",
@@ -36,6 +42,8 @@ impl ExportFormat {
         match self {
             Self::K2f => "K2F",
             Self::Pdf => "pdf",
+            Self::Pptx => "pptx",
+            Self::Docx => "docx",
             Self::Markdown => "md",
             Self::Png => "png",
             Self::Jpg => "jpg",
@@ -46,6 +54,8 @@ impl ExportFormat {
         match self {
             Self::K2f => ("K2F", &["K2F", "k2f"]),
             Self::Pdf => ("PDF", &["pdf"]),
+            Self::Pptx => ("PowerPoint", &["pptx"]),
+            Self::Docx => ("Word", &["docx"]),
             Self::Markdown => ("Markdown", &["md"]),
             Self::Png => ("PNG", &["png", "zip"]),
             Self::Jpg => ("JPEG", &["jpg", "jpeg", "zip"]),

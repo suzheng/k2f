@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum BreakInside {
-    /// Keep whole if it fits a page; split only at allowed points when taller than a page.
+    /// Split at line or child boundaries when the remainder of the page is too small.
     #[default]
     Auto,
     /// Never split. Move to the next page; fail if taller than one page.
@@ -14,6 +14,22 @@ pub enum BreakInside {
 impl BreakInside {
     pub fn is_auto(&self) -> bool {
         matches!(self, BreakInside::Auto)
+    }
+}
+
+/// Whether a node must start on a new page.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum BreakBefore {
+    #[default]
+    Auto,
+    /// Start on a new page when not already at the top of the content area.
+    Page,
+}
+
+impl BreakBefore {
+    pub fn is_auto(&self) -> bool {
+        matches!(self, BreakBefore::Auto)
     }
 }
 

@@ -17,6 +17,7 @@ members = [
     "tests/runner",
     "desktop/k2f_reader",
     "export/k2f_pptx",
+    "export/k2f_docx",
 ]
 default-members = [
     "engine/k2f_core",

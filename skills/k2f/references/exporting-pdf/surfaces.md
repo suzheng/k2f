@@ -40,3 +40,6 @@ pdf = bytes(ed.export_pdf_bytes())
 ## Desktop reader (not the agent default)
 
 `k2f-reader --export-pdf out.pdf file.K2F` — prefer `k2f export-pdf`.
+
+PowerPoint of the same lock: [exporting-pptx.md](../exporting-pptx.md) (`k2f export-pptx`, no `--scale`).
+Word of the same lock: [exporting-docx.md](../exporting-docx.md) (`k2f export-docx`, no `--scale`).

@@ -18,6 +18,7 @@ fn documents_lock_executor_rules() {
         "document.K2F.lock",
         "PDF export draws the lock",
         "PDF_IS_NOT_A_SOURCE",
+        "**DOCX**",
         "not a default-member",
     ] {
         assert!(text.contains(needle), "README must state {needle:?}");
@@ -33,6 +34,7 @@ fn documents_build_run_and_headless() {
         "cargo run -p k2f_reader --",
         "cargo run -p k2f_reader -- --verify",
         "cargo run -p k2f_reader -- --export-pdf",
+        "cargo run -p k2f_reader -- --export-docx",
         "cargo test -p k2f_reader",
         "examples/published/invoice.K2F",
     ] {
