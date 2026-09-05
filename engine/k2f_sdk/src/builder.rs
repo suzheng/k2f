@@ -1,12 +1,15 @@
-use crate::error::{AgentError, DUPLICATE_ID, INVALID_ID, UNCLOSED_SECTION, UNKNOWN_ID, WRONG_CONTENT};
+use crate::error::{
+    AgentError, DUPLICATE_ID, INVALID_ID, UNCLOSED_SECTION, UNKNOWN_ID, WRONG_CONTENT,
+};
 use crate::lock::write_lock;
 use crate::nodes::{image_node, text_node};
 use crate::page::PageSize;
 use crate::units::{mm_to_pt, scale_height};
 use k2f_core::{
     find_in_trees, find_node_mut, is_valid_node_id, validate_manifest_node_ids,
-    validate_manifest_running_blocks, validate_semantic_tree, validate_semantic_tree_with_theme_vocab,
-    NodeContent, RunningBlockNode, RunningBlockPosition, SemanticNode, ThemeVocab,
+    validate_manifest_running_blocks, validate_semantic_tree,
+    validate_semantic_tree_with_theme_vocab, NodeContent, RunningBlockNode, RunningBlockPosition,
+    SemanticNode, ThemeVocab,
 };
 use k2f_package::{pack_bytes, Package};
 use std::path::Path;

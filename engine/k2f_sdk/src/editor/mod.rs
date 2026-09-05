@@ -14,8 +14,8 @@ use crate::error::{
 };
 use crate::lock::relock;
 use crate::nodes::text_node;
-use crate::PdfScale;
 use crate::vocab::ensure_role;
+use crate::PdfScale;
 use k2f_core::{
     apply_role, clipboard_of, find_in_trees, find_in_trees_mut, hash_manifest_semantic,
     insert_child, is_valid_node_id, node_text, remove_node, replace_node_text, search_trees,
@@ -277,6 +277,14 @@ impl Editor {
 
     pub fn export_pdf_bytes_at(&self, scale: PdfScale) -> Result<Vec<u8>, AgentError> {
         crate::export_pdf_at(&pack_bytes(&self.package).map_err(AgentError::from)?, scale)
+    }
+
+    pub fn export_pptx_bytes(&self) -> Result<Vec<u8>, AgentError> {
+        crate::export_pptx(&pack_bytes(&self.package).map_err(AgentError::from)?)
+    }
+
+    pub fn export_docx_bytes(&self) -> Result<Vec<u8>, AgentError> {
+        crate::export_docx(&pack_bytes(&self.package).map_err(AgentError::from)?)
     }
 
     pub fn save_with(

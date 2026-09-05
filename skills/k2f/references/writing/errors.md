@@ -10,7 +10,7 @@ Fix the **semantic tree** or **theme**. Shapes: [`catalog/content/ex_*.json`](..
 | `DUPLICATE_ID` | Rename; ids must be globally unique |
 | `INVALID_ID` | Pattern `segment.segment` — alphanumeric + underscore |
 | `TABLE_ROW_MISMATCH` | Every row same length as columns; header_rows ≤ rows; table `column_widths` cannot be `{auto:true}` |
-| `IMAGE_SIZE` | Provide image bytes + declared width/height millipt. Formats: PNG, WebP, SVG — not JPEG |
+| `IMAGE_SIZE` | Provide image bytes + declared width/height millipt. Formats: PNG, JPEG, WebP, SVG — not GIF |
 | `FONT_MISSING` | Embed TTF/OTF under `assets/fonts/`; map role `font_family` via `font_aliases` to the file **stem** (e.g. `"DejaVuSans"`). One font auto-registers as `"default"`; with two+ fonts you must alias explicitly. No CSS generic families. |
 | `INVALID_MODIFIER` | Range on UTF-8 **byte** boundaries (`python scripts/modifier_range.py --text … --find …`); max 50 modifiers. For multi-line titles, pass the full `value` including `\n` (`\n` = 1 byte). |
 | `SCHEMA_INVALID` | Open [`schema/`](../../schema/) for the failing file. Key in schema but rejected → `pip install -U k2f`. Key not in schema → remove it. Optional layout keys may be omitted or `null`. |

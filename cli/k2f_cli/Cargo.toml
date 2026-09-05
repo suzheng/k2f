@@ -21,6 +21,8 @@ k2f_layout = { path = "../../engine/k2f_layout", version = "0.1.1" }
 k2f_package = { path = "../../engine/k2f_package", version = "0.1.1" }
 k2f_paint = { path = "../../engine/k2f_paint", version = "0.1.1" }
 k2f_pdf = { path = "../../engine/k2f_pdf", version = "0.1.1" }
+k2f_pptx = { path = "../../export/k2f_pptx" }
+k2f_docx = { path = "../../export/k2f_docx" }
 k2f_sdk = { path = "../../engine/k2f_sdk", version = "0.1.1" }
 clap = { version = "4.4", features = ["derive"] }
 anyhow = "1.0"

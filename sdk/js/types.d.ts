@@ -7,6 +7,8 @@ export function initViewerWasm(wasmSource?: InitWasmSource): Promise<ViewerWasmM
 export function createK2f(): Promise<K2fApi>;
 export function createViewer(): Promise<ViewerOnlyApi>;
 export function exportPdf(packageBytes: Uint8Array): Promise<Uint8Array>;
+export function exportPptx(packageBytes: Uint8Array): Promise<Uint8Array>;
+export function exportDocx(packageBytes: Uint8Array): Promise<Uint8Array>;
 export function markdownToK2f(
   md: string,
   opts?: { title?: string; template?: string },
@@ -97,6 +99,10 @@ export class Editor {
   reject_suggestion(id: string): void;
   save(): Uint8Array;
   saveWith(expectedContentHash?: string | null): Uint8Array;
+  exportPptx(): Uint8Array;
+  export_pptx(): Uint8Array;
+  exportDocx(): Uint8Array;
+  export_docx(): Uint8Array;
   free(): void;
 }
 
@@ -135,6 +141,8 @@ export class Viewer {
   page_height_pt(page: number): number;
   render_page(page: number, scale: number): Uint8Array;
   export_pdf(): Uint8Array;
+  export_pptx(): Uint8Array;
+  export_docx(): Uint8Array;
   search(query: string): string;
   hit_test(page: number, x_pt: number, y_pt: number): string | undefined;
   hit_selection(page: number, x_pt: number, y_pt: number): string | undefined;
@@ -176,7 +184,7 @@ export interface ViewerMountOptions {
   /** Explicit WASM flavor. `editable: true` always uses sdk. Default is viewer when available. */
   runtime?: "sdk" | "viewer";
   copyFormat?: "markdown" | "plain";
-  exportFormat?: "k2f" | "pdf" | "markdown" | "png" | "jpg";
+  exportFormat?: "k2f" | "pdf" | "pptx" | "docx" | "markdown" | "png" | "jpg";
   title?: string;
 }
 
@@ -187,7 +195,7 @@ export interface ViewerHandle {
   editing: boolean;
   destroy(): void;
   goPage(page: number): void;
-  export(format?: "k2f" | "pdf" | "markdown" | "png" | "jpg"): {
+  export(format?: "k2f" | "pdf" | "pptx" | "docx" | "markdown" | "png" | "jpg"): {
     bytes: Uint8Array;
     filename: string;
     mime: string;

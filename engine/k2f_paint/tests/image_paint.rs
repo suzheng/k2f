@@ -91,6 +91,79 @@ fn paints_real_png_not_gray_placeholder() {
     );
 }
 
+fn solid_jpeg(w: u32, h: u32, r: u8, g: u8, b: u8) -> Vec<u8> {
+    let mut img = image::RgbImage::new(w, h);
+    for p in img.pixels_mut() {
+        *p = image::Rgb([r, g, b]);
+    }
+    let mut buf = Vec::new();
+    image::DynamicImage::ImageRgb8(img)
+        .write_to(&mut std::io::Cursor::new(&mut buf), image::ImageFormat::Jpeg)
+        .unwrap();
+    buf
+}
+
+#[test]
+fn paints_real_jpeg_not_gray_placeholder() {
+    let jpeg = solid_jpeg(20, 10, 30, 30, 200);
+    let mut images = BTreeMap::new();
+    images.insert("assets/images/logo.jpg".to_string(), jpeg);
+    let lock = LockFile {
+        engine_version: "0".into(),
+        engine_commit_sha: "0".into(),
+        content_hash: "0".into(),
+        appearance_hash: "0".into(),
+        geometry: LayoutResult {
+            pages: vec![Page {
+                index: 0,
+                width: Pt(100000),
+                height: Pt(100000),
+                root: GeometryNode {
+                    id: "img".into(),
+                    x: Pt(0),
+                    y: Pt(0),
+                    width: Pt(100000),
+                    height: Pt(100000),
+                    glyphs: vec![],
+                    text_runs: vec![],
+                    fill_rects: vec![],
+                    children: vec![],
+                },
+            }],
+        },
+        render_plan: RenderPlan {
+            compositing: Default::default(),
+            pages: vec![PageRenderPlan {
+                index: 0,
+                ops: vec![PaintOp::DrawImage {
+                    node_id: "img".into(),
+                    rect: Rect {
+                        x: Pt(0),
+                        y: Pt(0),
+                        width: Pt(100000),
+                        height: Pt(100000),
+                    },
+                    src: "assets/images/logo.jpg".into(),
+                }],
+            }],
+        },
+    };
+    let out = render_lockfile_page_to_png(
+        &lock,
+        0,
+        OFFICIAL_PNG_SCALE,
+        &single_font_map(&common::font_bytes()),
+        &images,
+    )
+    .unwrap();
+    let decoded = image::load_from_memory(&out).unwrap().to_rgba8();
+    let p = decoded.get_pixel(decoded.width() / 2, decoded.height() / 2);
+    assert!(
+        p[2] > 150 && p[0] < 80,
+        "center should be the blue logo, got {p:?}"
+    );
+}
+
 fn solid_webp(w: u32, h: u32, r: u8, g: u8, b: u8) -> Vec<u8> {
     let mut img = image::RgbImage::new(w, h);
     for p in img.pixels_mut() {

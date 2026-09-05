@@ -74,8 +74,7 @@ pub fn invoice_bytes() -> Vec<u8> {
 }
 
 fn child_count(ed: &Editor) -> usize {
-    let root: serde_json::Value =
-        serde_json::from_str(&ed.get_node_json("root").unwrap()).unwrap();
+    let root: serde_json::Value = serde_json::from_str(&ed.get_node_json("root").unwrap()).unwrap();
     root["content"]["value"]["children"]
         .as_array()
         .map(|a| a.len())

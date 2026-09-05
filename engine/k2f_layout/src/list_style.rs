@@ -33,6 +33,18 @@ pub struct ListStyle {
 }
 
 impl ListStyle {
+    /// Starter-theme defaults when `list_item` omits `list_style`.
+    pub fn list_item_defaults() -> Self {
+        Self {
+            marker_box_width_pt: Some(Pt(18_000)),
+            marker_gap_pt: Some(Pt(4_000)),
+            depth_indent_pt: Some(Pt(18_000)),
+            marker_align: None,
+            bullet_glyph: Some("-".to_string()),
+            number_suffix: Some(".".to_string()),
+        }
+    }
+
     /// Deterministically merge a base definition with an overlay definition.
     ///
     /// For each field, `overlay` wins when it is present; otherwise the value from `base` is kept.

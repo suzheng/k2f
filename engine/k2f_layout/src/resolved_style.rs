@@ -117,15 +117,26 @@ pub fn resolve_list_style(role: &str, variant: Option<&str>, theme: &Theme) -> O
         .or_else(|| theme.roles.get("default"))?;
 
     let base = role_style.list_style.as_ref();
+    let default_for_role = role == "list_item" && base.is_none();
 
     let Some(variant_name) = variant else {
+        if default_for_role {
+            return Some(ListStyle::list_item_defaults());
+        }
         return base.cloned();
     };
     let Some(variant_def) = role_style.variants.get(variant_name) else {
+        if default_for_role {
+            return Some(ListStyle::list_item_defaults());
+        }
         return base.cloned();
     };
 
-    ListStyle::merged(base, variant_def.list_style.as_ref())
+    let merged = ListStyle::merged(base, variant_def.list_style.as_ref());
+    if merged.is_none() && role == "list_item" {
+        return Some(ListStyle::list_item_defaults());
+    }
+    merged
 }
 
 /// Extract padding insets for a node-like (role, variant) pair.

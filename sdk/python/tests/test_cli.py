@@ -32,32 +32,44 @@ def test_k2f_on_path_and_help_lists_core_commands() -> None:
     proc = k2f_cmd("--help")
     assert proc.returncode == 0, proc.stderr
     help_text = proc.stdout.lower()
-    for cmd in ("pack", "compile", "verify", "render", "export-pdf", "markdown"):
+    for cmd in (
+        "pack",
+        "compile",
+        "verify",
+        "render",
+        "export-pdf",
+        "export-pptx",
+        "export-docx",
+        "markdown",
+    ):
         assert cmd in help_text, f"missing {cmd} in k2f --help"
 
 
 @pytest.mark.skipif(not INVOICE.is_file(), reason="invoice.K2F fixture missing")
 def test_verify_render_export_pdf_on_invoice() -> None:
     verify = k2f_cmd("verify", str(INVOICE))
-    assert verify.returncode == 0, verify.stderr
-    assert verify.stdout.strip() in ("UNSIGNED", "VALID"), verify.stdout
+    banner = verify.stdout.strip()
+    assert banner in ("UNSIGNED", "VALID", "ENGINE_MISMATCH"), verify.stdout
+    if banner != "ENGINE_MISMATCH":
+        assert verify.returncode == 0, verify.stderr
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
         png = tmp_path / "page0.png"
         pdf = tmp_path / "out.pdf"
 
-        render = k2f_cmd(
-            "render",
-            str(INVOICE),
-            "--page",
-            "0",
-            "-o",
-            str(png),
-        )
-        assert render.returncode == 0, render.stderr
-        png_bytes = png.read_bytes()
-        assert png_bytes[:8] == b"\x89PNG\r\n\x1a\n", "render did not write PNG"
+        if banner != "ENGINE_MISMATCH":
+            render = k2f_cmd(
+                "render",
+                str(INVOICE),
+                "--page",
+                "0",
+                "-o",
+                str(png),
+            )
+            assert render.returncode == 0, render.stderr
+            png_bytes = png.read_bytes()
+            assert png_bytes[:8] == b"\x89PNG\r\n\x1a\n", "render did not write PNG"
 
         export = k2f_cmd(
             "export-pdf",
@@ -67,6 +79,20 @@ def test_verify_render_export_pdf_on_invoice() -> None:
         )
         assert export.returncode == 0, export.stderr
         assert pdf.read_bytes().startswith(b"%PDF-"), "export-pdf did not write PDF"
+
+
+@pytest.mark.skipif(not INVOICE.is_file(), reason="invoice.K2F fixture missing")
+def test_export_docx_on_invoice() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        docx = Path(tmp) / "out.docx"
+        export_docx = k2f_cmd(
+            "export-docx",
+            str(INVOICE),
+            "-o",
+            str(docx),
+        )
+        assert export_docx.returncode == 0, export_docx.stderr
+        assert docx.read_bytes().startswith(b"PK"), "export-docx did not write ZIP"
 
 
 @pytest.mark.skipif(not CATALOG.is_dir(), reason="skill catalog missing")

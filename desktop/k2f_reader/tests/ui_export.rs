@@ -237,3 +237,71 @@ fn export_pdf_to_unlocked_writes_nothing() {
     assert!(err.contains("UNLOCKED"), "got {err}");
     assert!(!out.exists(), "must not write a PDF without a lock");
 }
+
+#[test]
+fn export_pptx_to_writes_zip() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let out = scratch("gui-export-pptx").join("invoice.pptx");
+    app.export_to(ExportFormat::Pptx, &out).unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    assert!(bytes.starts_with(b"PK"));
+    assert_eq!(bytes, app.export_pptx_bytes().unwrap());
+}
+
+#[test]
+fn export_pptx_to_unlocked_writes_nothing() {
+    let app = AppState::open(&unlocked_bytes(&invoice_bytes())).unwrap();
+    let out = scratch("gui-export-pptx-unlocked").join("out.pptx");
+    let err = format!("{}", app.export_to(ExportFormat::Pptx, &out).unwrap_err());
+    assert!(err.contains("UNLOCKED"), "got {err}");
+    assert!(!out.exists(), "must not write a PPTX without a lock");
+}
+
+#[test]
+fn export_format_cycle_includes_pptx() {
+    assert!(ExportFormat::ALL.contains(&ExportFormat::Pptx));
+    assert_eq!(ExportFormat::Pptx.extension(), "pptx");
+    assert_eq!(ExportFormat::Pptx.hud_label(), "PPTX");
+    assert_eq!(
+        ExportFormat::Pdf.toggle(),
+        ExportFormat::Pptx,
+        "HUD format cycle must reach PPTX after PDF"
+    );
+    assert_eq!(
+        ExportFormat::Pptx.toggle(),
+        ExportFormat::Docx,
+        "HUD format cycle must reach DOCX after PPTX"
+    );
+    assert_eq!(
+        ExportFormat::Docx.toggle(),
+        ExportFormat::Markdown,
+        "HUD format cycle must continue after DOCX"
+    );
+}
+
+#[test]
+fn export_docx_to_writes_zip() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let out = scratch("gui-export-docx").join("invoice.docx");
+    app.export_to(ExportFormat::Docx, &out).unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    assert!(bytes.starts_with(b"PK"));
+    assert_eq!(bytes, app.export_docx_bytes().unwrap());
+}
+
+#[test]
+fn export_docx_to_unlocked_writes_nothing() {
+    let app = AppState::open(&unlocked_bytes(&invoice_bytes())).unwrap();
+    let out = scratch("gui-export-docx-unlocked").join("out.docx");
+    let err = format!("{}", app.export_to(ExportFormat::Docx, &out).unwrap_err());
+    assert!(err.contains("UNLOCKED"), "got {err}");
+    assert!(!out.exists(), "must not write a DOCX without a lock");
+}
+
+#[test]
+fn export_format_cycle_includes_docx() {
+    assert!(ExportFormat::ALL.contains(&ExportFormat::Docx));
+    assert_eq!(ExportFormat::Docx.extension(), "docx");
+    assert_eq!(ExportFormat::Docx.hud_label(), "DOCX");
+    assert_eq!(ExportFormat::Docx.dialog_filter(), ("Word", &["docx"][..]));
+}

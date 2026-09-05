@@ -4,7 +4,7 @@
 
 Conversion runs in the **SDK** (`markdown_to_k2f`, `k2f_to_markdown`). **Never** parse Markdown in the agent and emit raw K2F JSON — use the deterministic bridge. Roundtrip targets **semantic structure**, not lock bytes, theme, or signatures.
 
-**Default theme for import:** `report` (embedded in the Python/JS package — not in this skill folder). Fallback: `legal`.
+**Default theme for import:** named id `report` (or `legal`). Requires the official template directory on disk — **not** in this skill folder. In a repo checkout that is `templates/report`; otherwise set `K2F_TEMPLATES` to a parent of those dirs, or pass an author directory path. **Preferred agent path:** [writing.md](writing.md) (`init_package.py` + JSON), not `k2f markdown`.
 
 K2F-specific mapping, skip strings, and `<!-- k2f: … -->` comments: [converting-markdown/mapping.md](converting-markdown/mapping.md).
 
@@ -61,6 +61,7 @@ CLI writes the package and **does not print warnings**.
 | Missing local image | Skipped |
 | `FONT_MISSING_GLYPH` | Covering `--font`, or change text; no OS fonts |
 | Need footnotes as content | Keep in MD or extend tree with [writing.md](writing.md) |
+| `unknown template 'report'` | Official templates are not in the skill — use `init_package.py` ([writing.md](writing.md)), or point `K2F_TEMPLATES` at a checkout `templates/` parent |
 
 ## Common mistakes
 

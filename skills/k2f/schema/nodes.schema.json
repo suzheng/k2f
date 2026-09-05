@@ -64,7 +64,12 @@
     "break_inside": {
       "enum": ["auto", "avoid"],
       "default": "auto",
-      "description": "Page split policy. auto: keep whole if it fits a page, else split at child or line boundaries. avoid: never split; fail if taller than one page."
+      "description": "Page split policy. auto: split at line or child boundaries when the remainder of the page is too small. avoid: never split; fail if taller than one page."
+    },
+    "break_before": {
+      "enum": ["auto", "page"],
+      "default": "auto",
+      "description": "When page, start this node on a new page when not already at the content top."
     },
     "keep_with_next": {
       "type": "boolean",
@@ -145,7 +150,7 @@
               "properties": {
                 "src": {
                   "type": "string",
-                  "description": "Package path under assets/images/. Supported: PNG, WebP, SVG (engine rasterizes SVG). JPEG/GIF are not supported."
+                  "description": "Package path under assets/images/. Supported: PNG, JPEG, WebP, SVG (engine rasterizes SVG). GIF is not supported."
                 },
                 "width": {
                   "type": "integer",

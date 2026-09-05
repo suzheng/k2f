@@ -52,6 +52,7 @@ pub fn markdown_to_k2f(md: &str, opts: MarkdownOptions) -> Result<MarkdownResult
         heading_level: 0,
         pending_variant: None,
         pending_keep_with_next: false,
+        pending_break_before: false,
         pending_column_span: false,
         pending_role: None,
     };
@@ -84,6 +85,7 @@ struct Importer {
     heading_level: u8,
     pending_variant: Option<String>,
     pending_keep_with_next: bool,
+    pending_break_before: bool,
     pending_column_span: bool,
     pending_role: Option<String>,
 }
@@ -353,6 +355,8 @@ impl Importer {
                 self.pending_variant = Some(v.to_string());
             } else if part == "keep_with_next=true" {
                 self.pending_keep_with_next = true;
+            } else if part == "break_before=page" {
+                self.pending_break_before = true;
             } else if part == "column_span=all" {
                 self.pending_column_span = true;
             } else if let Some(v) = part.strip_prefix("role=") {
@@ -553,6 +557,10 @@ impl Importer {
         if self.pending_keep_with_next {
             node.keep_with_next = true;
             self.pending_keep_with_next = false;
+        }
+        if self.pending_break_before {
+            node.break_before = k2f_core::BreakBefore::Page;
+            self.pending_break_before = false;
         }
         if self.pending_column_span {
             node.column_span = k2f_core::ColumnSpan::All;

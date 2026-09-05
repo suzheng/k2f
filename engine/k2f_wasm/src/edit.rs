@@ -117,6 +117,14 @@ impl K2fEditor {
         self.inner.save_bytes().map_err(js_err)
     }
 
+    pub fn export_pptx(&self) -> Result<Vec<u8>, JsValue> {
+        self.inner.export_pptx_bytes().map_err(js_err)
+    }
+
+    pub fn export_docx(&self) -> Result<Vec<u8>, JsValue> {
+        self.inner.export_docx_bytes().map_err(js_err)
+    }
+
     pub fn save_with(&mut self, expected_content_hash: Option<String>) -> Result<Vec<u8>, JsValue> {
         self.inner
             .save_with(expected_content_hash.as_deref())

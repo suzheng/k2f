@@ -22,6 +22,8 @@ pip install k2f    # preferred: CLI on PATH + Python SDK
 | `k2f sign <package> --key <secret.key>` | Sign package (`--signed-by`, `--signed-at` optional) |
 | `k2f render <package> -o <page.png> [--page N] [--scale N]` | Rasterize one lock page to PNG |
 | `k2f export-pdf <package> -o <out.pdf> [--scale N] [--trust-pack]` | Draw lock into PDF |
+| `k2f export-pptx <package> -o <out.pptx>` | Draw lock into PowerPoint (not a second layout engine) |
+| `k2f export-docx <package> -o <out.docx>` | Draw lock into Word (not a second layout engine) |
 | `k2f hit-test <package> --page N --x X --y Y` | Hit-test lock geometry (pt, not px) |
 | `k2f markdown <source.md> -o <out.K2F> [--theme report]` | Compile Markdown → `.K2F` |
 
@@ -33,6 +35,8 @@ Coordinates for `hit-test` are in **points** on the page, matching the lock exec
 k2f compile examples/published/invoice.K2F
 k2f verify examples/published/invoice.K2F
 k2f export-pdf examples/published/invoice.K2F -o /tmp/invoice.pdf
+k2f export-pptx examples/published/invoice.K2F -o /tmp/invoice.pptx
+k2f export-docx examples/published/invoice.K2F -o /tmp/invoice.docx
 k2f markdown README.md -o /tmp/readme.K2F --theme report
 ```
 

@@ -2000,10 +2000,12 @@ version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
+ "k2f_docx",
  "k2f_layout",
  "k2f_package",
  "k2f_paint",
  "k2f_pdf",
+ "k2f_pptx",
  "k2f_sdk",
 ]
 
@@ -2034,6 +2036,20 @@ dependencies = [
  "sha2",
  "thiserror 1.0.69",
  "unicode-normalization",
+]
+
+[[package]]
+name = "k2f_docx"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "image 0.25.6",
+ "k2f_core",
+ "k2f_paint",
+ "roxmltree",
+ "thiserror 1.0.69",
+ "ttf-parser 0.21.1",
+ "zip",
 ]
 
 [[package]]
@@ -2134,6 +2150,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "k2f_pptx"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "image 0.25.6",
+ "k2f_core",
+ "k2f_paint",
+ "roxmltree",
+ "thiserror 1.0.69",
+ "ttf-parser 0.21.1",
+ "zip",
+]
+
+[[package]]
 name = "k2f_py"
 version = "0.1.2"
 dependencies = [
@@ -2151,10 +2181,12 @@ dependencies = [
  "clap",
  "image 0.25.6",
  "k2f_core",
+ "k2f_docx",
  "k2f_markdown",
  "k2f_package",
  "k2f_paint",
  "k2f_pdf",
+ "k2f_pptx",
  "k2f_sdk",
  "rfd",
  "serde",
@@ -2172,17 +2204,20 @@ dependencies = [
  "include_dir",
  "js-sys",
  "k2f_core",
+ "k2f_docx",
  "k2f_layout",
  "k2f_markdown",
  "k2f_package",
  "k2f_paint",
  "k2f_pdf",
+ "k2f_pptx",
  "lopdf",
  "pulldown-cmark",
  "resvg",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+ "zip",
 ]
 
 [[package]]
@@ -2202,9 +2237,11 @@ dependencies = [
  "console_error_panic_hook",
  "getrandom 0.3.4",
  "js-sys",
+ "k2f_docx",
  "k2f_layout",
  "k2f_paint",
  "k2f_pdf",
+ "k2f_pptx",
  "k2f_sdk",
  "serde_json",
  "wasm-bindgen",

@@ -1,4 +1,4 @@
-//! Binary tests for `--export-pdf` / `--verify`. Must not open a window.
+//! Binary tests for `--export-pdf` / `--export-pptx` / `--export-docx` / `--verify`. Must not open a window.
 
 mod common;
 
@@ -12,6 +12,147 @@ use std::path::Path;
 
 fn run(args: &[&str]) -> std::process::Output {
     run_reader(args)
+}
+
+#[test]
+fn headless_export_docx() {
+    let dir = scratch("export-docx");
+    let k2f_bytes = invoice_bytes();
+    let k2f = write_k2f(&dir, &k2f_bytes);
+    let docx = dir.join("out.docx");
+    let out = run(&[
+        "--export-docx",
+        docx.to_str().unwrap(),
+        k2f.to_str().unwrap(),
+    ]);
+    assert_ok(&out);
+    assert!(
+        out.stdout.is_empty(),
+        "export-only stdout must stay empty for CI; got {:?}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    let bytes = std::fs::read(&docx).unwrap();
+    assert!(
+        bytes.starts_with(b"PK"),
+        "export must write a DOCX without opening a window"
+    );
+    let app = AppState::open(&k2f_bytes).unwrap();
+    assert_eq!(
+        bytes,
+        app.export_docx_bytes().unwrap(),
+        "CLI must draw the same lock as AppState::export_docx_bytes"
+    );
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("wrote"), "{stderr}");
+}
+
+#[test]
+fn headless_rejects_docx_as_source() {
+    let dir = scratch("docx-source");
+    let k2f = write_k2f(&dir, &invoice_bytes());
+    let docx = dir.join("invoice.docx");
+    let export = run(&[
+        "--export-docx",
+        docx.to_str().unwrap(),
+        k2f.to_str().unwrap(),
+    ]);
+    assert_ok(&export);
+    let nested = dir.join("out.docx");
+    let reuse = run(&[
+        "--export-docx",
+        nested.to_str().unwrap(),
+        docx.to_str().unwrap(),
+    ]);
+    assert!(!reuse.status.success());
+    let err = String::from_utf8_lossy(&reuse.stderr);
+    assert!(
+        err.contains("UNEXPECTED_PATH") || err.contains("DOCX_IS_NOT_A_SOURCE"),
+        "got {err}"
+    );
+    assert!(
+        !nested.exists(),
+        "must not write a DOCX when the input is a DOCX"
+    );
+}
+
+#[test]
+fn export_docx_conflicts_with_export_pdf() {
+    let dir = scratch("conflict-docx-pdf");
+    let k2f = write_k2f(&dir, &invoice_bytes());
+    let out = run(&[
+        "--export-pdf",
+        dir.join("a.pdf").to_str().unwrap(),
+        "--export-docx",
+        dir.join("a.docx").to_str().unwrap(),
+        k2f.to_str().unwrap(),
+    ]);
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        err.contains("cannot be used with") || err.contains("conflict"),
+        "{err}"
+    );
+}
+
+#[test]
+fn export_docx_conflicts_with_export_pptx() {
+    let dir = scratch("conflict-docx-pptx");
+    let k2f = write_k2f(&dir, &invoice_bytes());
+    let out = run(&[
+        "--export-pptx",
+        dir.join("a.pptx").to_str().unwrap(),
+        "--export-docx",
+        dir.join("a.docx").to_str().unwrap(),
+        k2f.to_str().unwrap(),
+    ]);
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        err.contains("cannot be used with") || err.contains("conflict"),
+        "{err}"
+    );
+}
+
+#[test]
+fn headless_export_pptx() {
+    let dir = scratch("export-pptx");
+    let k2f_bytes = invoice_bytes();
+    let k2f = write_k2f(&dir, &k2f_bytes);
+    let pptx = dir.join("out.pptx");
+    let out = run(&[
+        "--export-pptx",
+        pptx.to_str().unwrap(),
+        k2f.to_str().unwrap(),
+    ]);
+    assert_ok(&out);
+    assert!(
+        out.stdout.is_empty(),
+        "export-only stdout must stay empty for CI; got {:?}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    let bytes = std::fs::read(&pptx).unwrap();
+    assert!(
+        bytes.starts_with(b"PK"),
+        "export must write a PPTX without opening a window"
+    );
+    let app = AppState::open(&k2f_bytes).unwrap();
+    assert_eq!(
+        bytes,
+        app.export_pptx_bytes().unwrap(),
+        "CLI must draw the same lock as AppState::export_pptx_bytes"
+    );
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("wrote"), "{stderr}");
 }
 
 #[test]
@@ -216,5 +357,12 @@ fn headless_flags_require_file() {
     assert!(
         !Path::new("/tmp/k2f-reader-missing.pdf").exists(),
         "must not write PDF without a source file"
+    );
+
+    let docx = run(&["--export-docx", "/tmp/k2f-reader-missing.docx"]);
+    assert_eq!(docx.status.code(), Some(2));
+    assert!(
+        !Path::new("/tmp/k2f-reader-missing.docx").exists(),
+        "must not write DOCX without a source file"
     );
 }

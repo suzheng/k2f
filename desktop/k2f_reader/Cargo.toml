@@ -15,6 +15,8 @@ path = "src/main.rs"
 k2f_paint = { path = "../../engine/k2f_paint" }
 k2f_package = { path = "../../engine/k2f_package" }
 k2f_pdf = { path = "../../engine/k2f_pdf" }
+k2f_pptx = { path = "../../export/k2f_pptx" }
+k2f_docx = { path = "../../export/k2f_docx" }
 k2f_markdown = { path = "../../engine/k2f_markdown" }
 clap = { version = "4.4", features = ["derive"] }
 anyhow = "1.0"

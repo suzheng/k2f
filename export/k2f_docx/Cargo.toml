@@ -1,0 +1,22 @@
+[package]
+name = "k2f_docx"
+version = "0.1.0"
+edition = "2021"
+description = "Experimental K2F lock → DOCX exporter (isolated; not part of k2f CLI)"
+publish = false
+
+[[bin]]
+name = "k2f-docx"
+path = "src/main.rs"
+
+[dependencies]
+k2f_core = { path = "../../engine/k2f_core" }
+k2f_paint = { path = "../../engine/k2f_paint" }
+thiserror = "1.0"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+clap = { version = "4", features = ["derive"] }
+image = { version = "=0.25.6", default-features = false, features = ["png"] }
+ttf-parser = "0.21"
+
+[dev-dependencies]
+roxmltree = "0.20"

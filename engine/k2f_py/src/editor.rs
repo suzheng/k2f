@@ -139,4 +139,14 @@ impl Editor {
     fn export_pdf_bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
         self.export_pdf_bytes_at(py, 2.0)
     }
+
+    fn export_pptx_bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
+        let bytes = self.inner.export_pptx_bytes().map_err(py_err)?;
+        Ok(PyBytes::new(py, &bytes))
+    }
+
+    fn export_docx_bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
+        let bytes = self.inner.export_docx_bytes().map_err(py_err)?;
+        Ok(PyBytes::new(py, &bytes))
+    }
 }

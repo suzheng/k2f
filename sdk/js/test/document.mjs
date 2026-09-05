@@ -1,4 +1,4 @@
-import { createK2f, exportPdf } from "../k2f.js";
+import { createK2f, exportPdf, exportPptx, exportDocx } from "../k2f.js";
 import { invoicePackage } from "./helpers/invoice-package.mjs";
 
 const k2f = await createK2f();
@@ -19,6 +19,38 @@ if (ed.getNode("invoice.note").content.value !== "Net 14.") {
   throw new Error("replaceText must update the semantic node");
 }
 ed.setRunningFooter("Page {{page_current}} of {{page_total}}");
+
+// openTemplate strips the lock; save first so exportPptx draws a compiled package.
+const saved = ed.save();
+const fromEditor = ed.exportPptx();
+if (fromEditor[0] !== 0x50 || fromEditor[1] !== 0x4b) {
+  throw new Error("Editor.exportPptx must return a ZIP");
+}
+const viaAlias = ed.export_pptx();
+if (viaAlias.length !== fromEditor.length) {
+  throw new Error("export_pptx alias must match exportPptx");
+}
+const fromBytes = await exportPptx(saved);
+if (fromBytes[0] !== 0x50) throw new Error("exportPptx(saved) must be a ZIP");
+const afterSave = ed.exportPptx();
+if (Buffer.from(afterSave).compare(Buffer.from(fromBytes)) !== 0) {
+  throw new Error("Editor.exportPptx after save must match exportPptx(bytes)");
+}
+
+const fromEditorDocx = ed.exportDocx();
+if (fromEditorDocx[0] !== 0x50 || fromEditorDocx[1] !== 0x4b) {
+  throw new Error("Editor.exportDocx must return a ZIP");
+}
+const viaAliasDocx = ed.export_docx();
+if (viaAliasDocx.length !== fromEditorDocx.length) {
+  throw new Error("export_docx alias must match exportDocx");
+}
+const fromBytesDocx = await exportDocx(saved);
+if (fromBytesDocx[0] !== 0x50) throw new Error("exportDocx(saved) must be a ZIP");
+const afterSaveDocx = ed.exportDocx();
+if (Buffer.from(afterSaveDocx).compare(Buffer.from(fromBytesDocx)) !== 0) {
+  throw new Error("Editor.exportDocx after save must match exportDocx(bytes)");
+}
 
 const pdf = await exportPdf(blob);
 if (Buffer.from(pdf.subarray(0, 5)).toString() !== "%PDF-") {

@@ -38,7 +38,7 @@ mod semantic_code_blocks_tests;
 mod semantic_math_tests;
 
 pub use appearance_hash::{hash_appearance_binding, AppearanceHashInput};
-pub use break_policy::BreakInside;
+pub use break_policy::{BreakBefore, BreakInside};
 pub use canonical_json::{canonical_json_string, canonicalize_json_value};
 pub use columns::ColumnSpan;
 pub use compositing::*;
@@ -211,6 +211,9 @@ pub struct SemanticNode {
     /// If true, this node and the next sibling must start on the same page when possible.
     #[serde(default, skip_serializing_if = "break_policy::is_false")]
     pub keep_with_next: bool,
+    /// When `page`, start this node on a new page when not already at the content top.
+    #[serde(default, skip_serializing_if = "BreakBefore::is_auto")]
+    pub break_before: BreakBefore,
     /// When `all`, this node spans the full width of an enclosing columns container.
     #[serde(default, skip_serializing_if = "ColumnSpan::is_none")]
     pub column_span: ColumnSpan,
@@ -231,6 +234,7 @@ impl Default for SemanticNode {
             layout: None,
             break_inside: BreakInside::Auto,
             keep_with_next: false,
+            break_before: BreakBefore::Auto,
             column_span: ColumnSpan::None,
         }
     }

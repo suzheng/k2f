@@ -39,6 +39,8 @@ Requires `pip install k2f` only (`k2f` on PATH or `K2F_CLI`).
 | Running header/footer | `set_running_header` / `set_running_footer` | `setRunningHeader` / `setRunningFooter` | `set_running_header` / `set_running_footer` |
 | Save | `save_bytes()` / `save_with(hash?)` | `save()` / `saveWith` | `save_bytes` / `save_with` |
 | PDF from Editor | `export_pdf_bytes` | not on Editor — `exportPdf(bytes)` after save | `export_pdf_bytes` |
+| PPTX from Editor | `export_pptx_bytes` | `exportPptx` / `export_pptx`（当前内存包；要最新 lock 先 `save`） | `export_pptx_bytes` |
+| DOCX from Editor | `export_docx_bytes` | `exportDocx` / `export_docx`（当前内存包；要最新 lock 先 `save`） | `export_docx_bytes` |
 | Suggest | `suggest` / `accept_suggestion` / `reject_suggestion` | same (+ `suggestions()`) | same (+ `suggestions_json`) |
 | Selection / clipboard | `selection` / `clipboard` → JSON str | same → objects | `selection` / `clipboard` |
 

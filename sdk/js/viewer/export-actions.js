@@ -63,6 +63,12 @@ export function exportDocument({
         return v.export_pdf();
       });
       break;
+    case "pptx":
+      out = withViewer(Viewer, bytes, (v) => v.export_pptx());
+      break;
+    case "docx":
+      out = withViewer(Viewer, bytes, (v) => v.export_docx());
+      break;
     case "markdown":
       out = withViewer(Viewer, bytes, (v) => {
         if (typeof v.document_markdown === "function") {

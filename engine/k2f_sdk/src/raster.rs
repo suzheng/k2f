@@ -5,9 +5,10 @@ pub fn raster_size(bytes: &[u8]) -> Result<(u32, u32, &'static str), AgentError>
     match image::guess_format(bytes) {
         Ok(ImageFormat::Png) => size_from_raster(bytes, "png"),
         Ok(ImageFormat::WebP) => size_from_raster(bytes, "webp"),
+        Ok(ImageFormat::Jpeg) => size_from_raster(bytes, "jpg"),
         Ok(other) => Err(AgentError::new(
             IMAGE_SIZE,
-            format!("unsupported image format {other:?}; embed PNG, WebP, or SVG"),
+            format!("unsupported image format {other:?}; embed PNG, JPEG, WebP, or SVG"),
         )),
         Err(_) if looks_like_svg(bytes) => svg_size(bytes),
         Err(e) => Err(AgentError::new(
@@ -17,7 +18,10 @@ pub fn raster_size(bytes: &[u8]) -> Result<(u32, u32, &'static str), AgentError>
     }
 }
 
-fn size_from_raster(bytes: &[u8], ext: &'static str) -> Result<(u32, u32, &'static str), AgentError> {
+fn size_from_raster(
+    bytes: &[u8],
+    ext: &'static str,
+) -> Result<(u32, u32, &'static str), AgentError> {
     let img = image::load_from_memory(bytes)
         .map_err(|e| AgentError::new(IMAGE_SIZE, format!("cannot decode image: {e}")))?;
     let (w, h) = img.dimensions();
@@ -34,8 +38,7 @@ fn looks_like_svg(bytes: &[u8]) -> bool {
     let s = String::from_utf8_lossy(bytes);
     let trimmed = s.trim_start();
     let lower = trimmed.to_ascii_lowercase();
-    lower.starts_with("<svg")
-        || (lower.starts_with("<?xml") && lower.contains("<svg"))
+    lower.starts_with("<svg") || (lower.starts_with("<?xml") && lower.contains("<svg"))
 }
 
 fn svg_size(bytes: &[u8]) -> Result<(u32, u32, &'static str), AgentError> {

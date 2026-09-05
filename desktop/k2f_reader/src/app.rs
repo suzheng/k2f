@@ -145,10 +145,20 @@ impl AppState {
         Ok(self.doc.export_pages_jpeg(OFFICIAL_PNG_SCALE)?)
     }
 
+    pub fn export_pptx_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        Ok(k2f_pptx::export_opened(&self.doc)?)
+    }
+
+    pub fn export_docx_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        Ok(k2f_docx::export_opened(&self.doc)?)
+    }
+
     pub fn export_bytes(&self, format: ExportFormat) -> anyhow::Result<Vec<u8>> {
         match format {
             ExportFormat::K2f => self.export_k2f_bytes(),
             ExportFormat::Pdf => self.export_pdf_bytes(),
+            ExportFormat::Pptx => self.export_pptx_bytes(),
+            ExportFormat::Docx => self.export_docx_bytes(),
             ExportFormat::Markdown => self
                 .export_markdown()
                 .map(|s| s.into_bytes()),

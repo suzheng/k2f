@@ -18,4 +18,12 @@ const png = viewer.render_page(0, k2f.Viewer.official_scale());
 if (png[0] !== 0x89 || png[1] !== 0x50) {
   throw new Error("render_page must return PNG bytes");
 }
-console.log(`ok viewer-only pages=${viewer.page_count()} png=${png.length}`);
+const pptx = viewer.export_pptx();
+if (pptx[0] !== 0x50 || pptx[1] !== 0x4b) {
+  throw new Error("viewer-only export_pptx must return a ZIP");
+}
+const docx = viewer.export_docx();
+if (docx[0] !== 0x50 || docx[1] !== 0x4b) {
+  throw new Error("viewer-only export_docx must return a ZIP");
+}
+console.log(`ok viewer-only pages=${viewer.page_count()} png=${png.length} pptx=${pptx.length} docx=${docx.length}`);

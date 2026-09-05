@@ -24,6 +24,10 @@ export function exportFilename(title, format, pageCount) {
       return `${stripExt(stem, "k2f")}.K2F`;
     case "pdf":
       return `${stripExt(stem, "pdf")}.pdf`;
+    case "pptx":
+      return `${stripExt(stem, "pptx")}.pptx`;
+    case "docx":
+      return `${stripExt(stem, "docx")}.docx`;
     case "markdown":
       return `${stripExt(stem, "md")}.md`;
     case "png":
@@ -41,6 +45,10 @@ export function exportMime(format, pageCount) {
       return "application/zip";
     case "pdf":
       return "application/pdf";
+    case "pptx":
+      return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    case "docx":
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     case "markdown":
       return "text/markdown;charset=utf-8";
     case "png":
