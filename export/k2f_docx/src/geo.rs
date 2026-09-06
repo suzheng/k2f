@@ -1,9 +1,10 @@
 use k2f_core::{BoxDecoration, Fill, GeometryNode, Page, PaintOp, Pt, Rect};
 use k2f_paint::{parse_hex_rgba, resolve_fill};
 
-/// Fills thinner than this stay in front of the document. Address underlines
-/// and similar 1 pt rules must not sit behind later text in Word/LibreOffice.
-const THIN_FILL_PT: i128 = 2_000;
+/// Fills thinner than this stay in front of the document. LibreOffice Writer
+/// paints `behindDoc` shapes under `w:background`, so 1 pt rules and a few-pt
+/// accent bars would vanish if they sat behind. Card/cell fills are larger.
+const THIN_FILL_PT: i128 = 8_000;
 
 pub(crate) fn find_geo<'a>(node: &'a GeometryNode, id: &str) -> Option<&'a GeometryNode> {
     if node.id == id {
@@ -127,6 +128,7 @@ mod tests {
     #[test]
     fn thin_fill_rect_detects_rules() {
         assert!(is_thin_fill_rect(&r(0, 0, 114_000, 1_000)));
+        assert!(is_thin_fill_rect(&r(0, 0, 6_000, 25_000)));
         assert!(!is_thin_fill_rect(&r(0, 0, 150_000, 86_000)));
     }
 }

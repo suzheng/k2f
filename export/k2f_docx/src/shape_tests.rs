@@ -240,6 +240,19 @@ fn page_background_is_behind_doc() {
         "1 pt rules must stay in front, got behind_doc={}",
         rule[0].behind_doc
     );
+    let bar_rect = Rect {
+        x: Pt(0),
+        y: Pt(0),
+        width: Pt(6_000),
+        height: Pt(25_000),
+    };
+    let bar = shapes_from_box("bar.magenta", &bar_rect, &dec, w, h, 10).unwrap();
+    assert_eq!(bar.len(), 1);
+    assert!(
+        !bar[0].behind_doc,
+        "few-pt accent bars must stay in front, got behind_doc={}",
+        bar[0].behind_doc
+    );
 }
 
 #[test]

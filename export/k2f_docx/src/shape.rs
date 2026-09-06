@@ -39,7 +39,8 @@ pub(crate) fn shapes_from_box(
     }
     // Large fills sit behind text/pictures. LibreOffice Writer otherwise paints
     // later container rects on top of pictures (stamp) and text (address).
-    // 1 pt rules stay in front so form underlines remain visible.
+    // Thin fills (1 pt rules, few-pt accent bars) stay in front: Writer paints
+    // behindDoc shapes under `w:background`, so those bars would disappear.
     let behind_doc = (fill_hex.is_some() && !crate::geo::is_thin_fill_rect(rect))
         || (node_id.contains("::background") && is_full_page_rect(page_w, page_h, rect));
     let base = ShapeBox {
