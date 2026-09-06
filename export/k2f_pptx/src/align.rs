@@ -61,6 +61,24 @@ pub(crate) fn source_lines(geo: &GeometryNode) -> Vec<Vec<&GlyphPosition>> {
     lines
 }
 
+/// Office wrap on a glyph-tight lock box reflows the last word onto a clipped
+/// second line when host bold/metrics are wider than rustybuzz. Keep wrap only
+/// when the lock already wrapped or left leftover width in the frame.
+pub(crate) fn should_wrap_lock(geo: Option<&GeometryNode>) -> bool {
+    let Some(geo) = geo else {
+        return true;
+    };
+    let lines = source_lines(geo);
+    if lines.len() >= 2 {
+        return true;
+    }
+    let Some(line) = lines.first() else {
+        return true;
+    };
+    let (slack, _, _) = line_gaps(line, geo.width.0);
+    slack >= MIN_SLACK
+}
+
 pub(crate) fn line_gaps(glyphs: &[&GlyphPosition], box_w: i128) -> (i128, i128, i128) {
     let left = glyphs.iter().map(|g| g.x_offset.0).min().unwrap_or(0);
     let right_edge = glyphs
@@ -197,5 +215,19 @@ mod tests {
             ],
         );
         assert_eq!(infer_text_align(&just, "A B\nA B"), TextAlign::Justify);
+    }
+
+    #[test]
+    fn wrap_only_when_lock_has_slack_or_multiple_lines() {
+        let tight = geo(40_000, vec![glyph(0, 0, 40_000, 0)]);
+        assert!(!should_wrap_lock(Some(&tight)));
+        let slack = geo(100_000, vec![glyph(0, 0, 40_000, 0)]);
+        assert!(should_wrap_lock(Some(&slack)));
+        let wrapped = geo(
+            40_000,
+            vec![glyph(0, 0, 40_000, 0), glyph(1, 0, 20_000, 14_000)],
+        );
+        assert!(should_wrap_lock(Some(&wrapped)));
+        assert!(should_wrap_lock(None));
     }
 }

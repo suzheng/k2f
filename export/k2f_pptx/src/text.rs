@@ -1,4 +1,4 @@
-use crate::align::{infer_text_align, line_spacing_spc_pts, source_lines};
+use crate::align::{infer_text_align, line_spacing_spc_pts, should_wrap_lock, source_lines};
 use crate::coord::pt_to_emu;
 use crate::ir::{ScriptPos, TextAlign, TextBox, TextRun};
 use k2f_core::{
@@ -116,7 +116,7 @@ pub(crate) fn textbox_from_draw(
         bullet,
         numbered,
         preserve_whitespace: node.preserve_whitespace == Some(true) || node.role == "code_block",
-        wrap: !running,
+        wrap: !running && should_wrap_lock(geo),
         line_spc_pts: line_spacing_spc_pts(geo),
         t_ins_emu: top_inset_emu(geo),
         mar_l_emu: if numbered || bullet {

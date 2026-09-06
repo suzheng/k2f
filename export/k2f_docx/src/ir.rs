@@ -47,6 +47,8 @@ pub struct TextBox {
     pub relative_height: u32,
     /// Opaque underlay so Word Dark Mode does not invert noFill text.
     pub fill_hex: Option<String>,
+    /// DrawingML wrap. False for glyph-tight single-line lock boxes.
+    pub wrap: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

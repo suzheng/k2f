@@ -49,11 +49,12 @@ pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, St
                     <w:txbxContent>
 {body}                    </w:txbxContent>
                   </wps:txbx>
-                  <wps:bodyPr wrap="square" lIns="{l}" tIns="{t}" rIns="{r}" bIns="{b}" anchor="{anchor}"/>
+                  <wps:bodyPr wrap="{wrap}" lIns="{l}" tIns="{t}" rIns="{r}" bIns="{b}" anchor="{anchor}"/>
                 </wps:wsp>
 "#,
         cx = tb.cx_emu,
         cy = tb.cy_emu,
+        wrap = if tb.wrap { "square" } else { "none" },
         l = l,
         t = t,
         r = r,
@@ -316,6 +317,7 @@ mod tests {
             preserve_whitespace: false,
             relative_height: 1,
             fill_hex: None,
+            wrap: true,
         }
     }
 

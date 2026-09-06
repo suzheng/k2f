@@ -47,6 +47,7 @@ pub(crate) fn textbox_from_draw_ctx(
     let align = geo
         .map(|g| infer_text_align(g, text))
         .unwrap_or(crate::ir::TextAlign::Left);
+    let wrap = align::should_wrap_lock(geo);
     let (l_ins_emu, mut t_ins_emu, r_ins_emu, b_ins_emu) = metrics::insets(geo, align);
     let font_size = paint_runs
         .first()
@@ -81,6 +82,7 @@ pub(crate) fn textbox_from_draw_ctx(
             || matches!(node.content, NodeContent::CodeBlock(_)),
         relative_height,
         fill_hex: None,
+        wrap,
     })
 }
 
