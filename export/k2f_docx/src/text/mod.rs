@@ -12,6 +12,7 @@ use k2f_core::{GeometryNode, ListMarkerType, NodeContent, Rect, SemanticNode, Te
 use std::collections::BTreeMap;
 
 pub use align::infer_text_align;
+pub(crate) use fields::has_page_tokens;
 pub(crate) use font::FontCtx;
 pub(crate) use runs::runs_from_paint;
 

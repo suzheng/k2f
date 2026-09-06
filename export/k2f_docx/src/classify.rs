@@ -26,7 +26,7 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
     let fonts = font_ctx(doc.fonts());
     let root = doc.semantic_root();
     let running = doc.running_blocks();
-    let skip_running = crate::header::running_ids(running);
+    let skip_running = crate::header::running_field_ids(running);
     let assets = doc.assets();
     let tables = index_native_tables(root, running);
     let mut media_n = 1u32;

@@ -415,6 +415,50 @@ fn subscript_is_vertAlign_not_italic() {
 }
 
 #[test]
+fn italic_emphasis_on_italic_paint_is_not_bold() {
+    let text = "Keywords: italic only";
+    let mut italic = style("#000000", 9_000);
+    italic.italic = true;
+    let xml = wml_from(
+        text,
+        vec![Modifier {
+            range: [10, text.len()],
+            mod_type: "emphasis".into(),
+            intent: "italic".into(),
+        }],
+        vec![
+            TextGlyphRun {
+                glyph_range: [0, 10],
+                style: style("#000000", 9_000),
+            },
+            TextGlyphRun {
+                glyph_range: [10, text.chars().count()],
+                style: italic,
+            },
+        ],
+        glyphs_for(text, 0, 8_000),
+        200_000,
+    );
+    let doc = roxmltree::Document::parse(&xml).unwrap();
+    let italic_t = doc
+        .descendants()
+        .find(|n| n.has_tag_name("t") && n.text() == Some("italic only"))
+        .expect("italic run text");
+    let rpr = italic_t
+        .parent()
+        .and_then(|r| r.children().find(|n| n.has_tag_name("rPr")))
+        .expect("rPr");
+    assert!(
+        rpr.children().any(|n| n.has_tag_name("i")),
+        "italic emphasis must keep italic, got {xml}"
+    );
+    assert!(
+        !rpr.children().any(|n| n.has_tag_name("b")),
+        "italic emphasis must not force bold, got {xml}"
+    );
+}
+
+#[test]
 fn syntax_highlight_keeps_run_colors() {
     let text = "ab";
     let xml = wml_from(

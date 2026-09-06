@@ -189,11 +189,10 @@ fn run_from_style(
 
 fn apply_modifier(run: &mut TextRun, m: &Modifier, style: &TextPaintStyle) {
     match m.mod_type.as_str() {
-        "emphasis" => {
-            if !style.bold {
-                run.bold = true;
-            }
-        }
+        "emphasis" => match m.intent.as_str() {
+            "italic" => run.italic = true,
+            _ => run.bold = true,
+        },
         "underline" => run.underline = true,
         "strikethrough" => run.strike = true,
         "link" => run.hyperlink = k2f_core::hyperlink_href(&m.intent).map(str::to_string),
@@ -324,5 +323,37 @@ mod tests {
             &fallback_style(),
         );
         assert_eq!(run.hyperlink.as_deref(), Some("https://example.com"));
+    }
+
+    #[test]
+    fn italic_emphasis_is_not_forced_bold() {
+        let mut run = dummy_run();
+        apply_modifier(
+            &mut run,
+            &Modifier {
+                range: [0, 4],
+                mod_type: "emphasis".into(),
+                intent: "italic".into(),
+            },
+            &fallback_style(),
+        );
+        assert!(run.italic);
+        assert!(!run.bold);
+    }
+
+    #[test]
+    fn critical_emphasis_is_bold() {
+        let mut run = dummy_run();
+        apply_modifier(
+            &mut run,
+            &Modifier {
+                range: [0, 4],
+                mod_type: "emphasis".into(),
+                intent: "critical".into(),
+            },
+            &fallback_style(),
+        );
+        assert!(run.bold);
+        assert!(!run.italic);
     }
 }

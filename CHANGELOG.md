@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `export-docx`: LibreOffice Writer paints pictures above DrawingML shapes regardless of `behindDoc`, so a later opaque container hid stamps and address text. Large fill boxes now use `behindDoc=1`; thin fills (1 pt rules and few-pt accent bars, min side ≤ 8 pt) stay in front; images fully covered by a later opaque lock box are omitted (they are invisible in the lock). Landscape `w:pgSz` sets `w:orient="landscape"`. A large fill that also has a four-sided stroke (drawing frames, card shells) splits: fill stays behind, outline is a separate in-front shape so Writer does not hide the border under `w:background`.
 - `export-docx` / `export-pptx`: cluster lock glyphs into lines with a font-relative y-tolerance (half the face, 2–7.5pt) instead of a fixed 7.5pt. 5–7pt wrapped body was merging two lines, so wrap and line pitch followed host defaults. 11–12pt tests keep the old cap.
 - `export-pptx`: native table cells follow lock borders (explicit `a:noFill` when the lock has none) instead of a fake four-side `#D0D0D0` 0.5pt grid. Cell paragraph align is inferred from lock glyphs, matching Word. Invoice/text/corpus tests still pass.
+- `export-docx` / `export-pptx`: `emphasis` intent `italic` sets italic, not bold. Re-applying every emphasis as bold made lock-italic runs (keywords, captions) export as bold-italic.
+- `export-docx`: static running-header/footer paint (logos, labels without `{{page_*}}`) is drawn in the body at lock coordinates. LibreOffice Writer does not paint `header1.xml` / `footer1.xml` when `pgMar` header/footer is 0. PAGE/NUMPAGES fields stay in the footer part so invoice page numbers are not duplicated.
 
 ### Removed
 

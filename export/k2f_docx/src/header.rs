@@ -2,17 +2,28 @@ use crate::geo::find_geo;
 use crate::ir::PageElement;
 use crate::picture::picture_from_draw;
 use crate::shape::shapes_from_box;
-use crate::text::{textbox_from_draw_ctx, FontCtx};
+use crate::text::{has_page_tokens, textbox_from_draw_ctx, FontCtx};
 use crate::DocxError;
 use k2f_core::{for_each_node, LockFile, PaintOp, RunningBlockNode, RunningBlockPosition};
 use k2f_paint::OpenedDocument;
 use std::collections::{BTreeMap, HashSet};
 
-pub(crate) fn running_ids(running: &[RunningBlockNode]) -> HashSet<String> {
+/// Node ids whose running-header/footer text becomes Word PAGE/NUMPAGES
+/// fields. Those stay in header1.xml / footer1.xml and are skipped in the
+/// body so they are not duplicated as "Page 1 of 3".
+///
+/// Other running paint (logos, static labels) is drawn in the body at lock
+/// coordinates. LibreOffice Writer does not paint header/footer parts when
+/// `pgMar` header/footer is 0 (required so lock geometry maps onto the page).
+pub(crate) fn running_field_ids(running: &[RunningBlockNode]) -> HashSet<String> {
     let mut ids = HashSet::new();
     for rb in running {
         for_each_node(&rb.node, &mut |n| {
-            ids.insert(n.id.clone());
+            if let Some(t) = k2f_core::node_text(n) {
+                if has_page_tokens(t) {
+                    ids.insert(n.id.clone());
+                }
+            }
         });
     }
     ids

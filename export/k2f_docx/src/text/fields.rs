@@ -5,6 +5,10 @@ const TOKENS: [(&str, DocField); 2] = [
     ("{{page_total}}", DocField::NumPages),
 ];
 
+pub(crate) fn has_page_tokens(text: &str) -> bool {
+    TOKENS.iter().any(|(tok, _)| text.contains(tok))
+}
+
 /// Rewrite `{{page_current}}` / `{{page_total}}` into Word fields.
 /// Tokens may be split across adjacent paint runs; search the concatenated text.
 pub(crate) fn expand_fields(runs: Vec<TextRun>) -> Vec<TextRun> {

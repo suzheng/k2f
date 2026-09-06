@@ -546,7 +546,10 @@ fn run_from_style(
 
 fn apply_modifier(run: &mut TextRun, m: &Modifier) {
     match m.mod_type.as_str() {
-        "emphasis" => run.bold = true,
+        "emphasis" => match m.intent.as_str() {
+            "italic" => run.italic = true,
+            _ => run.bold = true,
+        },
         "underline" => run.underline = true,
         "strikethrough" => run.strike = true,
         "link" => run.hyperlink = k2f_core::hyperlink_href(&m.intent).map(str::to_string),
@@ -618,6 +621,21 @@ mod tests {
         assert_eq!(runs[0].text, "Hello");
         assert!(runs[0].bold);
         assert_eq!(runs[1].text, " world");
+        assert!(!runs[1].bold);
+    }
+
+    #[test]
+    fn italic_emphasis_is_not_forced_bold() {
+        let style = fallback_style();
+        let mods = [Modifier {
+            range: [0, 6],
+            mod_type: "emphasis".into(),
+            intent: "italic".into(),
+        }];
+        let runs = split_runs("italic rest", &style, &mods, "Roboto", 0);
+        assert!(runs[0].italic);
+        assert!(!runs[0].bold);
+        assert!(!runs[1].italic);
         assert!(!runs[1].bold);
     }
 
