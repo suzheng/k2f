@@ -37,7 +37,11 @@ pub(crate) fn shapes_from_box(
     if fill_hex.is_none() && line.is_none() {
         return Ok(Vec::new());
     }
-    let behind_doc = node_id.contains("::background") && is_full_page_rect(page_w, page_h, rect);
+    // Large fills sit behind text/pictures. LibreOffice Writer otherwise paints
+    // later container rects on top of pictures (stamp) and text (address).
+    // 1 pt rules stay in front so form underlines remain visible.
+    let behind_doc = (fill_hex.is_some() && !crate::geo::is_thin_fill_rect(rect))
+        || (node_id.contains("::background") && is_full_page_rect(page_w, page_h, rect));
     let base = ShapeBox {
         node_id: node_id.to_string(),
         x_emu: pt_to_emu(rect.x),
@@ -166,7 +170,7 @@ fn edge_bars(base: &ShapeBox, border: &Border, ln: &LineSpec) -> Vec<ShapeBox> {
             line_hex: None,
             line_w_emu: 0,
             line_dash: LineDash::Solid,
-            behind_doc: base.behind_doc,
+            behind_doc: false,
             relative_height: base.relative_height,
         });
     }

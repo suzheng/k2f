@@ -157,6 +157,9 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
                     }
                 }
                 PaintOp::DrawImage { node_id, rect, src } => {
+                    if crate::geo::image_occluded_by_later_opaque_box(rect, &ops[i + 1..]) {
+                        continue;
+                    }
                     let pic = picture_from_draw(node_id, rect, src, assets, media_n, rel)?;
                     media_n = media_n.saturating_add(1);
                     elements.push(PageElement::Picture(pic));

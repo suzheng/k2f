@@ -61,7 +61,7 @@ pub fn document_xml(
   <w:background w:color="{bg}"/>
   <w:body>
 {body}    <w:sectPr>
-{sect}      <w:pgSz w:w="{w}" w:h="{h}"/>
+{sect}      <w:pgSz w:w="{w}" w:h="{h}"{orient}/>
       <w:pgMar w:top="0" w:right="0" w:bottom="0" w:left="0"
                w:header="0" w:footer="0" w:gutter="0"/>
     </w:sectPr>
@@ -69,6 +69,11 @@ pub fn document_xml(
 </w:document>
 "#,
         w = ir.page_width_twips,
+        orient = if ir.page_width_twips > ir.page_height_twips {
+            r#" w:orient="landscape""#
+        } else {
+            ""
+        },
         h = ir.page_height_twips,
         bg = paper_hex(
             ir.pages

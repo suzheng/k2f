@@ -35,6 +35,26 @@ fn page_background_behind_doc() {
 }
 
 #[test]
+fn landscape_pg_sz_sets_orient() {
+    let xml = common::xml_in(
+        &export_opened(&common::invoice()).unwrap(),
+        "word/document.xml",
+    );
+    let parsed = roxmltree::Document::parse(&xml).unwrap();
+    let sz = parsed
+        .descendants()
+        .find(|n| n.has_tag_name("pgSz"))
+        .expect("pgSz");
+    let w: i64 = common::local_attr(&sz, "w").unwrap().parse().unwrap();
+    let h: i64 = common::local_attr(&sz, "h").unwrap().parse().unwrap();
+    if w > h {
+        assert_eq!(common::local_attr(&sz, "orient"), Some("landscape"));
+    } else {
+        assert!(common::local_attr(&sz, "orient").is_none());
+    }
+}
+
+#[test]
 fn z_order_follows_paint_ops() {
     let doc = common::invoice();
     let lock = doc.lock().expect("locked");

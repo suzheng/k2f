@@ -193,7 +193,23 @@ fn page_background_is_behind_doc() {
     assert!(bg[0].behind_doc);
     let cell = shapes_from_box("invoice.th.item", &rect(), &dec, w, h, 10).unwrap();
     assert_eq!(cell.len(), 1);
-    assert!(!cell[0].behind_doc);
+    assert!(
+        cell[0].behind_doc,
+        "large container fills must sit behind text/pictures"
+    );
+    let rule_rect = Rect {
+        x: Pt(0),
+        y: Pt(0),
+        width: Pt(114_000),
+        height: Pt(1_000),
+    };
+    let rule = shapes_from_box("addr_line", &rule_rect, &dec, w, h, 10).unwrap();
+    assert_eq!(rule.len(), 1);
+    assert!(
+        !rule[0].behind_doc,
+        "1 pt rules must stay in front, got behind_doc={}",
+        rule[0].behind_doc
+    );
 }
 
 #[test]
