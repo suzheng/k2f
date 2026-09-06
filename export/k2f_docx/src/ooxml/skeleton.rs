@@ -1,6 +1,4 @@
-use crate::ir::{
-    collect_hyperlink_urls, collect_pictures, has_lists, hyperlink_theme_hex, DocIR,
-};
+use crate::ir::{collect_hyperlink_urls, collect_pictures, has_lists, hyperlink_theme_hex, DocIR};
 use crate::xml::escape_xml;
 use std::collections::BTreeMap;
 

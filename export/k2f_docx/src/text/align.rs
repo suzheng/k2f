@@ -1,5 +1,5 @@
 use crate::ir::TextAlign;
-use k2f_core::{GeometryNode, GlyphPosition};
+use k2f_core::{GeometryNode, GlyphPosition, Pt};
 
 const MIN_SLACK: i128 = 2_000;
 
@@ -20,7 +20,7 @@ pub fn infer_text_align(geo: &GeometryNode, text: &str) -> TextAlign {
         }
     }
     match best {
-        Some((_, left, right)) => infer_from_gaps(left, right, box_w),
+        Some((_, left, right)) => infer_from_gaps(left, right),
         None => TextAlign::Left,
     }
 }
@@ -63,20 +63,31 @@ pub(crate) fn source_lines(geo: &GeometryNode) -> Vec<Vec<&GlyphPosition>> {
 
 /// Office wrap on a glyph-tight lock box reflows the last word onto a clipped
 /// second line when host bold/metrics are wider than rustybuzz. Keep wrap only
-/// when the lock already wrapped or left leftover width in the frame.
-pub(crate) fn should_wrap_lock(geo: Option<&GeometryNode>) -> bool {
+/// when the lock already wrapped, or leftover width sits in a frame tall
+/// enough for a second line. One-line-tall boxes (pills, title/date rows)
+/// must not wrap: leftover padding or unused cell width is not wrap room.
+pub(crate) fn should_wrap_lock(geo: Option<&GeometryNode>, font_size: Pt) -> bool {
     let Some(geo) = geo else {
         return true;
     };
     let lines = source_lines(geo);
     if lines.len() >= 2 {
         return true;
-    };
+    }
     let Some(line) = lines.first() else {
         return true;
     };
+    if !fits_two_lines(geo, line, font_size) {
+        return false;
+    }
     let (slack, _, _) = line_gaps(line, geo.width.0);
     slack >= MIN_SLACK
+}
+
+fn fits_two_lines(geo: &GeometryNode, line: &[&GlyphPosition], font_size: Pt) -> bool {
+    let y = line.iter().map(|g| g.y_offset.0).min().unwrap_or(0).max(0);
+    let content_h = geo.height.0.saturating_sub(y);
+    content_h >= font_size.0.saturating_mul(2)
 }
 
 pub(crate) fn line_gaps(glyphs: &[&GlyphPosition], box_w: i128) -> (i128, i128, i128) {
@@ -90,13 +101,15 @@ pub(crate) fn line_gaps(glyphs: &[&GlyphPosition], box_w: i128) -> (i128, i128, 
     (left.saturating_add(right), left, right)
 }
 
-fn infer_from_gaps(left: i128, right: i128, box_w: i128) -> TextAlign {
+fn infer_from_gaps(left: i128, right: i128) -> TextAlign {
     let slack = left.saturating_add(right);
     if slack < MIN_SLACK {
         return TextAlign::Left;
     }
     let delta = left - right;
-    if delta.abs() * 5 <= slack && left * 10 > box_w {
+    // Equal leftover on both sides is padding (pills, chips), not a wide
+    // left-aligned frame. Hosts need that slack for metrics, so center.
+    if delta.abs() * 5 <= slack && left >= MIN_SLACK && right >= MIN_SLACK {
         TextAlign::Center
     } else if delta > slack / 4 {
         TextAlign::Right
@@ -170,15 +183,26 @@ mod tests {
 
     #[test]
     fn wrap_only_when_lock_has_slack_or_multiple_lines() {
+        let fs = Pt(10_000);
         let tight = geo(40_000, vec![glyph(0, 0, 40_000, 0)]);
-        assert!(!should_wrap_lock(Some(&tight)));
+        assert!(!should_wrap_lock(Some(&tight), fs));
         let slack = geo(100_000, vec![glyph(0, 0, 40_000, 0)]);
-        assert!(should_wrap_lock(Some(&slack)));
+        assert!(should_wrap_lock(Some(&slack), fs));
         let wrapped = geo(
             40_000,
             vec![glyph(0, 0, 40_000, 0), glyph(1, 0, 20_000, 14_000)],
         );
-        assert!(should_wrap_lock(Some(&wrapped)));
-        assert!(should_wrap_lock(None));
+        assert!(should_wrap_lock(Some(&wrapped), fs));
+        assert!(should_wrap_lock(None, fs));
+    }
+
+    #[test]
+    fn wrap_off_when_single_line_frame_is_too_short() {
+        let mut short = geo(250_000, vec![glyph(0, 0, 220_000, 500)]);
+        short.height = Pt(13_000);
+        assert!(!should_wrap_lock(Some(&short), Pt(9_500)));
+        let mut padded = geo(87_000, vec![glyph(0, 6_500, 74_000, 2_500)]);
+        padded.height = Pt(13_250);
+        assert!(!should_wrap_lock(Some(&padded), Pt(7_500)));
     }
 }

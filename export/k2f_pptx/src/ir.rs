@@ -41,6 +41,10 @@ pub struct TextBox {
     pub line_spc_pts: Option<i32>,
     /// Role `padding_pt.top` baked into first-line glyph `y_offset`.
     pub t_ins_emu: i64,
+    /// Lock glyph left gap (role padding) as DrawingML `lIns`.
+    pub l_ins_emu: i64,
+    /// Lock glyph right gap as DrawingML `rIns` (right-aligned only).
+    pub r_ins_emu: i64,
     /// Hanging indent for list markers (DrawingML `marL` / negative `indent`).
     pub mar_l_emu: i64,
     /// 1-based `a:buAutoNum startAt`. Each list item is its own text box.

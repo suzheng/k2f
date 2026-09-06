@@ -49,6 +49,8 @@ pub struct TextBox {
     pub relative_height: u32,
     /// Opaque underlay so Word Dark Mode does not invert noFill text.
     pub fill_hex: Option<String>,
+    /// Copied from the matching DrawBox when the node is a decorated chip/pill.
+    pub corner_emu: i64,
     /// DrawingML wrap. False for glyph-tight single-line lock boxes.
     pub wrap: bool,
 }

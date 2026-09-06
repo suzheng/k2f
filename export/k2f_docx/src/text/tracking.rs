@@ -52,8 +52,8 @@ mod tests {
 
     #[test]
     fn tracking_twips_from_lock_extra_advance_on_alias_stem() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../assets/fonts/Roboto-Regular.ttf");
+        let path =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts/Roboto-Regular.ttf");
         let bytes = std::fs::read(path).unwrap();
         let mut fonts = BTreeMap::new();
         fonts.insert("assets/fonts/Roboto-Regular.ttf".into(), bytes.clone());

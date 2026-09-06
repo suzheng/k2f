@@ -105,6 +105,16 @@ pub(crate) fn textbox_from_draw(
     let align = geo
         .map(|g| infer_text_align(g, &raw))
         .unwrap_or(TextAlign::Left);
+    let font_size = paint_runs
+        .first()
+        .map(|r| r.style.font_size)
+        .unwrap_or(Pt(12_000));
+    let (l_ins_emu, r_ins_emu) = h_insets_emu(geo, align);
+    let wrap = !running && should_wrap_lock(geo, font_size);
+    let mut line_spc_pts = line_spacing_spc_pts(geo);
+    if !wrap && line_spc_pts.is_none() {
+        line_spc_pts = i32::try_from(font_size.0 / 10).ok().map(|v| v.max(100));
+    }
     Some(TextBox {
         node_id: node.id.clone(),
         x_emu: pt_to_emu(rect.x),
@@ -116,9 +126,11 @@ pub(crate) fn textbox_from_draw(
         bullet,
         numbered,
         preserve_whitespace: node.preserve_whitespace == Some(true) || node.role == "code_block",
-        wrap: !running && should_wrap_lock(geo),
-        line_spc_pts: line_spacing_spc_pts(geo),
+        wrap,
+        line_spc_pts,
         t_ins_emu: top_inset_emu(geo),
+        l_ins_emu,
+        r_ins_emu,
         mar_l_emu: if numbered || bullet {
             list_hanging_emu(geo)
         } else {
@@ -202,6 +214,36 @@ fn top_inset_emu(geo: Option<&GeometryNode>) -> i64 {
         return 0;
     }
     pt_to_emu(Pt(y))
+}
+
+/// Lock glyph gaps become DrawingML insets. Left leftover on a left-aligned
+/// line is padding; unused width on the right is editable slack, not `rIns`.
+fn h_insets_emu(geo: Option<&GeometryNode>, align: TextAlign) -> (i64, i64) {
+    let Some(geo) = geo else {
+        return (0, 0);
+    };
+    let lines = source_lines(geo);
+    if lines.is_empty() {
+        return (0, 0);
+    }
+    let box_w = geo.width.0;
+    let min_left = lines
+        .iter()
+        .map(|g| crate::align::line_gaps(g, box_w).1)
+        .min()
+        .unwrap_or(0)
+        .max(0);
+    let min_right = lines
+        .iter()
+        .map(|g| crate::align::line_gaps(g, box_w).2)
+        .min()
+        .unwrap_or(0)
+        .max(0);
+    match align {
+        TextAlign::Left => (pt_to_emu(Pt(min_left)), 0),
+        TextAlign::Right => (0, pt_to_emu(Pt(min_right))),
+        TextAlign::Center | TextAlign::Justify => (0, 0),
+    }
 }
 
 fn expand_page_vars(text: &str, page_idx: usize, total_pages: usize) -> String {
@@ -725,5 +767,32 @@ mod tests {
             underline: false,
         };
         assert_eq!(tracking_spc(&refs, &style, &ctx), 350);
+    }
+
+    #[test]
+    fn left_align_l_ins_from_glyph_gap() {
+        let geo = GeometryNode {
+            id: "g".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(87_000),
+            height: Pt(13_000),
+            glyphs: vec![GlyphPosition {
+                glyph_id: 1,
+                cluster: 0,
+                x_offset: Pt(6_500),
+                y_offset: Pt(2_500),
+                x_advance: Pt(74_000),
+                y_advance: Pt(0),
+            }],
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        };
+        let (l, r) = h_insets_emu(Some(&geo), TextAlign::Left);
+        assert_eq!(l, pt_to_emu(Pt(6_500)));
+        assert_eq!(r, 0);
+        let (cl, cr) = h_insets_emu(Some(&geo), TextAlign::Center);
+        assert_eq!((cl, cr), (0, 0));
     }
 }

@@ -220,7 +220,7 @@ fn infer_text_align_unit() {
     );
     assert_eq!(
         infer_text_align(&geo(w, vec![glyph(0, 4_000, 92_000, 0)]), "A"),
-        TextAlign::Left
+        TextAlign::Center
     );
     assert_eq!(infer_text_align(&geo(w, vec![]), "A"), TextAlign::Left);
     let just = geo(

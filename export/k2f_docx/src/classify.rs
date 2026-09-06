@@ -170,6 +170,7 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
         }
         let bg_hex = page_bg_hex(page, ops);
         assign_textbox_underlays(&mut elements, &bg_hex);
+        absorb_self_fill_shapes(&mut elements);
         ir_pages.push(PageIR { bg_hex, elements });
     }
     let page0 = &pages[0];
@@ -181,6 +182,8 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
         .unwrap_or("FFFFFE");
     assign_textbox_underlays(&mut header, paper);
     assign_textbox_underlays(&mut footer, paper);
+    absorb_self_fill_shapes(&mut header);
+    absorb_self_fill_shapes(&mut footer);
     Ok(DocIR {
         title: doc.title().to_string(),
         page_width_emu: pt_to_emu(page0.width),
@@ -230,6 +233,37 @@ fn assign_textbox_underlays(elements: &mut [PageElement], paper_hex: &str) {
         let hex = found.unwrap_or_else(|| paper_hex.to_string());
         tb.fill_hex = Some(pin_underlay_hex(&hex));
     }
+}
+
+/// A DrawBox + DrawText for the same node (pills, chips) must be one Word
+/// shape. LibreOffice paints the later roundRect on top of the text box and
+/// hides white labels. Fold the corner radius into the text box and drop the
+/// duplicate fill shape.
+fn absorb_self_fill_shapes(elements: &mut Vec<PageElement>) {
+    let corners: BTreeMap<String, i64> = elements
+        .iter()
+        .filter_map(|el| match el {
+            PageElement::Shape(s) => Some((s.node_id.clone(), s.corner_emu)),
+            _ => None,
+        })
+        .collect();
+    let mut absorbed = HashSet::new();
+    for el in elements.iter_mut() {
+        let PageElement::TextBox(tb) = el else {
+            continue;
+        };
+        if let Some(corner) = corners.get(&tb.node_id) {
+            tb.corner_emu = *corner;
+            absorbed.insert(tb.node_id.clone());
+        }
+    }
+    if absorbed.is_empty() {
+        return;
+    }
+    elements.retain(|el| match el {
+        PageElement::Shape(s) => !absorbed.contains(&s.node_id),
+        _ => true,
+    });
 }
 
 fn pin_underlay_hex(hex: &str) -> String {

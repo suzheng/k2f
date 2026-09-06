@@ -152,6 +152,7 @@ fn tc_xml(cell: &TableCell, width_twips: i64, hyperlink_rids: &BTreeMap<String, 
         relative_height: 0,
         fill_hex: None,
         wrap: true,
+        corner_emu: 0,
     };
     format!(
         r#"                          <w:tc>

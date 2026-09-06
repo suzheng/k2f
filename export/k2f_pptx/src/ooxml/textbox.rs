@@ -20,6 +20,16 @@ pub(crate) fn textbox_sp_xml(
         hyperlink_rids,
         "      ",
     );
+    let (lins, rins) = if tb.numbered || tb.bullet {
+        (0, tb.r_ins_emu)
+    } else {
+        (tb.l_ins_emu, tb.r_ins_emu)
+    };
+    let overflow = if tb.wrap {
+        ""
+    } else {
+        r#" vertOverflow="overflow" horzOverflow="overflow""#
+    };
     format!(
         r#"    <p:sp>
       <p:nvSpPr>
@@ -37,7 +47,7 @@ pub(crate) fn textbox_sp_xml(
         <a:ln><a:noFill/></a:ln>
       </p:spPr>
       <p:txBody>
-        <a:bodyPr wrap="{wrap}" lIns="0" tIns="{tins}" rIns="0" bIns="0" rtlCol="0" anchor="t"/>
+        <a:bodyPr wrap="{wrap}" lIns="{lins}" tIns="{tins}" rIns="{rins}" bIns="0" rtlCol="0" anchor="t"{overflow}/>
         <a:lstStyle/>
 {body}      </p:txBody>
     </p:sp>

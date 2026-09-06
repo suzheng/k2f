@@ -47,12 +47,18 @@ pub(crate) fn textbox_from_draw_ctx(
     let align = geo
         .map(|g| infer_text_align(g, text))
         .unwrap_or(crate::ir::TextAlign::Left);
-    let wrap = align::should_wrap_lock(geo);
     let (l_ins_emu, mut t_ins_emu, r_ins_emu, b_ins_emu) = metrics::insets(geo, align);
     let font_size = paint_runs
         .first()
         .map(|r| r.style.font_size)
         .unwrap_or(k2f_core::Pt(12_000));
+    let wrap = align::should_wrap_lock(geo, font_size);
+    let mut line_twips = metrics::line_spacing_twips(geo);
+    if !wrap && line_twips.is_none() {
+        // Host default line pitch (~12pt) clips 7–9pt text in one-line-tall
+        // frames (pills, title rows). Pin exact spacing to the lock font.
+        line_twips = Some(crate::coord::pt_to_twips(font_size).max(20));
+    }
     let numbered = node.marker_type == Some(ListMarkerType::Number);
     let bullet =
         !numbered && (node.role == "list_item" || node.marker_type == Some(ListMarkerType::Bullet));
@@ -75,7 +81,7 @@ pub(crate) fn textbox_from_draw_ctx(
         t_ins_emu,
         r_ins_emu,
         b_ins_emu,
-        line_twips: metrics::line_spacing_twips(geo),
+        line_twips: line_twips,
         vert_center,
         preserve_whitespace: node.preserve_whitespace == Some(true)
             || node.role == "code_block"
@@ -83,6 +89,7 @@ pub(crate) fn textbox_from_draw_ctx(
         relative_height,
         fill_hex: None,
         wrap,
+        corner_emu: 0,
     })
 }
 

@@ -24,6 +24,19 @@ pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, St
     } else {
         (tb.l_ins_emu, tb.t_ins_emu, tb.r_ins_emu, tb.b_ins_emu)
     };
+    let overflow = if tb.wrap {
+        ""
+    } else {
+        r#" vertOverflow="overflow" horzOverflow="overflow""#
+    };
+    let geom = if tb.corner_emu <= 0 {
+        "                    <a:prstGeom prst=\"rect\">\n                      <a:avLst/>\n                    </a:prstGeom>\n".to_string()
+    } else {
+        let adj = crate::shape::round_rect_adj(tb.corner_emu, tb.cx_emu, tb.cy_emu);
+        format!(
+            "                    <a:prstGeom prst=\"roundRect\">\n                      <a:avLst>\n                        <a:gd name=\"adj\" fmla=\"val {adj}\"/>\n                      </a:avLst>\n                    </a:prstGeom>\n"
+        )
+    };
     format!(
         r#"                <wps:wsp>
                   <wps:cNvSpPr txBox="1"/>
@@ -32,10 +45,7 @@ pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, St
                       <a:off x="0" y="0"/>
                       <a:ext cx="{cx}" cy="{cy}"/>
                     </a:xfrm>
-                    <a:prstGeom prst="rect">
-                      <a:avLst/>
-                    </a:prstGeom>
-{fill}                    <a:ln>
+{geom}{fill}                    <a:ln>
                       <a:noFill/>
                     </a:ln>
                   </wps:spPr>
@@ -49,7 +59,7 @@ pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, St
                     <w:txbxContent>
 {body}                    </w:txbxContent>
                   </wps:txbx>
-                  <wps:bodyPr wrap="{wrap}" lIns="{l}" tIns="{t}" rIns="{r}" bIns="{b}" anchor="{anchor}"/>
+                  <wps:bodyPr wrap="{wrap}" lIns="{l}" tIns="{t}" rIns="{r}" bIns="{b}" anchor="{anchor}"{overflow}/>
                 </wps:wsp>
 "#,
         cx = tb.cx_emu,
@@ -320,6 +330,7 @@ mod tests {
             relative_height: 1,
             fill_hex: None,
             wrap: true,
+            corner_emu: 0,
         }
     }
 

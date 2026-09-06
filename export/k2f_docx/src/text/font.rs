@@ -118,8 +118,8 @@ mod tests {
     use std::path::PathBuf;
 
     fn roboto() -> Vec<u8> {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../assets/fonts/Roboto-Regular.ttf");
+        let path =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts/Roboto-Regular.ttf");
         std::fs::read(path).expect("Roboto-Regular.ttf")
     }
 
