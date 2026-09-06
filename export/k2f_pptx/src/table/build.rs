@@ -1,10 +1,14 @@
 use super::TableIndex;
+use crate::align::infer_text_align;
 use crate::coord::{millipt_to_emu, pt_to_emu};
-use crate::ir::{LineDash, ShapeBox, TableBox, TableCell, TableRow};
+use crate::ir::{
+    BorderStroke, CellBorders, LineDash, ShapeBox, TableBox, TableCell, TableRow, TextAlign,
+};
 use crate::text::{cell_runs, FontCtx};
 use crate::PptxError;
 use k2f_core::{
-    find_in_trees, GeometryNode, Page, PaintOp, Rect, RunningBlockNode, SemanticNode, TextGlyphRun,
+    find_in_trees, node_text, Border, BorderEdge, BorderStyle, GeometryNode, Page, PaintOp, Rect,
+    RunningBlockNode, SemanticNode, TextGlyphRun,
 };
 use k2f_paint::{parse_hex_rgba, resolve_fill};
 use std::collections::HashMap;
@@ -54,11 +58,19 @@ pub(crate) fn table_on_page(
                 fonts,
                 header && no_text,
             );
+            let text = node.and_then(node_text).unwrap_or("");
+            let align = if text.is_empty() {
+                TextAlign::Left
+            } else {
+                infer_text_align(g, text)
+            };
             cells.push(TableCell {
                 node_id: g.id.clone(),
                 runs,
+                align,
                 fill_hex: paint.and_then(|p| p.fill_hex.clone()),
                 preserve_whitespace: preserve,
+                borders: cell_borders(paint.and_then(|p| p.border.as_ref()))?,
             });
         }
         rows_out.push(TableRow {
@@ -95,7 +107,18 @@ pub(crate) fn table_ref_placeholder(node_id: &str, rect: &Rect) -> ShapeBox {
 
 struct CellPaint {
     fill_hex: Option<String>,
+    border: Option<Border>,
     runs: Vec<TextGlyphRun>,
+}
+
+impl CellPaint {
+    fn empty() -> Self {
+        Self {
+            fill_hex: None,
+            border: None,
+            runs: Vec::new(),
+        }
+    }
 }
 
 fn cell_paints(ops: &[PaintOp]) -> Result<HashMap<String, CellPaint>, PptxError> {
@@ -108,25 +131,53 @@ fn cell_paints(ops: &[PaintOp]) -> Result<HashMap<String, CellPaint>, PptxError>
                 ..
             } => {
                 let fill = opaque_solid_hex(decoration)?;
-                map.entry(node_id.clone())
-                    .or_insert_with(|| CellPaint {
-                        fill_hex: None,
-                        runs: Vec::new(),
-                    })
-                    .fill_hex = fill;
+                let e = map.entry(node_id.clone()).or_insert_with(CellPaint::empty);
+                e.fill_hex = fill;
+                e.border = decoration.border.clone();
             }
             PaintOp::DrawText { node_id, runs, .. } => {
                 map.entry(node_id.clone())
-                    .or_insert_with(|| CellPaint {
-                        fill_hex: None,
-                        runs: Vec::new(),
-                    })
+                    .or_insert_with(CellPaint::empty)
                     .runs = runs.clone();
             }
             _ => {}
         }
     }
     Ok(map)
+}
+
+fn cell_borders(border: Option<&Border>) -> Result<CellBorders, PptxError> {
+    let Some(b) = border else {
+        return Ok(CellBorders::default());
+    };
+    if b.width_pt <= 0 || b.edges.is_empty() {
+        return Ok(CellBorders::default());
+    }
+    let stroke = BorderStroke {
+        color_hex: srgb_hex(&b.color)?,
+        w_emu: millipt_to_emu(b.width_pt).max(1),
+        dash: match b.style {
+            BorderStyle::Solid => LineDash::Solid,
+            BorderStyle::Dashed => LineDash::Dash,
+            BorderStyle::Dotted => LineDash::Dot,
+        },
+    };
+    Ok(CellBorders {
+        top: edge(b, BorderEdge::Top, &stroke),
+        left: edge(b, BorderEdge::Left, &stroke),
+        bottom: edge(b, BorderEdge::Bottom, &stroke),
+        right: edge(b, BorderEdge::Right, &stroke),
+    })
+}
+
+fn edge(b: &Border, e: BorderEdge, stroke: &BorderStroke) -> Option<BorderStroke> {
+    b.draws_edge(e).then(|| stroke.clone())
+}
+
+fn srgb_hex(color: &str) -> Result<String, PptxError> {
+    let [r, g, b, _] = parse_hex_rgba(color)
+        .ok_or_else(|| PptxError::Write(format!("unparseable color '{color}'")))?;
+    Ok(format!("{r:02X}{g:02X}{b:02X}"))
 }
 
 fn opaque_solid_hex(decoration: &k2f_core::BoxDecoration) -> Result<Option<String>, PptxError> {

@@ -137,8 +137,25 @@ pub struct TableRow {
 pub struct TableCell {
     pub node_id: String,
     pub runs: Vec<TextRun>,
+    pub align: TextAlign,
     pub fill_hex: Option<String>,
     pub preserve_whitespace: bool,
+    pub borders: CellBorders,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct CellBorders {
+    pub top: Option<BorderStroke>,
+    pub left: Option<BorderStroke>,
+    pub bottom: Option<BorderStroke>,
+    pub right: Option<BorderStroke>,
+}
+
+#[derive(Clone, Debug)]
+pub struct BorderStroke {
+    pub color_hex: String,
+    pub w_emu: i64,
+    pub dash: LineDash,
 }
 
 /// Most common lock color among clickable hyperlink runs, if any.

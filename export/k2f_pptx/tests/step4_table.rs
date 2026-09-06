@@ -286,6 +286,20 @@ fn table_graphic_frame_near_lock_rect() {
 }
 
 #[test]
+fn native_table_cells_do_not_fake_gray_grid() {
+    let pptx = export_opened(&common::invoice()).unwrap();
+    let xml = all_slide_xml(&pptx);
+    assert!(
+        !xml.contains(r#"<a:lnL w="6350"><a:solidFill><a:srgbClr val="D0D0D0"/>"#),
+        "native table cells must follow lock edges, not a fake #D0D0D0 grid"
+    );
+    assert!(
+        xml.contains("<a:lnL><a:noFill/></a:lnL>") || xml.contains("<a:noFill/>"),
+        "cells without lock borders need explicit noFill so hosts do not invent a grid"
+    );
+}
+
+#[test]
 fn draw_table_reference_is_shape_not_tbl() {
     let doc = common::invoice();
     let lock = doc.lock().expect("locked");

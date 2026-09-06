@@ -1,10 +1,7 @@
-use crate::ir::{TableBox, TableCell, TextAlign};
+use crate::ir::{BorderStroke, LineDash, TableBox, TableCell};
 use crate::ooxml::textbox::txbody_inner;
 use crate::xml::escape_xml;
 use std::collections::BTreeMap;
-
-const CELL_LN: &str =
-    r#"<a:solidFill><a:srgbClr val="D0D0D0"/></a:solidFill><a:prstDash val="solid"/>"#;
 
 pub(crate) fn table_graphic_frame_xml(
     table: &TableBox,
@@ -57,7 +54,7 @@ pub(crate) fn table_graphic_frame_xml(
 fn cell_xml(cell: &TableCell, hyperlink_rids: &BTreeMap<String, String>) -> String {
     let body = txbody_inner(
         &cell.runs,
-        TextAlign::Left,
+        cell.align,
         false,
         false,
         cell.preserve_whitespace,
@@ -79,13 +76,104 @@ fn cell_xml(cell: &TableCell, hyperlink_rids: &BTreeMap<String, String>) -> Stri
                 <a:lstStyle/>
 {body}              </a:txBody>
               <a:tcPr marL="0" marR="0" marT="0" marB="0">
-                <a:lnL w="6350">{CELL_LN}</a:lnL>
-                <a:lnR w="6350">{CELL_LN}</a:lnR>
-                <a:lnT w="6350">{CELL_LN}</a:lnT>
-                <a:lnB w="6350">{CELL_LN}</a:lnB>
+                {ln_l}
+                {ln_r}
+                {ln_t}
+                {ln_b}
                 {fill}
               </a:tcPr>
             </a:tc><!--{cell_id}-->
-"#
+"#,
+        ln_l = ln_xml("lnL", cell.borders.left.as_ref()),
+        ln_r = ln_xml("lnR", cell.borders.right.as_ref()),
+        ln_t = ln_xml("lnT", cell.borders.top.as_ref()),
+        ln_b = ln_xml("lnB", cell.borders.bottom.as_ref()),
     )
+}
+
+fn ln_xml(tag: &str, stroke: Option<&BorderStroke>) -> String {
+    match stroke {
+        Some(s) => {
+            let dash = match s.dash {
+                LineDash::Solid => "solid",
+                LineDash::Dash => "dash",
+                LineDash::Dot => "sysDot",
+            };
+            format!(
+                r#"<a:{tag} w="{w}"><a:solidFill><a:srgbClr val="{hex}"/></a:solidFill><a:prstDash val="{dash}"/></a:{tag}>"#,
+                w = s.w_emu,
+                hex = escape_xml(&s.color_hex),
+            )
+        }
+        None => format!(r#"<a:{tag}><a:noFill/></a:{tag}>"#),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::{CellBorders, TableCell, TextAlign};
+
+    fn dummy_cell(align: TextAlign, borders: CellBorders) -> TableCell {
+        TableCell {
+            node_id: "c".into(),
+            runs: Vec::new(),
+            align,
+            fill_hex: None,
+            preserve_whitespace: false,
+            borders,
+        }
+    }
+
+    #[test]
+    fn no_lock_border_emits_nofill_not_d0d0d0() {
+        let xml = cell_xml(
+            &dummy_cell(TextAlign::Left, CellBorders::default()),
+            &BTreeMap::new(),
+        );
+        assert!(
+            !xml.contains("D0D0D0"),
+            "must not fake four-side #D0D0D0, got {xml}"
+        );
+        for edge in ["lnL", "lnR", "lnT", "lnB"] {
+            assert!(
+                xml.contains(&format!("<a:{edge}><a:noFill/></a:{edge}>")),
+                "missing noFill on {edge}, got {xml}"
+            );
+        }
+    }
+
+    #[test]
+    fn right_align_emits_algn_r() {
+        let xml = cell_xml(
+            &dummy_cell(TextAlign::Right, CellBorders::default()),
+            &BTreeMap::new(),
+        );
+        assert!(
+            xml.contains(r#"algn="r""#),
+            "right-aligned lock cell must not be hardcoded left, got {xml}"
+        );
+    }
+
+    #[test]
+    fn lock_bottom_edge_keeps_color() {
+        let borders = CellBorders {
+            bottom: Some(BorderStroke {
+                color_hex: "1A73E8".into(),
+                w_emu: 12700,
+                dash: LineDash::Solid,
+            }),
+            ..CellBorders::default()
+        };
+        let xml = cell_xml(&dummy_cell(TextAlign::Left, borders), &BTreeMap::new());
+        assert!(
+            xml.contains(r#"<a:lnB w="12700">"#),
+            "bottom width, got {xml}"
+        );
+        assert!(xml.contains("1A73E8"), "lock color, got {xml}");
+        assert!(
+            xml.contains("<a:lnL><a:noFill/></a:lnL>"),
+            "other edges stay empty, got {xml}"
+        );
+    }
 }
