@@ -196,7 +196,7 @@ fn apply_modifier(run: &mut TextRun, m: &Modifier, style: &TextPaintStyle) {
         }
         "underline" => run.underline = true,
         "strikethrough" => run.strike = true,
-        "link" => run.hyperlink = Some(m.intent.clone()),
+        "link" => run.hyperlink = k2f_core::hyperlink_href(&m.intent).map(str::to_string),
         "subscript" => {
             run.script = ScriptPos::Sub;
             run.italic = style.italic;
@@ -277,5 +277,52 @@ mod tests {
             "unresolved palette tokens must become a valid hex color, not ST_HexColor garbage"
         );
         assert_eq!(color_hex("black"), "000001");
+    }
+
+    fn dummy_run() -> TextRun {
+        TextRun {
+            text: "link".into(),
+            font_name: "Roboto".into(),
+            sz_half_points: 22,
+            bold: false,
+            italic: false,
+            underline: false,
+            strike: false,
+            color_hex: "000001".into(),
+            hyperlink: None,
+            script: ScriptPos::Baseline,
+            tracking_twips: 0,
+            field: None,
+        }
+    }
+
+    #[test]
+    fn link_default_intent_is_not_a_hyperlink() {
+        let mut run = dummy_run();
+        apply_modifier(
+            &mut run,
+            &Modifier {
+                range: [0, 4],
+                mod_type: "link".into(),
+                intent: "default".into(),
+            },
+            &fallback_style(),
+        );
+        assert!(run.hyperlink.is_none());
+    }
+
+    #[test]
+    fn link_url_intent_is_a_hyperlink() {
+        let mut run = dummy_run();
+        apply_modifier(
+            &mut run,
+            &Modifier {
+                range: [0, 4],
+                mod_type: "link".into(),
+                intent: "https://example.com".into(),
+            },
+            &fallback_style(),
+        );
+        assert_eq!(run.hyperlink.as_deref(), Some("https://example.com"));
     }
 }

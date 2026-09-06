@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 #[derive(Clone, Debug)]
 pub struct DocIR {
     pub title: String,
@@ -229,6 +231,33 @@ fn push_run_urls(urls: &mut Vec<String>, runs: &[TextRun]) {
             if !urls.iter().any(|u| u == url) {
                 urls.push(url.clone());
             }
+        }
+    }
+}
+
+/// Most common lock color among clickable hyperlink runs, if any.
+pub fn hyperlink_theme_hex(elements: &[PageElement]) -> Option<String> {
+    let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+    for e in elements {
+        match e {
+            PageElement::TextBox(tb) => count_link_colors(&mut counts, &tb.runs),
+            PageElement::Table(tbl) => {
+                for row in &tbl.rows {
+                    for cell in &row.cells {
+                        count_link_colors(&mut counts, &cell.runs);
+                    }
+                }
+            }
+            PageElement::Shape(_) | PageElement::Picture(_) | PageElement::Raster(_) => {}
+        }
+    }
+    counts.into_iter().max_by_key(|(_, n)| *n).map(|(c, _)| c)
+}
+
+fn count_link_colors(counts: &mut BTreeMap<String, usize>, runs: &[TextRun]) {
+    for run in runs {
+        if run.hyperlink.is_some() {
+            *counts.entry(run.color_hex.clone()).or_default() += 1;
         }
     }
 }

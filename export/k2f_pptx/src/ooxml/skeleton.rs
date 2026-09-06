@@ -2,7 +2,7 @@ use crate::ir::{DeckIR, SlideElement};
 use crate::ooxml::parts;
 use crate::ooxml::slide;
 use crate::ooxml::xml_master;
-use crate::ooxml::xml_theme::THEME_XML;
+use crate::ooxml::xml_theme;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub fn build_package(deck: &DeckIR) -> BTreeMap<String, Vec<u8>> {
@@ -55,7 +55,10 @@ pub fn build_package(deck: &DeckIR) -> BTreeMap<String, Vec<u8>> {
         "ppt/slideLayouts/_rels/slideLayout1.xml.rels".into(),
         xml_master::slide_layout_rels().as_bytes().to_vec(),
     );
-    files.insert("ppt/theme/theme1.xml".into(), THEME_XML.as_bytes().to_vec());
+    files.insert(
+        "ppt/theme/theme1.xml".into(),
+        xml_theme::theme_xml(crate::ir::hyperlink_theme_hex(deck).as_deref()).into_bytes(),
+    );
     for (i, slide) in deck.slides.iter().enumerate() {
         let n = i + 1;
         let bindings = slide::bind_slide(slide);

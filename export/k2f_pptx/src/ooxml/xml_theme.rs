@@ -85,3 +85,20 @@ pub const THEME_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="
   <a:extraClrSchemeLst/>
 </a:theme>
 "#;
+
+/// Pin theme `hlink`/`folHlink` to the lock hyperlink run color. Hosts ignore
+/// run `solidFill` on `a:hlinkClick` and paint the scheme hyperlink slot.
+pub fn theme_xml(hlink_hex: Option<&str>) -> String {
+    match hlink_hex {
+        None => THEME_XML.to_string(),
+        Some(hex) => THEME_XML
+            .replace(
+                r#"<a:hlink><a:srgbClr val="0000FF"/></a:hlink>"#,
+                &format!(r#"<a:hlink><a:srgbClr val="{hex}"/></a:hlink>"#),
+            )
+            .replace(
+                r#"<a:folHlink><a:srgbClr val="800080"/></a:folHlink>"#,
+                &format!(r#"<a:folHlink><a:srgbClr val="{hex}"/></a:folHlink>"#),
+            ),
+    }
+}

@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 /// Crate-local deck model. PaintOps are classified into this, then written as OOXML.
 #[derive(Clone, Debug)]
 pub struct DeckIR {
@@ -133,4 +135,33 @@ pub struct TableCell {
     pub runs: Vec<TextRun>,
     pub fill_hex: Option<String>,
     pub preserve_whitespace: bool,
+}
+
+/// Most common lock color among clickable hyperlink runs, if any.
+pub fn hyperlink_theme_hex(deck: &DeckIR) -> Option<String> {
+    let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+    for slide in &deck.slides {
+        for el in &slide.elements {
+            match el {
+                SlideElement::TextBox(tb) => count_link_colors(&mut counts, &tb.runs),
+                SlideElement::Table(t) => {
+                    for row in &t.rows {
+                        for cell in &row.cells {
+                            count_link_colors(&mut counts, &cell.runs);
+                        }
+                    }
+                }
+                SlideElement::Shape(_) | SlideElement::Picture(_) | SlideElement::Raster(_) => {}
+            }
+        }
+    }
+    counts.into_iter().max_by_key(|(_, n)| *n).map(|(c, _)| c)
+}
+
+fn count_link_colors(counts: &mut BTreeMap<String, usize>, runs: &[TextRun]) {
+    for run in runs {
+        if run.hyperlink.is_some() {
+            *counts.entry(run.color_hex.clone()).or_default() += 1;
+        }
+    }
 }

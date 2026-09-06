@@ -268,7 +268,9 @@ fn rpr_xml(run: &TextRun) -> String {
         sz = run.sz_half_points,
     ));
     if run.underline {
-        s.push_str("                            <w:u w:val=\"single\"/>\n");
+        s.push_str(&format!(
+            "                            <w:u w:val=\"single\" w:color=\"{color}\"/>\n"
+        ));
     }
     match run.script {
         ScriptPos::Sub => {

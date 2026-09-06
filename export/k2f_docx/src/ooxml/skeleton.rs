@@ -1,4 +1,6 @@
-use crate::ir::{collect_hyperlink_urls, collect_pictures, has_lists, DocIR};
+use crate::ir::{
+    collect_hyperlink_urls, collect_pictures, has_lists, hyperlink_theme_hex, DocIR,
+};
 use crate::xml::escape_xml;
 use std::collections::BTreeMap;
 
@@ -8,7 +10,7 @@ use super::media::{
     media_exts, part_rels_xml, picture_rids,
 };
 use super::numbering::numbering_xml;
-use super::xml_theme::THEME_XML;
+use super::xml_theme;
 
 pub fn build_package(ir: &DocIR) -> BTreeMap<String, Vec<u8>> {
     let n = ir.pages.len();
@@ -64,10 +66,14 @@ pub fn build_package(ir: &DocIR) -> BTreeMap<String, Vec<u8>> {
         )
         .into_bytes(),
     );
-    files.insert("word/styles.xml".into(), STYLES.as_bytes().to_vec());
+    let hlink_hex = hyperlink_theme_hex(&all_els);
+    files.insert(
+        "word/styles.xml".into(),
+        styles_xml(hlink_hex.as_deref()).into_bytes(),
+    );
     files.insert(
         "word/theme/theme1.xml".into(),
-        THEME_XML.as_bytes().to_vec(),
+        xml_theme::theme_xml(hlink_hex.as_deref()).into_bytes(),
     );
     files.insert("word/settings.xml".into(), SETTINGS.as_bytes().to_vec());
     files.insert("word/fontTable.xml".into(), FONT_TABLE.as_bytes().to_vec());
@@ -212,7 +218,12 @@ const ROOT_RELS: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"
 </Relationships>
 "#;
 
-const STYLES: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+fn styles_xml(hlink_hex: Option<&str>) -> String {
+    // Hosts apply the Hyperlink character style to `w:hyperlink` even when the
+    // run sets `w:color`. Pin that style to the lock color (or near-black).
+    let color = hlink_hex.unwrap_or("000001");
+    format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:docDefaults>
     <w:rPrDefault>
@@ -233,8 +244,17 @@ const STYLES: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <w:name w:val="Normal"/>
     <w:qFormat/>
   </w:style>
+  <w:style w:type="character" w:styleId="Hyperlink">
+    <w:name w:val="Hyperlink"/>
+    <w:rPr>
+      <w:color w:val="{color}"/>
+      <w:u w:val="single" w:color="{color}"/>
+    </w:rPr>
+  </w:style>
 </w:styles>
-"#;
+"#
+    )
+}
 
 const SETTINGS: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">

@@ -397,6 +397,30 @@ pub struct Modifier {
     pub intent: String,
 }
 
+/// `link` modifier `intent` is a URL (spec). Theme variant keys such as
+/// `default` are style lookups, not hrefs, and must not become Office targets.
+pub fn hyperlink_href(intent: &str) -> Option<&str> {
+    let t = intent.trim();
+    if t.is_empty() {
+        return None;
+    }
+    let lower = t.to_ascii_lowercase();
+    if lower == "default" {
+        return None;
+    }
+    if lower.contains("://")
+        || lower.starts_with("mailto:")
+        || lower.starts_with("tel:")
+        || lower.starts_with("www.")
+        || t.starts_with('#')
+        || t.starts_with('/')
+    {
+        Some(t)
+    } else {
+        None
+    }
+}
+
 /// Solid fill rectangle in page coordinates (millipt). Used for math fraction/radical rules.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct FillRect {
@@ -501,6 +525,19 @@ mod tests {
         let pt = Pt(1500);
         let json = serde_json::to_string(&pt).unwrap();
         assert_eq!(json, "1500");
+    }
+
+    #[test]
+    fn link_intent_default_is_not_an_href() {
+        assert_eq!(hyperlink_href("default"), None);
+        assert_eq!(hyperlink_href(""), None);
+        assert_eq!(hyperlink_href("bold"), None);
+        assert_eq!(
+            hyperlink_href("https://example.com"),
+            Some("https://example.com")
+        );
+        assert_eq!(hyperlink_href("mailto:a@b.c"), Some("mailto:a@b.c"));
+        assert_eq!(hyperlink_href("#section"), Some("#section"));
     }
 
     #[test]

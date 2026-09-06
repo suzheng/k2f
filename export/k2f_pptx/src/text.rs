@@ -507,7 +507,7 @@ fn apply_modifier(run: &mut TextRun, m: &Modifier) {
         "emphasis" => run.bold = true,
         "underline" => run.underline = true,
         "strikethrough" => run.strike = true,
-        "link" => run.hyperlink = Some(m.intent.clone()),
+        "link" => run.hyperlink = k2f_core::hyperlink_href(&m.intent).map(str::to_string),
         "subscript" => run.script = ScriptPos::Sub,
         "superscript" => run.script = ScriptPos::Super,
         "math" | "syntax_highlight" => {}
@@ -577,6 +577,32 @@ mod tests {
         assert!(runs[0].bold);
         assert_eq!(runs[1].text, " world");
         assert!(!runs[1].bold);
+    }
+
+    #[test]
+    fn link_default_intent_is_not_a_hyperlink() {
+        let style = fallback_style();
+        let mods = [Modifier {
+            range: [0, 4],
+            mod_type: "link".into(),
+            intent: "default".into(),
+        }];
+        let runs = split_runs("link text", &style, &mods, "Roboto", 0);
+        assert!(runs.iter().all(|r| r.hyperlink.is_none()), "{runs:?}");
+        assert!(runs[0].hyperlink.is_none());
+    }
+
+    #[test]
+    fn link_url_intent_is_a_hyperlink() {
+        let style = fallback_style();
+        let mods = [Modifier {
+            range: [0, 4],
+            mod_type: "link".into(),
+            intent: "https://example.com".into(),
+        }];
+        let runs = split_runs("link text", &style, &mods, "Roboto", 0);
+        assert_eq!(runs[0].hyperlink.as_deref(), Some("https://example.com"));
+        assert!(runs[1].hyperlink.is_none());
     }
 
     #[test]
