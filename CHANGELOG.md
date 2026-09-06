@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Agent skill **design-first workflow** — write a design specification Markdown before authoring K2F JSON; implement `theme.json` + content from the spec, then render and iterate until the output matches.
 - `k2f export-pptx <package> -o <out.pptx>` — draw the published lock into PowerPoint. Not a second layout engine; slight text reflow is expected. PPTX is not a K2F source (`PPTX_IS_NOT_A_SOURCE`).
 - `k2f export-docx <package> -o <out.docx>` — draw the published lock into Word. Not a second layout engine; slight text reflow is expected. DOCX is not a K2F source (`DOCX_IS_NOT_A_SOURCE`).
 - Desktop reader: HUD format **DOCX** and `k2f-reader --export-docx out.docx file.K2F` (same lock bytes as GUI Export; conflicts with `--export-pdf` / `--export-pptx`).
@@ -17,6 +18,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 
 - Agent skill: poster/slide page shell is a pinned-height **grid** with `{auto:true}` header/footer and a `{fr:1}` grower ([`ex_poster_shell.json`](skills/k2f/catalog/content/ex_poster_shell.json)); do not stack content inside a fixed-height shell
+
+### Removed
+
+- Agent skill **`looks/`** — removed bundled design skins (`quiet-light`, `vivid-blocks`, `night-wash`) and `verify_looks.py`; styling is authored from the design spec instead
 
 ## [0.1.2] - 2026-08-30
 

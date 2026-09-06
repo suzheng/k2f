@@ -59,6 +59,7 @@ golden.json
 !skills/k2f/**/*.png
 !skills/k2f/**/*.ttf
 !skills/k2f/**/*.otf
+!.github/assets/**
 *.jpg
 *.jpeg
 *.gif

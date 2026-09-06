@@ -36,7 +36,6 @@ jobs:
           k2f --help
           pytest -q
           python3 ../../skills/k2f/scripts/pack_verify.py ../../skills/k2f/catalog -o /tmp/k2f-skill-catalog.K2F
-          python3 ../../skills/k2f/scripts/verify_looks.py
 
       - name: Run golden suite (5x determinism)
         run: cargo run -p k2f-test-runner -- run --dataset-runs 5

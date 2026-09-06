@@ -43,7 +43,7 @@
     }
   },
   "modifiers": {
-    "precedence": ["emphasis", "link"],
+    "precedence": ["emphasis", "link", "math"],
     "styles": {
       "emphasis": {
         "strong": { "bold": true },
@@ -54,6 +54,21 @@
       },
       "math": {
         "inline": { "color": "ink" }
+      },
+      "underline": {
+        "default": { "underline": true }
+      },
+      "strikethrough": {
+        "default": { "strikethrough": true }
+      },
+      "subscript": {
+        "default": {}
+      },
+      "superscript": {
+        "default": {}
+      },
+      "syntax_highlight": {
+        "keyword": { "color": "accent", "bold": true }
       }
     }
   },
@@ -76,6 +91,13 @@
       "font_size": 11000,
       "line_height_mult": 1350,
       "color": "ink"
+    },
+    "image": {
+      "font_family": "Roboto-Regular",
+      "font_size": 11000,
+      "line_height_mult": 1350,
+      "color": "ink",
+      "self_align": "start"
     },
     "h1": {
       "font_family": "Roboto-Regular",

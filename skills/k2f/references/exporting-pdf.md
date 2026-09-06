@@ -1,16 +1,8 @@
 # Exporting K2F to PDF
 
-## Overview
-
 PDF is a **drawing of the published lock**, not a second layout engine. `.K2F` stays the source.
 
-Exact API names: [exporting-pdf/surfaces.md](exporting-pdf/surfaces.md). Output contract (extra page, caption, raster ops): [exporting-pdf/pdf-contract.md](exporting-pdf/pdf-contract.md).
-
-## Prerequisites
-
-```bash
-pip install k2f    # CLI on PATH + Editor.export_pdf_bytes
-```
+If the PDF looks wrong or you are checking bytes: [exporting-pdf/pdf-contract.md](exporting-pdf/pdf-contract.md).
 
 ## When to Use
 
@@ -27,10 +19,11 @@ pip install k2f    # CLI on PATH + Editor.export_pdf_bytes
 ```bash
 k2f export-pdf file.K2F -o out.pdf
 k2f export-pdf file.K2F -o out.pdf --scale 4   # higher-res stamp pages only
-python3 scripts/check-pdf.py out.pdf
 ```
 
-`scripts/check-pdf.py` lives under this skill’s `scripts/`. Run it from the skill directory (or pass an absolute path).
+`--scale` is `2` (default), `3`, or `4` — stamp pages only. Default export has the **same page count as the lock** (no integrity page, no source caption). `--trust-pack` adds those; then run `python3 scripts/check-pdf.py out.pdf` (script lives under this skill’s `scripts/`).
+
+**Never** fall back to html2pdf, jsPDF, browser print, or React-PDF.
 
 ## Which lock is drawn
 
@@ -42,20 +35,13 @@ python3 scripts/check-pdf.py out.pdf
 
 JS `Editor` has **no** export. `save()` then `exportPdf(bytes)`.
 
-## Other surfaces (one-liners)
+## Other surfaces
 
 | Surface | Call | Notes |
 |---------|------|-------|
-| Python | `doc.export_pdf(path)` / `doc.export_pdf_bytes()`; `ed.export_pdf_bytes()` | No module-level `k2f.export_pdf` |
+| Python | `doc.export_pdf(path)` / `doc.export_pdf_bytes()`; `ed.export_pdf_bytes()` | No module-level `k2f.export_pdf`. Editor: **old** lock until `save_bytes()` |
 | JS | `exportPdf(bytes)`; `doc.exportPdf()`; `handle.exportPdf()` | Editor: save then `exportPdf(bytes)` |
 | Viewer UI | `<k2f-viewer>` Export PDF button / `handle.exportPdf()` | [embedding-viewer.md](embedding-viewer.md) |
-
-## Validation loop
-
-1. Ensure a compiled lock exists (`save` / `compile` if UNLOCKED).
-2. Export via CLI or SDK.
-3. Run `scripts/check-pdf.py` on the output.
-4. If check fails: use the table below. **Never** fall back to html2pdf, jsPDF, browser print, or React-PDF.
 
 ## Failure protocol
 
@@ -74,7 +60,7 @@ JS `Editor` has **no** export. `save()` then `exportPdf(bytes)`.
 |---------|---------|
 | Markdown / HTML → PDF library | MD → K2F → export PDF |
 | Edit the PDF and expect K2F to sync | One-way export |
-| Extra last page is a bug | Integrity verification page — see [pdf-contract.md](exporting-pdf/pdf-contract.md) |
+| Extra last page on a default export | Bug, or you passed `--trust-pack` — see [pdf-contract.md](exporting-pdf/pdf-contract.md) |
 | Export Editor before `save` | Stale lock in the PDF |
 
 ## See also

@@ -1,16 +1,6 @@
 # Exporting K2F to PPTX
 
-## Overview
-
 PPTX is a **drawing of the published lock**, not a second layout engine. `.K2F` stays the source. Slight text reflow in PowerPoint is expected and allowed.
-
-Exact CLI names: [exporting-pptx/surfaces.md](exporting-pptx/surfaces.md). Capability table: crate README (`k2f_pptx`).
-
-## Prerequisites
-
-```bash
-pip install k2f    # CLI on PATH
-```
 
 ## When to Use
 
@@ -50,9 +40,8 @@ No `--scale`. No `--trust-pack`. Draws the published lock; does not compile.
 
 | Mistake | Reality |
 |---------|---------|
-| Treat PPTX as a second source | One-way dump of the lock |
-| Expect glyph-identical slides | Slight reflow is legal |
 | Stamp a full-slide PNG | Native text/tables/pics must stay editable |
+| Expect glyph-identical slides | Slight reflow is legal |
 
 ## See also
 

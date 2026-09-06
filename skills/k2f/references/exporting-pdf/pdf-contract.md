@@ -16,7 +16,7 @@ When trust pack is enabled, each content page draws a small caption:
 
 `Official source is K2F. appearance_hash={hash}`
 
-The PDF Info subject uses the same line. `check-pdf.py` looks for `appearance_hash=` or `Official source is K2F` in the file bytes (Info / uncompressed strings). Content streams are Flate-compressed — do **not** assert `% k2f.verify` in the raw file.
+The PDF Info subject uses the same line. `scripts/check-pdf.py` is for **trust-pack** PDFs: it looks for `appearance_hash=` or `Official source is K2F` in the file bytes (Info / uncompressed strings). Default export has neither — do not run the checker on it. Content streams are Flate-compressed — do **not** assert `% k2f.verify` in the raw file.
 
 ## Selectable text
 

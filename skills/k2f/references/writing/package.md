@@ -2,7 +2,7 @@
 
 Domain conventions for fixed layouts (CV, flyer, cheatsheet). **Allowed JSON keys:** [`schema/`](../../schema/). **Golden shapes:** [`catalog/content/ex_*.json`](../../catalog/content/) ([index](../../catalog/README.md)). Copy those files; do not invent syntax.
 
-**Do not use in this skill's writing workflow** (schema-legal but unsupported here): `content.type: "table_reference"`, table `data.type: "asset"`, `content.type: "code_block"` (use `role: "code"` + text — see `ex_code.json` and [converting-markdown/mapping.md](../converting-markdown/mapping.md)).
+**Do not use in this skill's writing workflow** (schema-legal but unsupported here): `content.type: "table_reference"`, table `data.type: "asset"`, `content.type: "code_block"` (use `role: "code"` + text — see `ex_code.json` and [converting-markdown.md](../converting-markdown.md#mapping)).
 
 ## Required loose files
 
@@ -91,7 +91,7 @@ Allowed layout types and fields: `schema/nodes.schema.json` → `layout`. Copy f
 
 **Theme-only styling.** Style fields live in `styles/theme.json` roles/variants only — never on nodes in `root.json`. Nodes may set `role`, `variant`, `layout`, `modifiers`, `break_inside`, `break_before`, `keep_with_next`, `column_span`. Allowed role/theme keys: `schema/styles.schema.json` + `schema/visual_primitives.schema.json`.
 
-**Looks (optional, posters / slides / styled reports):** bundled **examples** under [`looks/`](../../looks/) — a complete `theme.json` plus a composition guide. Use **only when the user did not specify a style**. If they named a design, ignore bundled looks and author `styles/theme.json` to match. When you do use a look: read **one** `look.md`, then **rewrite** the package theme from that example (adapt tokens and roles; do not ship the file unchanged). Shared extension roles: `display`, `kicker`, `caption`, `metric`, `shell` — see [`looks/README.md`](../../looks/README.md). Starter does not define those roles.
+Typography, spacing, and layout intent for slides, posters, and styled reports belong in the **design spec** ([writing.md](../writing.md)); implement them as roles and variants in `styles/theme.json`. Layout recipes (box model, poster shell, `ex_poster_shell.json`) stay in this file — do not copy a pre-made skin unchanged.
 
 - Colors only via `palette` (keys or `#RRGGBB` / `#RRGGBBAA`).
 - `box_decoration` fields are **named primitive strings** only → unknown name = `UNKNOWN_PRIMITIVE`.

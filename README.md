@@ -1,17 +1,33 @@
-# K2F
+<p align="center">
+  <a href="https://k2f.dev">
+    <img src=".github/assets/logo.png" alt="K2F" width="260" />
+  </a>
+</p>
 
-**The PDF format for the AI agent era.**
+<p align="center">
+  <strong>The PDF format for the AI agent era.</strong>
+  <br />
+  Consistent like PDF. Editable like code.
+</p>
 
-Consistent like PDF. Editable like code.
+<p align="center">
+  <a href="https://github.com/suzheng/k2f/actions/workflows/golden-suite.yml"><img src="https://github.com/suzheng/k2f/actions/workflows/golden-suite.yml/badge.svg" alt="CI" /></a>
+  <a href="https://crates.io/crates/k2f"><img src="https://img.shields.io/crates/v/k2f" alt="crates.io" /></a>
+  <a href="https://pypi.org/project/k2f/"><img src="https://img.shields.io/pypi/v/k2f" alt="PyPI" /></a>
+  <a href="https://www.npmjs.com/package/@openk2f/k2f"><img src="https://img.shields.io/npm/v/@openk2f/k2f" alt="npm" /></a>
+</p>
 
-[![CI](https://github.com/suzheng/k2f/actions/workflows/golden-suite.yml/badge.svg)](https://github.com/suzheng/k2f/actions/workflows/golden-suite.yml)
-[![crates.io](https://img.shields.io/crates/v/k2f)](https://crates.io/crates/k2f)
-[![PyPI](https://img.shields.io/pypi/v/k2f)](https://pypi.org/project/k2f/)
-[![npm](https://img.shields.io/npm/v/@openk2f/k2f)](https://www.npmjs.com/package/@openk2f/k2f)
+<p align="center">
+  <a href="https://k2f.dev"><b>k2f.dev</b></a> ·
+  <a href="https://k2f.dev/playground">Playground</a> ·
+  <a href="https://k2f.dev/gallery">Gallery</a> ·
+  <a href="https://k2f.dev/docs">Docs</a> ·
+  <a href="docs/spec/k2f-v0.1.md">Spec</a>
+</p>
+
+---
 
 K2F is a packaged document format (`.K2F`) built for AI agents and deterministic readers. Agents edit a **semantic tree**; the reference engine compiles a **render lock** that paints identically on every official reader.
-
-**[k2f.dev](https://k2f.dev)** · [Playground](https://k2f.dev/playground) · [Gallery](https://k2f.dev/gallery) · [Docs](https://k2f.dev/docs) · [Spec](docs/spec/k2f-v0.1.md)
 
 ## The problem
 

@@ -8,8 +8,8 @@ Deliverable is an **UNSIGNED** `.K2F` — signing stays a human step.
 
 | Situation | Path |
 |-----------|------|
-| New CV, flyer, cheatsheet, slide deck, poster, custom layout | Start from blank (below) |
-| Existing `.K2F` to patch | `k2f unpack` → edit JSON → `pack_verify.py` |
+| New CV, flyer, cheatsheet, slide deck, poster, custom layout | Get a working directory (below), then this loop |
+| Existing `.K2F` to patch | Same loop — unpack (or use the open dir) at step 2 |
 | Already have an unpacked author directory | Edit JSON → `pack_verify.py` |
 | Source is Markdown | [converting-markdown.md](converting-markdown.md), then patch JSON here if needed |
 | PDF-only request | Write `.K2F` first, then [exporting-pdf.md](exporting-pdf.md) |
@@ -26,16 +26,25 @@ pip install k2f    # unpack, pack, compile, verify, render, schema dump — on P
 
 ### Steps
 
-1. **Get a working directory**
-   - **Blank:** `python scripts/init_package.py --dir ./out/doc --title "…" --page a4` — copies [`starter/`](../starter/) (empty tree + core theme + Roboto).
-   - **Packaged `.K2F`:** `k2f unpack contract.K2F -o ./out/contract` — do **not** use `--include-lock` (author dirs must not contain lock or embedded `schema/`).
-   - **Already unpacked:** use the existing directory.
-2. Edit `content/root.json` (+ optional `content/*.json` includes) and `styles/theme.json`. **Minimal diff** — change only the nodes you mean to change.
-3. **Copy shapes** from [`catalog/content/ex_*.json`](../catalog/content/) — one file per construct (stack, grid, table, …). See [`catalog/README.md`](../catalog/README.md). Do not ship the catalog as your document.
-4. **Design (optional looks):** if the user **already named a style or design**, follow that. If they did **not**, pick the **one** look under [`looks/`](../looks/README.md) that fits this content (if not sure which to use, you can use `quiet-light`), read that guide, and **rewrite** `styles/theme.json` from the example. You can that look's composition recipes.
-5. **Unsure about a key?** Open the matching file under [`schema/`](../schema/) before writing JSON.
+1. **Write a design spec (Markdown).** Before any K2F JSON, produce a concrete design document (e.g. `./out/doc/design.md`). If the user named a style or brand, follow it. If not, design to the highest aesthetic standard for this deliverable. Outline:
+
+   - `## Intent` — audience, tone, one-page vs multi-page
+   - `## Typography` — fonts, roles, size intent for this canvas
+   - `## Spacing` — margins, stack/grid gaps, card padding
+   - `## Color & surfaces` — palette intent, backgrounds, accents
+   - `## Layout` — columns, hero, headers/footers, figure placement
+   - `## Components` — cards, metrics, captions, tables as needed
+
+   See [Design first](../SKILL.md#design-first) in the skill entry.
+2. **Get a working directory.** Probe once, stop at the first hit. Kind mismatch, missing tools, or download failure → do not retry; go to the next row.
+   1. User gave a `.K2F` or an unpacked author dir → `k2f unpack existing.K2F -o ./out/doc` (do **not** use `--include-lock`; author dirs must not contain lock or embedded `schema/`) or use the existing directory. For patches, skip step 1 unless the brief changes visual design.
+   2. Site MCP already connected (`list_templates` / `download_template`) **and** a catalog `kind` matches the deliverable → download the package URL to a `.K2F`, then unpack as in (1). See [Optional Gallery](#optional-gallery-mcp).
+   3. Otherwise: `python scripts/init_package.py --dir ./out/doc --title "…" --page a4` — copies [`starter/`](../starter/) (empty tree + core theme + Roboto).
+3. Implement the spec: edit `content/root.json` (+ optional `content/*.json` includes) and `styles/theme.json`. **Minimal diff** on patches — change only what the task requires.
+4. **Copy shapes** from [`catalog/content/ex_*.json`](../catalog/content/) — one file per construct (stack, grid, table, …). See [`catalog/README.md`](../catalog/README.md). Do not ship the catalog as your document. The **current package** `styles/theme.json` must already define every role, modifier type, and font those nodes use. Starter already includes `image` and the modifier styles used by `ex_modifiers.json`. Copying [`ex_math.json`](../catalog/content/ex_math.json) still needs NotoSansMath from [`catalog/assets/fonts/`](../catalog/assets/fonts/) plus a `font_aliases` / `math` role font update — starter ships Roboto only.
+5. **Unsure about a key?** Read [writing/fields.md](writing/fields.md), then open the matching file under [`schema/`](../schema/) before writing JSON.
 6. `python scripts/pack_verify.py ./out/doc -o ./out/doc.K2F --render preview.png`
-7. Expect `verify` → **`UNSIGNED`**. Then **open the PNG** — [visual check](#visual-check). If you used a look, also check that look's **Don'ts**.
+7. Expect `verify` → **`UNSIGNED`**. Then **open the PNG** — [visual check](#visual-check). If the image does not match the design spec, revise the spec or implementation and pack again.
 
 Page presets: `a4` | `letter` | `a4-landscape` | `widescreen` | `widescreen-43`. Slides/posters: see [writing/package.md](writing/package.md).
 
@@ -48,18 +57,19 @@ python scripts/init_package.py --dir ./out/report --title "Q3 Report" --page a4
 # slides: --page widescreen --margin 0 | widescreen-43
 # posters: --page a4 --margin 0; copy catalog/content/ex_poster_shell.json; set height to page
 # --margin 36000  or  --margin 36000,48000,36000,48000
+# write design.md first (typography, spacing, layout, color)
 # edit content/root.json — copy nodes from catalog/content/ex_*.json
-# edit styles/theme.json — if the user gave no design, rewrite from looks/<name>/ (see looks/README.md)
+# edit styles/theme.json — implement the design spec
 python scripts/pack_verify.py ./out/report -o ./out/report.K2F --render preview.png
 ```
 
 **Patch an existing package**
 
 ```bash
-k2f unpack contract.K2F -o ./out/contract
+k2f unpack existing.K2F -o ./out/doc
 # grep or read content/*.json for stable ids — never guess
 # edit the text node (or cell id for tables); roles from this package's theme.json
-python scripts/pack_verify.py ./out/contract -o ./out/contract-edited.K2F --render preview.png
+python scripts/pack_verify.py ./out/doc -o ./out/doc-edited.K2F --render preview.png
 ```
 
 **Single-page poster check** (`compile` prints `pages=N`; preview is page 0 only):
@@ -83,7 +93,7 @@ Keep structure in `content/root.json`; add `{ "include": "content/ch01.json" }` 
 | Single-page poster check | `pack_verify.py … --expect-pages 1 --render preview.png` |
 | Custom font | `init_package.py --font /path/to/Covering.ttf` or add under `assets/fonts/` + `font_aliases` |
 | Modifier byte ranges | `python scripts/modifier_range.py --text "…" --find "…"` |
-| Allowed JSON keys | [`schema/`](../schema/) |
+| Allowed JSON keys | [writing/fields.md](writing/fields.md), then [`schema/`](../schema/) |
 
 ## Visual check
 
@@ -101,7 +111,7 @@ Inspect every page. In particular:
 - **Report empty bands** — shrink `page_config.margin`, role `padding_pt`, or stack `gap`.
 - **Type size** — body text too large or headings too small for the canvas. Change `font_size` on the **role** in `styles/theme.json`, never on the node.
 
-If the PNG looks wrong, edit JSON or theme and run `pack_verify.py --render` again.
+If the PNG does not match the design spec, update the spec or JSON/theme and run `pack_verify.py --render` again.
 
 ## Rules (non-negotiable)
 
@@ -129,6 +139,16 @@ If the PNG looks wrong, edit JSON or theme and run `pack_verify.py --render` aga
 | Viewer `BROKEN_INTEGRITY` | Content changed without relock — run `pack_verify.py` |
 | Want Word-like layout | Theme + full relock, not per-node x/y |
 | Used `Editor.insert_node` on author dir | Wrong API — edit JSON files, then pack |
+
+## Optional Gallery (MCP)
+
+Not required. Do not install or configure MCP for this skill. If `list_templates` and `download_template` are already available:
+
+1. `list_templates` (optional filters: `kind`, `style`) — metadata only, not package bytes.
+2. Use an entry only when `kind` matches the deliverable. Otherwise skip to `init_package.py`.
+3. `download_template` returns `{ slug, packageUrl }`. Fetch that URL to a `.K2F` on disk, then `k2f unpack` as in step 2. Do not load the ZIP into context.
+
+Missing tools, empty list, kind mismatch, or fetch error → `init_package.py`. After unpack, the loop is the same JSON + `pack_verify.py` path — do not use `Editor.insert_node` on that directory.
 
 ## Common mistakes
 
@@ -180,6 +200,7 @@ Requires `pip install k2f` only when using those shortcuts.
 
 ## See also
 
+- [writing/fields.md](writing/fields.md) — node vs theme allowed keys
 - [writing/package.md](writing/package.md) — slides, posters, fonts, capability limits
 - [writing/errors.md](writing/errors.md) — error codes
 - [converting-markdown.md](converting-markdown.md) — Markdown source

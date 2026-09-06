@@ -1,16 +1,6 @@
 # Exporting K2F to DOCX
 
-## Overview
-
 DOCX is a **drawing of the published lock**, not a flowing “Save as Word” layout engine. `.K2F` stays the source. Slight text reflow in Word is expected and allowed.
-
-Exact CLI names: [exporting-docx/surfaces.md](exporting-docx/surfaces.md). Capability table: crate README (`k2f_docx`).
-
-## Prerequisites
-
-```bash
-pip install k2f    # CLI on PATH
-```
 
 ## When to Use
 
@@ -29,7 +19,7 @@ pip install k2f    # CLI on PATH
 k2f export-docx file.K2F -o out.docx
 ```
 
-No `--scale`. No `--trust-pack`. Draws the published lock; does not compile. Not a second layout engine; slight text reflow is legal.
+No `--scale`. No `--trust-pack`. Draws the published lock; does not compile.
 
 ## Which lock is drawn
 
@@ -50,10 +40,9 @@ No `--scale`. No `--trust-pack`. Draws the published lock; does not compile. Not
 
 | Mistake | Reality |
 |---------|---------|
-| Treat DOCX as a second source | One-way dump of the lock |
-| Expect glyph-identical pages | Slight reflow is legal |
 | Restyle with Word Heading 1 | Absolute lock coordinates would reflow |
 | Stamp a full-page PNG | Native text/tables/pics must stay editable |
+| Expect glyph-identical pages | Slight reflow is legal |
 
 ## See also
 

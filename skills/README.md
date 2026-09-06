@@ -20,16 +20,17 @@ npm i @openk2f/k2f           # only for embedding <k2f-viewer>
 # cargo install k2f          # optional: CLI without Python
 ```
 
-MCP is not published on registries; this skill does not depend on MCP.
+MCP is optional. Writing does not require it; if a site MCP is already connected, [writing.md](k2f/references/writing.md) may use Gallery packages as a starting directory.
 
 ## Workflows
 
 | Workflow | Use when |
 |----------|----------|
-| [writing](k2f/references/writing.md) | Create or update `.K2F` (JSON + pack; starter + catalog + schema lookup) |
+| [writing](k2f/references/writing.md) | Create or update `.K2F` — design spec first, then JSON + pack |
 | [converting-markdown](k2f/references/converting-markdown.md) | Convert Markdown ↔ K2F |
 | [exporting-pdf](k2f/references/exporting-pdf.md) | Export PDF from the published lock |
 | [exporting-pptx](k2f/references/exporting-pptx.md) | Export PPTX from the published lock |
+| [exporting-docx](k2f/references/exporting-docx.md) | Export DOCX from the published lock |
 | [embedding-viewer](k2f/references/embedding-viewer.md) | Embed `<k2f-viewer>` in a web app |
 | [publishing](k2f/references/publishing.md) | Publish permanent `/v/{appearance_hash}` (requires your site origin) |
 
@@ -39,8 +40,7 @@ Entry point: [k2f/SKILL.md](k2f/SKILL.md).
 
 | Path | Purpose |
 |------|---------|
-| `k2f/schema/` | Read-only format JSON Schemas (lookup — never copy into author dirs) |
-| `k2f/starter/` | Empty package copied by `init_package.py` |
-| `k2f/catalog/` | Golden `ex_*.json` shape reference ([index](k2f/catalog/README.md)) |
-| `k2f/looks/` | Example design skins — theme + composition guide; fallback when the user did not name a style ([index](k2f/looks/README.md)) |
+| `k2f/schema/` | Read-only format JSON Schemas — lookup after [fields.md](k2f/references/writing/fields.md); never copy into author dirs |
+| `k2f/starter/` | Empty package copied by `init_package.py` when there is no existing `.K2F` and no matching Gallery package |
+| `k2f/catalog/` | Golden `ex_*.json` shape dictionary, not a deliverable ([index](k2f/catalog/README.md)) |
 | `k2f/scripts/` | `init_package.py`, `pack_verify.py`, `edit_and_verify.py`, … |
