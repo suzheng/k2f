@@ -62,7 +62,7 @@ pub(crate) fn line_spacing_twips(geo: Option<&GeometryNode>) -> Option<i64> {
     let y0 = baseline(&lines[0]);
     let y1 = baseline(&lines[1]);
     let delta = (y1 - y0).abs();
-    if delta < 7_000 {
+    if delta < 2_000 {
         return None;
     }
     Some(millipt_to_twips(i64::try_from(delta).unwrap_or(0)))

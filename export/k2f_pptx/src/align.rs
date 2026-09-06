@@ -2,6 +2,9 @@ use crate::ir::TextAlign;
 use k2f_core::{GeometryNode, GlyphPosition, Pt};
 
 const MIN_SLACK: i128 = 2_000;
+/// Historical body default: 7.5pt. Half of 11–12pt faces still land here.
+const MAX_LINE_CLUSTER_TOL: i128 = 7_500;
+const MIN_LINE_CLUSTER_TOL: i128 = 2_000;
 
 pub fn infer_text_align(geo: &GeometryNode, text: &str) -> TextAlign {
     let lines = source_lines(geo);
@@ -38,12 +41,13 @@ pub(crate) fn source_lines(geo: &GeometryNode) -> Vec<Vec<&GlyphPosition>> {
         return Vec::new();
     }
     glyphs.sort_by_key(|g| (g.y_offset.0, g.x_offset.0));
+    let tol = line_cluster_tol(geo);
 
     let mut lines: Vec<Vec<&GlyphPosition>> = Vec::new();
     for g in glyphs {
         if let Some(line) = lines.iter_mut().find(|line| {
             line.iter()
-                .any(|existing| (existing.y_offset.0 - g.y_offset.0).abs() <= 7_500)
+                .any(|existing| (existing.y_offset.0 - g.y_offset.0).abs() <= tol)
         }) {
             line.push(g);
         } else {
@@ -59,6 +63,19 @@ pub(crate) fn source_lines(geo: &GeometryNode) -> Vec<Vec<&GlyphPosition>> {
         line.sort_by_key(|g| g.x_offset.0);
     }
     lines
+}
+
+/// Same-line glyphs stay together; wrapped lines of this face must split.
+/// Half the lock font, clamped so 5–7pt body (6.2pt leading) is not merged
+/// by the historical 7.5pt cap. 11–12pt tests keep that cap.
+fn line_cluster_tol(geo: &GeometryNode) -> i128 {
+    let fs = geo
+        .text_runs
+        .first()
+        .map(|r| r.style.font_size.0.abs())
+        .filter(|n| *n > 0)
+        .unwrap_or(12_000);
+    (fs / 2).clamp(MIN_LINE_CLUSTER_TOL, MAX_LINE_CLUSTER_TOL)
 }
 
 /// Office wrap on a glyph-tight lock box reflows the last word onto a clipped
@@ -115,7 +132,7 @@ pub(crate) fn line_spacing_spc_pts(geo: Option<&GeometryNode>) -> Option<i32> {
     let y0 = baseline(&lines[0]);
     let y1 = baseline(&lines[1]);
     let delta = (y1 - y0).abs();
-    if delta < 7_000 {
+    if delta < MIN_LINE_CLUSTER_TOL {
         return None;
     }
     i32::try_from(delta / 10).ok().map(|v| v.max(100))
@@ -201,6 +218,22 @@ mod tests {
         }
     }
 
+    fn with_font(mut g: GeometryNode, size: i128) -> GeometryNode {
+        g.text_runs = vec![k2f_core::TextGlyphRun {
+            glyph_range: [0, g.glyphs.len()],
+            style: k2f_core::TextPaintStyle {
+                font_family: "default".into(),
+                font_size: Pt(size),
+                color: "#000000".into(),
+                bold: false,
+                italic: false,
+                strikethrough: false,
+                underline: false,
+            },
+        }];
+        g
+    }
+
     #[test]
     fn infer_text_align_unit() {
         let w = 100_000i128;
@@ -257,5 +290,21 @@ mod tests {
         let mut padded = geo(87_000, vec![glyph(0, 6_500, 74_000, 2_500)]);
         padded.height = Pt(13_250);
         assert!(!should_wrap_lock(Some(&padded), Pt(7_500)));
+    }
+
+    #[test]
+    fn small_font_wrapped_lines_are_not_merged() {
+        let fs = Pt(5_200);
+        let mut g = with_font(
+            geo(
+                196_000,
+                vec![glyph(0, 0, 190_000, 0), glyph(1, 0, 40_000, 6_240)],
+            ),
+            5_200,
+        );
+        g.height = Pt(12_480);
+        assert_eq!(source_lines(&g).len(), 2);
+        assert!(should_wrap_lock(Some(&g), fs));
+        assert_eq!(line_spacing_spc_pts(Some(&g)), Some(624));
     }
 }
