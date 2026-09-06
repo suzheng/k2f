@@ -12,7 +12,7 @@ Use `@openk2f/k2f/viewer` (`mountK2fViewer`, `<k2f-viewer>`). Types also ship on
 |-----------|--------|
 | `src` | URL of a `.K2F` package (fetched on connect / `src` change). **Only observed attribute.** |
 | `editable` | Allow **Edit** toolbar + surgical popover. Opens in view mode; user clicks Edit first. Read at mount. |
-| `no-banner` | Hide integrity banner. Read at mount. |
+| `no-banner` | Hide integrity chrome (`banner: "off"`). Read at mount. |
 
 Changing `editable` / `no-banner` after connect does **not** remount. Use `element.open(bytes)` or remount to apply new options.
 
@@ -20,7 +20,7 @@ Changing `editable` / `no-banner` after connect does **not** remount. Use `eleme
 
 | Option | Type | Default | Meaning |
 |--------|------|---------|---------|
-| `banner` | `boolean` | `true` | Show integrity banner |
+| `banner` | `boolean \| "auto" \| "full" \| "off"` | `"auto"` | Integrity chrome: tiered (`auto`), legacy verbose strip (`true`/`full`), hidden (`false`/`off`) |
 | `editable` | `boolean` | `false` | Allow Edit toolbar + popover (forces sdk WASM); default open is view-only |
 | `runtime` | `"sdk" \| "viewer"` | inferred | Explicit WASM flavor; see [bundlers.md](bundlers.md) |
 
@@ -50,15 +50,17 @@ Custom events bubble from the host (`bubbles` + `composed`):
 
 ## Integrity banners
 
-Derived from package integrity (must stay visible unless `no-banner`):
+Derived from package integrity. Default `banner: "auto"` uses tiered visibility:
 
-| Banner | Meaning |
-|--------|---------|
-| `SIGNED` | Valid hash chain + valid signature |
-| `UNSIGNED` | Valid hashes, no signature |
-| `SIGNED_BUT_BROKEN` | Signature present but hash/crypto failed — **not** signed |
-| `BROKEN_INTEGRITY` | Content / appearance / engine / font mismatch — paints **old** lock |
-| `UNLOCKED` | No `document.K2F.lock` |
+| Banner | Meaning | Default UI |
+|--------|---------|------------|
+| `SIGNED` | Valid hash chain + valid signature | Compact green strip |
+| `UNSIGNED` | Valid hashes, no signature | Hidden (quiet read) |
+| `SIGNED_BUT_BROKEN` | Signature present but hash/crypto failed — **not** signed | Prominent warning |
+| `BROKEN_INTEGRITY` | Content / appearance / engine / font mismatch — paints **old** lock | Prominent warning |
+| `UNLOCKED` | No `document.K2F.lock` | Compact draft strip |
+
+Use `banner: "full"` for legacy verbose strips on every state. Use `no-banner` / `banner: "off"` to hide chrome entirely (still read `detail.banner` from `k2f-open`).
 
 `signed_by` on the file is an unbound claim. Trusted display names come only from app-side issuer maps, not from the package alone.
 
@@ -66,5 +68,5 @@ Derived from package integrity (must stay visible unless `no-banner`):
 
 - Transparent spans from `viewer.text_layer(page)` over the PNG.
 - Copy: `text/plain` plus `application/x-k2f-nodes+json` when the selection intersects K2F text spans.
-- Default `text/plain` is Markdown via `viewer.selection_markdown(rangesJson)` (semantic tree). Toolbar **Copy: Markdown / Plain** (persisted as `localStorage.k2f.copyFormat`); `mountK2fViewer(..., { copyFormat })` overrides the initial value.
+- Default `text/plain` is Markdown via `viewer.selection_markdown(rangesJson)` (semantic tree). **More → Copy as Markdown / Copy as Plain Text** (persisted as `localStorage.k2f.copyFormat`); `mountK2fViewer(..., { copyFormat })` overrides the initial value.
 - With `editable`, toolbar **Edit** → click node → text-first on-page popover → Save and relock (not a separate DOM typography path). View mode is default; no popover until Edit is active.

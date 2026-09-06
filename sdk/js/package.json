@@ -59,6 +59,6 @@
   "scripts": {
     "prepack": "node ../../scripts/materialize-js-public.mjs && node -e \"require('node:fs').accessSync('wasm/k2f_wasm_bg.wasm')\"",
     "postpack": "node ../../scripts/restore-js-public-symlinks.mjs",
-    "test": "node test/public-exports.mjs && node test/banner.mjs && node test/coords.mjs && node test/links.mjs && node test/no-fill-text.mjs && node test/copy.mjs && node test/page-nav.mjs && node test/smoke.mjs && node test/document.mjs && node test/editor-p0.mjs && node test/viewer-only.mjs && node test/markdown.mjs && node test/viewer-api.mjs && node test/text-layer.mjs && node test/selection-markdown.mjs && node test/export-formats.mjs && node test/edit-mode.mjs && node test/browser-embed.mjs && node test/web-embed.mjs && node test/stack-scroll.mjs && node test/wide-scroll.mjs"
+    "test": "node test/public-exports.mjs && node test/banner.mjs && node test/chrome-ui.mjs && node test/coords.mjs && node test/links.mjs && node test/no-fill-text.mjs && node test/copy.mjs && node test/page-nav.mjs && node test/smoke.mjs && node test/document.mjs && node test/editor-p0.mjs && node test/viewer-only.mjs && node test/markdown.mjs && node test/viewer-api.mjs && node test/text-layer.mjs && node test/selection-markdown.mjs && node test/export-formats.mjs && node test/edit-mode.mjs && node test/browser-embed.mjs && node test/web-embed.mjs && node test/stack-scroll.mjs && node test/wide-scroll.mjs"
   }
 }

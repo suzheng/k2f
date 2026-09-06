@@ -38,6 +38,19 @@ impl ExportFormat {
         }
     }
 
+    /// Same labels as `sdk/js/viewer/export-format.js` (`EXPORT_FORMATS`).
+    pub fn action_label(self) -> &'static str {
+        match self {
+            Self::K2f => "Export as K2F",
+            Self::Pdf => "Export as PDF",
+            Self::Pptx => "Export as PowerPoint",
+            Self::Docx => "Export as Word",
+            Self::Markdown => "Export as Markdown",
+            Self::Png => "Export as PNG",
+            Self::Jpg => "Export as JPG",
+        }
+    }
+
     pub fn extension(self) -> &'static str {
         match self {
             Self::K2f => "K2F",

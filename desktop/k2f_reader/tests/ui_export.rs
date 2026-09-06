@@ -7,13 +7,15 @@ use common::{
 };
 use k2f_reader::export::ExportFormat;
 use k2f_reader::ui::{
-    accept_key, default_pdf_path, ensure_pdf_path, export_hit, export_label_x, key_action,
-    overlay_label, pdf_file_name, Action, KeyBind, Session, EXPORT_ACTION_LABEL, HUD_HEIGHT,
+    accept_key, default_pdf_path, ensure_pdf_path, export_hit, export_label_x, export_menu_hit,
+    export_menu_item_hit, key_action, overlay_label, pdf_file_name, Action, KeyBind, Session,
+    EXPORT_ACTION_LABEL, HUD_HEIGHT,
 };
 use k2f_reader::AppState;
 use std::path::{Path, PathBuf};
 
-const HUD_FG: u32 = 0xF8FAFC;
+const EXPORT_BG: u32 = 0x007AFF;
+const EXPORT_FG: u32 = 0xFFFFFF;
 
 #[test]
 fn ctrl_shift_s_maps_to_export() {
@@ -126,21 +128,22 @@ fn broken_integrity_still_exports_the_published_lock() {
 fn hud_export_hit_is_the_right_edge() {
     let w = 800u32;
     let h = HUD_HEIGHT;
-    assert_eq!(EXPORT_ACTION_LABEL, "Export");
+    assert_eq!(EXPORT_ACTION_LABEL, "Export as K2F");
+    let x0 = f64::from(export_label_x(w));
     assert!(
-        export_hit(w, h, f64::from(w) - 4.0, 8.0),
-        "right-side HUD control matches the web Export button"
+        export_hit(w, h, x0 + 8.0, 24.0),
+        "right-side Export as button matches the web Export control"
     );
     assert!(
-        !export_hit(w, h, 12.0, 8.0),
-        "left banner text is not the export control"
+        !export_hit(w, h, 12.0, 24.0),
+        "left title is not the export control"
     );
     assert!(
-        !export_hit(w, h, f64::from(w) - 4.0, f64::from(HUD_HEIGHT) + 2.0),
+        !export_hit(w, h, x0 + 8.0, f64::from(HUD_HEIGHT) + 2.0),
         "page pixels must not trigger export"
     );
     assert!(
-        !export_hit(w, 10, f64::from(w) - 4.0, 12.0),
+        !export_hit(w, 10, x0 + 8.0, 12.0),
         "a short window clips the HUD; clicks below it are not Export"
     );
 }
@@ -178,24 +181,23 @@ fn hud_paints_export_pdf_on_the_right() {
     let (w, h) = session.scaled_size();
     let frame = session.compose_frame(w, h);
     let x0 = export_label_x(w);
-    let mut fg = 0u32;
-    for row in 8..16 {
-        for col in 0..8 {
-            if frame[(row * w + x0 + col) as usize] == HUD_FG {
-                fg += 1;
+    let mut hits = 0u32;
+    for row in 6..42 {
+        for col in 2..20 {
+            let p = frame[(row * w + x0 + col) as usize];
+            if p == EXPORT_BG || p == EXPORT_FG {
+                hits += 1;
             }
         }
     }
     assert!(
-        fg > 0,
-        "Export must be painted in the HUD, not only hit-tested"
+        hits > 0,
+        "Export must be painted in the toolbar, not only hit-tested"
     );
 }
 
 #[test]
 fn hud_export_does_not_overlap_banner_on_narrow_window() {
-    // Broken integrity overlays include the status code and are long enough to
-    // collide with Export on a narrow window; a short UNSIGNED label would not.
     let bytes = pack_with_tampered_lock(&published_invoice_bytes(), |lock| {
         lock.engine_version = "9.9.9".into();
     });
@@ -208,11 +210,11 @@ fn hud_export_does_not_overlap_banner_on_narrow_window() {
     let w = 320u32;
     let h = HUD_HEIGHT + 40;
     let frame = session.compose_frame(w, h);
-    let gap_x = export_label_x(w).saturating_sub(4);
+    let x0 = export_label_x(w);
     assert_eq!(
-        frame[(8 * w + gap_x) as usize],
-        frame[0],
-        "banner chrome must clip before Export on a resized window"
+        frame[(24 * w + x0 + 2) as usize],
+        EXPORT_BG,
+        "title/banner chrome must clip before the Export button"
     );
 }
 
@@ -262,6 +264,7 @@ fn export_format_cycle_includes_pptx() {
     assert!(ExportFormat::ALL.contains(&ExportFormat::Pptx));
     assert_eq!(ExportFormat::Pptx.extension(), "pptx");
     assert_eq!(ExportFormat::Pptx.hud_label(), "PPTX");
+    assert_eq!(ExportFormat::Pptx.action_label(), "Export as PowerPoint");
     assert_eq!(
         ExportFormat::Pdf.toggle(),
         ExportFormat::Pptx,
@@ -303,5 +306,117 @@ fn export_format_cycle_includes_docx() {
     assert!(ExportFormat::ALL.contains(&ExportFormat::Docx));
     assert_eq!(ExportFormat::Docx.extension(), "docx");
     assert_eq!(ExportFormat::Docx.hud_label(), "DOCX");
+    assert_eq!(ExportFormat::Docx.action_label(), "Export as Word");
     assert_eq!(ExportFormat::Docx.dialog_filter(), ("Word", &["docx"][..]));
+}
+
+#[test]
+fn export_action_labels_match_web_menu() {
+    let labels: Vec<&str> = ExportFormat::ALL.iter().map(|f| f.action_label()).collect();
+    assert_eq!(
+        labels,
+        [
+            "Export as K2F",
+            "Export as PDF",
+            "Export as PowerPoint",
+            "Export as Word",
+            "Export as Markdown",
+            "Export as PNG",
+            "Export as JPG",
+        ]
+    );
+}
+
+#[test]
+fn export_caret_opens_export_as_menu() {
+    let w = 800u32;
+    let h = HUD_HEIGHT;
+    let x0 = f64::from(export_label_x(w));
+    assert!(
+        export_hit(w, h, x0 + 8.0, 24.0),
+        "main control exports the last format"
+    );
+    assert!(
+        !export_menu_hit(w, h, x0 + 8.0, 24.0),
+        "the label is not the caret"
+    );
+    assert!(
+        export_menu_hit(w, h, f64::from(w) - 24.0, 24.0),
+        "caret sits on the right of the split button"
+    );
+    assert!(
+        export_menu_item_hit(w, 0, f64::from(w) - 48.0, 70.0),
+        "first menu row is Export as K2F, click exports immediately"
+    );
+    assert!(
+        !export_menu_item_hit(w, 0, f64::from(w) - 48.0, 24.0),
+        "toolbar clicks are not menu rows"
+    );
+}
+
+#[test]
+fn session_export_menu_paints_over_the_page() {
+    let mut session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
+    assert!(!session.export_menu_open());
+    session.toggle_export_menu();
+    assert!(session.export_menu_open());
+    let (w, h) = session.scaled_size();
+    session.set_window_size(w, h);
+    let frame = session.compose_frame(w, h);
+    let mut white = 0u32;
+    for row in 60..78 {
+        for col in (w.saturating_sub(240))..w.saturating_sub(24) {
+            let p = frame[(row * w + col) as usize];
+            if p == 0xFFFFFF {
+                white += 1;
+            }
+        }
+    }
+    assert!(
+        white > 100,
+        "open Export as menu must paint a light panel, got {white} white pixels"
+    );
+    session.close_export_menu();
+    let closed = session.compose_frame(w, h);
+    let mut white_closed = 0u32;
+    for row in 60..78 {
+        for col in (w.saturating_sub(240))..w.saturating_sub(24) {
+            if closed[(row * w + col) as usize] == 0xFFFFFF {
+                white_closed += 1;
+            }
+        }
+    }
+    assert!(
+        white_closed < white / 4,
+        "closing the menu must drop the panel, open={white} closed={white_closed}"
+    );
+}
+
+fn is_primary_blue(p: u32) -> bool {
+    let r = (p >> 16) & 0xff;
+    let g = (p >> 8) & 0xff;
+    let b = p & 0xff;
+    r < 32 && g > 64 && g < 180 && b > 200
+}
+
+#[test]
+fn export_menu_check_icon_paints_primary_blue() {
+    let mut session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
+    session.toggle_export_menu();
+    let (w, h) = session.scaled_size();
+    session.set_window_size(w, h);
+    let frame = session.compose_frame(w, h);
+    let mut blue = 0u32;
+    for row in 62..100 {
+        for col in (w.saturating_sub(260))..w.saturating_sub(8) {
+            let p = frame[(row * w + col) as usize];
+            if is_primary_blue(p) {
+                blue += 1;
+            }
+        }
+    }
+    assert!(
+        blue >= 4,
+        "selected export row must paint a vector check in PRIMARY blue, got {blue} pixels"
+    );
 }

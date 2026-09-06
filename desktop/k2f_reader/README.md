@@ -8,7 +8,7 @@ Native lock executor for `.K2F` files. Same rules as the web viewer:
 - PPTX / DOCX export also draws the lock (not a second layout engine)
 - A PDF is not a K2F source (`PDF_IS_NOT_A_SOURCE`)
 
-Links `k2f_paint` + `k2f_package` plus the PDF / PPTX / DOCX / Markdown exporters. The official raster is `render_page` at `OFFICIAL_PNG_SCALE` (2×). Zoom is UI scale of that bitmap. Surgical edit is not in v0.
+Links `k2f_paint` + `k2f_package` plus the PDF / PPTX / DOCX / Markdown exporters. The official raster is `render_page` at `OFFICIAL_PNG_SCALE` (2×). Zoom is a blit-time UI scale of that bitmap (same idea as the web viewer's CSS scale); it does not re-paint the lock. Surgical edit is not in v0.
 
 This crate is a workspace member but **not a default-member** (same pattern as `k2f_py`), so root `cargo test` does not pull GUI crates. CI runs `cargo test -p k2f_reader`.
 
@@ -33,20 +33,23 @@ sudo apt-get install -y pkg-config libxkbcommon-dev libxkbcommon-x11-dev libwayl
 ## Run
 
 ```bash
-cargo run -p k2f_reader -- examples/published/invoice.K2F
+cargo run -p k2f_reader --release -- examples/published/invoice.K2F
 ```
 
-Title: `K2F Reader — {banner} — {title}`. Under `BROKEN_INTEGRITY` the title also shows `status_code`. HUD: banner, `page / count`, zoom, export format (**K2F** / **PDF** / **PPTX** / **DOCX** / **MD** / **PNG** / **JPG**), **Export**. Pages stack vertically; the wheel scrolls them. Left/Right jump so the next sheet sits under the HUD.
+Debug `cargo run -p k2f_reader --` also works; `--release` is snappier for first paint. Zoom samples the official bitmap at blit time.
+
+Title: document title for `UNSIGNED`; `K2F Reader — Signed — {title}` or `K2F Reader — Draft — {title}` when applicable; `BROKEN_INTEGRITY` / `SIGNED_BUT_BROKEN` keep the raw codes (with `status_code` under broken). Toolbar: title, zoom `−` / `%` / `+`, copy format, **Export as** split button (last format) plus a caret menu of **Export as K2F** / **PDF** / PowerPoint / Word (**DOCX**) / Markdown / PNG / JPG — choosing a row exports immediately (same as the web viewer). Integrity chrome matches web `banner: "auto"`: quiet for `UNSIGNED`; compact Signed / Draft strips; plain-language warning for broken locks (not a full-width `BROKEN_INTEGRITY` ticker). Status bar: page, zoom, format. Pages stack vertically; the wheel scrolls them. Left/Right jump so the next sheet sits under the toolbar. Zoom scales the lock bitmap inside a stable window (default 1280×820, min 960×640).
 
 | Key | Action |
 | --- | --- |
 | Wheel / trackpad | Scroll the stacked pages |
 | Left / Right | Previous / next page |
 | `+` / `-` | Zoom (0.5–3.0) |
-| Ctrl/Cmd+C | Copy selected text (`text/plain`) |
+| Drag on lock text | Select characters (I-beam cursor, blue highlight like the web viewer) |
+| Ctrl/Cmd+C | Copy the selection (`text/plain`) |
 | Ctrl/Cmd+Shift+S | Export in the selected format (native Save) |
 
-Drag on the page (not the HUD) maps window px → document pt and copies intersecting text-layer spans.
+Drag across a line of lock text (not the toolbar or status bar) selects glyph runs the same way the web viewer does. The highlight stays after you release; releasing also copies. A click without a drag is a collapsed selection and copies nothing.
 
 ## Headless
 

@@ -17,6 +17,5 @@ pub fn pick_save_path(
     {
         dlg = dlg.set_directory(dir);
     }
-    dlg.save_file()
-    .map(|p| ensure_extension(p, format))
+    dlg.save_file().map(|p| ensure_extension(p, format))
 }

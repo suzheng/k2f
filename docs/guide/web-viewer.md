@@ -37,7 +37,7 @@ Attributes:
 |-----------|--------|
 | `src` | URL of a `.K2F` package (fetched on connect / change). Only observed attribute. |
 | `editable` | Allow **Edit** toolbar + surgical popover (`replace_text` + save). Opens in **view mode**; user clicks Edit first. Read at mount. |
-| `no-banner` | Hide the integrity banner. Read at mount. |
+| `no-banner` | Hide integrity chrome (`banner: "off"`). Read at mount. |
 
 ### Mount API
 
@@ -49,7 +49,7 @@ const bytes = await fetch("/invoice.K2F").then((r) => r.arrayBuffer());
 const handle = await mountK2fViewer(
   document.getElementById("k2f-root"),
   new Uint8Array(bytes),
-  { banner: true, editable: false },
+  { editable: false },
 );
 // handle.destroy() on unmount
 ```
@@ -58,7 +58,7 @@ const handle = await mountK2fViewer(
 
 | Option | Type | Default | Meaning |
 |--------|------|---------|---------|
-| `banner` | `boolean` | `true` | Show integrity banner |
+| `banner` | `boolean \| "auto" \| "full" \| "off"` | `"auto"` | Integrity chrome: tiered (`auto`), legacy verbose strip (`true`/`full`), hidden (`false`/`off`) |
 | `editable` | `boolean` | `false` | Allow Edit toolbar + popover (forces sdk WASM); default open is view-only |
 | `runtime` | `"sdk" \| "viewer"` | inferred | Explicit WASM; `editable` or `"sdk"` → full sdk |
 
@@ -103,8 +103,8 @@ node skills/k2f/scripts/copy-wasm.mjs --dest ./public
 
 2. Call `await initWasm("/k2f_wasm_bg.wasm")` before mount (or `initViewerWasm("/k2f_viewer_bg.wasm")` for preview-only in this repo).
 3. Mount only on the client — do not SSR the canvas; do not pass `Uint8Array` as an RSC prop.
-4. Page width comes from `page_config`, not the viewport. On open, the viewer **fit-to-width** when the widest page is wider than the scroll stage (snapped to toolbar zoom steps, capped at 100%). Use **+ / −** to zoom in after open.
-5. Toolbar **Fullscreen** toggles the `<k2f-viewer>` host into browser fullscreen (hidden when the Fullscreen API is unavailable).
+4. Page width comes from `page_config`, not the viewport. On open, the viewer **fit-to-width** when the widest page is wider than the scroll stage (snapped to toolbar zoom steps, capped at 100%). Use **+ / −** (or the zoom menu on the percentage) to zoom after open.
+5. **More → Fullscreen** toggles the `<k2f-viewer>` host into browser fullscreen (hidden when the Fullscreen API is unavailable). Export is a single **Export as …** split button (current format on click; caret picks K2F / PDF / PowerPoint / Word / Markdown / PNG / JPG). Copy Markdown vs Plain lives under **More** (`localStorage.k2f.copyFormat`).
 6. Import from `@openk2f/k2f/viewer` only (avoids duplicating `initWasm` via bare `@openk2f/k2f`).
 
 The adoption portal for maintainers lives in the sibling [`k2f-site`](https://github.com/suzheng/k2f-site) checkout and consumes this package via `file:../k2f/sdk/js`. npm consumers do not need that repo.
@@ -115,7 +115,7 @@ See [examples/web-embed/README.md](../../examples/web-embed/README.md) for a run
 
 1. **Never** use `fillText` or CSS flow for document body text.
 2. **Opening ≠ compiling.** Locked packages paint the lock only.
-3. Integrity banners (`SIGNED`, `UNSIGNED`, `SIGNED_BUT_BROKEN`, `BROKEN_INTEGRITY`, `UNLOCKED`) must stay visible to the user.
+3. Integrity status must be surfaced: default `banner: "auto"` hides `UNSIGNED`, uses compact strips for `SIGNED`/`UNLOCKED`, and prominent warnings for broken states. Use `banner: "full"` for legacy verbose strips; never hide broken states silently.
 4. Prefer the npm `@openk2f/k2f` / `@openk2f/k2f/viewer` entries; do not reimplement paint.
 
 ## Related

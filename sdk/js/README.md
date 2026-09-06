@@ -91,7 +91,7 @@ const signed = k2f.sign(fromMd, key.secret_hex, "agent@example.com");
 |-----------|--------|
 | `src` | URL of a `.K2F` package |
 | `editable` | Enable Edit toolbar + surgical popover |
-| `no-banner` | Hide the integrity banner |
+| `no-banner` | Hide integrity chrome (`banner: "off"`) |
 
 Custom events: `k2f-open`, `k2f-page-change`, `k2f-select`.
 

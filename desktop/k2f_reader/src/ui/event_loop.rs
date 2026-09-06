@@ -1,19 +1,19 @@
-use crate::export::{ensure_extension, pick_save_path};
-use super::hud::{copy_format_hit, export_format_hit, export_hit};
+use super::hud::{ChromeHit, DEFAULT_INNER_H, DEFAULT_INNER_W, MIN_INNER_H, MIN_INNER_W};
 use super::input::{accept_key, key_action, Action, KeyBind};
-use super::scroll::line_delta_px;
-use super::session::Session;
+use super::scroll::{line_delta_px, wheel_y_to_scroll};
+use super::session::{PointerCursor, Session};
+use crate::export::{ensure_extension, pick_save_path, ExportFormat};
 use crate::AppState;
 use softbuffer::{Context, Surface};
 use std::num::NonZeroU32;
 use std::path::PathBuf;
 use std::sync::Arc;
 use winit::application::ApplicationHandler;
-use winit::dpi::PhysicalSize;
+use winit::dpi::LogicalSize;
 use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::keyboard::{Key, NamedKey};
-use winit::window::{Window, WindowId};
+use winit::window::{CursorIcon, Window, WindowId};
 
 pub fn run(app: AppState, source: Option<PathBuf>) -> anyhow::Result<()> {
     let event_loop = EventLoop::new()?;
@@ -50,16 +50,6 @@ impl Gui {
         }
     }
 
-    fn apply_window_size(&mut self) {
-        let Some(window) = &self.window else {
-            return;
-        };
-        let (w, h) = self.session.scaled_size();
-        let _ = window.request_inner_size(PhysicalSize::new(w, h));
-        window.set_title(&self.session.window_title());
-        self.redraw();
-    }
-
     fn present(&mut self) {
         let (Some(window), Some(surface)) = (&self.window, &mut self.surface) else {
             return;
@@ -72,6 +62,7 @@ impl Gui {
         if surface.resize(nw, nh).is_err() {
             return;
         }
+        self.session.set_scale(window.scale_factor() as f32);
         self.session.set_window_size(size.width, size.height);
         let frame = self.session.compose_frame(size.width, size.height);
         window.pre_present_notify();
@@ -90,20 +81,6 @@ impl Gui {
         if let Some(cb) = &mut self.clipboard {
             let _ = cb.set_text(plain);
         }
-    }
-
-    fn window_width(&self) -> u32 {
-        self.window
-            .as_ref()
-            .map(|w| w.inner_size().width)
-            .unwrap_or(1)
-    }
-
-    fn window_height(&self) -> u32 {
-        self.window
-            .as_ref()
-            .map(|w| w.inner_size().height)
-            .unwrap_or(1)
     }
 
     fn save_export(&self) {
@@ -130,10 +107,13 @@ impl ApplicationHandler for Gui {
         if self.window.is_some() {
             return;
         }
-        let (w, h) = self.session.scaled_size();
         let attrs = Window::default_attributes()
             .with_title(self.session.window_title())
-            .with_inner_size(PhysicalSize::new(w, h));
+            .with_inner_size(LogicalSize::new(
+                DEFAULT_INNER_W as f64,
+                DEFAULT_INNER_H as f64,
+            ))
+            .with_min_inner_size(LogicalSize::new(MIN_INNER_W as f64, MIN_INNER_H as f64));
         let window = Arc::new(event_loop.create_window(attrs).expect("create window"));
         let context = Context::new(window.clone()).expect("softbuffer context");
         let surface = Surface::new(&context, window.clone()).expect("softbuffer surface");
@@ -158,8 +138,15 @@ impl ApplicationHandler for Gui {
             WindowEvent::ModifiersChanged(m) => self.modifiers = m.state(),
             WindowEvent::CursorMoved { position, .. } => {
                 self.cursor = (position.x, position.y);
-                self.session.pointer_move(position.x, position.y);
-                if self.session.is_dragging() {
+                let chrome_changed = self.session.pointer_move(position.x, position.y);
+                if let Some(window) = &self.window {
+                    window.set_cursor(match self.session.pointer_cursor(position.x, position.y) {
+                        PointerCursor::Pointer => CursorIcon::Pointer,
+                        PointerCursor::Text => CursorIcon::Text,
+                        PointerCursor::Default => CursorIcon::Default,
+                    });
+                }
+                if chrome_changed {
                     self.redraw();
                 }
             }
@@ -169,28 +156,41 @@ impl ApplicationHandler for Gui {
                 ..
             } => match state {
                 ElementState::Pressed => {
-                    let w = self.window_width();
-                    let h = self.window_height();
-                    if export_hit(w, h, self.cursor.0, self.cursor.1) {
-                        self.save_export();
-                        return;
-                    }
-                    let copy_label = self.session.app().copy_format().hud_label();
-                    let format_label = self.session.app().export_format().hud_label();
-                    if export_format_hit(w, h, format_label, self.cursor.0, self.cursor.1) {
-                        self.session.app_mut().toggle_export_format();
-                        self.redraw();
-                        return;
-                    }
-                    if copy_format_hit(w, h, copy_label, format_label, self.cursor.0, self.cursor.1) {
-                        self.session.app_mut().toggle_copy_format();
-                        self.redraw();
-                        return;
-                    }
                     self.session.pointer_down(self.cursor.0, self.cursor.1);
                     self.redraw();
                 }
                 ElementState::Released => {
+                    if let Some(hit) = self.session.take_chrome_click(self.cursor.0, self.cursor.1)
+                    {
+                        match hit {
+                            ChromeHit::Export => {
+                                self.session.close_export_menu();
+                                self.save_export();
+                            }
+                            ChromeHit::ExportMenu => self.session.toggle_export_menu(),
+                            ChromeHit::ExportItem(i) => {
+                                if let Some(format) = ExportFormat::ALL.get(i).copied() {
+                                    self.session.close_export_menu();
+                                    self.session.app_mut().set_export_format(format);
+                                    self.save_export();
+                                }
+                            }
+                            ChromeHit::Copy => {
+                                self.session.close_export_menu();
+                                self.session.app_mut().toggle_copy_format();
+                            }
+                            ChromeHit::ZoomIn => {
+                                self.session.close_export_menu();
+                                self.session.apply(Action::ZoomIn);
+                            }
+                            ChromeHit::ZoomOut => {
+                                self.session.close_export_menu();
+                                self.session.apply(Action::ZoomOut);
+                            }
+                        }
+                        self.redraw();
+                        return;
+                    }
                     if let Some(payload) = self.session.pointer_up(self.cursor.0, self.cursor.1) {
                         self.copy_to_clipboard(payload.plain);
                     }
@@ -199,6 +199,12 @@ impl ApplicationHandler for Gui {
             },
             WindowEvent::KeyboardInput { event, .. } => {
                 if !event.state.is_pressed() {
+                    return;
+                }
+                if matches!(event.logical_key, Key::Named(NamedKey::Escape)) {
+                    if self.session.close_export_menu() {
+                        self.redraw();
+                    }
                     return;
                 }
                 let Some(bind) = bind_key(&event.logical_key) else {
@@ -216,6 +222,7 @@ impl ApplicationHandler for Gui {
                     return;
                 }
                 if action == Action::Export {
+                    self.session.close_export_menu();
                     self.save_export();
                     return;
                 }
@@ -223,17 +230,14 @@ impl ApplicationHandler for Gui {
                 if let Some(payload) = copied {
                     self.copy_to_clipboard(payload.plain);
                 }
-                if matches!(action, Action::ZoomIn | Action::ZoomOut) {
-                    self.apply_window_size();
-                }
                 self.redraw();
             }
             WindowEvent::MouseWheel { delta, .. } => {
-                let dy = match delta {
+                let wheel_y = match delta {
                     MouseScrollDelta::LineDelta(_, y) => line_delta_px(y),
                     MouseScrollDelta::PixelDelta(p) => p.y,
                 };
-                self.session.scroll_by(dy);
+                self.session.scroll_by(wheel_y_to_scroll(wheel_y));
                 self.redraw();
             }
             _ => {}

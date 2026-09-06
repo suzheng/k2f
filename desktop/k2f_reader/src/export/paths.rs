@@ -5,9 +5,7 @@ fn strip_suffix<'a>(name: &'a str, ext: &str) -> &'a str {
     let bytes = name.as_bytes();
     let needle = format!(".{ext}");
     let nlen = needle.len();
-    if bytes.len() >= nlen
-        && bytes[bytes.len() - nlen..].eq_ignore_ascii_case(needle.as_bytes())
-    {
+    if bytes.len() >= nlen && bytes[bytes.len() - nlen..].eq_ignore_ascii_case(needle.as_bytes()) {
         &name[..bytes.len() - nlen]
     } else {
         name
@@ -35,7 +33,12 @@ pub fn export_file_name(title: &str, format: ExportFormat, page_count: usize) ->
     }
 }
 
-pub fn default_export_path(source: &Path, title: &str, format: ExportFormat, page_count: usize) -> PathBuf {
+pub fn default_export_path(
+    source: &Path,
+    title: &str,
+    format: ExportFormat,
+    page_count: usize,
+) -> PathBuf {
     source.with_file_name(export_file_name(title, format, page_count))
 }
 

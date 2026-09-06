@@ -2,8 +2,8 @@ mod common;
 
 use common::published_invoice_bytes;
 use k2f_reader::ui::{
-    clamp_scroll, content_height, line_delta_px, page_at_scroll, page_tops, Action, Session,
-    HUD_HEIGHT, LINE_PX, PAGE_GAP,
+    clamp_scroll, content_height, line_delta_px, page_at_scroll, page_inset_y, page_tops,
+    wheel_y_to_scroll, window_chrome_h, Action, Session, LINE_PX, PAGE_GAP,
 };
 use k2f_reader::AppState;
 
@@ -35,11 +35,21 @@ fn line_delta_is_positive_down() {
 }
 
 #[test]
+fn wheel_y_matches_system_content_direction() {
+    assert_eq!(
+        wheel_y_to_scroll(line_delta_px(1.0)),
+        -LINE_PX,
+        "positive winit Y moves content down, so scroll_y decreases"
+    );
+    assert_eq!(wheel_y_to_scroll(-24.0), 24.0);
+}
+
+#[test]
 fn published_invoice_stack_is_taller_than_one_page() {
     let session = Session::new(AppState::open(&published_invoice_bytes()).unwrap()).unwrap();
     assert!(session.app().page_count() >= 3);
     let (_w, h) = session.scaled_size();
-    let view_h = f64::from(h.saturating_sub(HUD_HEIGHT));
+    let view_h = f64::from(h.saturating_sub(window_chrome_h(session.app())));
     assert!(
         session.content_height() > view_h + PAGE_GAP,
         "stack {} view {}",
@@ -76,7 +86,7 @@ fn compose_at_scroll_zero_matches_page0_png() {
     let (w, h) = session.scaled_size();
     let view = session.page_view(w, h);
     assert!(
-        (view.origin_y - f64::from(HUD_HEIGHT)).abs() < 1e-9,
+        (view.origin_y - f64::from(page_inset_y(session.app()))).abs() < 1e-9,
         "page 0 sits under the HUD at scroll 0, got {}",
         view.origin_y
     );
@@ -98,7 +108,7 @@ fn jump_to_page_1_blits_page1_not_page0() {
 
     let view = session.page_view(w, h);
     assert!(
-        (view.origin_y - f64::from(HUD_HEIGHT)).abs() < 1e-9,
+        (view.origin_y - f64::from(page_inset_y(session.app()))).abs() < 1e-9,
         "jumped page sits under the HUD, got {}",
         view.origin_y
     );
@@ -132,6 +142,6 @@ fn differing_pixel(session: &Session, max_x: u32) -> Option<(u32, u32)> {
 
 fn page_tops_for(session: &Session) -> Vec<f64> {
     let (_w, h) = session.scaled_size();
-    let page_h = h.saturating_sub(HUD_HEIGHT);
+    let page_h = h.saturating_sub(window_chrome_h(session.app()));
     page_tops(&vec![page_h; session.app().page_count()])
 }

@@ -36,8 +36,8 @@ fn status_links_desktop_readme() {
 fn status_does_not_claim_a_shipped_desktop_binary() {
     let status = read_repo("docs/guide/status.md");
     assert_not_packaged_binary("docs/guide/status.md", &status);
-    let shipped = markdown_section(&status, "## Shipped")
-        .expect("status.md must have a Shipped section");
+    let shipped =
+        markdown_section(&status, "## Shipped").expect("status.md must have a Shipped section");
     assert!(
         !shipped.contains("k2f_reader") && !shipped.contains("k2f-reader"),
         "native reader is in development, not shipped in v0.1"

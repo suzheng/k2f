@@ -29,9 +29,7 @@
     const root = el.shadowRoot;
     const stage = root.querySelector(".k2f-stage");
     const wrap = root.querySelector(".k2f-page-wrap");
-    const zoomLabel = [...root.querySelectorAll(".k2f-toolbar span")].find(
-      (s) => /^\d+%$/.test(s.textContent.trim()),
-    );
+    const zoomLabel = root.querySelector(".k2f-zoom-label");
     const fullscreenBtn = root.querySelector('[data-act="fullscreen"]');
     const stageBox = stage.getBoundingClientRect();
     const fitLeft = wrap.getBoundingClientRect().left;

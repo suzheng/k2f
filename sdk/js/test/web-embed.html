@@ -33,7 +33,7 @@
     const { bytes: pdf } = handle.export("pdf");
     handle.goPage(1);
     const pageLabel = doc.querySelector("k2f-viewer").shadowRoot.querySelector(
-      ".k2f-toolbar span",
+      ".k2f-page-label",
     ).textContent;
     const img = doc.querySelector("k2f-viewer").shadowRoot.querySelector("img.k2f-page");
     const result = {

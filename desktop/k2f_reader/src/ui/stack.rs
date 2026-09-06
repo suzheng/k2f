@@ -1,7 +1,6 @@
 //! Word-style vertical stack of lock pages.
 
 use super::coords::{scaled_png_size, PageView};
-use super::hud::HUD_HEIGHT;
 
 /// Gutter between sheets, matching `.k2f-stack { gap: 24px }`.
 pub const PAGE_GAP: f64 = 24.0;
@@ -41,14 +40,15 @@ pub fn content_height(heights: &[u32]) -> f64 {
         + PAGE_GAP * heights.len().saturating_sub(1) as f64
 }
 
-pub fn origin_y(page: usize, tops: &[f64], scroll_y: f64) -> f64 {
-    f64::from(HUD_HEIGHT) + tops.get(page).copied().unwrap_or(0.0) - scroll_y
+pub fn origin_y(page: usize, tops: &[f64], scroll_y: f64, inset_y: f64) -> f64 {
+    inset_y + tops.get(page).copied().unwrap_or(0.0) - scroll_y
 }
 
 pub fn page_view(win_w: u32, png_w: u32, png_h: u32, zoom: f32, origin_y: f64) -> PageView {
     let (sw, _) = scaled_png_size(png_w, png_h, zoom);
+    let content_w = win_w.saturating_sub(super::hud::SCROLLBAR_WIDTH);
     PageView {
-        origin_x: (f64::from(win_w) - f64::from(sw)) * 0.5,
+        origin_x: (f64::from(content_w) - f64::from(sw)) * 0.5,
         origin_y,
         zoom,
         png_w,

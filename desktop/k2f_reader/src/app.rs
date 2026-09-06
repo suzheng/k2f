@@ -1,8 +1,8 @@
 use crate::copy::{CopyFormat, CopyPayload, RectPt};
 use crate::export::ExportFormat;
 use anyhow::Context;
-use k2f_package::VerifyStatus;
 use k2f_package::pack_bytes;
+use k2f_package::VerifyStatus;
 use k2f_paint::{Banner, OpenedDocument, TextSpan, OFFICIAL_PNG_SCALE};
 use k2f_pdf::export_opened;
 use std::path::Path;
@@ -42,7 +42,7 @@ impl AppState {
             page: 0,
             zoom: 1.0,
             copy_format: CopyFormat::Markdown,
-            export_format: ExportFormat::Pdf,
+            export_format: ExportFormat::K2f,
         })
     }
 
@@ -66,6 +66,18 @@ impl AppState {
     /// Integrity code shown beside the web banner (`ENGINE_MISMATCH` under `BROKEN_INTEGRITY`).
     pub fn status_code(&self) -> &'static str {
         self.doc.status_code()
+    }
+
+    pub fn hash_code(&self) -> &'static str {
+        self.doc.hash_code()
+    }
+
+    pub fn fingerprint(&self) -> Option<&str> {
+        self.doc.fingerprint()
+    }
+
+    pub fn generated_by(&self) -> Option<&str> {
+        self.doc.generated_by()
     }
 
     pub fn page_count(&self) -> usize {
@@ -159,9 +171,7 @@ impl AppState {
             ExportFormat::Pdf => self.export_pdf_bytes(),
             ExportFormat::Pptx => self.export_pptx_bytes(),
             ExportFormat::Docx => self.export_docx_bytes(),
-            ExportFormat::Markdown => self
-                .export_markdown()
-                .map(|s| s.into_bytes()),
+            ExportFormat::Markdown => self.export_markdown().map(|s| s.into_bytes()),
             ExportFormat::Png => self.export_pages_png_bytes(),
             ExportFormat::Jpg => self.export_pages_jpeg_bytes(),
         }
@@ -201,6 +211,19 @@ impl AppState {
 
     pub fn copy_selection_at(&self, page: usize, sel: RectPt) -> Option<CopyPayload> {
         CopyPayload::from_spans(&self.text_layer_at(page), sel)?
+            .with_format(&self.doc, self.copy_format)
+    }
+
+    /// Caret-range copy between two document points (same as the web text layer).
+    pub fn copy_points_at(
+        &self,
+        page: usize,
+        ax: f64,
+        ay: f64,
+        bx: f64,
+        by: f64,
+    ) -> Option<CopyPayload> {
+        CopyPayload::from_points(&self.text_layer_at(page), ax, ay, bx, by)?
             .with_format(&self.doc, self.copy_format)
     }
 

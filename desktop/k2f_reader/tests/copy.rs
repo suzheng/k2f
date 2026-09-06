@@ -1,6 +1,7 @@
 use k2f_paint::TextSpan;
 use k2f_reader::copy::{
-    plain_text_from_spans, selected_spans, CopyPayload, RectPt, K2F_NODES_MIME,
+    plain_text_from_points, plain_text_from_spans, selected_spans, slices_at, CopyPayload, RectPt,
+    K2F_NODES_MIME,
 };
 
 fn span(id: &str, text: &str, x: f64, y: f64, w: f64, h: f64) -> TextSpan {
@@ -150,4 +151,44 @@ fn payload_merges_spans_of_the_same_node() {
     assert_eq!(payload.nodes[0].char_start, 0);
     assert_eq!(payload.nodes[0].char_end, 11);
     assert_eq!(payload.nodes[0].text, "helloworld");
+}
+
+#[test]
+fn horizontal_points_select_a_substring() {
+    let spans = [span("a", "ABCDEF", 0.0, 0.0, 60.0, 10.0)];
+    let slices = slices_at(&spans, 0.0, 5.0, 30.0, 5.0);
+    assert_eq!(slices.len(), 1);
+    assert_eq!(slices[0].text, "ABC");
+    assert_eq!(slices[0].char_start, 0);
+    assert_eq!(slices[0].char_end, 3);
+    assert_eq!(plain_text_from_points(&spans, 0.0, 5.0, 30.0, 5.0), "ABC");
+}
+
+#[test]
+fn reverse_horizontal_drag_is_the_same_range() {
+    let spans = [span("a", "ABCDEF", 0.0, 0.0, 60.0, 10.0)];
+    assert_eq!(
+        plain_text_from_points(&spans, 30.0, 5.0, 0.0, 5.0),
+        plain_text_from_points(&spans, 0.0, 5.0, 30.0, 5.0)
+    );
+}
+
+#[test]
+fn collapsed_points_select_nothing() {
+    let spans = [span("a", "ABCDEF", 0.0, 0.0, 60.0, 10.0)];
+    assert!(slices_at(&spans, 15.0, 5.0, 15.0, 5.0).is_empty());
+    assert!(plain_text_from_points(&spans, 15.0, 5.0, 15.0, 5.0).is_empty());
+    assert!(CopyPayload::from_points(&spans, 15.0, 5.0, 15.0, 5.0).is_none());
+}
+
+#[test]
+fn caret_range_inserts_newline_between_stacked_lines() {
+    let spans = [
+        span("left", "left", 10.0, 10.0, 20.0, 10.0),
+        span("later", "bottom", 10.0, 40.0, 20.0, 10.0),
+    ];
+    assert_eq!(
+        plain_text_from_points(&spans, 10.0, 15.0, 30.0, 45.0),
+        "left\nbottom"
+    );
 }

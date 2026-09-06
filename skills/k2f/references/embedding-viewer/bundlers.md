@@ -19,7 +19,7 @@ Typical result: `public/k2f_wasm_bg.wasm`.
 import { initWasm, mountK2fViewer } from "@openk2f/k2f/viewer";
 
 await initWasm("/k2f_wasm_bg.wasm");
-const handle = await mountK2fViewer(host, bytes, { banner: true, editable: false });
+const handle = await mountK2fViewer(host, bytes, { editable: false });
 ```
 
 The published npm package **does not** include a viewer-only binary. External apps always use `initWasm` (full sdk WASM). `runtime: "viewer"` needs a separately built viewer-only file named `k2f_viewer_bg.wasm` next to the sdk file.

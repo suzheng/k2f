@@ -14,7 +14,7 @@ python3 -m http.server 8000
 
 Open http://127.0.0.1:8000/examples/web-embed/
 
-Expected: stacked invoice pages you can scroll (Word-style), integrity banner, Previous/Next jump a page, Export PDF downloads `k2f-lock.pdf` from the lock (no re-layout).
+Expected: stacked invoice pages you can scroll (Word-style), tiered integrity chrome (quiet for unsigned), Previous/Next jump a page, Export PDF downloads `k2f-lock.pdf` from the lock (no re-layout).
 
 This demo opens `examples/invoice.K2F` when that file exists and the current engine accepts it. Otherwise it compiles the same invoice from `examples/invoice/assets/data/invoice_data.json` through `createK2f()` (packed `.K2F` files are gitignored and may fail `SCHEMA_INVALID` after a schema change).
 
@@ -46,7 +46,6 @@ import { mountK2fViewer, initWasm } from "@openk2f/k2f/viewer";
 await initWasm();
 const bytes = await fetch("/invoice.K2F").then((r) => r.arrayBuffer());
 const handle = await mountK2fViewer(document.getElementById("k2f-root"), new Uint8Array(bytes), {
-  banner: true,
   editable: true,
 });
 // handle.destroy() on unmount

@@ -29,7 +29,7 @@ async function openBytes(bytes) {
     await handle.open(bytes);
     return;
   }
-  handle = await mountK2fViewer(root, bytes, { editable: true, banner: true });
+  handle = await mountK2fViewer(root, bytes, { editable: true });
 }
 
 function onFile(dropped) {

@@ -111,15 +111,17 @@ Additional package errors: `SCHEMA_INVALID`, `NODE_ID`, `UNEXPECTED_PATH`, `UNKN
 
 ## Viewer banners
 
-Viewers must display an integrity banner derived from `IntegrityStatus`:
+Viewers must surface integrity status derived from `IntegrityStatus`. The banner **code** is always available via `banner()` / `k2f-open`; default UI uses **tiered visibility** (like PDF viewers):
 
-| Banner | When |
-|--------|------|
-| `SIGNED` | Valid signature and hash chain |
-| `UNSIGNED` | Valid, unsigned |
-| `SIGNED_BUT_BROKEN` | Signature file invalid or tampered |
-| `BROKEN_INTEGRITY` | Content, appearance, engine, or font failure |
-| `UNLOCKED` | Package not compiled |
+| Banner | When | Default UI |
+|--------|------|------------|
+| `SIGNED` | Valid signature and hash chain | Compact positive strip |
+| `UNSIGNED` | Valid, unsigned | Hidden (quiet read) |
+| `SIGNED_BUT_BROKEN` | Signature file invalid or tampered | Prominent warning |
+| `BROKEN_INTEGRITY` | Content, appearance, engine, or font failure | Prominent warning |
+| `UNLOCKED` | Package not compiled | Compact draft strip |
+
+Embedders may pass `banner: "full"` for the legacy verbose strip on every state, or `banner: "off"` / `no-banner` to hide chrome entirely. Broken states must never be silently treated as signed.
 
 `BROKEN_INTEGRITY` and `SIGNED_BUT_BROKEN` must **not** be treated as signed.
 

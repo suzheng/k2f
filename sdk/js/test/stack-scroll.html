@@ -31,7 +31,7 @@
     const stage = root.querySelector(".k2f-stage");
     const wraps = [...root.querySelectorAll(".k2f-page-wrap")];
     const imgs = [...root.querySelectorAll("img.k2f-page")];
-    const label = root.querySelector(".k2f-toolbar span");
+    const label = root.querySelector(".k2f-page-label");
     const firstH = wraps[0]?.getBoundingClientRect().height ?? 0;
     if (wraps.length < 2) throw new Error(`wraps ${wraps.length}`);
     if (imgs.filter((img) => img.src.startsWith("blob:")).length < 2) {

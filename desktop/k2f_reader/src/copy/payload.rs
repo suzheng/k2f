@@ -1,4 +1,4 @@
-use super::{plain_text_from_spans, selected_spans, RectPt};
+use super::{join_span_text, selected_spans, slices_at, RectPt};
 use k2f_markdown::NodeCharRange;
 use k2f_paint::{OpenedDocument, TextSpan};
 use serde::Serialize;
@@ -47,11 +47,22 @@ pub struct CopyPayload {
 
 impl CopyPayload {
     pub fn from_spans(spans: &[TextSpan], sel: RectPt) -> Option<Self> {
-        let plain = plain_text_from_spans(spans, sel);
+        Self::from_hits(&selected_spans(spans, sel))
+    }
+
+    /// Character-level range between two document points (web text-layer copy).
+    pub fn from_points(spans: &[TextSpan], ax: f64, ay: f64, bx: f64, by: f64) -> Option<Self> {
+        let sliced = slices_at(spans, ax, ay, bx, by);
+        let hits: Vec<&TextSpan> = sliced.iter().collect();
+        Self::from_hits(&hits)
+    }
+
+    fn from_hits(hits: &[&TextSpan]) -> Option<Self> {
+        let plain = join_span_text(hits);
         if plain.is_empty() {
             return None;
         }
-        let nodes = selected_nodes(spans, sel);
+        let nodes = selected_nodes_from(hits);
         if nodes.is_empty() {
             return None;
         }
@@ -85,9 +96,9 @@ impl CopyPayload {
     }
 }
 
-fn selected_nodes(spans: &[TextSpan], sel: RectPt) -> Vec<SelectedNode> {
+fn selected_nodes_from(hits: &[&TextSpan]) -> Vec<SelectedNode> {
     let mut out: Vec<SelectedNode> = Vec::new();
-    for s in selected_spans(spans, sel) {
+    for s in hits {
         if let Some(prev) = out.iter_mut().find(|n| n.node_id == s.node_id) {
             prev.char_start = prev.char_start.min(s.char_start);
             prev.char_end = prev.char_end.max(s.char_end);

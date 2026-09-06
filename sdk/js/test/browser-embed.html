@@ -27,7 +27,7 @@
     const { bytes: pdf } = handle.export("pdf");
     const img = el.shadowRoot.querySelector("img.k2f-page");
     handle.goPage(1);
-    const pageLabel = el.shadowRoot.querySelector(".k2f-toolbar span").textContent;
+    const pageLabel = el.shadowRoot.querySelector(".k2f-page-label").textContent;
     const result = {
       pages: detail.pageCount,
       pageLabel,

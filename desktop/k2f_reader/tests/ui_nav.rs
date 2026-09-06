@@ -3,7 +3,9 @@ mod common;
 use common::{invoice_bytes, published_invoice_bytes};
 use k2f_paint::TextSpan;
 use k2f_reader::copy::RectPt;
-use k2f_reader::ui::{accept_key, key_action, Action, KeyBind, Session, HUD_HEIGHT};
+use k2f_reader::ui::{
+    accept_key, key_action, page_inset_y, Action, KeyBind, PointerCursor, Session,
+};
 use k2f_reader::AppState;
 
 fn title_span(spans: &[TextSpan]) -> &TextSpan {
@@ -78,14 +80,8 @@ fn drag_on_page_1_copies_that_page_lock_text() {
         .clone();
     let (w, h) = session.scaled_size();
     let view = session.page_view(w, h);
-    let (x0, y0) = view.pt_to_window(
-        span.x_pt + span.width_pt * 0.25,
-        span.y_pt + span.height_pt * 0.25,
-    );
-    let (x1, y1) = view.pt_to_window(
-        span.x_pt + span.width_pt * 0.75,
-        span.y_pt + span.height_pt * 0.75,
-    );
+    let (x0, y0) = view.pt_to_window(span.x_pt, span.y_pt + span.height_pt * 0.5);
+    let (x1, y1) = view.pt_to_window(span.x_pt + span.width_pt, span.y_pt + span.height_pt * 0.5);
     session.pointer_down(x0, y0);
     let payload = session
         .pointer_up(x1, y1)
@@ -104,13 +100,10 @@ fn drag_in_window_pixels_copies_lock_text() {
     let title = title_span(&session.app().text_layer()).clone();
     let (w, h) = session.scaled_size();
     let view = session.page_view(w, h);
-    let (x0, y0) = view.pt_to_window(
-        title.x_pt + title.width_pt * 0.25,
-        title.y_pt + title.height_pt * 0.25,
-    );
+    let (x0, y0) = view.pt_to_window(title.x_pt, title.y_pt + title.height_pt * 0.5);
     let (x1, y1) = view.pt_to_window(
-        title.x_pt + title.width_pt * 0.75,
-        title.y_pt + title.height_pt * 0.75,
+        title.x_pt + title.width_pt,
+        title.y_pt + title.height_pt * 0.5,
     );
 
     session.pointer_down(x0, y0);
@@ -162,11 +155,11 @@ fn hud_is_excluded_from_page_coordinates() {
     let session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
     let (w, h) = session.scaled_size();
     let view = session.page_view(w, h);
-    let (x, y) = view.window_to_pt(0.0, HUD_HEIGHT as f64);
+    let (x, y) = view.window_to_pt(0.0, page_inset_y(session.app()) as f64);
     assert!(x.abs() < 1e-9, "{x}");
     assert!(
         y.abs() < 1e-9,
-        "window y=HUD_HEIGHT is document pt 0, got {y}"
+        "window y=page inset is document pt 0, got {y}"
     );
 }
 
@@ -183,5 +176,74 @@ fn drag_starting_on_hud_does_not_copy() {
     assert!(
         session.pointer_up(x1, y1).is_none(),
         "banner chrome is not a text-layer drag, matching the web header"
+    );
+}
+
+#[test]
+fn horizontal_drag_selects_title_like_the_web_viewer() {
+    let mut session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
+    let title = title_span(&session.app().text_layer()).clone();
+    let (w, h) = session.scaled_size();
+    let view = session.page_view(w, h);
+    let mid_y = title.y_pt + title.height_pt * 0.5;
+    let (x0, y0) = view.pt_to_window(title.x_pt, mid_y);
+    let (x1, y1) = view.pt_to_window(title.x_pt + title.width_pt, mid_y);
+    assert!(
+        (y0 - y1).abs() < 1e-6,
+        "this is a same-y drag the old 2D rect treated as empty"
+    );
+    session.pointer_down(x0, y0);
+    let payload = session
+        .pointer_up(x1, y1)
+        .expect("horizontal drag must select text");
+    assert!(
+        payload.plain.contains("STATEMENT"),
+        "same-y drag must copy lock text, got {:?}",
+        payload.plain
+    );
+}
+
+#[test]
+fn ibeam_over_lock_text() {
+    let mut session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
+    let title = title_span(&session.app().text_layer()).clone();
+    let (w, h) = session.scaled_size();
+    session.set_window_size(w, h);
+    let (x, y) = session.page_view(w, h).pt_to_window(
+        title.x_pt + title.width_pt * 0.5,
+        title.y_pt + title.height_pt * 0.5,
+    );
+    session.pointer_move(x, y);
+    assert_eq!(session.pointer_cursor(x, y), PointerCursor::Text);
+    session.pointer_move(8.0, 4.0);
+    assert_ne!(
+        session.pointer_cursor(8.0, 4.0),
+        PointerCursor::Text,
+        "toolbar is not lock text"
+    );
+}
+
+#[test]
+fn selection_paints_glyph_run_not_a_marquee() {
+    let mut session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
+    let title = title_span(&session.app().text_layer()).clone();
+    let (w, h) = session.scaled_size();
+    session.set_window_size(w, h);
+    let view = session.page_view(w, h);
+    let mid_x = title.x_pt + title.width_pt * 0.5;
+    let mid_y = title.y_pt + title.height_pt * 0.5;
+    let (x0, y0) = view.pt_to_window(title.x_pt, mid_y);
+    let (x1, y1) = view.pt_to_window(title.x_pt + title.width_pt, mid_y);
+    let (mx, my) = view.pt_to_window(mid_x, mid_y);
+    let ix = my.round() as u32 * w + mx.round() as u32;
+    let before = session.compose_frame(w, h);
+    session.pointer_down(x0, y0);
+    session
+        .pointer_up(x1, y1)
+        .expect("full-span drag must select");
+    let after = session.compose_frame(w, h);
+    assert_ne!(
+        before[ix as usize], after[ix as usize],
+        "selected glyph run must show the web-style blue highlight"
     );
 }

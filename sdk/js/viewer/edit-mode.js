@@ -13,13 +13,15 @@ export function bindEditMode({ button, canEdit, signal, onChange }) {
   }
 
   button.hidden = false;
-  button.textContent = "Edit";
 
   function sync() {
     button.textContent = editing ? "Done" : "Edit";
     button.setAttribute("aria-pressed", editing ? "true" : "false");
     onChange?.(editing);
   }
+
+  button.textContent = "Edit";
+  button.setAttribute("aria-pressed", "false");
 
   button.addEventListener(
     "click",

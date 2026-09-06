@@ -178,7 +178,8 @@ export interface TextSpanJson {
 }
 
 export interface ViewerMountOptions {
-  banner?: boolean;
+  /** Integrity banner presentation. Default `auto` (tiered). `true`/`full` = legacy verbose strip. `false`/`off` = hidden. */
+  banner?: boolean | "auto" | "full" | "off";
   /** Allow Edit toolbar + surgical popover (opens in view mode). Forces sdk WASM. */
   editable?: boolean;
   /** Explicit WASM flavor. `editable: true` always uses sdk. Default is viewer when available. */
@@ -221,7 +222,7 @@ export class K2fViewerElement extends HTMLElement {
   static readonly observedAttributes: string[];
   src?: string;
   editable?: boolean;
-  /** Hide the integrity banner when present. */
+  /** Hide the integrity banner when present. Same as `banner="off"`. */
   "no-banner"?: boolean;
   readonly handle?: ViewerHandle;
   open(bytes: Uint8Array): Promise<void>;

@@ -37,7 +37,7 @@ export class K2fViewerElement extends HtmlElement {
   #options() {
     return {
       editable: this.hasAttribute("editable"),
-      banner: !this.hasAttribute("no-banner"),
+      banner: this.hasAttribute("no-banner") ? "off" : "auto",
     };
   }
 
