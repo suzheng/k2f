@@ -155,6 +155,36 @@ fn four_solid_edges_use_ln() {
 }
 
 #[test]
+fn large_fill_keeps_stroke_in_front() {
+    let (w, h) = page();
+    let frame = Rect {
+        x: Pt(56_667),
+        y: Pt(14_115),
+        width: Pt(524_166),
+        height: Pt(813_770),
+    };
+    let dec = BoxDecoration {
+        background: Some(FillRef::Inline(Fill::Solid {
+            color: "#FFFFFF".into(),
+        })),
+        border: Some(four_edge(BorderStyle::Solid)),
+        ..Default::default()
+    };
+    let boxes = shapes_from_box("main_frame", &frame, &dec, w, h, 150).unwrap();
+    assert_eq!(boxes.len(), 2, "fill and stroke must be separate shapes");
+    assert!(boxes[0].behind_doc, "large fill stays behind text");
+    assert!(boxes[0].line_hex.is_none());
+    assert_eq!(boxes[0].fill_hex.as_deref(), Some("FFFFFF"));
+    assert!(
+        !boxes[1].behind_doc,
+        "frame stroke must stay in front of w:background"
+    );
+    assert!(boxes[1].fill_hex.is_none());
+    assert_eq!(boxes[1].line_hex.as_deref(), Some("FF0000"));
+    assert!(boxes[1].node_id.ends_with("::stroke"));
+}
+
+#[test]
 fn four_dashed_edges_use_ln_not_bars() {
     let (w, h) = page();
     let border = four_edge(BorderStyle::Dashed);

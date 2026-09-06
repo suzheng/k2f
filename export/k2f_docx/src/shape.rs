@@ -59,11 +59,26 @@ pub(crate) fn shapes_from_box(
     match line {
         None => Ok(vec![base]),
         Some(ln) if ln.all_four => {
-            let mut s = base;
-            s.line_hex = Some(ln.hex);
-            s.line_w_emu = ln.w_emu;
-            s.line_dash = ln.dash;
-            Ok(vec![s])
+            if behind_doc && base.fill_hex.is_some() {
+                // Fill stays behind text/pictures. The outline must not: LibreOffice
+                // Writer paints behindDoc shapes under `w:background`, so a merged
+                // fill+stroke frame (drawing title blocks, card shells) disappears.
+                let fill = base.clone();
+                let mut stroke = base;
+                stroke.fill_hex = None;
+                stroke.behind_doc = false;
+                stroke.line_hex = Some(ln.hex);
+                stroke.line_w_emu = ln.w_emu;
+                stroke.line_dash = ln.dash;
+                stroke.node_id = format!("{}::stroke", stroke.node_id);
+                Ok(vec![fill, stroke])
+            } else {
+                let mut s = base;
+                s.line_hex = Some(ln.hex);
+                s.line_w_emu = ln.w_emu;
+                s.line_dash = ln.dash;
+                Ok(vec![s])
+            }
         }
         Some(ln) => {
             let mut out = Vec::new();
