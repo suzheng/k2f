@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - Agent skill: poster/slide page shell is a pinned-height **grid** with `{auto:true}` header/footer and a `{fr:1}` grower ([`ex_poster_shell.json`](skills/k2f/catalog/content/ex_poster_shell.json)); do not stack content inside a fixed-height shell
 - `export-docx` / `export-pptx`: pin Office theme `dk1`/`lt1` to RGB black/white instead of `sysClr windowText`/`window`. Text that is lock-black / lock-white is stored as `000001` / `FFFFFE` so Word/PowerPoint Dark Mode cannot treat it as Automatic and invert it on a still-white page. Word export now includes `word/theme/theme1.xml`, explicit `w:background`, `w14:textFill`, RGB `wps:style` fontRef, and an opaque text-box underlay matching the shape behind the text so unfilled boxes are not remapped in Dark Mode.
+- `export-docx` / `export-pptx`: resolve lock font keys (package path stem such as `Roboto-Regular`, plus `default`) to the embedded TTF family name instead of leaking the alias into `typeface` / `w:rFonts`. Character tracking is taken from lock glyph extra-advance (Word `w:spacing`, DrawingML `a:rPr spc`). Role `padding_pt.top` on a text node becomes text-box `tIns` from the first-line glyph `y_offset` (skipped when the box is vertically centered).
 
 ### Removed
 

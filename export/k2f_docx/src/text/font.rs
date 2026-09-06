@@ -42,15 +42,16 @@ impl FontCtx {
     }
 
     pub(crate) fn typeface(&self, family: &str) -> String {
+        if let Some(data) = self.bytes_for(family) {
+            if let Some(name) = family_from_bytes(data) {
+                return name;
+            }
+        }
         if let Some(name) = self.families.get(family) {
             return name.clone();
         }
         if family == "default" {
             return self.default_family.clone();
-        }
-        if self.bytes.contains_key(family) {
-            return family_from_bytes(&self.bytes[family])
-                .unwrap_or_else(|| self.default_family.clone());
         }
         family.to_string()
     }
@@ -58,6 +59,20 @@ impl FontCtx {
     pub(crate) fn bytes_for(&self, family: &str) -> Option<&[u8]> {
         if let Some(b) = self.bytes.get(family) {
             return Some(b.as_slice());
+        }
+        for (path, b) in &self.bytes {
+            let p = std::path::Path::new(path);
+            if p.file_stem().is_some_and(|s| s == family) {
+                return Some(b.as_slice());
+            }
+            if p.file_name().is_some_and(|s| s == family) {
+                return Some(b.as_slice());
+            }
+        }
+        for b in self.bytes.values() {
+            if family_from_bytes(b).as_deref() == Some(family) {
+                return Some(b.as_slice());
+            }
         }
         if family == "default" {
             if let Some(b) = self.bytes.get("default") {
@@ -94,4 +109,28 @@ fn family_from_bytes(data: &[u8]) -> Option<String> {
         }
     }
     fallback
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::BTreeMap;
+    use std::path::PathBuf;
+
+    fn roboto() -> Vec<u8> {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../assets/fonts/Roboto-Regular.ttf");
+        std::fs::read(path).expect("Roboto-Regular.ttf")
+    }
+
+    #[test]
+    fn alias_stem_resolves_to_ttf_family_and_bytes() {
+        let mut fonts = BTreeMap::new();
+        fonts.insert("assets/fonts/Roboto-Regular.ttf".into(), roboto());
+        let ctx = FontCtx::new(&fonts);
+        assert_eq!(ctx.typeface("Roboto-Regular"), "Roboto");
+        assert_eq!(ctx.typeface("default"), "Roboto");
+        assert!(ctx.bytes_for("Roboto-Regular").is_some());
+        assert!(ctx.bytes_for("default").is_some());
+    }
 }

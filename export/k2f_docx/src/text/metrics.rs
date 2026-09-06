@@ -24,14 +24,28 @@ pub(crate) fn insets(geo: Option<&GeometryNode>, align: TextAlign) -> (i64, i64,
         .min()
         .unwrap_or(0)
         .max(0);
+    let top = first_line_top_emu(geo);
     match align {
         // Left leftover on the right is editable width, not padding. Writing it as
         // rIns shrinks the Word text frame to the glyph span and clips short words
         // in a wide box (stretching the outer shape then reveals the rest).
-        TextAlign::Left => (emu(min_left), 0, 0, 0),
-        TextAlign::Right => (0, 0, emu(min_right), 0),
-        TextAlign::Center | TextAlign::Justify => (0, 0, 0, 0),
+        TextAlign::Left => (emu(min_left), top, 0, 0),
+        TextAlign::Right => (0, top, emu(min_right), 0),
+        TextAlign::Center | TextAlign::Justify => (0, top, 0, 0),
     }
+}
+
+/// Lock `y_offset` on the first line includes role `padding_pt.top`. Office
+/// `anchor=t` starts at the box top, so that padding must become `tIns`.
+fn first_line_top_emu(geo: &GeometryNode) -> i64 {
+    let Some(line) = source_lines(geo).into_iter().next() else {
+        return 0;
+    };
+    let y = line.iter().map(|g| g.y_offset.0).min().unwrap_or(0);
+    if y < 1_000 {
+        return 0;
+    }
+    emu(y)
 }
 
 pub(crate) fn line_spacing_twips(geo: Option<&GeometryNode>) -> Option<i64> {

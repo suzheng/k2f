@@ -37,6 +37,8 @@ pub struct TextBox {
     pub wrap: bool,
     /// DrawingML `a:spcPts` (hundredths of a point), from lock line-to-line delta.
     pub line_spc_pts: Option<i32>,
+    /// Role `padding_pt.top` baked into first-line glyph `y_offset`.
+    pub t_ins_emu: i64,
     /// Hanging indent for list markers (DrawingML `marL` / negative `indent`).
     pub mar_l_emu: i64,
     /// 1-based `a:buAutoNum startAt`. Each list item is its own text box.
@@ -70,6 +72,8 @@ pub struct TextRun {
     pub color_hex: String,
     pub hyperlink: Option<String>,
     pub script: ScriptPos,
+    /// DrawingML `a:rPr spc` (hundredths of a point). Extra lock glyph advance.
+    pub tracking_spc: i32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

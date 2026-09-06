@@ -37,7 +37,7 @@ pub(crate) fn textbox_sp_xml(
         <a:ln><a:noFill/></a:ln>
       </p:spPr>
       <p:txBody>
-        <a:bodyPr wrap="{wrap}" lIns="0" tIns="0" rIns="0" bIns="0" rtlCol="0" anchor="t"/>
+        <a:bodyPr wrap="{wrap}" lIns="0" tIns="{tins}" rIns="0" bIns="0" rtlCol="0" anchor="t"/>
         <a:lstStyle/>
 {body}      </p:txBody>
     </p:sp>
@@ -47,6 +47,7 @@ pub(crate) fn textbox_sp_xml(
         y = tb.y_emu,
         cx = tb.cx_emu,
         cy = tb.cy_emu,
+        tins = tb.t_ins_emu,
         wrap = if tb.wrap { "square" } else { "none" },
     )
 }
@@ -181,6 +182,9 @@ fn run_xml(run: &TextRun, preserve_box: bool, hyperlink_rids: &BTreeMap<String, 
         r#"<a:rPr lang="en-US" sz="{sz}" dirty="0""#,
         sz = run.sz_hundredths_pt
     );
+    if run.tracking_spc != 0 {
+        rpr.push_str(&format!(r#" spc="{}""#, run.tracking_spc));
+    }
     if run.bold {
         rpr.push_str(r#" b="1""#);
     }
@@ -272,6 +276,7 @@ mod tests {
             color_hex: "000001".into(),
             hyperlink: None,
             script: ScriptPos::Baseline,
+            tracking_spc: 0,
         }
     }
 

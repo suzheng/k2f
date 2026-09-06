@@ -47,7 +47,7 @@ pub(crate) fn textbox_from_draw_ctx(
     let align = geo
         .map(|g| infer_text_align(g, text))
         .unwrap_or(crate::ir::TextAlign::Left);
-    let (l_ins_emu, t_ins_emu, r_ins_emu, b_ins_emu) = metrics::insets(geo, align);
+    let (l_ins_emu, mut t_ins_emu, r_ins_emu, b_ins_emu) = metrics::insets(geo, align);
     let font_size = paint_runs
         .first()
         .map(|r| r.style.font_size)
@@ -55,6 +55,10 @@ pub(crate) fn textbox_from_draw_ctx(
     let numbered = node.marker_type == Some(ListMarkerType::Number);
     let bullet =
         !numbered && (node.role == "list_item" || node.marker_type == Some(ListMarkerType::Bullet));
+    let vert_center = metrics::vert_center(geo, rect, font_size);
+    if vert_center {
+        t_ins_emu = 0;
+    }
     Some(TextBox {
         node_id: node.id.clone(),
         x_emu: pt_to_emu(rect.x),
@@ -71,7 +75,7 @@ pub(crate) fn textbox_from_draw_ctx(
         r_ins_emu,
         b_ins_emu,
         line_twips: metrics::line_spacing_twips(geo),
-        vert_center: metrics::vert_center(geo, rect, font_size),
+        vert_center,
         preserve_whitespace: node.preserve_whitespace == Some(true)
             || node.role == "code_block"
             || matches!(node.content, NodeContent::CodeBlock(_)),

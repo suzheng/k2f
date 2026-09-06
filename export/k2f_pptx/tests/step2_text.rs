@@ -236,7 +236,11 @@ fn resolved_font_not_default_in_invoice() {
         !xml.contains("typeface=\"default\""),
         "embedded default font must be resolved via ttf-parser"
     );
-    assert!(xml.contains("typeface=\"Roboto\""));
+    assert!(xml.contains(r#"typeface="Roboto""#));
+    assert!(
+        !xml.contains(r#"typeface="Roboto-Regular""#),
+        "lock alias keys must resolve to the TTF family name, got {xml}"
+    );
 }
 
 #[test]

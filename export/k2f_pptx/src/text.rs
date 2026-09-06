@@ -1,4 +1,4 @@
-use crate::align::{infer_text_align, line_spacing_spc_pts};
+use crate::align::{infer_text_align, line_spacing_spc_pts, source_lines};
 use crate::coord::pt_to_emu;
 use crate::ir::{ScriptPos, TextAlign, TextBox, TextRun};
 use k2f_core::{
@@ -11,21 +11,57 @@ use ttf_parser::{name_id, Face, Language};
 
 pub(crate) struct FontCtx {
     default_family: String,
+    bytes: BTreeMap<String, Vec<u8>>,
 }
 
 impl FontCtx {
     pub(crate) fn new(fonts: &BTreeMap<String, Vec<u8>>) -> Self {
         Self {
             default_family: embedded_family(fonts).unwrap_or_else(|| "Roboto".into()),
+            bytes: fonts.clone(),
         }
     }
 
     fn typeface(&self, family: &str) -> String {
-        if family == "default" {
-            self.default_family.clone()
-        } else {
-            family.to_string()
+        if let Some(data) = self.bytes_for(family) {
+            if let Some(name) = family_from_bytes(data) {
+                return name;
+            }
         }
+        if family == "default" {
+            return self.default_family.clone();
+        }
+        family.to_string()
+    }
+
+    fn bytes_for(&self, family: &str) -> Option<&[u8]> {
+        if let Some(b) = self.bytes.get(family) {
+            return Some(b.as_slice());
+        }
+        for (path, b) in &self.bytes {
+            let p = std::path::Path::new(path);
+            if p.file_stem().is_some_and(|s| s == family) {
+                return Some(b.as_slice());
+            }
+            if p.file_name().is_some_and(|s| s == family) {
+                return Some(b.as_slice());
+            }
+        }
+        for b in self.bytes.values() {
+            if family_from_bytes(b).as_deref() == Some(family) {
+                return Some(b.as_slice());
+            }
+        }
+        if family == "default" {
+            if let Some(b) = self.bytes.get("default") {
+                return Some(b.as_slice());
+            }
+            if let Some((_, b)) = self.bytes.iter().find(|(k, _)| k.contains("Roboto")) {
+                return Some(b.as_slice());
+            }
+            return self.bytes.values().next().map(|b| b.as_slice());
+        }
+        None
     }
 }
 
@@ -57,7 +93,7 @@ pub(crate) fn textbox_from_draw(
             .map(|r| r.style.clone())
             .unwrap_or_else(fallback_style);
         let font_name = fonts.typeface(&style.font_family);
-        split_runs(&text, &style, &node.modifiers, &font_name)
+        split_runs(&text, &style, &node.modifiers, &font_name, 0)
     } else {
         runs_from_paint(&raw, paint_runs, &node.modifiers, geo, fonts)
     };
@@ -82,6 +118,7 @@ pub(crate) fn textbox_from_draw(
         preserve_whitespace: node.preserve_whitespace == Some(true) || node.role == "code_block",
         wrap: !running,
         line_spc_pts: line_spacing_spc_pts(geo),
+        t_ins_emu: top_inset_emu(geo),
         mar_l_emu: if numbered || bullet {
             list_hanging_emu(geo)
         } else {
@@ -152,6 +189,21 @@ fn list_hanging_emu(geo: Option<&GeometryNode>) -> i64 {
     pt_to_emu(Pt(min_left))
 }
 
+fn top_inset_emu(geo: Option<&GeometryNode>) -> i64 {
+    let geo = match geo {
+        Some(g) => g,
+        None => return 0,
+    };
+    let Some(line) = source_lines(geo).into_iter().next() else {
+        return 0;
+    };
+    let y = line.iter().map(|g| g.y_offset.0).min().unwrap_or(0);
+    if y < 1_000 {
+        return 0;
+    }
+    pt_to_emu(Pt(y))
+}
+
 fn expand_page_vars(text: &str, page_idx: usize, total_pages: usize) -> String {
     if !text.contains("{{") {
         return text.to_string();
@@ -182,7 +234,7 @@ pub(crate) fn cell_runs(
     let font_name = fonts.typeface(&style.font_family);
     let preserve = node.preserve_whitespace == Some(true) || node.role == "code_block";
     (
-        split_runs(text, &style, &node.modifiers, &font_name),
+        split_runs(text, &style, &node.modifiers, &font_name, 0),
         preserve,
     )
 }
@@ -197,23 +249,23 @@ fn runs_from_paint(
     if paint_runs.is_empty() {
         let style = fallback_style();
         let font_name = fonts.typeface(&style.font_family);
-        return split_runs(text, &style, modifiers, &font_name);
+        return split_runs(text, &style, modifiers, &font_name, 0);
     }
     let default_style = &paint_runs[0].style;
-    let mut spans: Vec<(usize, usize, &TextPaintStyle)> = Vec::new();
+    let mut spans: Vec<(usize, usize, &TextPaintStyle, Vec<&GlyphPosition>)> = Vec::new();
     for pr in paint_runs {
-        let Some((bs, be)) = paint_byte_range(text, pr, geo) else {
+        let Some((bs, be, glyphs)) = paint_byte_range(text, pr, geo) else {
             continue;
         };
         if bs < be {
-            spans.push((bs, be, &pr.style));
+            spans.push((bs, be, &pr.style, glyphs));
         }
     }
-    spans.sort_by_key(|(bs, _, _)| *bs);
+    spans.sort_by_key(|(bs, _, _, _)| *bs);
     let mut out = Vec::new();
-    if let Some(&(first, _, _)) = spans.first() {
+    if let Some(&(first, _, _, _)) = spans.first() {
         let mut pos = first;
-        for (bs, be, style) in spans {
+        for (bs, be, style, glyphs) in spans {
             if be <= pos {
                 continue;
             }
@@ -226,9 +278,12 @@ fn runs_from_paint(
                     default_style,
                     modifiers,
                     fonts,
+                    &[],
                 ));
             }
-            out.extend(split_piece(text, start, be, style, modifiers, fonts));
+            out.extend(split_piece(
+                text, start, be, style, modifiers, fonts, &glyphs,
+            ));
             pos = pos.max(be);
         }
     }
@@ -240,16 +295,17 @@ fn runs_from_paint(
             default_style,
             modifiers,
             fonts,
+            &[],
         ));
     }
     out
 }
 
-fn paint_byte_range(
+fn paint_byte_range<'a>(
     text: &str,
     pr: &TextGlyphRun,
-    geo: Option<&GeometryNode>,
-) -> Option<(usize, usize)> {
+    geo: Option<&'a GeometryNode>,
+) -> Option<(usize, usize, Vec<&'a GlyphPosition>)> {
     let geo = geo?;
     let start = pr.glyph_range[0];
     let end = pr.glyph_range[1].min(geo.glyphs.len());
@@ -265,7 +321,7 @@ fn paint_byte_range(
     }
     let cs = glyphs.iter().map(|g| g.cluster).min()? as usize;
     let ce = glyphs.iter().map(|g| g.cluster).max()? as usize + 1;
-    Some((char_to_byte(text, cs), char_to_byte(text, ce)))
+    Some((char_to_byte(text, cs), char_to_byte(text, ce), glyphs))
 }
 
 fn split_piece(
@@ -275,6 +331,7 @@ fn split_piece(
     style: &TextPaintStyle,
     modifiers: &[Modifier],
     fonts: &FontCtx,
+    glyphs: &[&GlyphPosition],
 ) -> Vec<TextRun> {
     let font_name = fonts.typeface(&style.font_family);
     let slice =
@@ -288,7 +345,46 @@ fn split_piece(
         style,
         &shift_modifiers(modifiers, bs, be),
         &font_name,
+        tracking_spc(glyphs, style, fonts),
     )
+}
+
+/// Extra lock advance vs the face's native advance, as DrawingML `spc`
+/// (hundredths of a point). Matches Word `w:spacing` inferred from the same glyphs.
+fn tracking_spc(glyphs: &[&GlyphPosition], style: &TextPaintStyle, fonts: &FontCtx) -> i32 {
+    if glyphs.len() < 2 {
+        return 0;
+    }
+    let Some(data) = fonts.bytes_for(&style.font_family) else {
+        return 0;
+    };
+    if data.len() > 512_000 {
+        return 0;
+    }
+    let Ok(face) = ttf_parser::Face::parse(data, 0) else {
+        return 0;
+    };
+    let upem = i128::from(face.units_per_em());
+    if upem == 0 {
+        return 0;
+    }
+    let mut extras = Vec::new();
+    for g in glyphs.iter().take(glyphs.len() - 1) {
+        let Ok(gid) = u16::try_from(g.glyph_id) else {
+            return 0;
+        };
+        let Some(adv) = face.glyph_hor_advance(ttf_parser::GlyphId(gid)) else {
+            return 0;
+        };
+        let font_adv = i128::from(adv) * style.font_size.0 / upem;
+        extras.push(g.x_advance.0 - font_adv);
+    }
+    if extras.is_empty() {
+        return 0;
+    }
+    extras.sort_unstable();
+    let extra = extras[extras.len() / 2];
+    i32::try_from(extra / 10).unwrap_or(0)
 }
 
 fn shift_modifiers(modifiers: &[Modifier], bs: usize, be: usize) -> Vec<Modifier> {
@@ -346,8 +442,9 @@ fn split_runs(
     style: &TextPaintStyle,
     modifiers: &[Modifier],
     font_name: &str,
+    tracking_spc: i32,
 ) -> Vec<TextRun> {
-    let base = run_from_style("", style, font_name);
+    let base = run_from_style("", style, font_name, tracking_spc);
     let mut cuts = vec![0usize, text.len()];
     for m in modifiers {
         let [s, e] = m.range;
@@ -383,7 +480,12 @@ fn split_runs(
     out
 }
 
-fn run_from_style(text: &str, style: &TextPaintStyle, font_name: &str) -> TextRun {
+fn run_from_style(
+    text: &str,
+    style: &TextPaintStyle,
+    font_name: &str,
+    tracking_spc: i32,
+) -> TextRun {
     let sz = (style.font_size.0 / 10).clamp(100, i32::MAX as i128) as i32;
     TextRun {
         text: text.to_string(),
@@ -396,6 +498,7 @@ fn run_from_style(text: &str, style: &TextPaintStyle, font_name: &str) -> TextRu
         color_hex: color_hex(&style.color),
         hyperlink: None,
         script: ScriptPos::Baseline,
+        tracking_spc,
     }
 }
 
@@ -468,7 +571,7 @@ mod tests {
             mod_type: "emphasis".into(),
             intent: "critical".into(),
         }];
-        let runs = split_runs("Hello world", &style, &mods, "Roboto");
+        let runs = split_runs("Hello world", &style, &mods, "Roboto", 0);
         assert_eq!(runs.len(), 2);
         assert_eq!(runs[0].text, "Hello");
         assert!(runs[0].bold);
@@ -484,7 +587,7 @@ mod tests {
             mod_type: "superscript".into(),
             intent: "superscript".into(),
         }];
-        let runs = split_runs("Zheng Su1,* x", &style, &mods, "Roboto");
+        let runs = split_runs("Zheng Su1,* x", &style, &mods, "Roboto", 0);
         let super_run = runs.iter().find(|r| r.text == "1,*").expect("super");
         assert_eq!(super_run.script, ScriptPos::Super);
         assert!(!super_run.italic);
@@ -502,6 +605,7 @@ mod tests {
         let text = "HelloWorld";
         let fonts = FontCtx {
             default_family: "Roboto".into(),
+            bytes: BTreeMap::new(),
         };
         let style = fallback_style();
         let geo = GeometryNode {
@@ -536,5 +640,64 @@ mod tests {
         );
         let blob: String = runs.iter().map(|r| r.text.as_str()).collect();
         assert_eq!(blob, "World");
+    }
+
+    #[test]
+    fn alias_stem_resolves_to_ttf_family() {
+        let mut fonts = BTreeMap::new();
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../assets/fonts/Roboto-Regular.ttf");
+        fonts.insert(
+            "assets/fonts/Roboto-Regular.ttf".into(),
+            std::fs::read(path).unwrap(),
+        );
+        let ctx = FontCtx::new(&fonts);
+        assert_eq!(ctx.typeface("Roboto-Regular"), "Roboto");
+        assert_eq!(ctx.typeface("default"), "Roboto");
+        assert!(ctx.bytes_for("Roboto-Regular").is_some());
+    }
+
+    #[test]
+    fn tracking_spc_from_lock_extra_advance() {
+        let mut fonts = BTreeMap::new();
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../assets/fonts/Roboto-Regular.ttf");
+        let bytes = std::fs::read(path).unwrap();
+        fonts.insert("assets/fonts/Roboto-Regular.ttf".into(), bytes.clone());
+        let ctx = FontCtx::new(&fonts);
+        let face = ttf_parser::Face::parse(&bytes, 0).unwrap();
+        let gid = face.glyph_index('A').unwrap();
+        let native = i128::from(face.glyph_hor_advance(gid).unwrap()) * 12_000
+            / i128::from(face.units_per_em());
+        let extra = 3_500i128;
+        let glyphs = [
+            GlyphPosition {
+                glyph_id: u32::from(gid.0),
+                cluster: 0,
+                x_offset: Pt(0),
+                y_offset: Pt(0),
+                x_advance: Pt(native + extra),
+                y_advance: Pt(0),
+            },
+            GlyphPosition {
+                glyph_id: u32::from(gid.0),
+                cluster: 1,
+                x_offset: Pt(native + extra),
+                y_offset: Pt(0),
+                x_advance: Pt(native),
+                y_advance: Pt(0),
+            },
+        ];
+        let refs: Vec<&GlyphPosition> = glyphs.iter().collect();
+        let style = TextPaintStyle {
+            font_family: "Roboto-Regular".into(),
+            font_size: Pt(12_000),
+            color: "#000000".into(),
+            bold: false,
+            italic: false,
+            strikethrough: false,
+            underline: false,
+        };
+        assert_eq!(tracking_spc(&refs, &style, &ctx), 350);
     }
 }

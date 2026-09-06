@@ -348,6 +348,20 @@ fn exported_textboxes_paint_opaque_underlay() {
 }
 
 #[test]
+fn resolved_font_not_alias_stem_in_invoice() {
+    let docx = export_opened(&common::invoice()).unwrap();
+    let xml = common::xml_in(&docx, "word/document.xml");
+    assert!(
+        xml.contains(r#"w:ascii="Roboto""#),
+        "embedded font must use the TTF family name, got {xml}"
+    );
+    assert!(
+        !xml.contains(r#"w:ascii="Roboto-Regular""#) && !xml.contains(r#"w:ascii="default""#),
+        "lock alias keys must not leak into Word rFonts, got {xml}"
+    );
+}
+
+#[test]
 fn subscript_is_vertAlign_not_italic() {
     let text = "H2O";
     let xml = wml_from(
