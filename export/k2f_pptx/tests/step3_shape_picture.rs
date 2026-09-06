@@ -1,7 +1,7 @@
 mod common;
 
 use k2f_core::PaintOp;
-use k2f_paint::lookup_image;
+use k2f_paint::{decode_raster, letterbox_rect, lookup_image};
 use k2f_pptx::{export_opened, pt_to_emu};
 
 fn slide_xml_names(pptx: &[u8]) -> Vec<String> {
@@ -18,7 +18,10 @@ fn is_txbox(sp: roxmltree::Node<'_, '_>) -> bool {
         .any(|n| n.has_tag_name("cNvSpPr") && n.attribute("txBox") == Some("1"))
 }
 
-fn sp_named<'a, 'b>(doc: &'a roxmltree::Document<'b>, name: &str) -> Option<roxmltree::Node<'a, 'b>> {
+fn sp_named<'a, 'b>(
+    doc: &'a roxmltree::Document<'b>,
+    name: &str,
+) -> Option<roxmltree::Node<'a, 'b>> {
     doc.descendants().find(|n| {
         n.has_tag_name("sp")
             && n.descendants()
@@ -96,7 +99,10 @@ fn shape_rect_near_lock_drawbox() {
     let xml = common::xml_in(&pptx, "ppt/slides/slide1.xml");
     let parsed = roxmltree::Document::parse(&xml).unwrap();
     let sp = sp_named(&parsed, &node_id).unwrap_or_else(|| panic!("no shape named {node_id}"));
-    assert!(!is_txbox(sp), "{node_id} should be a filled shape, not txBox");
+    assert!(
+        !is_txbox(sp),
+        "{node_id} should be a filled shape, not txBox"
+    );
     let (x, y) = off_xy(sp);
     assert!(
         (x - pt_to_emu(rect.x)).abs() <= 1,
@@ -118,15 +124,15 @@ fn images_are_separate_media_if_present() {
         .ops
         .iter()
         .find_map(|op| match op {
-            PaintOp::DrawImage {
-                node_id,
-                rect,
-                src,
-            } => Some((node_id.clone(), rect.clone(), src.clone())),
+            PaintOp::DrawImage { node_id, rect, src } => {
+                Some((node_id.clone(), rect.clone(), src.clone()))
+            }
             _ => None,
         })
         .expect("invoice page 0 has DrawImage");
     let asset = lookup_image(doc.assets(), &src).expect("logo bytes");
+    let img = decode_raster(asset).expect("logo decode");
+    let dest = letterbox_rect(img.width(), img.height(), &rect).unwrap_or(rect.clone());
 
     let pptx = export_opened(&doc).unwrap();
     let names = common::unzip_names(&pptx);
@@ -140,7 +146,10 @@ fn images_are_separate_media_if_present() {
         "invoice logo must be a separate media part, got {names:?}"
     );
     let media_bytes = common::bytes_in(&pptx, &media[0]);
-    assert_eq!(media_bytes, *asset, "media must be the original image bytes");
+    assert_eq!(
+        media_bytes, *asset,
+        "media must be the original image bytes"
+    );
 
     let xml = common::xml_in(&pptx, "ppt/slides/slide1.xml");
     let parsed = roxmltree::Document::parse(&xml).unwrap();
@@ -148,20 +157,37 @@ fn images_are_separate_media_if_present() {
         .descendants()
         .find(|n| {
             n.has_tag_name("pic")
-                && n.descendants()
-                    .any(|c| c.has_tag_name("cNvPr") && c.attribute("name") == Some(node_id.as_str()))
+                && n.descendants().any(|c| {
+                    c.has_tag_name("cNvPr") && c.attribute("name") == Some(node_id.as_str())
+                })
         })
         .unwrap_or_else(|| panic!("missing p:pic named {node_id}"));
     let (x, y) = off_xy(pic);
     assert!(
-        (x - pt_to_emu(rect.x)).abs() <= 1,
+        (x - pt_to_emu(dest.x)).abs() <= 1,
         "pic x {x} vs {}",
-        pt_to_emu(rect.x)
+        pt_to_emu(dest.x)
     );
     assert!(
-        (y - pt_to_emu(rect.y)).abs() <= 1,
+        (y - pt_to_emu(dest.y)).abs() <= 1,
         "pic y {y} vs {}",
-        pt_to_emu(rect.y)
+        pt_to_emu(dest.y)
+    );
+    let ext = pic
+        .descendants()
+        .find(|n| n.has_tag_name("ext"))
+        .expect("a:ext");
+    let cx: i64 = ext.attribute("cx").unwrap().parse().unwrap();
+    let cy: i64 = ext.attribute("cy").unwrap().parse().unwrap();
+    assert!(
+        (cx - pt_to_emu(dest.width)).abs() <= 1,
+        "pic cx {cx} vs {}",
+        pt_to_emu(dest.width)
+    );
+    assert!(
+        (cy - pt_to_emu(dest.height)).abs() <= 1,
+        "pic cy {cy} vs {}",
+        pt_to_emu(dest.height)
     );
 }
 

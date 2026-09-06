@@ -61,6 +61,9 @@ fn cell_xml(cell: &TableCell, hyperlink_rids: &BTreeMap<String, String>) -> Stri
         false,
         false,
         cell.preserve_whitespace,
+        None,
+        0,
+        1,
         hyperlink_rids,
         "                ",
     );

@@ -39,7 +39,14 @@ fn zip_entries_use_fixed_1980_timestamp() {
         let f = zip.by_index(i).unwrap();
         let t = f.last_modified().expect("DOS timestamp");
         assert_eq!(
-            (t.year(), t.month(), t.day(), t.hour(), t.minute(), t.second()),
+            (
+                t.year(),
+                t.month(),
+                t.day(),
+                t.hour(),
+                t.minute(),
+                t.second()
+            ),
             (1980, 1, 1, 0, 0, 0),
             "{}",
             f.name()

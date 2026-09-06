@@ -90,8 +90,19 @@ pub(crate) fn symbol_atom(name: &str) -> Option<(char, AtomClass)> {
         "infty" => ('\u{221E}', Ord),
         "partial" => ('\u{2202}', Ord),
         "nabla" => ('\u{2207}', Ord),
+        "hbar" => ('\u{210F}', Ord),
+        "ell" => ('\u{2113}', Ord),
+        "emptyset" => ('\u{2205}', Ord),
+        "forall" => ('\u{2200}', Ord),
+        "exists" => ('\u{2203}', Ord),
+        "prime" => ('\u{2032}', Ord),
         "ldots" => ('\u{2026}', Inner),
         "cdots" => ('\u{22EF}', Inner),
+        // Delimiters also usable without `\left`/`\right`.
+        "langle" => ('\u{27E8}', Open),
+        "rangle" => ('\u{27E9}', Close),
+        "lfloor" => ('\u{230A}', Open),
+        "rfloor" => ('\u{230B}', Close),
         // Binary operators.
         "pm" => ('\u{00B1}', Bin),
         "mp" => ('\u{2213}', Bin),
@@ -110,6 +121,9 @@ pub(crate) fn symbol_atom(name: &str) -> Option<(char, AtomClass)> {
         "notin" => ('\u{2209}', Rel),
         "subset" => ('\u{2282}', Rel),
         "supset" => ('\u{2283}', Rel),
+        "subseteq" => ('\u{2286}', Rel),
+        "supseteq" => ('\u{2287}', Rel),
+        "mapsto" => ('\u{21A6}', Rel),
         "rightarrow" | "to" => ('\u{2192}', Rel),
         "leftarrow" => ('\u{2190}', Rel),
         "Rightarrow" => ('\u{21D2}', Rel),
@@ -191,6 +205,39 @@ fn pair_space(left: AtomClass, right: AtomClass) -> (i128, bool) {
         (Punct, _) => THIN_S,
         _ => NONE,
     }
+}
+
+/// Map a source letter/digit to Mathematical Double-Struck (`\mathbb`).
+pub(crate) fn mathbb_char(ch: char) -> Option<char> {
+    Some(match ch {
+        'C' => '\u{2102}',
+        'H' => '\u{210D}',
+        'N' => '\u{2115}',
+        'P' => '\u{2119}',
+        'Q' => '\u{211A}',
+        'R' => '\u{211D}',
+        'Z' => '\u{2124}',
+        'A'..='Z' => char::from_u32(0x1D538 + (ch as u32 - 'A' as u32))?,
+        'a'..='z' => char::from_u32(0x1D552 + (ch as u32 - 'a' as u32))?,
+        '0'..='9' => char::from_u32(0x1D7D8 + (ch as u32 - '0' as u32))?,
+        _ => return None,
+    })
+}
+
+/// Map a source letter to Mathematical Script (`\mathcal`). Digits are unchanged.
+pub(crate) fn mathcal_char(ch: char) -> Option<char> {
+    Some(match ch {
+        'B' => '\u{212C}',
+        'E' => '\u{2130}',
+        'F' => '\u{2131}',
+        'H' => '\u{210B}',
+        'I' => '\u{2110}',
+        'L' => '\u{2112}',
+        'M' => '\u{2133}',
+        'R' => '\u{211B}',
+        'A'..='Z' => char::from_u32(0x1D49C + (ch as u32 - 'A' as u32))?,
+        _ => return None,
+    })
 }
 
 /// Space to insert between two adjacent atoms, in math units.

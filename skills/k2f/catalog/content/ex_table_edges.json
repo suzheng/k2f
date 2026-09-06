@@ -1,0 +1,57 @@
+{
+  "id": "ex.table_edges",
+  "role": "table",
+  "content": {
+    "type": "table",
+    "value": {
+      "column_widths": [{ "fr": 1 }, { "fr": 1 }, { "fr": 1 }],
+      "header_rows": 1,
+      "gap": 0,
+      "data": {
+        "type": "inline",
+        "rows": [
+          [
+            {
+              "id": "ex.table_edges.h0",
+              "role": "table_header_cell",
+              "variant": "hbar",
+              "content": { "type": "text", "value": "Name" }
+            },
+            {
+              "id": "ex.table_edges.h1",
+              "role": "table_header_cell",
+              "variant": "hbar",
+              "content": { "type": "text", "value": " " }
+            },
+            {
+              "id": "ex.table_edges.h2",
+              "role": "table_header_cell",
+              "variant": "bottom",
+              "content": { "type": "text", "value": "Role" }
+            }
+          ],
+          [
+            {
+              "id": "ex.table_edges.r0c0",
+              "role": "table_row_cell",
+              "variant": "hbar",
+              "content": { "type": "text", "value": "Ada Lovelace" }
+            },
+            {
+              "id": "ex.table_edges.r0c1",
+              "role": "table_row_cell",
+              "variant": "hbar",
+              "content": { "type": "text", "value": " " }
+            },
+            {
+              "id": "ex.table_edges.r0c2",
+              "role": "table_row_cell",
+              "variant": "bottom",
+              "content": { "type": "text", "value": "Lead" }
+            }
+          ]
+        ]
+      }
+    }
+  }
+}

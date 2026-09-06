@@ -28,7 +28,10 @@ fn zip_entries(bytes: &[u8]) -> BTreeMap<String, Vec<u8>> {
 fn invoice_markdown_has_heading_without_hints() {
     let doc = OpenedDocument::open(&invoice_bytes()).unwrap();
     let md = doc.document_markdown().unwrap();
-    assert!(md.contains('#'), "invoice markdown must have headings:\n{md}");
+    assert!(
+        md.contains('#'),
+        "invoice markdown must have headings:\n{md}"
+    );
     assert!(!md.contains("<!--"), "export markdown must omit k2f hints");
 }
 
@@ -73,7 +76,10 @@ fn contract_multi_page_png_zip() {
     let entries = zip_entries(&zip);
     assert_eq!(entries.len(), n);
     for (name, bytes) in &entries {
-        assert!(name.starts_with("page-") && name.ends_with(".png"), "{name}");
+        assert!(
+            name.starts_with("page-") && name.ends_with(".png"),
+            "{name}"
+        );
         assert!(bytes.starts_with(b"\x89PNG"), "{name}");
     }
 }

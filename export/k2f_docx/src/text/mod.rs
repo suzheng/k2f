@@ -76,12 +76,13 @@ pub(crate) fn textbox_from_draw_ctx(
             || node.role == "code_block"
             || matches!(node.content, NodeContent::CodeBlock(_)),
         relative_height,
+        fill_hex: None,
     })
 }
 
 pub fn textbox_wml(tb: &TextBox) -> String {
     format!(
-        r#"<root xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+        r#"<root xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml">
 {}</root>"#,
         ooxml::textbox_wsp_xml(tb, &BTreeMap::new())
     )

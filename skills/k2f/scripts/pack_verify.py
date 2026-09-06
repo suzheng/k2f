@@ -32,7 +32,8 @@ def k2f_binary() -> list[str]:
     print(
         "error: `k2f` CLI not found on PATH.\n"
         "Install: pip install k2f\n"
-        "Or set K2F_CLI to the binary path.",
+        "Or set K2F_CLI to the binary path.\n"
+        "This script does not search a git checkout or cargo target directory.",
         file=sys.stderr,
     )
     sys.exit(1)

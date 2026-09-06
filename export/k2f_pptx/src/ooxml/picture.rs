@@ -20,7 +20,7 @@ fn pic_xml(pic: &PictureBox, cnv_id: u32, embed_rid: &str, name: &str) -> String
         r#"    <p:pic>
       <p:nvPicPr>
         <p:cNvPr id="{id}" name="{name}"/>
-        <p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>
+        <p:cNvPicPr><a:picLocks noChangeAspect="0"/></p:cNvPicPr>
         <p:nvPr/>
       </p:nvPicPr>
       <p:blipFill>

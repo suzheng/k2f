@@ -4,7 +4,7 @@ use k2f_core::{Modifier, Pt};
 
 use super::metrics::line_height_for_style;
 use super::run_split::split_runs;
-use super::types::{push_or_merge_run, TextLayout, TextLine, TextRun};
+use super::types::{merge_join_tracking, push_or_merge_run, TextLayout, TextLine, TextRun};
 use super::wrap_tokenize::{split_run_for_wrapping, FragKind};
 
 /// Preformatted text layout for semantic code blocks.
@@ -75,7 +75,11 @@ fn wrap_runs_preformatted(
                     let r = frag.run.expect("run present for text/whitespace");
                     let w = super::metrics::measure_text_run_width(&r.text, &r.style, ctx)?;
                     let h = line_height_for_style(&r.style).max(base_line_height);
-                    line_width += w;
+                    let join = line_runs
+                        .last()
+                        .map(|prev| merge_join_tracking(prev, &r))
+                        .unwrap_or(Pt::ZERO);
+                    line_width += join + w;
                     if h > line_height {
                         line_height = h;
                     }
@@ -86,7 +90,11 @@ fn wrap_runs_preformatted(
                     let tex = r.math_tex.as_deref().unwrap_or("");
                     let math = crate::math::layout_inline_tex(tex, r.style.font_size, ctx)?;
                     let h = math.height.max(base_line_height);
-                    line_width += math.width;
+                    let join = line_runs
+                        .last()
+                        .map(|prev| merge_join_tracking(prev, &r))
+                        .unwrap_or(Pt::ZERO);
+                    line_width += join + math.width;
                     if h > line_height {
                         line_height = h;
                     }

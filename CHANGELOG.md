@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 
 - Agent skill: poster/slide page shell is a pinned-height **grid** with `{auto:true}` header/footer and a `{fr:1}` grower ([`ex_poster_shell.json`](skills/k2f/catalog/content/ex_poster_shell.json)); do not stack content inside a fixed-height shell
+- `export-docx` / `export-pptx`: pin Office theme `dk1`/`lt1` to RGB black/white instead of `sysClr windowText`/`window`. Text that is lock-black / lock-white is stored as `000001` / `FFFFFE` so Word/PowerPoint Dark Mode cannot treat it as Automatic and invert it on a still-white page. Word export now includes `word/theme/theme1.xml`, explicit `w:background`, `w14:textFill`, RGB `wps:style` fontRef, and an opaque text-box underlay matching the shape behind the text so unfilled boxes are not remapped in Dark Mode.
 
 ### Removed
 

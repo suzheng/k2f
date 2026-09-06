@@ -138,7 +138,7 @@ pub(crate) fn picture_anchor(pic: &PictureBox, doc_pr_id: u32, embed_rid: &str) 
         doc_pr_id,
         &pic.node_id,
         PIC_URI,
-        &pic_xml(pic, embed_rid),
+        &pic_xml(pic, embed_rid, doc_pr_id),
     )
 }
 
@@ -154,7 +154,7 @@ pub(crate) fn raster_anchor(pic: &PictureBox, doc_pr_id: u32, embed_rid: &str) -
         doc_pr_id,
         &name,
         PIC_URI,
-        &raster_pic_xml(pic, embed_rid),
+        &raster_pic_xml(pic, embed_rid, doc_pr_id),
     )
 }
 

@@ -1,8 +1,9 @@
+use crate::alignment::align_offset_and_size;
 use crate::fixed_size::subtract_if_bounded;
 use crate::grid::{resolve_tracks, sum_prefix, sum_with_gaps};
-use crate::resolved_style::padding_for_role_variant;
+use crate::resolved_style::{padding_for_role_variant, resolve_self_align};
 use crate::{arrange_node, measure_node, LayoutContext, Point, Size, SizeConstraint};
-use k2f_core::{GeometryNode, Pt, SemanticNode, TableDataSource, TableSpec};
+use k2f_core::{Align, GeometryNode, Pt, SemanticNode, TableDataSource, TableSpec};
 
 fn inline_rows(spec: &TableSpec) -> Result<&Vec<Vec<SemanticNode>>, String> {
     match &spec.data {
@@ -151,8 +152,19 @@ pub(crate) fn arrange_table_fragment(
         for (c, cell) in row.iter().enumerate() {
             let cell_x = inner_pos.x + sum_prefix(&col_sizes, c, gap_pt);
             let cell_size = Size::new(col_sizes[c], row_heights[frag_r]);
-            // v1: default to "stretch in cell" (cells receive the full cell rect).
-            let child_geo = arrange_node(cell, Point::new(cell_x, cell_y), cell_size, ctx)?;
+            let cell_constraint = SizeConstraint::new(Size::ZERO, cell_size);
+            let measured = measure_node(cell, cell_constraint, ctx)?;
+            // Cross-axis of the row: role `self_align` (default stretch = v1 full cell).
+            let align_y = resolve_self_align(&cell.role, cell.variant.as_deref(), ctx.theme)
+                .unwrap_or(Align::Stretch);
+            let (dy, child_h) =
+                align_offset_and_size(align_y, cell_size.height, measured.height);
+            let child_geo = arrange_node(
+                cell,
+                Point::new(cell_x, cell_y + dy),
+                Size::new(cell_size.width, child_h),
+                ctx,
+            )?;
             composed_children.push(child_geo);
         }
     }

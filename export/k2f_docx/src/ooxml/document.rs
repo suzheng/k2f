@@ -11,7 +11,10 @@ const NS: &str = r#"xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/
             xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
             xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
             xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"
-            xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape""#;
+            xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+            xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            mc:Ignorable="w14""#;
 
 pub fn document_xml(
     ir: &DocIR,
@@ -55,6 +58,7 @@ pub fn document_xml(
     format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document {NS}>
+  <w:background w:color="{bg}"/>
   <w:body>
 {body}    <w:sectPr>
 {sect}      <w:pgSz w:w="{w}" w:h="{h}"/>
@@ -66,7 +70,21 @@ pub fn document_xml(
 "#,
         w = ir.page_width_twips,
         h = ir.page_height_twips,
+        bg = paper_hex(
+            ir.pages
+                .first()
+                .map(|p| p.bg_hex.as_str())
+                .unwrap_or("FFFFFF")
+        ),
     )
+}
+
+fn paper_hex(hex: &str) -> String {
+    match hex.to_ascii_uppercase().as_str() {
+        "FFFFFF" => "FFFFFE".into(),
+        "000000" => "000001".into(),
+        other => other.to_string(),
+    }
 }
 
 fn page_paragraph(

@@ -52,7 +52,10 @@ fn invoice_round_structure() {
     let lock = doc.lock().expect("invoice is locked");
     assert_eq!(slide_count(&pptx), lock.geometry.pages.len());
     let xml = all_slide_xml(&pptx);
-    assert!(xml.contains("<p:txBody>"), "invoice must keep editable txBody");
+    assert!(
+        xml.contains("<p:txBody>"),
+        "invoice must keep editable txBody"
+    );
     if !common::native_table_member_ids(&doc).is_empty() {
         assert!(
             xml.contains("<a:tbl>"),
@@ -158,7 +161,12 @@ fn cli_export_pptx_exits_one() {
     std::fs::write(&src, &pptx).unwrap();
     let _ = std::fs::remove_file(&dest);
     let out = std::process::Command::new(env!("CARGO_BIN_EXE_k2f-pptx"))
-        .args(["export", src.to_str().unwrap(), "-o", dest.to_str().unwrap()])
+        .args([
+            "export",
+            src.to_str().unwrap(),
+            "-o",
+            dest.to_str().unwrap(),
+        ])
         .output()
         .expect("run k2f-pptx export");
     assert_eq!(out.status.code(), Some(1));
@@ -167,5 +175,8 @@ fn cli_export_pptx_exits_one() {
         err.contains("PPTX_IS_NOT_A_SOURCE"),
         "stderr must print PPTX_IS_NOT_A_SOURCE, got {err}"
     );
-    assert!(!dest.is_file(), "failed export must not write an output file");
+    assert!(
+        !dest.is_file(),
+        "failed export must not write an output file"
+    );
 }

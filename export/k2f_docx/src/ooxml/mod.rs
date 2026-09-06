@@ -4,6 +4,7 @@ mod media;
 mod numbering;
 mod skeleton;
 mod textbox;
+mod xml_theme;
 mod zip_write;
 
 pub(crate) use drawing::wp_anchor;

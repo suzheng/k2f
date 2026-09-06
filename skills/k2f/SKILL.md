@@ -21,7 +21,7 @@ npm i @openk2f/k2f           # only when embedding <k2f-viewer> in a web app
 
 **MCP** is optional. Writing does not require it and does not install it. If a site MCP with `list_templates` / `download_template` is already connected, use it in step 2 of [writing.md](references/writing.md). Missing tools, kind mismatch, or download failure → continue from `starter/`; do not stop the task.
 
-Run scripts from this skill directory (or pass absolute paths to them).
+Run scripts from this skill directory (or pass absolute paths to them). The author directory may live anywhere. `pack_verify.py` needs `k2f` on PATH (`pip install k2f`) or `K2F_CLI` — it does not walk a git checkout or build directory for a binary.
 
 ## What K2F is
 

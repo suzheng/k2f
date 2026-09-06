@@ -66,7 +66,10 @@ fn invoice_cell_ids(doc: &k2f_paint::OpenedDocument) -> Vec<String> {
 fn invoice_or_fixture_has_a_tbl() {
     let pptx = export_opened(&common::invoice()).unwrap();
     let xml = all_slide_xml(&pptx);
-    assert!(xml.contains("<a:tbl>"), "invoice line items must export as a:tbl");
+    assert!(
+        xml.contains("<a:tbl>"),
+        "invoice line items must export as a:tbl"
+    );
     assert!(
         xml.contains("<a:tblGrid>"),
         "native table must include a:tblGrid"
@@ -125,9 +128,9 @@ fn table_cells_not_duplicated_as_textboxes() {
         let xml = common::xml_in(&pptx, &name);
         let parsed = roxmltree::Document::parse(&xml).unwrap();
         for sp in parsed.descendants().filter(|n| n.has_tag_name("sp")) {
-            let is_txbox = sp.descendants().any(|c| {
-                c.has_tag_name("cNvSpPr") && c.attribute("txBox") == Some("1")
-            });
+            let is_txbox = sp
+                .descendants()
+                .any(|c| c.has_tag_name("cNvSpPr") && c.attribute("txBox") == Some("1"));
             if !is_txbox {
                 continue;
             }
@@ -229,14 +232,20 @@ fn header_row_fill_from_drawbox() {
                 .any(|t| t.has_tag_name("t") && t.text() == Some("Item"))
             && tc_fill(*n) == Some("1A73E8")
     });
-    assert_eq!(tc_fill(header_tc.expect("header Item cell")), Some("1A73E8"));
+    assert_eq!(
+        tc_fill(header_tc.expect("header Item cell")),
+        Some("1A73E8")
+    );
 }
 
 #[test]
 fn paginated_table_on_slide3() {
     let pptx = export_opened(&common::invoice()).unwrap();
     let xml = common::xml_in(&pptx, "ppt/slides/slide3.xml");
-    assert!(xml.contains("<a:tbl>"), "paginated table fragment on slide 3");
+    assert!(
+        xml.contains("<a:tbl>"),
+        "paginated table fragment on slide 3"
+    );
     let parsed = roxmltree::Document::parse(&xml).unwrap();
     assert_eq!(
         parsed

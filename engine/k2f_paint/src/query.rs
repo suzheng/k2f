@@ -25,9 +25,7 @@ impl OpenedDocument {
             Pt(x_milli_pt as i128),
             Pt(y_milli_pt as i128),
         )?;
-        let exists = |id: &str| {
-            find_in_trees(&self.query_root, &self.query_running, id).is_some()
-        };
+        let exists = |id: &str| find_in_trees(&self.query_root, &self.query_running, id).is_some();
         hit.ids = semantic_ids(&hit.ids, exists);
         if hit.ids.is_empty() {
             return None;
@@ -61,10 +59,7 @@ impl OpenedDocument {
     }
 
     /// Selection ranges → Markdown (no K2F HTML hints). Empty ranges → empty string.
-    pub fn selection_to_markdown(
-        &self,
-        ranges: &[k2f_markdown::NodeCharRange],
-    ) -> String {
+    pub fn selection_to_markdown(&self, ranges: &[k2f_markdown::NodeCharRange]) -> String {
         k2f_markdown::selection_to_markdown(
             &self.query_root,
             &self.query_running,
@@ -75,8 +70,8 @@ impl OpenedDocument {
 
     /// Same as [`Self::selection_to_markdown`], parsing `[{node_id, char_start, char_end, ...}]`.
     pub fn selection_markdown_json(&self, ranges_json: &str) -> Result<String, String> {
-        let ranges: Vec<k2f_markdown::NodeCharRange> = serde_json::from_str(ranges_json)
-            .map_err(|e| format!("selection ranges: {e}"))?;
+        let ranges: Vec<k2f_markdown::NodeCharRange> =
+            serde_json::from_str(ranges_json).map_err(|e| format!("selection ranges: {e}"))?;
         Ok(self.selection_to_markdown(&ranges))
     }
 

@@ -98,7 +98,10 @@ fn solid_jpeg(w: u32, h: u32, r: u8, g: u8, b: u8) -> Vec<u8> {
     }
     let mut buf = Vec::new();
     image::DynamicImage::ImageRgb8(img)
-        .write_to(&mut std::io::Cursor::new(&mut buf), image::ImageFormat::Jpeg)
+        .write_to(
+            &mut std::io::Cursor::new(&mut buf),
+            image::ImageFormat::Jpeg,
+        )
         .unwrap();
     buf
 }

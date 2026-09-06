@@ -13,6 +13,10 @@ pub fn millipt_to_twips(millipt: i64) -> i64 {
     millipt / 50
 }
 
+pub fn emu_to_twips(emu: i64) -> i64 {
+    emu / 635
+}
+
 pub fn pt_to_twips(pt: k2f_core::Pt) -> i64 {
     millipt_to_twips(i64::try_from(pt.0).unwrap_or(i64::MAX))
 }

@@ -54,13 +54,13 @@ No CLI command for K2F → MD; use Python/JS/Rust `k2f_to_markdown`.
 | Modifiers | Capped at 50; excess → `truncated modifiers from N to 50` |
 | `$$…$$` | `NodeContent::Math` (display) |
 | `$…$` | Inline math modifier on body/table/list text |
-| Math compile errors | Same codes as math role nodes (`MATH_UNSUPPORTED` / `MATH_PARSE` / `MATH_MISSING_GLYPH`) — see [writing.md](writing.md) |
+| Math compile errors | Same codes as math role nodes (`MATH_UNSUPPORTED` / `MATH_PARSE` / `MATH_MISSING_GLYPH`) — TeX whitelist + NotoSansMath: [errors.md](writing/errors.md) |
 
 Ordinary paragraphs → `body`; lists → `list_item`; GFM tables → `table`.
 
 **Images:** local paths only; declared width **80 mm**. `http(s)` / empty src / missing file → skip. Paths are relative to process CWD (no `image_base` on CLI/Python/JS).
 
-**Fonts:** the author directory passed as `--template` / `template` supplies embedded faces. Missing codepoints fail with `FONT_MISSING_GLYPH`. Pass `--font` on CLI; Python/JS `markdown_to_k2f` have no font override — fix text or use CLI. Never use system fonts.
+**Fonts:** the author directory passed as `--template` / `template` supplies embedded faces. Missing codepoints fail with `FONT_MISSING_GLYPH`. Formulas need NotoSansMath in that template. Pass `--font` on CLI to a covering face (JP/KR/SC as needed; NotoSansSC ≠ Japanese). Python/JS `markdown_to_k2f` have no font override — use CLI. Never use system fonts. Do not rewrite the user's language to English.
 
 ## Skip warnings (exact strings)
 
@@ -111,7 +111,7 @@ Also exported: running header/footer as `header=` / `footer=` comments; list-ite
 1. Convert (`k2f markdown --template <author_dir>` / SDK), or skip the bridge and author JSON via [writing.md](writing.md).
 2. Warn the user about known skips (table above) — do not claim full conversion.
 3. `k2f verify` on the package.
-4. `FONT_MISSING_GLYPH` → change the text, or re-run with `k2f markdown --font` pointing at a covering TTF/OTF.
+4. `FONT_MISSING_GLYPH` → re-run with `k2f markdown --font` pointing at a covering TTF/OTF (not NotoSansSC for Japanese). Do not rewrite the user's language to English.
 5. Patch nodes → [writing.md](writing.md). PDF → [exporting-pdf.md](exporting-pdf.md).
 
 ## Failure protocol
@@ -121,7 +121,7 @@ Also exported: running header/footer as `header=` / `footer=` comments; list-ite
 | Footnotes / MDX / raw HTML / task checkboxes | Skipped; do not claim full conversion |
 | Remote `http(s)` image | Skipped — use a local path under CWD |
 | Missing local image | Skipped |
-| `FONT_MISSING_GLYPH` | Covering `--font`, or change text; no OS fonts |
+| `FONT_MISSING_GLYPH` | Covering `--font` (JP/KR/SC as needed); no OS fonts; do not rewrite user language |
 | Need footnotes as content | Keep in MD or extend tree with [writing.md](writing.md) |
 | `unknown template '…'` | Do not look up official named templates. `init_package.py` ([writing.md](writing.md)), then pass that directory as `--template` |
 

@@ -72,7 +72,7 @@ Containers may use `layout.type = "columns"` (`count` 2..=4, optional `gap`) for
 
 Grid layouts accept optional `width`/`height` (millipt fixed outer size, same as stack/overlay — needed for `fr` tracks when the parent axis is unbounded), optional `row_gap` and `column_gap` (millipt; when omitted or `null`, both axes use `gap`), and optional `cell_align` (omit or `null` defaults to stretch). Tracks are `{pt}`, `{fr}`, or `{auto:true}` (content-sized from measured cells; leftover goes to `fr`). `{auto:true}` is not CSS `auto-fit`. Table `column_widths` remain `{pt}`/`{fr}` only. Pack rejects asset files outside `assets/fonts/`, `assets/images/`, and `assets/data/` (`UNEXPECTED_PATH`).
 
-Display math is `role: "math"` with `content: { "type": "math", "value": "<tex>" }`. Inline math stays on a text node as U+FFFC plus modifier `{ "type": "math", "intent": "<tex>" }`. The engine compiles a TeX subset (`frac`, `sqrt`, scripts, sums/integrals, Greek/symbols, stretchy `\left\right`, `matrix`/`pmatrix`/`bmatrix`/`align`/`cases`) into glyphs plus solid fraction/radical/delimiter rules. Unknown commands fail compile (`MATH_UNSUPPORTED`).
+Display math is `role: "math"` with `content: { "type": "math", "value": "<tex>" }`. Inline math stays on a text node as U+FFFC plus modifier `{ "type": "math", "intent": "<tex>" }`. The engine compiles a TeX subset (`frac`, `sqrt`, scripts, sums/integrals, Greek/symbols including `\hbar` `\langle` `\mathbb` `\mathcal`, stretchy `\left\right`, `matrix`/`pmatrix`/`bmatrix`/`align`/`cases`) into glyphs plus solid fraction/radical/delimiter rules. Unknown commands fail compile (`MATH_UNSUPPORTED`).
 
 ## State B — reference engine
 

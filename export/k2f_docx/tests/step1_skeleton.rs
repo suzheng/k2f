@@ -39,12 +39,56 @@ fn export_invoice_is_zip_with_document_xml() {
         "word/settings.xml",
         "word/fontTable.xml",
         "word/webSettings.xml",
+        "word/theme/theme1.xml",
     ] {
         assert!(
             names.iter().any(|n| n == required),
             "missing {required} in {names:?}"
         );
     }
+}
+
+#[test]
+fn theme_pins_dk1_lt1_to_srgb_not_system_window_colors() {
+    let docx = export_opened(&common::invoice()).unwrap();
+    let theme = common::xml_in(&docx, "word/theme/theme1.xml");
+    assert!(
+        !theme.contains("windowText") && !theme.contains(r#"sysClr val="window""#),
+        "dk1/lt1 must not follow OS dark mode, got {theme}"
+    );
+    assert!(
+        theme.contains(r#"<a:dk1><a:srgbClr val="000000"/></a:dk1>"#),
+        "dk1 must be pinned srgb black, got {theme}"
+    );
+    assert!(
+        theme.contains(r#"<a:lt1><a:srgbClr val="FFFFFF"/></a:lt1>"#),
+        "lt1 must be pinned srgb white, got {theme}"
+    );
+    let ct = common::xml_in(&docx, "[Content_Types].xml");
+    assert!(
+        ct.contains("/word/theme/theme1.xml"),
+        "Content_Types must register the theme part, got {ct}"
+    );
+    let rels = common::xml_in(&docx, "word/_rels/document.xml.rels");
+    assert!(
+        rels.contains("/relationships/theme") && rels.contains("theme/theme1.xml"),
+        "document.xml.rels must point at the theme, got {rels}"
+    );
+}
+
+#[test]
+fn paper_background_is_explicit_rgb_not_automatic() {
+    let docx = export_opened(&common::invoice()).unwrap();
+    let xml = common::xml_in(&docx, "word/document.xml");
+    assert!(
+        xml.contains("<w:background ") && !xml.contains(r#"w:color="FFFFFF""#),
+        "Word Dark Mode remaps automatic/white paper; got {xml}"
+    );
+    let settings = common::xml_in(&docx, "word/settings.xml");
+    assert!(
+        settings.contains("<w:displayBackgroundShape/>"),
+        "settings must show the paper color, got {settings}"
+    );
 }
 
 #[test]

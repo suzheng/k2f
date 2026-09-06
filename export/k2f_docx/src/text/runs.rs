@@ -30,38 +30,44 @@ pub(crate) fn runs_from_paint(
     }
     spans.sort_by_key(|(bs, _, _, _)| *bs);
     let mut out = Vec::new();
-    let mut pos = 0usize;
-    for (bs, be, style, glyphs) in spans {
-        if be <= pos {
-            continue;
+    // Page-token fields must keep the full source string so `{{page_*}}` can be
+    // rewritten after paint-run splits. Ordinary nodes must not fill 0..first /
+    // last..len — that re-inserts glyphs that belong to other pages.
+    let keep_full = text.contains("{{page_current}}") || text.contains("{{page_total}}");
+    if let Some(&(first, _, _, _)) = spans.first() {
+        let mut pos = if keep_full { 0 } else { first };
+        for (bs, be, style, glyphs) in spans {
+            if be <= pos {
+                continue;
+            }
+            let start = bs.max(pos);
+            if start > pos {
+                out.extend(split_piece(
+                    text,
+                    pos,
+                    start,
+                    default_style,
+                    modifiers,
+                    fonts,
+                    &[],
+                ));
+            }
+            out.extend(split_piece(
+                text, start, be, style, modifiers, fonts, &glyphs,
+            ));
+            pos = pos.max(be);
         }
-        let start = bs.max(pos);
-        if start > pos {
+        if keep_full && pos < text.len() {
             out.extend(split_piece(
                 text,
                 pos,
-                start,
+                text.len(),
                 default_style,
                 modifiers,
                 fonts,
                 &[],
             ));
         }
-        out.extend(split_piece(
-            text, start, be, style, modifiers, fonts, &glyphs,
-        ));
-        pos = pos.max(be);
-    }
-    if pos < text.len() {
-        out.extend(split_piece(
-            text,
-            pos,
-            text.len(),
-            default_style,
-            modifiers,
-            fonts,
-            &[],
-        ));
     }
     if out.is_empty() {
         out.extend(split_piece(
@@ -209,17 +215,32 @@ fn sz_half_points(millipt: i128) -> i32 {
 }
 
 pub(crate) fn color_hex(color: &str) -> String {
-    parse_hex_rgba(color)
+    let hex = parse_hex_rgba(color)
         .map(|[r, g, b, _]| format!("{r:02X}{g:02X}{b:02X}"))
-        .unwrap_or_else(|| {
-            color
-                .trim()
-                .trim_start_matches('#')
-                .chars()
-                .take(6)
-                .collect::<String>()
-                .to_ascii_uppercase()
-        })
+        .or_else(|| six_digit_hex(color))
+        .unwrap_or_else(|| "000000".into());
+    pin_office_srgb(&hex)
+}
+
+/// Word `ST_HexColor` is exactly 6 hex digits (or `auto`). Palette tokens
+/// such as `ACCENT` must not be written into `w:color` / `a:srgbClr`.
+pub(crate) fn six_digit_hex(color: &str) -> Option<String> {
+    let t = color.trim().trim_start_matches('#');
+    if t.len() == 6 && t.bytes().all(|b| b.is_ascii_hexdigit()) {
+        Some(t.to_ascii_uppercase())
+    } else {
+        None
+    }
+}
+
+/// Word treats RGB `000000` / `FFFFFF` as Automatic (window text / window).
+/// Dark Mode remaps those even when a document theme pins `dk1`/`lt1` to sRGB.
+fn pin_office_srgb(hex: &str) -> String {
+    match hex {
+        "000000" => "000001".into(),
+        "FFFFFF" => "FFFFFE".into(),
+        _ => hex.to_string(),
+    }
 }
 
 fn char_to_byte(text: &str, char_idx: usize) -> usize {
@@ -238,5 +259,23 @@ fn fallback_style() -> TextPaintStyle {
         italic: false,
         strikethrough: false,
         underline: false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn black_and_white_are_not_office_automatic() {
+        assert_eq!(color_hex("#000000"), "000001");
+        assert_eq!(color_hex("#FFFFFF"), "FFFFFE");
+        assert_eq!(color_hex("#C1002A"), "C1002A");
+        assert_eq!(
+            color_hex("ACCENT"),
+            "000001",
+            "unresolved palette tokens must become a valid hex color, not ST_HexColor garbage"
+        );
+        assert_eq!(color_hex("black"), "000001");
     }
 }

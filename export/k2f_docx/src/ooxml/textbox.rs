@@ -1,10 +1,29 @@
 use crate::ir::{DocField, ScriptPos, TextAlign, TextBox, TextRun};
-use crate::xml::escape_xml;
+use crate::xml::{escape_xml, word_hex_color};
 use std::collections::BTreeMap;
 
 pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, String>) -> String {
     let body = txbx_content(tb, hyperlink_rids);
     let anchor = if tb.vert_center { "ctr" } else { "t" };
+    let font_hex = tb
+        .runs
+        .first()
+        .map(|r| word_hex_color(&r.color_hex))
+        .unwrap_or_else(|| "000001".into());
+    let fill = match &tb.fill_hex {
+        Some(hex) => format!(
+            "                    <a:solidFill>\n                      <a:srgbClr val=\"{}\"/>\n                    </a:solidFill>\n",
+            word_hex_color(hex)
+        ),
+        None => "                    <a:noFill/>\n".into(),
+    };
+    let (l, t, r, b) = if tb.numbered || tb.bullet {
+        // Marker column is a hanging indent on the paragraph, not shape padding.
+        // Extra lIns plus numbering indent shrinks wrap width and clips citations.
+        (0, tb.t_ins_emu, tb.r_ins_emu, tb.b_ins_emu)
+    } else {
+        (tb.l_ins_emu, tb.t_ins_emu, tb.r_ins_emu, tb.b_ins_emu)
+    };
     format!(
         r#"                <wps:wsp>
                   <wps:cNvSpPr txBox="1"/>
@@ -16,11 +35,16 @@ pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, St
                     <a:prstGeom prst="rect">
                       <a:avLst/>
                     </a:prstGeom>
-                    <a:noFill/>
-                    <a:ln>
+{fill}                    <a:ln>
                       <a:noFill/>
                     </a:ln>
                   </wps:spPr>
+                  <wps:style>
+                    <a:lnRef idx="0"><a:srgbClr val="000001"/></a:lnRef>
+                    <a:fillRef idx="0"><a:srgbClr val="000001"/></a:fillRef>
+                    <a:effectRef idx="0"><a:srgbClr val="000001"/></a:effectRef>
+                    <a:fontRef idx="minor"><a:srgbClr val="{font_hex}"/></a:fontRef>
+                  </wps:style>
                   <wps:txbx>
                     <w:txbxContent>
 {body}                    </w:txbxContent>
@@ -30,10 +54,10 @@ pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, St
 "#,
         cx = tb.cx_emu,
         cy = tb.cy_emu,
-        l = tb.l_ins_emu,
-        t = tb.t_ins_emu,
-        r = tb.r_ins_emu,
-        b = tb.b_ins_emu,
+        l = l,
+        t = t,
+        r = r,
+        b = b,
     )
 }
 
@@ -86,18 +110,9 @@ fn paragraph_xml(
     runs: &[TextRun],
     hyperlink_rids: &BTreeMap<String, String>,
 ) -> String {
-    let mut ppr = format!(
-        r#"                        <w:pPr>
-                          <w:jc w:val="{}"/>
-"#,
-        tb.align.jc_val()
-    );
-    if let Some(line) = tb.line_twips {
-        ppr.push_str(&format!(
-            r#"                          <w:spacing w:line="{line}" w:lineRule="exact"/>
-"#
-        ));
-    }
+    // CT_PPr is an xsd:sequence: numPr, then spacing, then ind, then jc.
+    // Word (especially Mac) refuses to open the package if these are out of order.
+    let mut ppr = String::from("                        <w:pPr>\n");
     if tb.numbered || tb.bullet {
         let num_id = if tb.numbered { 2 } else { 1 };
         ppr.push_str(&format!(
@@ -109,6 +124,26 @@ fn paragraph_xml(
             tb.ilvl
         ));
     }
+    if let Some(line) = tb.line_twips {
+        ppr.push_str(&format!(
+            r#"                          <w:spacing w:line="{line}" w:lineRule="exact"/>
+"#
+        ));
+    }
+    if tb.numbered || tb.bullet {
+        let hang = crate::coord::emu_to_twips(tb.l_ins_emu).max(0);
+        if hang > 0 {
+            ppr.push_str(&format!(
+                r#"                          <w:ind w:left="{hang}" w:hanging="{hang}"/>
+"#
+            ));
+        }
+    }
+    ppr.push_str(&format!(
+        r#"                          <w:jc w:val="{}"/>
+"#,
+        tb.align.jc_val()
+    ));
     ppr.push_str("                        </w:pPr>\n");
     let mut body = String::new();
     for run in runs {
@@ -196,16 +231,14 @@ fn styled_t(run: &TextRun, preserve_box: bool) -> String {
 }
 
 fn rpr_xml(run: &TextRun) -> String {
+    // CT_RPr sequence: rFonts, b, i, strike, color, spacing, sz, szCs, u, vertAlign.
+    // w14:textFill is an extension and must come after the 2006 children.
+    let color = word_hex_color(&run.color_hex);
     let mut s = format!(
         r#"                          <w:rPr>
                             <w:rFonts w:ascii="{f}" w:hAnsi="{f}" w:eastAsia="{f}" w:cs="{f}"/>
-                            <w:sz w:val="{sz}"/>
-                            <w:szCs w:val="{sz}"/>
-                            <w:color w:val="{}"/>
 "#,
-        run.color_hex,
         f = escape_xml(&run.font_name),
-        sz = run.sz_half_points,
     );
     if run.bold {
         s.push_str("                            <w:b/>\n");
@@ -213,25 +246,13 @@ fn rpr_xml(run: &TextRun) -> String {
     if run.italic {
         s.push_str("                            <w:i/>\n");
     }
-    if run.underline {
-        s.push_str(r#"                            <w:u w:val="single"/>"#);
-        s.push('\n');
-    }
     if run.strike {
         s.push_str("                            <w:strike/>\n");
     }
-    match run.script {
-        ScriptPos::Sub => {
-            s.push_str(r#"                            <w:vertAlign w:val="subscript"/>"#)
-        }
-        ScriptPos::Super => {
-            s.push_str(r#"                            <w:vertAlign w:val="superscript"/>"#)
-        }
-        ScriptPos::Baseline => {}
-    }
-    if run.script != ScriptPos::Baseline {
-        s.push('\n');
-    }
+    s.push_str(&format!(
+        r#"                            <w:color w:val="{color}"/>
+"#
+    ));
     if run.tracking_twips != 0 {
         s.push_str(&format!(
             r#"                            <w:spacing w:val="{}"/>
@@ -239,6 +260,123 @@ fn rpr_xml(run: &TextRun) -> String {
             run.tracking_twips
         ));
     }
+    s.push_str(&format!(
+        r#"                            <w:sz w:val="{sz}"/>
+                            <w:szCs w:val="{sz}"/>
+"#,
+        sz = run.sz_half_points,
+    ));
+    if run.underline {
+        s.push_str("                            <w:u w:val=\"single\"/>\n");
+    }
+    match run.script {
+        ScriptPos::Sub => {
+            s.push_str("                            <w:vertAlign w:val=\"subscript\"/>\n")
+        }
+        ScriptPos::Super => {
+            s.push_str("                            <w:vertAlign w:val=\"superscript\"/>\n")
+        }
+        ScriptPos::Baseline => {}
+    }
+    s.push_str(&format!(
+        r#"                            <w14:textFill>
+                              <w14:solidFill>
+                                <w14:srgbClr w14:val="{color}"/>
+                              </w14:solidFill>
+                            </w14:textFill>
+"#
+    ));
     s.push_str("                          </w:rPr>\n");
     s
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::TextBox;
+
+    fn box_with(numbered: bool, line_twips: Option<i64>) -> TextBox {
+        TextBox {
+            node_id: "n".into(),
+            x_emu: 0,
+            y_emu: 0,
+            cx_emu: 1,
+            cy_emu: 1,
+            runs: Vec::new(),
+            align: TextAlign::Left,
+            bullet: false,
+            numbered,
+            ilvl: 0,
+            l_ins_emu: 0,
+            t_ins_emu: 0,
+            r_ins_emu: 0,
+            b_ins_emu: 0,
+            line_twips,
+            vert_center: false,
+            preserve_whitespace: false,
+            relative_height: 1,
+            fill_hex: None,
+        }
+    }
+
+    fn child_order(xml: &str, tags: &[&str]) {
+        let mut last = 0usize;
+        for tag in tags {
+            let at = xml
+                .find(tag)
+                .unwrap_or_else(|| panic!("missing {tag} in {xml}"));
+            assert!(at >= last, "{tag} out of order in {xml}");
+            last = at;
+        }
+    }
+
+    #[test]
+    fn ppr_emits_numpr_then_spacing_then_jc() {
+        let xml = paragraph_xml(&box_with(true, Some(240)), &[], &BTreeMap::new());
+        child_order(&xml, &["<w:numPr>", "<w:spacing", "<w:jc "]);
+    }
+
+    #[test]
+    fn ppr_emits_ind_between_spacing_and_jc_for_lists() {
+        let mut tb = box_with(true, Some(240));
+        tb.l_ins_emu = 635 * 360;
+        let xml = paragraph_xml(&tb, &[], &BTreeMap::new());
+        child_order(&xml, &["<w:numPr>", "<w:spacing", "<w:ind ", "<w:jc "]);
+        assert!(xml.contains(r#"w:hanging="360""#), "{xml}");
+    }
+
+    #[test]
+    fn rpr_follows_schema_order_with_w14_last() {
+        let run = TextRun {
+            text: "a".into(),
+            font_name: "Calibri".into(),
+            sz_half_points: 22,
+            bold: true,
+            italic: true,
+            underline: true,
+            strike: true,
+            color_hex: "000001".into(),
+            hyperlink: None,
+            script: ScriptPos::Super,
+            tracking_twips: 20,
+            field: None,
+        };
+        let xml = rpr_xml(&run);
+        child_order(
+            &xml,
+            &[
+                "<w:rFonts",
+                "<w:b/>",
+                "<w:i/>",
+                "<w:strike/>",
+                "<w:color",
+                "<w:spacing",
+                "<w:sz ",
+                "<w:szCs",
+                "<w:u ",
+                "<w:vertAlign",
+                "<w14:textFill>",
+            ],
+        );
+    }
 }

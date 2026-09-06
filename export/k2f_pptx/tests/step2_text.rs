@@ -52,9 +52,7 @@ fn sample_semantic_strings(doc: &k2f_paint::OpenedDocument) -> Vec<String> {
         .map(|id| {
             let node = find_in_trees(doc.semantic_root(), doc.running_blocks(), &id)
                 .unwrap_or_else(|| panic!("find_in_trees missed {id}"));
-            node_text(node)
-                .expect("sampled node has text")
-                .to_string()
+            node_text(node).expect("sampled node has text").to_string()
         })
         .collect()
 }
@@ -86,6 +84,31 @@ fn text_is_txbody_not_only_picture() {
         doc.descendants()
             .any(|n| n.has_tag_name("t") && n.text().is_some()),
         "slide1 missing a:t"
+    );
+}
+
+#[test]
+fn black_and_white_text_are_not_theme_automatic() {
+    let pptx = export_opened(&common::invoice()).unwrap();
+    let s1 = common::xml_in(&pptx, "ppt/slides/slide1.xml");
+    let parsed = roxmltree::Document::parse(&s1).unwrap();
+    let run_fills: Vec<String> = parsed
+        .descendants()
+        .filter(|n| n.has_tag_name("rPr"))
+        .filter_map(|rpr| {
+            rpr.descendants()
+                .find(|n| n.has_tag_name("srgbClr"))
+                .and_then(|n| n.attribute("val"))
+                .map(|s| s.to_ascii_uppercase())
+        })
+        .collect();
+    assert!(
+        !run_fills.iter().any(|c| c == "000000" || c == "FFFFFF"),
+        "text RGB 000000/FFFFFF remaps in Dark Mode, got {run_fills:?}"
+    );
+    assert!(
+        !run_fills.is_empty(),
+        "expected text run fills on invoice slide 1"
     );
 }
 
@@ -127,8 +150,7 @@ fn textbox_count_matches_draw_text_on_invoice() {
             })
             .count();
         assert_eq!(
-            sp_count,
-            draw_text,
+            sp_count, draw_text,
             "slide{slide_n}: sp count {sp_count} vs draw_text {draw_text}"
         );
     }
@@ -167,8 +189,9 @@ fn textbox_origin_near_lock_rect() {
         .descendants()
         .find(|n| {
             n.has_tag_name("sp")
-                && n.descendants()
-                    .any(|c| c.has_tag_name("cNvPr") && c.attribute("name") == Some(node_id.as_str()))
+                && n.descendants().any(|c| {
+                    c.has_tag_name("cNvPr") && c.attribute("name") == Some(node_id.as_str())
+                })
         })
         .unwrap_or_else(|| panic!("no textbox named {node_id}"));
     let off = sp

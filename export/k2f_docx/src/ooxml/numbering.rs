@@ -22,8 +22,10 @@ pub(crate) fn numbering_xml() -> String {
 fn abstract_num(id: u32, numbered: bool) -> String {
     let mut s = format!(
         r#"  <w:abstractNum w:abstractNumId="{id}">
+    <w:nsid w:val="{nsid}"/>
     <w:multiLevelType w:val="hybridMultilevel"/>
-"#
+"#,
+        nsid = format!("{:08X}", 0x4B32_4630 + id),
     );
     for ilvl in 0..9u32 {
         if numbered {
@@ -35,11 +37,13 @@ fn abstract_num(id: u32, numbered: bool) -> String {
       <w:lvlText w:val="{lvl_text}"/>
       <w:lvlJc w:val="left"/>
       <w:pPr>
-        <w:ind w:left="{left}" w:hanging="360"/>
+        <w:ind w:left="0" w:hanging="0"/>
       </w:pPr>
+      <w:rPr>
+        <w:color w:val="000001"/>
+      </w:rPr>
     </w:lvl>
-"#,
-                left = 720 + ilvl * 360,
+"#
             ));
         } else {
             s.push_str(&format!(
@@ -49,14 +53,34 @@ fn abstract_num(id: u32, numbered: bool) -> String {
       <w:lvlText w:val="•"/>
       <w:lvlJc w:val="left"/>
       <w:pPr>
-        <w:ind w:left="{left}" w:hanging="360"/>
+        <w:ind w:left="0" w:hanging="0"/>
       </w:pPr>
+      <w:rPr>
+        <w:color w:val="000001"/>
+      </w:rPr>
     </w:lvl>
-"#,
-                left = 720 + ilvl * 360,
+"#
             ));
         }
     }
     s.push_str("  </w:abstractNum>\n");
     s
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn numbering_pins_rgb_marker_color() {
+        let xml = numbering_xml();
+        assert!(
+            xml.contains(r#"<w:color w:val="000001"/>"#),
+            "list markers must not use Automatic color, got {xml}"
+        );
+        assert!(
+            !xml.contains(r#"w:hanging="360""#),
+            "default numbering indent would shrink lock text boxes, got {xml}"
+        );
+    }
 }

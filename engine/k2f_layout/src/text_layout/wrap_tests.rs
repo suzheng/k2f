@@ -121,6 +121,47 @@ fn modifier_runs_are_preserved_across_line_breaks() {
     assert_eq!(layout.lines[1].runs[0].style.color, "red");
 }
 
+fn tracking_body_theme(letter_spacing_pt: i128) -> Theme {
+    use crate::theme::RoleStyle;
+    let mut theme = Theme::default();
+    theme.roles.insert(
+        "body".to_string(),
+        RoleStyle {
+            font_family: "default".to_string(),
+            font_size: Pt(12000),
+            line_height_mult: 1200,
+            color: "black".to_string(),
+            letter_spacing_pt: Pt(letter_spacing_pt),
+            ..RoleStyle::default()
+        },
+    );
+    theme
+}
+
+#[test]
+fn line_width_includes_tracking_between_wrapped_fragments() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = tracking_body_theme(2000);
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let style = crate::style::resolve_base_style("body", &theme);
+
+    let constraint = SizeConstraint::infinite();
+    let modifiers: Vec<Modifier> = vec![];
+    let layout =
+        crate::text_layout::layout_text("A B", "body", None, &modifiers, constraint, &ctx)
+            .unwrap();
+    assert_eq!(layout.lines.len(), 1);
+    let shaped = measure_text_run_width("A B", &style, &ctx).unwrap();
+    assert_eq!(
+        layout.lines[0].width, shaped,
+        "center/end alignment uses line.width; it must match a single shaped run"
+    );
+    let a = measure_text_run_width("A", &style, &ctx).unwrap();
+    let sp = measure_text_run_width(" ", &style, &ctx).unwrap();
+    let b = measure_text_run_width("B", &style, &ctx).unwrap();
+    assert_eq!(layout.lines[0].width, a + sp + b + style.letter_spacing * 2);
+}
+
 #[test]
 fn wrapping_is_deterministic_across_runs() {
     let fonts = crate::test_utils::test_fonts();

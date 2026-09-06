@@ -1,3 +1,4 @@
+mod align;
 mod classify;
 mod coord;
 mod effect;

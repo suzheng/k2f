@@ -1,8 +1,9 @@
 /// Minimal Office-openable theme. Not a copy of the full official scheme.
 ///
-/// `dk1`/`lt1` must be `srgbClr`, not `sysClr windowText`/`window`. Office Dark Mode
-/// remaps those system colors, and RGB `#000000`/`#FFFFFF` snap to those slots, so
-/// designed black text becomes unreadable on a still-white page.
+/// Word documents without a theme inherit Office's default scheme, whose `dk1`/`lt1`
+/// are `sysClr windowText`/`window`. Dark Mode remaps those, and RGB `#000000` /
+/// `#FFFFFF` snap to the slots — black title text goes faint on a white page.
+/// Pin both slots to `srgbClr` so lock colors stay as designed.
 pub const THEME_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="K2F">
   <a:themeElements>

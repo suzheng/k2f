@@ -312,6 +312,42 @@ fn paint_runs_keep_per_run_color_and_size() {
 }
 
 #[test]
+fn black_text_is_not_word_automatic() {
+    let xml = wml_from(
+        "Title",
+        vec![],
+        vec![TextGlyphRun {
+            glyph_range: [0, 5],
+            style: style("#000000", 12_000),
+        }],
+        glyphs_for("Title", 0, 8_000),
+        100_000,
+    );
+    assert!(
+        xml.contains(r#"w:val="000001""#) && xml.contains(r#"w14:textFill"#),
+        "pure black must be stored as RGB fill, not Automatic, got {xml}"
+    );
+    assert!(
+        xml.contains(r#"<a:fontRef idx="minor"><a:srgbClr val="000001"/>"#),
+        "textbox style must pin fontRef to RGB, not scheme dk1, got {xml}"
+    );
+    assert!(
+        !xml.contains(r#"w:val="000000""#),
+        "Word treats 000000 as Automatic in Dark Mode, got {xml}"
+    );
+}
+
+#[test]
+fn exported_textboxes_paint_opaque_underlay() {
+    let docx = export_opened(&common::invoice()).unwrap();
+    let xml = common::xml_in(&docx, "word/document.xml");
+    assert!(
+        xml.contains("<wps:txbx>") && xml.contains("<a:solidFill>"),
+        "Word Dark Mode inverts noFill text boxes; expected opaque underlay, got {xml}"
+    );
+}
+
+#[test]
 fn subscript_is_vertAlign_not_italic() {
     let text = "H2O";
     let xml = wml_from(
@@ -499,6 +535,27 @@ fn page_tokens_split_across_paint_runs_become_fields() {
 #[test]
 fn xml_escape_unit() {
     assert_eq!(escape_xml("a&b<c>"), "a&amp;b&lt;c&gt;");
+}
+
+#[test]
+fn paint_range_does_not_emit_unpainted_prefix() {
+    let text = "HelloWorld";
+    let glyphs: Vec<_> = (5..10)
+        .map(|i| glyph(i as u32, (i as i128 - 5) * 8_000, 8_000, 12_000))
+        .collect();
+    let xml = wml_from(
+        text,
+        vec![],
+        vec![TextGlyphRun {
+            glyph_range: [0, 5],
+            style: style("#111111", 12_000),
+        }],
+        glyphs,
+        80_000,
+    );
+    let blob = w_t_blob(&xml);
+    assert!(!blob.contains("Hello"), "{blob}");
+    assert!(blob.contains("World"), "{blob}");
 }
 
 #[test]

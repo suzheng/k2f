@@ -2,7 +2,7 @@ mod common;
 
 use k2f_core::PaintOp;
 use k2f_docx::{export_opened, pt_to_emu};
-use k2f_paint::lookup_image;
+use k2f_paint::{decode_raster, letterbox_rect, lookup_image};
 
 fn is_textbox_wsp(wsp: roxmltree::Node<'_, '_>) -> bool {
     wsp.descendants()
@@ -117,6 +117,8 @@ fn pictures_get_media_if_present() {
         })
         .expect("invoice has DrawImage");
     let asset = lookup_image(doc.assets(), &src).expect("image bytes");
+    let img = decode_raster(asset).expect("image decode");
+    let dest = letterbox_rect(img.width(), img.height(), &rect).unwrap_or(rect.clone());
 
     let docx = export_opened(&doc).unwrap();
     let names = common::unzip_names(&docx);
@@ -145,8 +147,16 @@ fn pictures_get_media_if_present() {
     let anchor = common::anchor_named(&parsed, &node_id)
         .unwrap_or_else(|| panic!("no picture docPr name={node_id}"));
     let (x, y) = common::pos_xy(anchor);
-    assert!((x - pt_to_emu(rect.x)).abs() <= 1);
-    assert!((y - pt_to_emu(rect.y)).abs() <= 1);
+    assert!((x - pt_to_emu(dest.x)).abs() <= 1);
+    assert!((y - pt_to_emu(dest.y)).abs() <= 1);
+    let ext = anchor
+        .descendants()
+        .find(|n| n.has_tag_name("extent"))
+        .expect("wp:extent");
+    let cx: i64 = common::local_attr(&ext, "cx").unwrap().parse().unwrap();
+    let cy: i64 = common::local_attr(&ext, "cy").unwrap().parse().unwrap();
+    assert!((cx - pt_to_emu(dest.width)).abs() <= 1);
+    assert!((cy - pt_to_emu(dest.height)).abs() <= 1);
 }
 
 #[test]

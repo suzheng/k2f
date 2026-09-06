@@ -99,9 +99,9 @@ fn filter_ops_drops_draw_text() {
         "chrome ops must not keep DrawImage"
     );
     assert!(
-        !filtered.iter().any(
-            |op| matches!(op, PaintOp::DrawBox { node_id, .. } if node_id == "card.solid")
-        ),
+        !filtered
+            .iter()
+            .any(|op| matches!(op, PaintOp::DrawBox { node_id, .. } if node_id == "card.solid")),
         "native-simple boxes must not bake into glass chrome"
     );
     assert!(filtered

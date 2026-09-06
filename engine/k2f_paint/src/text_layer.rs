@@ -91,8 +91,8 @@ fn spans_for_node(geo: &GeometryNode, text: &str) -> Vec<TextSpan> {
     for (line_i, y) in ys.iter().enumerate() {
         let glyphs = &by_y[y];
         let char_start = glyphs.iter().map(|(_, g)| g.cluster).min().unwrap() as usize;
-        let char_end = (glyphs.iter().map(|(_, g)| g.cluster).max().unwrap() as usize + 1)
-            .min(chars.len());
+        let char_end =
+            (glyphs.iter().map(|(_, g)| g.cluster).max().unwrap() as usize + 1).min(chars.len());
         if char_start >= char_end {
             continue;
         }

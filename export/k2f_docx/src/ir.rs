@@ -45,6 +45,8 @@ pub struct TextBox {
     pub vert_center: bool,
     pub preserve_whitespace: bool,
     pub relative_height: u32,
+    /// Opaque underlay so Word Dark Mode does not invert noFill text.
+    pub fill_hex: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

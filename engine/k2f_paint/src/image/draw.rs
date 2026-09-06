@@ -33,7 +33,10 @@ pub fn draw_image(
     Ok(())
 }
 
-pub fn lookup_image<'a>(images: &'a BTreeMap<String, Vec<u8>>, src: &'a str) -> Option<&'a Vec<u8>> {
+pub fn lookup_image<'a>(
+    images: &'a BTreeMap<String, Vec<u8>>,
+    src: &'a str,
+) -> Option<&'a Vec<u8>> {
     let stripped = src.strip_prefix("asset://").unwrap_or(src);
     let owned = [
         format!("assets/images/{stripped}"),

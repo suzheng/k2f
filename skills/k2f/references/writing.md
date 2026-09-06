@@ -24,6 +24,8 @@ Deliverable is an **UNSIGNED** `.K2F` — signing stays a human step.
 pip install k2f    # unpack, pack, compile, verify, render, schema dump — on PATH
 ```
 
+`pack_verify.py` uses that CLI (or `K2F_CLI`). The author directory can be anywhere; pass its path. The script does not search a source tree or cargo `target/` for a binary.
+
 ### Steps
 
 1. **Write a design spec (Markdown).** Before any K2F JSON, produce a concrete design document (e.g. `./out/doc/design.md`). If the user named a style or brand, follow it. If not, design to the highest aesthetic standard for this deliverable. Outline:
@@ -54,6 +56,8 @@ Page presets: `a4` | `letter` | `a4-landscape` | `widescreen` | `widescreen-43`.
 
 ```bash
 python scripts/init_package.py --dir ./out/report --title "Q3 Report" --page a4
+# CJK/kana: --add-font /path/to/NotoSansJP.otf   (keeps Roboto; not NotoSansSC for Japanese)
+# math: copy catalog NotoSansMath + font_aliases; or --add-font that ttf
 # slides: --page widescreen --margin 0 | widescreen-43
 # posters: --page a4 --margin 0; copy catalog/content/ex_poster_shell.json; set height to page
 # --margin 36000  or  --margin 36000,48000,36000,48000
@@ -91,7 +95,7 @@ Keep structure in `content/root.json`; add `{ "include": "content/ch01.json" }` 
 | Pack + compile + verify + PNG | `pack_verify.py <dir> -o out.K2F --render preview.png` |
 | Extra pages | `k2f render file.K2F --page 1 -o preview-1.png` |
 | Single-page poster check | `pack_verify.py … --expect-pages 1 --render preview.png` |
-| Custom font | `init_package.py --font /path/to/Covering.ttf` or add under `assets/fonts/` + `font_aliases` |
+| Custom font | `init_package.py --font /path/to/Covering.ttf` (replaces Roboto) or `--add-font` (fallback beside Roboto) |
 | Modifier byte ranges | `python scripts/modifier_range.py --text "…" --find "…"` |
 | Allowed JSON keys | [writing/fields.md](writing/fields.md), then [`schema/`](../schema/) |
 
@@ -129,7 +133,7 @@ If the PNG does not match the design spec, update the spec or JSON/theme and run
 
 | Situation | Action |
 |-----------|--------|
-| Missing `k2f` CLI | `pip install k2f` (or set `K2F_CLI`) |
+| Missing `k2f` CLI | `pip install k2f` or set `K2F_CLI`. CWD does not matter. The script does not search a git checkout or build dir |
 | validate / compile fails | [writing/errors.md](writing/errors.md); never edit lock |
 | `SCHEMA_INVALID` | Open [`schema/`](../schema/); key in schema but rejected → `pip install -U k2f`; key not in schema → remove |
 | `UNKNOWN_ID` | Read `content/` or grep for the id; never invent ids |
@@ -171,19 +175,32 @@ Missing tools, empty list, kind mismatch, or fetch error → `init_package.py`. 
 | `---` thematic break for a new chapter page | Renders as `role: "rule"` — use `break_before: "page"` on the next node, or `<!-- k2f: break_before=page -->` in Markdown |
 | Expect whole paragraphs to jump to next page | `break_inside: auto` splits **by line** when the page remainder is too small — shrink padding/gap or split into sibling nodes |
 | `$...$` inline math in author JSON | U+FFFC + `{ "type": "math", "intent": "<tex>" }` modifier — see `catalog/content/ex_modifiers.json`; `$` works Markdown only |
+| Expect `\mathbb` / `\forall` / `\prime` / `\text` unsupported | They are in the TeX whitelist ([errors.md](writing/errors.md)); add NotoSansMath. No `\color`/`\textcolor`/`\tag`/`\mathbf`/`\sqrt[n]` — role color + `ex_math_numbered.json` |
 | Multiple fonts but `"default":"default"` only | Map `font_aliases` to each file stem; two+ fonts have no auto-`default` |
 | `fr` rows without fixed grid height | Fails: `Cannot resolve fr tracks with infinite available size`. `fr` ≠ content-auto height — set grid `layout.height`, use `pt`/`auto` rows, or nest under a fixed-height stack (`ex_grid.json`) |
 | Poster/slide shell is a vertical stack | Content piles at the top. Copy `ex_poster_shell.json`: pinned `height` + `{fr:1}` body row |
+| Cover year in the footer / vertical space-between | Copy `ex_cover.json` / `ex_poster_shell.json` (`{auto:true}` + `{fr:1}` + `{auto:true}`), not padding guesses or empty spacers. Flow-only (footer not at page bottom) → vertical stack, not the `{fr:1}` shell |
+| Letter sender / right-flush cell | Copy `ex_end_block.json` (horizontal `justify_content: end` wrapping a content-width vertical stack). Left+right pair → `ex_split_bar.json`. Do not `text_align: end` on each line |
+| Expect small-caps / `font_variant` | Not in v0.1 — role uppercase + `letter_spacing_pt` |
+| Expect per-cell grid align or baseline | Nest stack / theme `self_align` / `ex_end_block.json` in the right cell; `cell_align.y: start` — no first-line baseline |
+| Binding gutter + title centered on the sheet | `margin` 4-tuple is the gutter; `text_align: center` is the **content box**. Overlay or equal padding on that title role |
+| Academic serif missing from starter | `--add-font` a serif TTF; starter ships Roboto only |
+| Inline code pills / modifier background | Sibling `role: code` (or a decorated container), not an inline background patch |
 | Expect a native `Divider` node | Use `role: "rule"` + small `layout.height` + surface fill (or bottom border) |
 | Noise / vignette / radial glow / dot matrix | Not in core — SVG under `assets/images/` (labels as `<path>`); size in millipt |
 | Require `row_gap`/`column_gap`/`cell_align` | Optional — see `schema/nodes.schema.json`; omit unused keys (`null` ok) |
 | Unicode superscript (`²`) for notes | Ordinary char + `superscript`/`subscript` modifier; formulas → math |
-| SVG `<text>` labels | Convert to `<path>` — paint has no system fonts; `<text>` is dropped |
-| One text node with `\n\n` for paragraphs | One paragraph = one text node; use stack `gap` |
-| Simulate margin with padding / empty spacer stacks | No node margin — use parent `gap` + role padding; empty `height`-only containers are geometry |
-| Dingbat/arrow/CJK glyphs (★ ◆ → ↗ ↑ 中文) in Roboto | `FONT_MISSING_GLYPH` — ASCII/`->`, SVG icon, or `init_package.py --font` covering TTF; bundled face is Latin-only |
+| SVG `<text>` labels | Convert to `<path>` — paint has no system fonts; `<text>` now **fails** instead of dropping silently |
+| One text node with `\n\n` for paragraphs | One paragraph = one text node; `\n` is a hard line break (each line still takes `line_height_mult`). Paragraph spacing = sibling `gap` |
+| Simulate margin with padding / empty spacer stacks | No node margin or node `padding_pt`. Even rhythm: parent `gap`. Uneven: nested stacks with different `gap`, or a **dedicated** role's `padding_pt`. Shared `h1`/`body` padding applies to every such node |
+| Dingbat/arrow/CJK glyphs (★ ◆ → ↗ ↑ 中文 かな) in Roboto | `FONT_MISSING_GLYPH` — `--add-font` a covering face (JP/KR/SC as needed). NotoSansSC ≠ Japanese. Math formulas → NotoSansMath. Do not rewrite user language to English |
 | Expect `canvas_mode: "slide"` | v0.1 is `paged` only — use `--page widescreen --margin 0` + per-slide fixed height + `break_inside: avoid` |
-| `layout.height` + padding overflowing the page | Height is min outer; padding is inside. Do not nest another full-page-height child inside a padded shell |
+| Expect `justify_content: space-between` or page `background` | Copy `ex_split_bar.json` / `ex_end_block.json` / `ex_poster_shell.json` / `ex_overlay.json` — not Flexbox or `page_config` |
+| Overlay nested stack `align_items: end` not on the page right | Overlay children shrink to content unless that layer sets `width`; left/right bars → `ex_split_bar.json`; trailing-edge block (letter sender) → `ex_end_block.json` |
+| Hand-count modifier ranges across `\n` | `\n` is 1 UTF-8 byte — run `modifier_range.py --text` with the exact node `value` |
+| Pixel formula for cover padding vs line-height | Copy `ex_cover.json`; iterate the PNG. Line boxes + `padding_pt` + `gap` **add**; do not invent spacer nodes or cancel line boxes with padding math |
+| Expect table `colspan` / `vertical_align` | Extra columns + cell `variant: "hbar"` / `"bottom"` (`ex_table_edges.json`); `variant: "center"` for vertical middle |
+| `layout.height` + padding overflowing the page | Height is min outer; padding is inside. Do not nest another full-page-height child inside a padded shell. Single-page: grid shell first (`ex_poster_shell.json`), then inner `gap` — a page-height `avoid` stack with large padding → `UNSPLITTABLE_OVERFLOW` |
 | Trust `preview.png` alone for single-page posters | Default render is page 0; check `pages=1` / `--expect-pages 1` |
 | Ship after `UNSIGNED` without opening the PNG | `verify` does not catch empty margins or oversized type — [visual check](#visual-check) |
 | Used `Editor.insert_node` to add grid/stack | Agent dialect — edit author JSON then pack |

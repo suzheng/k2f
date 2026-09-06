@@ -2,7 +2,7 @@ use crate::LayoutContext;
 use k2f_core::Pt;
 
 use super::metrics::{line_height_for_style, measure_text_run_width};
-use super::types::{push_or_merge_run, TextLine, TextRun};
+use super::types::{merge_join_tracking, push_or_merge_run, TextLine, TextRun};
 use super::wrap_fit::fit_prefix_boundary;
 use super::wrap_tokenize::{split_run_for_wrapping, FragKind, Fragment};
 
@@ -79,7 +79,10 @@ pub(crate) fn wrap_runs(
                     line_height_for_style(&run.style)
                 };
 
-                if infinite_width || line_width + piece_width <= line_limit(is_first_line) {
+                if infinite_width
+                    || next_line_width(&line, line_width, piece_width, &run)
+                        <= line_limit(is_first_line)
+                {
                     push_piece(
                         &mut line,
                         &mut line_width,
@@ -159,7 +162,9 @@ pub(crate) fn wrap_runs(
                 }
 
                 // If it fits, just add it.
-                if line_width + piece_width <= line_limit(is_first_line) {
+                if next_line_width(&line, line_width, piece_width, &run)
+                    <= line_limit(is_first_line)
+                {
                     push_piece(
                         &mut line,
                         &mut line_width,
@@ -265,6 +270,25 @@ pub(crate) fn wrap_runs(
     Ok(out_lines)
 }
 
+fn next_line_width(line: &[Piece], line_width: Pt, piece_width: Pt, run: &TextRun) -> Pt {
+    let join = line
+        .last()
+        .map(|p| merge_join_tracking(&p.run, run))
+        .unwrap_or(Pt::ZERO);
+    line_width + join + piece_width
+}
+
+fn pieces_advance(line: &[Piece]) -> Pt {
+    let mut w = Pt::ZERO;
+    for (i, p) in line.iter().enumerate() {
+        if i > 0 {
+            w = w + merge_join_tracking(&line[i - 1].run, &p.run);
+        }
+        w = w + p.width;
+    }
+    w
+}
+
 fn push_piece(
     line: &mut Vec<Piece>,
     line_width: &mut Pt,
@@ -273,7 +297,7 @@ fn push_piece(
     base_line_height: Pt,
     last_break: &mut Option<BreakPoint>,
 ) {
-    *line_width += piece.width;
+    *line_width = next_line_width(line, *line_width, piece.width, &piece.run);
     if piece.height > *line_height {
         *line_height = piece.height;
     }
@@ -334,10 +358,9 @@ fn flush_line(
 ) {
     // Trim trailing whitespace.
     while matches!(line.last().map(|p| p.kind), Some(FragKind::Whitespace)) {
-        if let Some(p) = line.pop() {
-            *line_width -= p.width;
-        }
+        line.pop();
     }
+    *line_width = pieces_advance(line);
 
     let mut runs: Vec<TextRun> = Vec::new();
     for p in line.iter() {
@@ -363,14 +386,12 @@ fn flush_line(
 }
 
 fn recompute_line_metrics(line: &[Piece], width: &mut Pt, height: &mut Pt, base_line_height: Pt) {
-    let mut w = Pt::ZERO;
     let mut h = base_line_height;
     for p in line {
-        w += p.width;
         if p.height > h {
             h = p.height;
         }
     }
-    *width = w;
+    *width = pieces_advance(line);
     *height = h.max(base_line_height);
 }

@@ -1,0 +1,106 @@
+{
+  "id": "ex.cover",
+  "role": "section",
+  "break_inside": "avoid",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.cover.header",
+          "role": "section",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.cover.header.logo",
+                  "role": "image",
+                  "content": {
+                    "type": "image",
+                    "value": {
+                      "src": "assets/images/dot.png",
+                      "width": 32000,
+                      "height": 32000
+                    }
+                  }
+                },
+                {
+                  "id": "ex.cover.header.titles",
+                  "role": "section",
+                  "content": {
+                    "type": "container",
+                    "value": {
+                      "children": [
+                        {
+                          "id": "ex.cover.header.titles.title",
+                          "role": "h1",
+                          "content": { "type": "text", "value": "Document title" }
+                        },
+                        {
+                          "id": "ex.cover.header.titles.sub",
+                          "role": "h2",
+                          "content": { "type": "text", "value": "Subtitle / affiliation" }
+                        }
+                      ]
+                    }
+                  },
+                  "layout": {
+                    "type": "stack",
+                    "direction": "vertical",
+                    "gap": 4000,
+                    "align_items": "center"
+                  }
+                },
+                {
+                  "id": "ex.cover.header.author",
+                  "role": "body",
+                  "content": { "type": "text", "value": "Author name" }
+                }
+              ]
+            }
+          },
+          "layout": {
+            "type": "stack",
+            "direction": "vertical",
+            "gap": 16000,
+            "align_items": "center"
+          }
+        },
+        {
+          "id": "ex.cover.body",
+          "role": "section",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.cover.body.note",
+                  "role": "body",
+                  "content": {
+                    "type": "text",
+                    "value": "{fr:1} leftover height. Nested header stacks use different gap — not empty spacers."
+                  }
+                }
+              ]
+            }
+          },
+          "layout": { "type": "stack", "gap": 0, "justify_content": "end" }
+        },
+        {
+          "id": "ex.cover.footer",
+          "role": "body",
+          "content": { "type": "text", "value": "2026" }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "grid",
+    "columns": [{ "fr": 1 }],
+    "rows": [{ "auto": true }, { "fr": 1 }, { "auto": true }],
+    "gap": 8000,
+    "height": 240000,
+    "cell_align": { "x": "stretch", "y": "stretch" }
+  }
+}

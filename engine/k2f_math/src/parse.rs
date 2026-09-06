@@ -1,4 +1,6 @@
-use crate::atom::{big_operator, operator_name, space_command, symbol_atom, AtomClass};
+use crate::atom::{
+    big_operator, mathbb_char, mathcal_char, operator_name, space_command, symbol_atom, AtomClass,
+};
 use crate::error::MathError;
 use crate::token::{tokenize, Token};
 
@@ -190,9 +192,18 @@ impl Parser<'_> {
             }
             "left" => self.parse_left_right(),
             "begin" => self.parse_begin(),
+            "mathbb" => {
+                let inner = self.parse_argument()?;
+                map_styled_letters(inner, mathbb_char, "mathbb")
+            }
+            "mathcal" => {
+                let inner = self.parse_argument()?;
+                map_styled_letters(inner, mathcal_char, "mathcal")
+            }
             "right" => Err(MathError::Parse("unexpected '\\right'".into())),
             "end" => Err(MathError::Parse("unexpected '\\end'".into())),
-            "over" | "underline" | "overline" | "hat" | "vec" | "color" | "def" | "newcommand" => {
+            "over" | "underline" | "overline" | "hat" | "vec" | "color" | "textcolor" | "tag"
+            | "def" | "newcommand" => {
                 Err(MathError::Unsupported(format!("unknown command '\\{name}'")))
             }
             _ => {
@@ -274,5 +285,29 @@ impl Parser<'_> {
             Some(Token::GroupClose) => Err(MathError::Parse("unexpected '}'".into())),
             _ => self.parse_nucleus(),
         }
+    }
+}
+
+fn map_styled_letters(
+    node: MathNode,
+    map: fn(char) -> Option<char>,
+    command: &str,
+) -> Result<MathNode, MathError> {
+    match node {
+        MathNode::Atom { ch, class } => {
+            let mapped = map(ch).ok_or_else(|| {
+                MathError::Unsupported(format!("\\{command} does not cover {ch:?}"))
+            })?;
+            Ok(MathNode::Atom { ch: mapped, class })
+        }
+        MathNode::Row(items) => Ok(MathNode::Row(
+            items
+                .into_iter()
+                .map(|n| map_styled_letters(n, map, command))
+                .collect::<Result<Vec<_>, _>>()?,
+        )),
+        _ => Err(MathError::Unsupported(format!(
+            "\\{command} applies to letters and digits only"
+        ))),
     }
 }

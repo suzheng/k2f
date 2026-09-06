@@ -40,8 +40,10 @@ fn compiled_hi_emits_one_span_with_both_chars() {
 
 #[test]
 fn invoice_page0_spans_are_nonempty() {
-    let doc = OpenedDocument::open(&std::fs::read(common::repo_root().join("examples/published/invoice.K2F")).unwrap())
-        .unwrap();
+    let doc = OpenedDocument::open(
+        &std::fs::read(common::repo_root().join("examples/published/invoice.K2F")).unwrap(),
+    )
+    .unwrap();
     let spans = doc.text_layer(0);
     assert!(
         !spans.is_empty(),

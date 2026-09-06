@@ -3,8 +3,10 @@ mod common;
 use k2f_paint::OpenedDocument;
 
 fn invoice() -> OpenedDocument {
-    OpenedDocument::open(&std::fs::read(common::repo_root().join("examples/published/invoice.K2F")).unwrap())
-        .unwrap()
+    OpenedDocument::open(
+        &std::fs::read(common::repo_root().join("examples/published/invoice.K2F")).unwrap(),
+    )
+    .unwrap()
 }
 
 #[test]
@@ -41,7 +43,11 @@ fn click_on_text_span_returns_one_char_from_cluster() {
         .expect("center of a text span must hit");
     assert_eq!(hit.leaf(), Some("invoice.header"));
     let range = hit.char_range.expect("clustered lock");
-    assert_eq!(range[1] - range[0], 1, "v0 hit is one character, got {range:?}");
+    assert_eq!(
+        range[1] - range[0],
+        1,
+        "v0 hit is one character, got {range:?}"
+    );
 }
 
 #[test]

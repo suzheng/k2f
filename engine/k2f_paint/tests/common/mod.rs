@@ -11,7 +11,8 @@ pub fn repo_root() -> PathBuf {
 }
 
 pub fn contract_k2f_bytes() -> Vec<u8> {
-    fs::read(repo_root().join("examples/published/contract.K2F")).expect("examples/published/contract.K2F")
+    fs::read(repo_root().join("examples/published/contract.K2F"))
+        .expect("examples/published/contract.K2F")
 }
 
 pub fn font_bytes() -> Vec<u8> {

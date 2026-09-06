@@ -1,4 +1,4 @@
-use crate::ir::{SlideElement, SlideIR, TextBox, TextRun};
+use crate::ir::{ScriptPos, SlideElement, SlideIR, TextBox, TextRun};
 use crate::xml::escape_xml;
 use std::collections::BTreeMap;
 
@@ -14,6 +14,9 @@ pub(crate) fn textbox_sp_xml(
         tb.bullet,
         tb.numbered,
         tb.preserve_whitespace,
+        tb.line_spc_pts,
+        tb.mar_l_emu,
+        tb.list_start,
         hyperlink_rids,
         "      ",
     );
@@ -34,7 +37,7 @@ pub(crate) fn textbox_sp_xml(
         <a:ln><a:noFill/></a:ln>
       </p:spPr>
       <p:txBody>
-        <a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" rtlCol="0" anchor="t"/>
+        <a:bodyPr wrap="{wrap}" lIns="0" tIns="0" rIns="0" bIns="0" rtlCol="0" anchor="t"/>
         <a:lstStyle/>
 {body}      </p:txBody>
     </p:sp>
@@ -44,6 +47,7 @@ pub(crate) fn textbox_sp_xml(
         y = tb.y_emu,
         cx = tb.cx_emu,
         cy = tb.cy_emu,
+        wrap = if tb.wrap { "square" } else { "none" },
     )
 }
 
@@ -53,18 +57,25 @@ pub(crate) fn txbody_inner(
     bullet: bool,
     numbered: bool,
     preserve: bool,
+    line_spc_pts: Option<i32>,
+    mar_l_emu: i64,
+    list_start: u32,
     hyperlink_rids: &BTreeMap<String, String>,
     indent: &str,
 ) -> String {
     let paras = paragraph_runs(runs);
     let mut body = String::new();
-    for para in &paras {
+    for (i, para) in paras.iter().enumerate() {
+        let list_on = i == 0;
         body.push_str(&paragraph_xml(
             para,
             align,
-            bullet,
-            numbered,
+            list_on && bullet,
+            list_on && numbered,
             preserve,
+            line_spc_pts,
+            if list_on { mar_l_emu } else { 0 },
+            if list_on { list_start } else { 1 },
             hyperlink_rids,
             indent,
         ));
@@ -108,6 +119,9 @@ fn paragraph_xml(
     bullet: bool,
     numbered: bool,
     preserve: bool,
+    line_spc_pts: Option<i32>,
+    mar_l_emu: i64,
+    list_start: u32,
     hyperlink_rids: &BTreeMap<String, String>,
     indent: &str,
 ) -> String {
@@ -117,9 +131,26 @@ fn paragraph_xml(
     p.push_str(indent);
     p.push_str("  <a:pPr algn=\"");
     p.push_str(align_token(align));
-    p.push_str("\">");
+    p.push_str("\"");
+    if mar_l_emu > 0 {
+        p.push_str(&format!(r#" marL="{mar_l_emu}" indent="-{mar_l_emu}""#));
+    }
+    p.push('>');
+    if let Some(pts) = line_spc_pts {
+        p.push_str(&format!(r#"<a:lnSpc><a:spcPts val="{pts}"/></a:lnSpc>"#));
+    }
+    if numbered || bullet {
+        let clr = runs
+            .first()
+            .map(|r| r.color_hex.as_str())
+            .unwrap_or("000001");
+        p.push_str(&format!(r#"<a:buClr><a:srgbClr val="{clr}"/></a:buClr>"#));
+    }
     if numbered {
-        p.push_str(r#"<a:buFont typeface="Arial"/><a:buAutoNum type="arabicPeriod"/>"#);
+        p.push_str(&format!(
+            r#"<a:buFont typeface="Arial"/><a:buAutoNum type="arabicPeriod" startAt="{start}"/>"#,
+            start = list_start.max(1),
+        ));
     } else if bullet {
         p.push_str(r#"<a:buFont typeface="Arial"/><a:buChar char="•"/>"#);
     } else {
@@ -141,6 +172,7 @@ fn align_token(align: crate::ir::TextAlign) -> &'static str {
         crate::ir::TextAlign::Left => "l",
         crate::ir::TextAlign::Center => "ctr",
         crate::ir::TextAlign::Right => "r",
+        crate::ir::TextAlign::Justify => "just",
     }
 }
 
@@ -160,6 +192,11 @@ fn run_xml(run: &TextRun, preserve_box: bool, hyperlink_rids: &BTreeMap<String, 
     }
     if run.strike {
         rpr.push_str(r#" strike="sngStrike""#);
+    }
+    match run.script {
+        ScriptPos::Super => rpr.push_str(r#" baseline="30000""#),
+        ScriptPos::Sub => rpr.push_str(r#" baseline="-25000""#),
+        ScriptPos::Baseline => {}
     }
     rpr.push('>');
     rpr.push_str(&format!(
@@ -215,5 +252,49 @@ fn push_urls(runs: &[TextRun], urls: &mut Vec<String>) {
                 urls.push(url.clone());
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::{ScriptPos, TextAlign, TextRun};
+
+    fn run(text: &str) -> TextRun {
+        TextRun {
+            text: text.into(),
+            font_name: "Times New Roman".into(),
+            sz_hundredths_pt: 1200,
+            bold: false,
+            italic: false,
+            underline: false,
+            strike: false,
+            color_hex: "000001".into(),
+            hyperlink: None,
+            script: ScriptPos::Baseline,
+        }
+    }
+
+    #[test]
+    fn numbered_paragraph_pins_bullet_color() {
+        let xml = paragraph_xml(
+            &[run("Dong")],
+            TextAlign::Left,
+            false,
+            true,
+            false,
+            None,
+            200_000,
+            3,
+            &BTreeMap::new(),
+            "",
+        );
+        assert!(
+            xml.contains(r#"<a:buClr><a:srgbClr val="000001"/></a:buClr>"#),
+            "list numbers must not use theme Automatic, got {xml}"
+        );
+        assert!(xml.contains(r#"marL="200000""#), "{xml}");
+        assert!(xml.contains(r#"indent="-200000""#), "{xml}");
+        assert!(xml.contains(r#"startAt="3""#), "{xml}");
     }
 }

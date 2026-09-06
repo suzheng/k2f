@@ -7,9 +7,9 @@ use crate::ir::{DeckIR, SlideElement, SlideIR};
 use crate::picture::picture_from_draw;
 use crate::shape::shape_from_box;
 use crate::table::{index_native_tables, paint_node_id, table_on_page, table_ref_placeholder};
-use crate::text::{textbox_from_draw, FontCtx};
+use crate::text::{list_start_at, textbox_from_draw, FontCtx};
 use crate::PptxError;
-use k2f_core::{Fill, Page, PaintOp, Pt, Rect};
+use k2f_core::{Fill, GeometryNode, Page, PaintOp, Pt, Rect};
 use k2f_paint::{parse_hex_rgba, resolve_fill, OpenedDocument};
 use std::collections::HashSet;
 
@@ -27,9 +27,11 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DeckIR, PptxError> {
     let running = doc.running_blocks();
     let assets = doc.assets();
     let tables = index_native_tables(root, running);
+    let list_starts = list_start_at(root);
     let mut media_n = 1u32;
     let mut raster_n = 1u32;
-    let mut slides = Vec::with_capacity(pages.len());
+    let total_pages = pages.len();
+    let mut slides = Vec::with_capacity(total_pages);
     for (page_idx, page) in pages.iter().enumerate() {
         let plan = lock
             .render_plan
@@ -105,8 +107,20 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DeckIR, PptxError> {
                         )?;
                         raster_n = raster_n.saturating_add(1);
                         elements.push(SlideElement::Raster(pic));
-                    } else if let Some(tb) = textbox_from_draw(node, rect, runs, &fonts) {
-                        elements.push(SlideElement::TextBox(tb));
+                    } else {
+                        let geo = find_geo(&page.root, node_id);
+                        if let Some(tb) = textbox_from_draw(
+                            node,
+                            rect,
+                            runs,
+                            geo,
+                            &fonts,
+                            page_idx,
+                            total_pages,
+                            list_starts.get(&node.id).copied().unwrap_or(1),
+                        ) {
+                            elements.push(SlideElement::TextBox(tb));
+                        }
                     }
                 }
                 PaintOp::DrawBox {
@@ -185,4 +199,11 @@ fn opaque_srgb_hex(color: &str) -> Option<String> {
         return None;
     }
     Some(format!("{r:02X}{g:02X}{b:02X}"))
+}
+
+fn find_geo<'a>(node: &'a GeometryNode, id: &str) -> Option<&'a GeometryNode> {
+    if node.id == id {
+        return Some(node);
+    }
+    node.children.iter().find_map(|c| find_geo(c, id))
 }

@@ -69,6 +69,55 @@ def replace_font(out: Path, font: Path) -> None:
         old.unlink()
     dest = fonts_dir / font.name
     shutil.copy2(font, dest)
+    patch_theme_primary_font(out, font.stem)
+
+
+def add_fonts(out: Path, fonts: list[Path]) -> None:
+    fonts_dir = out / "assets" / "fonts"
+    fonts_dir.mkdir(parents=True, exist_ok=True)
+    stems: list[str] = []
+    for font in fonts:
+        dest = fonts_dir / font.name
+        if dest.exists() and dest.resolve() != font.resolve():
+            dest.unlink()
+        if dest.resolve() != font.resolve():
+            shutil.copy2(font, dest)
+        stems.append(font.stem)
+    patch_theme_add_font_aliases(out, stems)
+
+
+def patch_theme_primary_font(out: Path, new_stem: str) -> None:
+    """Roles still named Roboto-Regular after --font would FONT_MISSING."""
+    path = out / "styles" / "theme.json"
+    theme = json.loads(path.read_text(encoding="utf-8"))
+    old_primary = "Roboto-Regular"
+    theme["font_aliases"] = {new_stem: new_stem}
+    for role in theme.get("roles", {}).values():
+        if role.get("font_family") in (old_primary, "default"):
+            role["font_family"] = new_stem
+        for variant in (role.get("variants") or {}).values():
+            overrides = variant.get("text_overrides") or {}
+            if overrides.get("font_family") in (old_primary, "default"):
+                overrides["font_family"] = new_stem
+    path.write_text(json.dumps(theme, indent=2) + "\n", encoding="utf-8")
+
+
+def patch_theme_add_font_aliases(out: Path, stems: list[str]) -> None:
+    path = out / "styles" / "theme.json"
+    theme = json.loads(path.read_text(encoding="utf-8"))
+    aliases = theme.setdefault("font_aliases", {})
+    for stem in stems:
+        aliases[stem] = stem
+    theme["font_aliases"] = aliases
+    path.write_text(json.dumps(theme, indent=2) + "\n", encoding="utf-8")
+
+
+def require_font_file(font: Path) -> str | None:
+    if not font.is_file():
+        return f"font not found: {font}"
+    if font.suffix.lower() not in {".ttf", ".otf"}:
+        return f"expected .ttf or .otf, got {font.suffix}"
+    return None
 
 
 def main() -> int:
@@ -106,7 +155,17 @@ def main() -> int:
         "--font",
         type=Path,
         default=None,
-        help="Replace bundled Roboto with this TTF/OTF (default: starter/assets/fonts/Roboto-Regular.ttf)",
+        help="Replace bundled Roboto with this covering TTF/OTF and retarget theme roles "
+        "(use a CJK face that includes Latin, e.g. Noto Sans JP)",
+    )
+    parser.add_argument(
+        "--add-font",
+        type=Path,
+        action="append",
+        default=[],
+        metavar="TTF",
+        help="Keep Roboto and copy this TTF/OTF for glyph fallback (repeatable). "
+        "Japanese/Korean/math: --add-font covering.otf (NotoSansSC is Simplified Chinese, not kana)",
     )
     parser.add_argument(
         "--author",
@@ -149,21 +208,39 @@ def main() -> int:
 
     patch_manifest(out, args.title, args.page, margin, args.width, args.height)
 
-    font = (args.font or default_font).expanduser().resolve()
-    if not font.is_file():
-        print(
-            f"error: font not found: {font}\n"
-            "Pass --font to a TTF/OTF, or reinstall the skill starter bundle.",
-            file=sys.stderr,
-        )
-        shutil.rmtree(out)
-        return 1
-    if font.suffix.lower() not in {".ttf", ".otf"}:
-        print(f"error: expected .ttf or .otf, got {font.suffix}", file=sys.stderr)
-        shutil.rmtree(out)
-        return 1
-    if font != default_font:
+    extra_fonts: list[Path] = []
+    for raw in args.add_font:
+        extra = raw.expanduser().resolve()
+        err = require_font_file(extra)
+        if err:
+            print(f"error: --add-font: {err}", file=sys.stderr)
+            shutil.rmtree(out)
+            return 1
+        extra_fonts.append(extra)
+
+    if args.font is not None:
+        font = args.font.expanduser().resolve()
+        err = require_font_file(font)
+        if err:
+            print(
+                f"error: {err}\nPass --font to a TTF/OTF, or reinstall the skill starter bundle.",
+                file=sys.stderr,
+            )
+            shutil.rmtree(out)
+            return 1
         replace_font(out, font)
+    else:
+        font = default_font.expanduser().resolve()
+        if not font.is_file():
+            print(
+                f"error: bundled Roboto missing: {font}\nReinstall the skill starter bundle.",
+                file=sys.stderr,
+            )
+            shutil.rmtree(out)
+            return 1
+
+    if extra_fonts:
+        add_fonts(out, extra_fonts)
 
     page = PAGES[args.page]
     width = args.width if args.width is not None else page["width"]
@@ -175,6 +252,8 @@ def main() -> int:
     if args.width is not None:
         size_note += " (custom size)"
     print(f"  title={args.title!r}  {size_note}  {width}x{height}  margin={applied_margin}")
+    if extra_fonts:
+        print("  extra fonts (glyph fallback): " + ", ".join(p.name for p in extra_fonts))
     if args.page in ("widescreen", "widescreen-43") and applied_margin != [0, 0, 0, 0]:
         print(
             "  tip: for full-bleed slide decks use --margin 0, then inner role padding_pt "

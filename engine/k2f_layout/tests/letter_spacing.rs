@@ -11,6 +11,10 @@ fn roboto() -> Vec<u8> {
 }
 
 fn theme_with_tracking(letter_spacing_pt: i64) -> String {
+    theme_with_tracking_align(letter_spacing_pt, "start")
+}
+
+fn theme_with_tracking_align(letter_spacing_pt: i64, text_align: &str) -> String {
     json!({
         "palette": { "ink": "#111111", "paper": "#FFFFFF" },
         "roles": {
@@ -20,6 +24,7 @@ fn theme_with_tracking(letter_spacing_pt: i64) -> String {
                 "line_height_mult": 1250,
                 "bold": true,
                 "color": "ink",
+                "text_align": text_align,
                 "letter_spacing_pt": letter_spacing_pt
             }
         }
@@ -40,8 +45,27 @@ fn content() -> &'static str {
     }"#
 }
 
+fn content_words() -> &'static str {
+    r#"{
+        "title": "tracking",
+        "canvas_mode": "paged",
+        "page_config": { "width": 595000, "height": 842000, "margin": [72000, 72000, 72000, 72000] },
+        "root": {
+            "id": "title",
+            "role": "h1",
+            "content": { "type": "text", "value": "A B" }
+        }
+    }"#
+}
+
 fn compile(theme: &str) -> LockFile {
     let json = LayoutEngine::compile_chunk(content(), theme, &roboto())
+        .unwrap_or_else(|e| panic!("compile: {e}"));
+    serde_json::from_str(&json).unwrap()
+}
+
+fn compile_words(theme: &str) -> LockFile {
+    let json = LayoutEngine::compile_chunk(content_words(), theme, &roboto())
         .unwrap_or_else(|e| panic!("compile: {e}"));
     serde_json::from_str(&json).unwrap()
 }
@@ -93,5 +117,40 @@ fn official_h1_negative_tracking_tightens_glyph_advances() {
     assert!(
         t.width <= z.width,
         "wrap/layout width should not grow under negative tracking"
+    );
+}
+
+fn ink_left_right(node: &GeometryNode) -> (Pt, Pt) {
+    let mut left = Pt(i128::MAX);
+    let mut right = Pt(i128::MIN);
+    for g in &node.glyphs {
+        if g.x_offset < left {
+            left = g.x_offset;
+        }
+        let r = g.x_offset + g.x_advance;
+        if r > right {
+            right = r;
+        }
+    }
+    (left, right)
+}
+
+#[test]
+fn centered_tracking_keeps_ink_centered_across_word_gaps() {
+    let lock = compile_words(&theme_with_tracking_align(2500, "center"));
+    let node = title_node(&lock);
+    assert!(
+        node.glyphs.len() >= 3,
+        "expected glyphs for 'A B', got {}",
+        node.glyphs.len()
+    );
+    let (left, right) = ink_left_right(node);
+    let leftover_left = left;
+    let leftover_right = node.width - right;
+    let drift = leftover_left.0 - leftover_right.0;
+    assert!(
+        drift.abs() <= 1,
+        "tracking must be in the centered width: leftover_left={left:?} leftover_right={leftover_right:?} drift={drift} box={:?}",
+        node.width
     );
 }

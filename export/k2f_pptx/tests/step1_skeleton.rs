@@ -63,6 +63,24 @@ fn export_invoice_is_zip_and_has_slide_per_lock_page() {
 }
 
 #[test]
+fn theme_pins_dk1_lt1_to_srgb_not_system_window_colors() {
+    let pptx = export_opened(&common::invoice()).unwrap();
+    let theme = common::xml_in(&pptx, "ppt/theme/theme1.xml");
+    assert!(
+        !theme.contains("windowText") && !theme.contains(r#"sysClr val="window""#),
+        "dk1/lt1 must not follow OS dark mode, got {theme}"
+    );
+    assert!(
+        theme.contains(r#"<a:dk1><a:srgbClr val="000000"/></a:dk1>"#),
+        "dk1 must be pinned srgb black, got {theme}"
+    );
+    assert!(
+        theme.contains(r#"<a:lt1><a:srgbClr val="FFFFFF"/></a:lt1>"#),
+        "lt1 must be pinned srgb white, got {theme}"
+    );
+}
+
+#[test]
 fn slide_size_matches_lock_page_config() {
     let doc = common::invoice();
     let pptx = export_opened(&doc).unwrap();

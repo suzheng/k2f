@@ -23,10 +23,7 @@ pub fn index_geometry_multi_str<'a>(
 }
 
 fn rect_matches(geo: &GeometryNode, rect: &Rect) -> bool {
-    geo.x == rect.x
-        && geo.y == rect.y
-        && geo.width == rect.width
-        && geo.height == rect.height
+    geo.x == rect.x && geo.y == rect.y && geo.width == rect.width && geo.height == rect.height
 }
 
 /// Resolve the geometry fragment for a paint op. Prefers an exact rect match when

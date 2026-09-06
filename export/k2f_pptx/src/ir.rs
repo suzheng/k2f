@@ -34,15 +34,28 @@ pub struct TextBox {
     pub bullet: bool,
     pub numbered: bool,
     pub preserve_whitespace: bool,
+    pub wrap: bool,
+    /// DrawingML `a:spcPts` (hundredths of a point), from lock line-to-line delta.
+    pub line_spc_pts: Option<i32>,
+    /// Hanging indent for list markers (DrawingML `marL` / negative `indent`).
+    pub mar_l_emu: i64,
+    /// 1-based `a:buAutoNum startAt`. Each list item is its own text box.
+    pub list_start: u32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TextAlign {
     Left,
-    #[allow(dead_code)]
     Center,
-    #[allow(dead_code)]
     Right,
+    Justify,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ScriptPos {
+    Baseline,
+    Sub,
+    Super,
 }
 
 #[derive(Clone, Debug)]
@@ -56,6 +69,7 @@ pub struct TextRun {
     pub strike: bool,
     pub color_hex: String,
     pub hyperlink: Option<String>,
+    pub script: ScriptPos,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

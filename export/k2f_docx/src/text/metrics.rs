@@ -40,9 +40,17 @@ pub(crate) fn line_spacing_twips(geo: Option<&GeometryNode>) -> Option<i64> {
     if lines.len() < 2 {
         return None;
     }
-    let y0 = lines[0][0].y_offset.0;
-    let y1 = lines[1][0].y_offset.0;
+    let baseline = |line: &[&k2f_core::GlyphPosition]| -> i128 {
+        let mut ys: Vec<i128> = line.iter().map(|g| g.y_offset.0).collect();
+        ys.sort_unstable();
+        ys[ys.len() / 2]
+    };
+    let y0 = baseline(&lines[0]);
+    let y1 = baseline(&lines[1]);
     let delta = (y1 - y0).abs();
+    if delta < 7_000 {
+        return None;
+    }
     Some(millipt_to_twips(i64::try_from(delta).unwrap_or(0)))
 }
 

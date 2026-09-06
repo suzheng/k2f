@@ -154,3 +154,64 @@ fn test_strict_table_row_heights_are_max_cell_height_and_y_positions_include_gap
     assert_eq!(geo.children[2].height, row1_h);
     assert_eq!(geo.children[3].height, row1_h);
 }
+
+#[test]
+fn table_cell_self_align_centers_short_child_in_tall_row() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme: crate::Theme = serde_json::from_str(
+        r#"{
+      "palette": {},
+      "roles": {
+        "table": {
+          "font_family": "default", "font_size": 12000,
+          "line_height_mult": 1200, "color": "black"
+        },
+        "mid": {
+          "font_family": "default", "font_size": 12000,
+          "line_height_mult": 1200, "color": "black",
+          "self_align": "center"
+        },
+        "body": {
+          "font_family": "default", "font_size": 12000,
+          "line_height_mult": 1200, "color": "black"
+        }
+      }
+    }"#,
+    )
+    .unwrap();
+    let ctx = LayoutContext::new(&fonts, &theme);
+
+    let mut short = make_image("short", 10_000, 10_000);
+    short.role = "mid".to_string();
+    let tall = make_image("tall", 10_000, 40_000);
+
+    let table = SemanticNode {
+        id: "tbl".to_string(),
+        role: "table".to_string(),
+        variant: None,
+        preserve_whitespace: None,
+        list_id: None,
+        depth: None,
+        marker_type: None,
+        content: NodeContent::Table(TableSpec {
+            column_widths: vec![GridTrack::Pt { pt: 50_000 }, GridTrack::Pt { pt: 50_000 }],
+            header_rows: 0,
+            gap: 0,
+            data: TableDataSource::Inline {
+                rows: vec![vec![short, tall]],
+            },
+        }),
+        modifiers: vec![],
+        layout: None,
+        ..Default::default()
+    };
+
+    let constraint = SizeConstraint::new(Size::ZERO, Size::new(Pt(100_000), Pt(i128::MAX)));
+    let measured = measure_node(&table, constraint, &ctx).unwrap();
+    assert_eq!(measured.height, Pt(40_000));
+    let geo = arrange_node(&table, Point::ZERO, measured, &ctx).unwrap();
+    assert_eq!(geo.children[0].height, Pt(10_000));
+    assert_eq!(geo.children[0].y, Pt(15_000));
+    assert_eq!(geo.children[1].height, Pt(40_000));
+    assert_eq!(geo.children[1].y, Pt(0));
+}

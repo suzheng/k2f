@@ -8,6 +8,7 @@ use super::media::{
     media_exts, part_rels_xml, picture_rids,
 };
 use super::numbering::numbering_xml;
+use super::xml_theme::THEME_XML;
 
 pub fn build_package(ir: &DocIR) -> BTreeMap<String, Vec<u8>> {
     let n = ir.pages.len();
@@ -64,6 +65,10 @@ pub fn build_package(ir: &DocIR) -> BTreeMap<String, Vec<u8>> {
         .into_bytes(),
     );
     files.insert("word/styles.xml".into(), STYLES.as_bytes().to_vec());
+    files.insert(
+        "word/theme/theme1.xml".into(),
+        THEME_XML.as_bytes().to_vec(),
+    );
     files.insert("word/settings.xml".into(), SETTINGS.as_bytes().to_vec());
     files.insert("word/fontTable.xml".into(), FONT_TABLE.as_bytes().to_vec());
     files.insert(
@@ -156,6 +161,7 @@ fn content_types(
   <Default Extension="xml" ContentType="application/xml"/>
 {media}  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
   <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+  <Override PartName="/word/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>
   <Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>
   <Override PartName="/word/webSettings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.webSettings+xml"/>
   <Override PartName="/word/fontTable.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml"/>
@@ -180,6 +186,7 @@ fn document_rels(
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>
   <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings" Target="webSettings.xml"/>
   <Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable" Target="fontTable.xml"/>
+  <Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>
 "#,
     );
     if numbering {
@@ -211,6 +218,7 @@ const STYLES: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <w:rPrDefault>
       <w:rPr>
         <w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Calibri" w:cs="Calibri"/>
+        <w:color w:val="000001"/>
         <w:sz w:val="22"/>
         <w:szCs w:val="22"/>
       </w:rPr>
@@ -230,6 +238,7 @@ const STYLES: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 
 const SETTINGS: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:displayBackgroundShape/>
   <w:compat>
     <w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/>
   </w:compat>

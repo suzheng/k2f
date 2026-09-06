@@ -21,13 +21,13 @@ fn looks_like_svg(bytes: &[u8]) -> bool {
     let s = String::from_utf8_lossy(bytes);
     let trimmed = s.trim_start();
     let lower = trimmed.to_ascii_lowercase();
-    lower.starts_with("<svg")
-        || (lower.starts_with("<?xml") && lower.contains("<svg"))
+    lower.starts_with("<svg") || (lower.starts_with("<?xml") && lower.contains("<svg"))
 }
 
 /// Rasterize SVG with a fixed-version resvg.
 /// Built without the `text` feature so host fonts never affect canonical output.
 pub fn decode_svg(bytes: &[u8]) -> Result<DynamicImage, PaintError> {
+    reject_svg_text(bytes)?;
     let opt = resvg::usvg::Options::default();
     let tree = resvg::usvg::Tree::from_data(bytes, &opt)
         .map_err(|e| PaintError::Image(format!("SVG parse failed: {e}")))?;
@@ -41,6 +41,44 @@ pub fn decode_svg(bytes: &[u8]) -> Result<DynamicImage, PaintError> {
         &mut pixmap.as_mut(),
     );
     premul_pixmap_to_dynamic(&pixmap)
+}
+
+/// `<text>` / `<tspan>` need host fonts. Fail closed instead of dropping glyphs.
+pub(crate) fn reject_svg_text(bytes: &[u8]) -> Result<(), PaintError> {
+    if svg_contains_text_element(bytes) {
+        return Err(PaintError::Image(
+            "SVG contains <text> — convert labels to <path> (engine rasterizes SVG without system fonts)"
+                .into(),
+        ));
+    }
+    Ok(())
+}
+
+fn svg_contains_text_element(bytes: &[u8]) -> bool {
+    let lower = String::from_utf8_lossy(bytes).to_ascii_lowercase();
+    let mut rest = lower.as_str();
+    while let Some(i) = rest.find("<text") {
+        let after = rest.get(i + 5..).unwrap_or("");
+        if after.starts_with('>')
+            || after.starts_with('/')
+            || after.starts_with(|c: char| c.is_ascii_whitespace())
+        {
+            return true;
+        }
+        rest = after;
+    }
+    let mut rest = lower.as_str();
+    while let Some(i) = rest.find("<tspan") {
+        let after = rest.get(i + 6..).unwrap_or("");
+        if after.starts_with('>')
+            || after.starts_with('/')
+            || after.starts_with(|c: char| c.is_ascii_whitespace())
+        {
+            return true;
+        }
+        rest = after;
+    }
+    false
 }
 
 fn premul_pixmap_to_dynamic(pixmap: &Pixmap) -> Result<DynamicImage, PaintError> {
@@ -95,4 +133,23 @@ pub fn letterbox_pixmap(
         letterbox_dest(img.width(), img.height(), box_w, box_h).ok_or(PaintError::Pixmap)?;
     let pixmap = raster_to_pixmap(img, w, h)?;
     Ok((x, y, pixmap))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn svg_without_text_decodes() {
+        let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="#00f"/></svg>"##;
+        decode_svg(svg).unwrap();
+    }
+
+    #[test]
+    fn svg_with_text_fails_closed() {
+        let svg = br#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><text x="1" y="2">A</text></svg>"#;
+        let err = decode_svg(svg).unwrap_err().to_string();
+        assert!(err.contains("<text>"), "{err}");
+        assert!(err.contains("<path>"), "{err}");
+    }
 }

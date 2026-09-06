@@ -106,6 +106,25 @@ mod tests {
     }
 
     #[test]
+    fn color_textcolor_and_tag_are_unsupported() {
+        for tex in [r"\color{red}{x}", r"\textcolor{red}{x}", r"x \tag{1}"] {
+            let err = layout_tex(tex, &font(), Pt(12000), MathStyle::Display).unwrap_err();
+            assert!(matches!(err, MathError::Unsupported(_)), "{tex}: {err}");
+        }
+    }
+
+    #[test]
+    fn hbar_langle_mathbb_are_supported() {
+        for tex in [r"\hbar", r"\langle x \rangle", r"\mathbb{R}", r"\forall"] {
+            let m = layout(tex);
+            assert!(!m.glyphs.is_empty(), "{tex}");
+        }
+        let rr = layout(r"\mathbb{R}");
+        let r = layout("R");
+        assert_ne!(rr.glyphs[0].glyph_id, r.glyphs[0].glyph_id);
+    }
+
+    #[test]
     fn unmatched_brace_is_parse() {
         let err = layout_tex("{x", &font(), Pt(12000), MathStyle::Display).unwrap_err();
         assert!(matches!(err, MathError::Parse(_)), "{err}");

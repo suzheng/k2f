@@ -1,0 +1,34 @@
+{
+  "id": "ex.math_numbered",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.math_numbered.eq",
+          "role": "math",
+          "content": {
+            "type": "math",
+            "value": "E = mc^2"
+          }
+        },
+        {
+          "id": "ex.math_numbered.num",
+          "role": "body",
+          "content": {
+            "type": "text",
+            "value": "(1)"
+          }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "grid",
+    "columns": [{ "fr": 1 }, { "auto": true }],
+    "rows": [{ "auto": true }],
+    "column_gap": 12000,
+    "cell_align": { "x": "stretch", "y": "center" }
+  }
+}

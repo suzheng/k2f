@@ -72,6 +72,26 @@ pub(crate) fn line_gaps(glyphs: &[&GlyphPosition], box_w: i128) -> (i128, i128, 
     (left.saturating_add(right), left, right)
 }
 
+pub(crate) fn line_spacing_spc_pts(geo: Option<&GeometryNode>) -> Option<i32> {
+    let geo = geo?;
+    let lines = source_lines(geo);
+    if lines.len() < 2 {
+        return None;
+    }
+    let baseline = |line: &[&GlyphPosition]| -> i128 {
+        let mut ys: Vec<i128> = line.iter().map(|g| g.y_offset.0).collect();
+        ys.sort_unstable();
+        ys[ys.len() / 2]
+    };
+    let y0 = baseline(&lines[0]);
+    let y1 = baseline(&lines[1]);
+    let delta = (y1 - y0).abs();
+    if delta < 7_000 {
+        return None;
+    }
+    i32::try_from(delta / 10).ok().map(|v| v.max(100))
+}
+
 fn infer_from_gaps(left: i128, right: i128, box_w: i128) -> TextAlign {
     let slack = left.saturating_add(right);
     if slack < MIN_SLACK {
@@ -118,4 +138,64 @@ fn space_advances(glyphs: &[&GlyphPosition], text: &str) -> Vec<i128> {
 
 fn char_at(text: &str, cluster: usize) -> Option<char> {
     text.chars().nth(cluster)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use k2f_core::{GlyphPosition, Pt};
+
+    fn glyph(cluster: u32, x_off: i128, x_adv: i128, y: i128) -> GlyphPosition {
+        GlyphPosition {
+            glyph_id: 1,
+            cluster,
+            x_offset: Pt(x_off),
+            y_offset: Pt(y),
+            x_advance: Pt(x_adv),
+            y_advance: Pt(0),
+        }
+    }
+
+    fn geo(width: i128, glyphs: Vec<GlyphPosition>) -> GeometryNode {
+        GeometryNode {
+            id: "g".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(width),
+            height: Pt(40_000),
+            glyphs,
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        }
+    }
+
+    #[test]
+    fn infer_text_align_unit() {
+        let w = 100_000i128;
+        assert_eq!(
+            infer_text_align(&geo(w, vec![glyph(0, 0, 40_000, 0)]), "A"),
+            TextAlign::Left
+        );
+        assert_eq!(
+            infer_text_align(&geo(w, vec![glyph(0, 30_000, 40_000, 0)]), "A"),
+            TextAlign::Center
+        );
+        assert_eq!(
+            infer_text_align(&geo(w, vec![glyph(0, 60_000, 40_000, 0)]), "A"),
+            TextAlign::Right
+        );
+        let just = geo(
+            w,
+            vec![
+                glyph(0, 0, 20_000, 0),
+                glyph(1, 20_000, 40_000, 0),
+                glyph(2, 60_000, 20_000, 0),
+                glyph(4, 0, 20_000, 14_000),
+                glyph(5, 20_000, 10_000, 14_000),
+                glyph(6, 30_000, 20_000, 14_000),
+            ],
+        );
+        assert_eq!(infer_text_align(&just, "A B\nA B"), TextAlign::Justify);
+    }
 }

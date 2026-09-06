@@ -1,6 +1,6 @@
+use k2f_core::{for_each_node, NodeContent};
 use k2f_markdown::NodeCharRange;
 use k2f_paint::OpenedDocument;
-use k2f_core::{for_each_node, NodeContent};
 
 fn invoice_bytes() -> Vec<u8> {
     std::fs::read(

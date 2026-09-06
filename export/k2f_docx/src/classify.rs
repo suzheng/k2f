@@ -168,14 +168,19 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
                 }
             }
         }
-        ir_pages.push(PageIR {
-            bg_hex: page_bg_hex(page, ops),
-            elements,
-        });
+        let bg_hex = page_bg_hex(page, ops);
+        assign_textbox_underlays(&mut elements, &bg_hex);
+        ir_pages.push(PageIR { bg_hex, elements });
     }
     let page0 = &pages[0];
-    let (header, footer) =
+    let (mut header, mut footer) =
         crate::header::collect_running(doc, lock, &fonts, &skip_running, assets, &mut media_n)?;
+    let paper = ir_pages
+        .first()
+        .map(|p| p.bg_hex.as_str())
+        .unwrap_or("FFFFFE");
+    assign_textbox_underlays(&mut header, paper);
+    assign_textbox_underlays(&mut footer, paper);
     Ok(DocIR {
         title: doc.title().to_string(),
         page_width_emu: pt_to_emu(page0.width),
@@ -186,6 +191,53 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
         header,
         footer,
     })
+}
+
+/// Word Dark Mode inverts text in `noFill` floating boxes. Paint an opaque
+/// underlay matching the shape behind the box (or the page paper).
+fn assign_textbox_underlays(elements: &mut [PageElement], paper_hex: &str) {
+    let shapes: Vec<(u32, i64, i64, i64, i64, String)> = elements
+        .iter()
+        .filter_map(|el| match el {
+            PageElement::Shape(s) => s.fill_hex.as_ref().map(|h| {
+                (
+                    s.relative_height,
+                    s.x_emu,
+                    s.y_emu,
+                    s.cx_emu,
+                    s.cy_emu,
+                    h.clone(),
+                )
+            }),
+            _ => None,
+        })
+        .collect();
+    for el in elements.iter_mut() {
+        let PageElement::TextBox(tb) = el else {
+            continue;
+        };
+        let px = tb.x_emu.saturating_add(tb.cx_emu / 2);
+        let py = tb.y_emu.saturating_add(tb.cy_emu / 2);
+        let mut found = None;
+        for (rel, x, y, w, h, hex) in &shapes {
+            if *rel >= tb.relative_height {
+                continue;
+            }
+            if px >= *x && py >= *y && px < x.saturating_add(*w) && py < y.saturating_add(*h) {
+                found = Some(hex.clone());
+            }
+        }
+        let hex = found.unwrap_or_else(|| paper_hex.to_string());
+        tb.fill_hex = Some(pin_underlay_hex(&hex));
+    }
+}
+
+fn pin_underlay_hex(hex: &str) -> String {
+    match hex.to_ascii_uppercase().as_str() {
+        "FFFFFF" => "FFFFFE".into(),
+        "000000" => "000001".into(),
+        other => other.to_string(),
+    }
 }
 
 fn slice(
