@@ -38,6 +38,7 @@ pub(crate) fn table_on_page(
     }
     let paints = cell_paints(ops)?;
     let col_widths_twips = col_widths_from_row(row_slices[0], geo);
+    let heights = row_heights_twips(&row_slices, geo);
     let mut rows_out = Vec::with_capacity(complete);
     for (r, cells_geo) in row_slices.iter().enumerate() {
         let header = r < meta.header_rows;
@@ -48,7 +49,7 @@ pub(crate) fn table_on_page(
             cells.push(build_cell(g, w, paints.get(&g.id), node, header, fonts)?);
         }
         rows_out.push(TableRow {
-            height_twips: row_height_twips(cells_geo),
+            height_twips: heights.get(r).copied().unwrap_or(0),
             cells,
         });
     }
@@ -96,7 +97,19 @@ fn col_widths_from_row(row: &[GeometryNode], table: &GeometryNode) -> Vec<i64> {
         .collect()
 }
 
-fn row_height_twips(row: &[GeometryNode]) -> i64 {
-    let h = row.iter().map(|c| c.height.0).max().unwrap_or(0);
-    millipt_to_twips(i64::try_from(h.max(0)).unwrap_or(0))
+fn row_heights_twips(rows: &[&[GeometryNode]], table: &GeometryNode) -> Vec<i64> {
+    rows.iter()
+        .enumerate()
+        .map(|(i, row)| {
+            let y = row.first().map(|c| c.y.0).unwrap_or(table.y.0);
+            let next_y = rows
+                .get(i + 1)
+                .and_then(|r| r.first())
+                .map(|c| c.y.0)
+                .unwrap_or(table.y.0 + table.height.0);
+            let from_gap = next_y - y;
+            let from_cell = row.iter().map(|c| c.height.0).max().unwrap_or(0);
+            millipt_to_twips(i64::try_from(from_gap.max(from_cell).max(0)).unwrap_or(0))
+        })
+        .collect()
 }

@@ -4,7 +4,10 @@ use k2f_core::{
     for_each_node, node_text, Border, BorderEdge, BorderStyle, GridTrack, NodeContent,
     SemanticNode, TableDataSource, TableSpec,
 };
-use k2f_docx::{can_emit_native_table, export_opened, infer_text_align, table_cell_wml, TextAlign};
+use k2f_docx::{
+    can_emit_native_table, export_opened, infer_text_align, millipt_to_twips, table_cell_wml,
+    TextAlign,
+};
 
 fn invoice_table_spec(doc: &k2f_paint::OpenedDocument) -> (String, usize) {
     let mut found = None;
@@ -296,6 +299,70 @@ fn nested_cell_returns_none() {
         },
     };
     assert!(!can_emit_native_table(&asset));
+}
+
+#[test]
+fn row_heights_follow_lock_y_delta() {
+    let doc = common::invoice();
+    let (table_id, ncols) = invoice_table_spec(&doc);
+    let lock = doc.lock().expect("locked");
+    let mut table_geo = None;
+    for page in &lock.geometry.pages {
+        if let Some(g) = find_geo(&page.root, &table_id) {
+            table_geo = Some(g);
+            break;
+        }
+    }
+    let geo = table_geo.expect("invoice table geo");
+    let complete = geo.children.len() / ncols;
+    assert!(complete >= 2, "invoice table needs at least two rows");
+    let mut want = Vec::with_capacity(complete);
+    for r in 0..complete {
+        let row = &geo.children[r * ncols..(r + 1) * ncols];
+        let y = row.first().map(|c| c.y.0).unwrap_or(geo.y.0);
+        let next_y = if r + 1 < complete {
+            geo.children[(r + 1) * ncols].y.0
+        } else {
+            geo.y.0 + geo.height.0
+        };
+        let from_gap = next_y - y;
+        let from_cell = row.iter().map(|c| c.height.0).max().unwrap_or(0);
+        want.push(millipt_to_twips(
+            i64::try_from(from_gap.max(from_cell).max(0)).unwrap_or(0),
+        ));
+    }
+    let cell_only: Vec<i64> = (0..complete)
+        .map(|r| {
+            let row = &geo.children[r * ncols..(r + 1) * ncols];
+            millipt_to_twips(
+                i64::try_from(row.iter().map(|c| c.height.0).max().unwrap_or(0).max(0))
+                    .unwrap_or(0),
+            )
+        })
+        .collect();
+    assert!(
+        want.iter().zip(&cell_only).any(|(w, c)| w > c),
+        "invoice table gap must enlarge at least one row vs cell box: want={want:?} cell={cell_only:?}"
+    );
+
+    let docx = export_opened(&doc).unwrap();
+    let xml = common::xml_in(&docx, "word/document.xml");
+    let parsed = roxmltree::Document::parse(&xml).unwrap();
+    let tbl = parsed
+        .descendants()
+        .find(|n| n.has_tag_name("tbl"))
+        .expect("w:tbl");
+    let got: Vec<i64> = tbl
+        .descendants()
+        .filter(|n| n.has_tag_name("trHeight"))
+        .map(|n| {
+            common::local_attr(&n, "val")
+                .expect("w:val")
+                .parse::<i64>()
+                .expect("twips")
+        })
+        .collect();
+    assert_eq!(got, want, "w:trHeight must include lock table gap");
 }
 
 fn find_geo(node: &k2f_core::GeometryNode, id: &str) -> Option<k2f_core::GeometryNode> {
