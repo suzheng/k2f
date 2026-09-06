@@ -42,6 +42,7 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
         let mut elements = Vec::new();
         let mut emitted_tables = HashSet::new();
         let mut skip_ops = HashSet::new();
+        let bg_hex = page_bg_hex(page, ops);
         for (i, op) in ops.iter().enumerate() {
             if skip_ops.contains(&i) {
                 continue;
@@ -151,6 +152,7 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
                             page.width,
                             page.height,
                             rel,
+                            &bg_hex,
                         )? {
                             elements.push(PageElement::Shape(s));
                         }
@@ -171,7 +173,6 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
                 }
             }
         }
-        let bg_hex = page_bg_hex(page, ops);
         assign_textbox_underlays(&mut elements, &bg_hex);
         absorb_self_fill_shapes(&mut elements);
         ir_pages.push(PageIR { bg_hex, elements });

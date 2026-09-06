@@ -3,7 +3,8 @@ use k2f_paint::{parse_hex_rgba, resolve_fill};
 
 /// Fills thinner than this stay in front of the document. LibreOffice Writer
 /// paints `behindDoc` shapes under `w:background`, so 1 pt rules and a few-pt
-/// accent bars would vanish if they sat behind. Card/cell fills are larger.
+/// accent bars would vanish if they sat behind. Paper-colored card/cell fills
+/// stay behind; contrasting large fills also stay in front.
 const THIN_FILL_PT: i128 = 8_000;
 
 pub(crate) fn find_geo<'a>(node: &'a GeometryNode, id: &str) -> Option<&'a GeometryNode> {

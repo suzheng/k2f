@@ -29,24 +29,32 @@ fn skips_shadow_rule_alpha_empty() {
         shadow: Some(ShadowRef::Inline(Shadow { layers: vec![] })),
         ..Default::default()
     };
-    assert!(shapes_from_box("card", &rect(), &dec, w, h, 0)
+    assert!(shapes_from_box("card", &rect(), &dec, w, h, 0, "FFFFFF")
         .unwrap()
         .is_empty());
     dec.shadow = None;
-    assert!(shapes_from_box("eq::rule_1", &rect(), &dec, w, h, 0)
-        .unwrap()
-        .is_empty());
-    dec.background = Some(FillRef::Inline(Fill::Solid {
-        color: "#FFFFFF80".into(),
-    }));
-    assert!(shapes_from_box("glass", &rect(), &dec, w, h, 0)
-        .unwrap()
-        .is_empty());
     assert!(
-        shapes_from_box("empty", &rect(), &BoxDecoration::default(), w, h, 0)
+        shapes_from_box("eq::rule_1", &rect(), &dec, w, h, 0, "FFFFFF")
             .unwrap()
             .is_empty()
     );
+    dec.background = Some(FillRef::Inline(Fill::Solid {
+        color: "#FFFFFF80".into(),
+    }));
+    assert!(shapes_from_box("glass", &rect(), &dec, w, h, 0, "FFFFFF")
+        .unwrap()
+        .is_empty());
+    assert!(shapes_from_box(
+        "empty",
+        &rect(),
+        &BoxDecoration::default(),
+        w,
+        h,
+        0,
+        "FFFFFF"
+    )
+    .unwrap()
+    .is_empty());
 }
 
 #[test]
@@ -56,7 +64,7 @@ fn unresolved_fill_ref_fails() {
         background: Some(FillRef::Ref("missing_surface".into())),
         ..Default::default()
     };
-    let err = shapes_from_box("card", &rect(), &dec, w, h, 0).unwrap_err();
+    let err = shapes_from_box("card", &rect(), &dec, w, h, 0, "FFFFFF").unwrap_err();
     match err {
         DocxError::Write(msg) => assert!(msg.contains("unresolved fill ref")),
         other => panic!("expected Write, got {other:?}"),
@@ -82,7 +90,7 @@ fn partial_border_emits_edge_bars_not_four_sided_ln() {
         }),
         ..Default::default()
     };
-    let boxes = shapes_from_box("rule", &rect(), &dec, w, h, 10).unwrap();
+    let boxes = shapes_from_box("rule", &rect(), &dec, w, h, 10, "FFFFFF").unwrap();
     assert_eq!(boxes.len(), 1);
     assert!(boxes[0].node_id.ends_with("::edge_bottom"));
     assert_eq!(boxes[0].fill_hex.as_deref(), Some("111111"));
@@ -124,7 +132,7 @@ fn skips_gradient_and_blur() {
         })),
         ..Default::default()
     };
-    assert!(shapes_from_box("card", &rect(), &grad, w, h, 0)
+    assert!(shapes_from_box("card", &rect(), &grad, w, h, 0, "FFFFFF")
         .unwrap()
         .is_empty());
     let blur = BoxDecoration {
@@ -134,7 +142,7 @@ fn skips_gradient_and_blur() {
         blur: Some(BlurRef::Inline(Blur { radius_pt: 8_000 })),
         ..Default::default()
     };
-    assert!(shapes_from_box("glass", &rect(), &blur, w, h, 0)
+    assert!(shapes_from_box("glass", &rect(), &blur, w, h, 0, "FFFFFF")
         .unwrap()
         .is_empty());
 }
@@ -147,7 +155,7 @@ fn four_solid_edges_use_ln() {
         ..Default::default()
     };
     assert!(dec.border.as_ref().unwrap().is_full_rect_stroke());
-    let boxes = shapes_from_box("card", &rect(), &dec, w, h, 10).unwrap();
+    let boxes = shapes_from_box("card", &rect(), &dec, w, h, 10, "FFFFFF").unwrap();
     assert_eq!(boxes.len(), 1);
     assert_eq!(boxes[0].line_hex.as_deref(), Some("FF0000"));
     assert_eq!(boxes[0].line_dash, LineDash::Solid);
@@ -170,7 +178,7 @@ fn large_fill_keeps_stroke_in_front() {
         border: Some(four_edge(BorderStyle::Solid)),
         ..Default::default()
     };
-    let boxes = shapes_from_box("main_frame", &frame, &dec, w, h, 150).unwrap();
+    let boxes = shapes_from_box("main_frame", &frame, &dec, w, h, 150, "FFFFFF").unwrap();
     assert_eq!(boxes.len(), 2, "fill and stroke must be separate shapes");
     assert!(boxes[0].behind_doc, "large fill stays behind text");
     assert!(boxes[0].line_hex.is_none());
@@ -193,7 +201,7 @@ fn four_dashed_edges_use_ln_not_bars() {
         border: Some(border),
         ..Default::default()
     };
-    let boxes = shapes_from_box("card", &rect(), &dec, w, h, 10).unwrap();
+    let boxes = shapes_from_box("card", &rect(), &dec, w, h, 10, "FFFFFF").unwrap();
     assert_eq!(
         boxes.len(),
         1,
@@ -218,14 +226,14 @@ fn page_background_is_behind_doc() {
         })),
         ..Default::default()
     };
-    let bg = shapes_from_box("root::page_0::background", &full, &dec, w, h, 0).unwrap();
+    let bg = shapes_from_box("root::page_0::background", &full, &dec, w, h, 0, "FFFFFF").unwrap();
     assert_eq!(bg.len(), 1);
     assert!(bg[0].behind_doc);
-    let cell = shapes_from_box("invoice.th.item", &rect(), &dec, w, h, 10).unwrap();
+    let cell = shapes_from_box("invoice.th.item", &rect(), &dec, w, h, 10, "FFFFFF").unwrap();
     assert_eq!(cell.len(), 1);
     assert!(
         cell[0].behind_doc,
-        "large container fills must sit behind text/pictures"
+        "paper-colored large fills must sit behind text/pictures"
     );
     let rule_rect = Rect {
         x: Pt(0),
@@ -233,7 +241,7 @@ fn page_background_is_behind_doc() {
         width: Pt(114_000),
         height: Pt(1_000),
     };
-    let rule = shapes_from_box("addr_line", &rule_rect, &dec, w, h, 10).unwrap();
+    let rule = shapes_from_box("addr_line", &rule_rect, &dec, w, h, 10, "FFFFFF").unwrap();
     assert_eq!(rule.len(), 1);
     assert!(
         !rule[0].behind_doc,
@@ -246,12 +254,53 @@ fn page_background_is_behind_doc() {
         width: Pt(6_000),
         height: Pt(25_000),
     };
-    let bar = shapes_from_box("bar.magenta", &bar_rect, &dec, w, h, 10).unwrap();
+    let bar = shapes_from_box("bar.magenta", &bar_rect, &dec, w, h, 10, "FFFFFF").unwrap();
     assert_eq!(bar.len(), 1);
     assert!(
         !bar[0].behind_doc,
         "few-pt accent bars must stay in front, got behind_doc={}",
         bar[0].behind_doc
+    );
+}
+
+#[test]
+fn contrasting_large_fill_stays_in_front() {
+    let (w, h) = page();
+    let body = Rect {
+        x: Pt(0),
+        y: Pt(170_000),
+        width: w,
+        height: Pt(672_000),
+    };
+    let blue = BoxDecoration {
+        background: Some(FillRef::Inline(Fill::Solid {
+            color: "#002AA6".into(),
+        })),
+        ..Default::default()
+    };
+    let boxes = shapes_from_box("body", &body, &blue, w, h, 50, "FFFFFF").unwrap();
+    assert_eq!(boxes.len(), 1);
+    assert!(
+        !boxes[0].behind_doc,
+        "cover-page body must stay in front of white w:background, got behind_doc"
+    );
+    let stripe = Rect {
+        x: Pt(0),
+        y: Pt(153_000),
+        width: w,
+        height: Pt(17_000),
+    };
+    let yellow = BoxDecoration {
+        background: Some(FillRef::Inline(Fill::Solid {
+            color: "#F2CB00".into(),
+        })),
+        ..Default::default()
+    };
+    let bar = shapes_from_box("stripe", &stripe, &yellow, w, h, 40, "FFFFFF").unwrap();
+    assert_eq!(bar.len(), 1);
+    assert!(
+        !bar[0].behind_doc,
+        "17pt contrasting band must stay visible, got behind_doc"
     );
 }
 
@@ -265,6 +314,6 @@ fn corner_radius_recorded() {
         corner_radius_pt: Some(8_000),
         ..Default::default()
     };
-    let boxes = shapes_from_box("card", &rect(), &dec, w, h, 0).unwrap();
+    let boxes = shapes_from_box("card", &rect(), &dec, w, h, 0, "FFFFFF").unwrap();
     assert_eq!(boxes[0].corner_emu, crate::coord::millipt_to_emu(8_000));
 }

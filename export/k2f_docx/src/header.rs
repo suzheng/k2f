@@ -1,4 +1,4 @@
-use crate::geo::find_geo;
+use crate::geo::{find_geo, page_bg_hex};
 use crate::ir::PageElement;
 use crate::picture::picture_from_draw;
 use crate::shape::shapes_from_box;
@@ -53,6 +53,7 @@ pub(crate) fn collect_running(
     else {
         return Ok((header, footer));
     };
+    let paper = page_bg_hex(page, &plan.ops);
     for (i, op) in plan.ops.iter().enumerate() {
         let Some(node_id) = op_node_id(op) else {
             continue;
@@ -83,9 +84,17 @@ pub(crate) fn collect_running(
                 rect, decoration, ..
             } => {
                 els.extend(
-                    shapes_from_box(node_id, rect, decoration, page.width, page.height, rel)?
-                        .into_iter()
-                        .map(PageElement::Shape),
+                    shapes_from_box(
+                        node_id,
+                        rect,
+                        decoration,
+                        page.width,
+                        page.height,
+                        rel,
+                        &paper,
+                    )?
+                    .into_iter()
+                    .map(PageElement::Shape),
                 );
             }
             PaintOp::DrawImage { rect, src, .. } => {

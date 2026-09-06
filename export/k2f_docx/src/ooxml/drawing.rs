@@ -60,17 +60,26 @@ pub(crate) fn shape_wsp_xml(shape: &ShapeBox) -> String {
         ),
         None => "                    <a:noFill/>\n".into(),
     };
+    let as_tx = !shape.behind_doc && shape.fill_hex.is_some();
+    let cnv = if as_tx {
+        "                  <wps:cNvSpPr txBox=\"1\"/>\n"
+    } else {
+        "                  <wps:cNvSpPr/>\n"
+    };
+    let tail = if as_tx {
+        "                  <wps:txbx>\n                    <w:txbxContent>\n                      <w:p/>\n                    </w:txbxContent>\n                  </wps:txbx>\n                  <wps:bodyPr wrap=\"none\"/>\n"
+    } else {
+        "                  <wps:bodyPr/>\n"
+    };
     format!(
         r#"                <wps:wsp>
-                  <wps:cNvSpPr/>
-                  <wps:spPr>
+{cnv}                  <wps:spPr>
                     <a:xfrm>
                       <a:off x="0" y="0"/>
                       <a:ext cx="{cx}" cy="{cy}"/>
                     </a:xfrm>
 {geom}{fill}{ln}                  </wps:spPr>
-                  <wps:bodyPr/>
-                </wps:wsp>
+{tail}                </wps:wsp>
 "#,
         cx = shape.cx_emu,
         cy = shape.cy_emu,
@@ -245,5 +254,17 @@ mod tests {
         let xml = shape_wsp_xml(&box_at(5_000));
         assert!(xml.contains("prst=\"roundRect\""), "{xml}");
         assert!(xml.contains("name=\"adj\""), "{xml}");
+    }
+
+    #[test]
+    fn in_front_fill_is_empty_textbox() {
+        let xml = shape_wsp_xml(&box_at(0));
+        assert!(xml.contains("txBox=\"1\""), "{xml}");
+        assert!(xml.contains("<w:txbxContent>"), "{xml}");
+        let mut behind = box_at(0);
+        behind.behind_doc = true;
+        let xml = shape_wsp_xml(&behind);
+        assert!(!xml.contains("txBox="), "{xml}");
+        assert!(!xml.contains("txbxContent"), "{xml}");
     }
 }

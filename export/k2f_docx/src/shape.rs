@@ -12,6 +12,7 @@ pub(crate) fn shapes_from_box(
     page_w: Pt,
     page_h: Pt,
     relative_height: u32,
+    paper_hex: &str,
 ) -> Result<Vec<ShapeBox>, DocxError> {
     if node_id.contains("::rule_") {
         return Ok(Vec::new());
@@ -37,12 +38,20 @@ pub(crate) fn shapes_from_box(
     if fill_hex.is_none() && line.is_none() {
         return Ok(Vec::new());
     }
-    // Large fills sit behind text/pictures. LibreOffice Writer otherwise paints
-    // later container rects on top of pictures (stamp) and text (address).
-    // Thin fills (1 pt rules, few-pt accent bars) stay in front: Writer paints
-    // behindDoc shapes under `w:background`, so those bars would disappear.
-    let behind_doc = (fill_hex.is_some() && !crate::geo::is_thin_fill_rect(rect))
-        || (node_id.contains("::background") && is_full_page_rect(page_w, page_h, rect));
+    // Paper-colored large fills sit behind text/pictures so later white
+    // containers cannot cover stamps (LibreOffice paints in-front shapes over
+    // pictures). Writer also paints behindDoc under `w:background`, so a
+    // contrasting fill (cover body, yellow band) would vanish — those stay in
+    // front as empty text boxes (in-front shapes cover later labels). Thin
+    // fills (1 pt rules, few-pt accent bars) always stay in front.
+    let behind_doc = behind_doc_for_fill(
+        node_id,
+        rect,
+        fill_hex.as_deref(),
+        page_w,
+        page_h,
+        paper_hex,
+    );
     let base = ShapeBox {
         node_id: node_id.to_string(),
         x_emu: pt_to_emu(rect.x),
@@ -90,6 +99,37 @@ pub(crate) fn shapes_from_box(
             Ok(out)
         }
     }
+}
+
+fn behind_doc_for_fill(
+    node_id: &str,
+    rect: &Rect,
+    fill_hex: Option<&str>,
+    page_w: Pt,
+    page_h: Pt,
+    paper_hex: &str,
+) -> bool {
+    if node_id.contains("::background") && is_full_page_rect(page_w, page_h, rect) {
+        return true;
+    }
+    let Some(hex) = fill_hex else {
+        return false;
+    };
+    if crate::geo::is_thin_fill_rect(rect) {
+        return false;
+    }
+    paper_hex_eq(hex, paper_hex)
+}
+
+fn paper_hex_eq(a: &str, b: &str) -> bool {
+    fn norm(h: &str) -> String {
+        match h.to_ascii_uppercase().as_str() {
+            "FFFFFE" => "FFFFFF".into(),
+            "000001" => "000000".into(),
+            other => other.to_string(),
+        }
+    }
+    norm(a) == norm(b)
 }
 
 struct LineSpec {
