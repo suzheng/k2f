@@ -110,7 +110,7 @@ pub(crate) fn textbox_from_draw(
         .map(|r| r.style.font_size)
         .unwrap_or(Pt(12_000));
     let (l_ins_emu, r_ins_emu) = h_insets_emu(geo, align);
-    let wrap = !running && should_wrap_lock(geo, font_size);
+    let wrap = !running && should_wrap_lock(geo, font_size, Some(&raw));
     let mut line_spc_pts = line_spacing_spc_pts(geo);
     if !wrap && line_spc_pts.is_none() {
         line_spc_pts = i32::try_from(font_size.0 / 10).ok().map(|v| v.max(100));
@@ -201,6 +201,15 @@ fn list_hanging_emu(geo: Option<&GeometryNode>) -> i64 {
     pt_to_emu(Pt(min_left))
 }
 
+fn line_fills_padded_width(pad: i128, opposite_slack: i128, box_w: i128) -> bool {
+    let avail = box_w.saturating_sub(pad);
+    if avail <= 0 {
+        return false;
+    }
+    let content = avail.saturating_sub(opposite_slack.max(0));
+    content.saturating_mul(100) >= avail.saturating_mul(85)
+}
+
 fn top_inset_emu(geo: Option<&GeometryNode>) -> i64 {
     let geo = match geo {
         Some(g) => g,
@@ -240,8 +249,23 @@ fn h_insets_emu(geo: Option<&GeometryNode>, align: TextAlign) -> (i64, i64) {
         .unwrap_or(0)
         .max(0);
     match align {
-        TextAlign::Left => (pt_to_emu(Pt(min_left)), 0),
-        TextAlign::Right => (0, pt_to_emu(Pt(min_right))),
+        TextAlign::Left => {
+            // A line that already fills the padded width needs the leftover
+            // left gap as host-metric slack. Keeping it as lIns clips the last
+            // glyphs (section title rows). Short lines keep lock left padding.
+            if line_fills_padded_width(min_left, min_right, box_w) {
+                (0, 0)
+            } else {
+                (pt_to_emu(Pt(min_left)), 0)
+            }
+        }
+        TextAlign::Right => {
+            if line_fills_padded_width(min_right, min_left, box_w) {
+                (0, 0)
+            } else {
+                (0, pt_to_emu(Pt(min_right)))
+            }
+        }
         TextAlign::Center | TextAlign::Justify => (0, 0),
     }
 }
@@ -808,9 +832,61 @@ mod tests {
             children: vec![],
         };
         let (l, r) = h_insets_emu(Some(&geo), TextAlign::Left);
-        assert_eq!(l, pt_to_emu(Pt(6_500)));
-        assert_eq!(r, 0);
+        assert_eq!(
+            (l, r),
+            (0, 0),
+            "almost-full line must keep slack for host metrics"
+        );
         let (cl, cr) = h_insets_emu(Some(&geo), TextAlign::Center);
         assert_eq!((cl, cr), (0, 0));
+    }
+
+    #[test]
+    fn left_align_keeps_l_ins_when_line_is_short() {
+        let geo = GeometryNode {
+            id: "g".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(100_000),
+            height: Pt(13_000),
+            glyphs: vec![GlyphPosition {
+                glyph_id: 1,
+                cluster: 0,
+                x_offset: Pt(8_000),
+                y_offset: Pt(2_500),
+                x_advance: Pt(10_000),
+                y_advance: Pt(0),
+            }],
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        };
+        let (l, r) = h_insets_emu(Some(&geo), TextAlign::Left);
+        assert_eq!(l, pt_to_emu(Pt(8_000)));
+        assert_eq!(r, 0);
+    }
+
+    #[test]
+    fn left_align_drops_l_ins_when_line_fills_the_box() {
+        let geo = GeometryNode {
+            id: "g".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(281_500),
+            height: Pt(19_000),
+            glyphs: vec![GlyphPosition {
+                glyph_id: 1,
+                cluster: 0,
+                x_offset: Pt(6_000),
+                y_offset: Pt(3_500),
+                x_advance: Pt(275_000),
+                y_advance: Pt(0),
+            }],
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        };
+        let (l, r) = h_insets_emu(Some(&geo), TextAlign::Left);
+        assert_eq!((l, r), (0, 0));
     }
 }

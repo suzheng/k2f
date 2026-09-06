@@ -29,10 +29,33 @@ pub(crate) fn insets(geo: Option<&GeometryNode>, align: TextAlign) -> (i64, i64,
         // Left leftover on the right is editable width, not padding. Writing it as
         // rIns shrinks the Word text frame to the glyph span and clips short words
         // in a wide box (stretching the outer shape then reveals the rest).
-        TextAlign::Left => (emu(min_left), top, 0, 0),
-        TextAlign::Right => (0, top, emu(min_right), 0),
+        // A line that already fills the padded width needs the leftover left
+        // gap as host-metric slack. Keeping it as lIns clips the last glyphs.
+        TextAlign::Left => {
+            if line_fills_padded_width(min_left, min_right, box_w) {
+                (0, top, 0, 0)
+            } else {
+                (emu(min_left), top, 0, 0)
+            }
+        }
+        TextAlign::Right => {
+            if line_fills_padded_width(min_right, min_left, box_w) {
+                (0, top, 0, 0)
+            } else {
+                (0, top, emu(min_right), 0)
+            }
+        }
         TextAlign::Center | TextAlign::Justify => (0, top, 0, 0),
     }
+}
+
+fn line_fills_padded_width(pad: i128, opposite_slack: i128, box_w: i128) -> bool {
+    let avail = box_w.saturating_sub(pad);
+    if avail <= 0 {
+        return false;
+    }
+    let content = avail.saturating_sub(opposite_slack.max(0));
+    content.saturating_mul(100) >= avail.saturating_mul(85)
 }
 
 /// Lock `y_offset` on the first line includes role `padding_pt.top`. Office

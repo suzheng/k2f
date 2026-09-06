@@ -80,31 +80,46 @@ fn line_cluster_tol(geo: &GeometryNode) -> i128 {
 
 /// Office wrap on a glyph-tight lock box reflows the last word onto a clipped
 /// second line when host bold/metrics are wider than rustybuzz. Keep wrap only
-/// when the lock already wrapped, or leftover width sits in a frame tall
-/// enough for a second line. One-line-tall boxes (pills, title/date rows)
-/// must not wrap: leftover padding or unused cell width is not wrap room.
-pub(crate) fn should_wrap_lock(geo: Option<&GeometryNode>, font_size: Pt) -> bool {
+/// when the lock already wrapped *within* a paragraph, or leftover width sits
+/// in a frame tall enough for another line. One-line-tall boxes (pills,
+/// title/date rows) must not wrap. Explicit `\n` lines in a frame that only
+/// fits those lines also stay `wrap=none` so a host-wider last line does not
+/// create a clipped extra row (footer event lines, two-line labels).
+pub(crate) fn should_wrap_lock(
+    geo: Option<&GeometryNode>,
+    font_size: Pt,
+    text: Option<&str>,
+) -> bool {
     let Some(geo) = geo else {
         return true;
     };
     let lines = source_lines(geo);
-    if lines.len() >= 2 {
+    let paras = text.map(source_paragraphs).unwrap_or(0);
+    if lines.len() >= 2 && (paras == 0 || lines.len() > paras) {
         return true;
+    }
+    if lines.len() >= 2 {
+        return fits_n_lines(geo, &lines[0], font_size, lines.len() + 1);
     }
     let Some(line) = lines.first() else {
         return true;
     };
-    if !fits_two_lines(geo, line, font_size) {
+    if !fits_n_lines(geo, line, font_size, 2) {
         return false;
     }
     let (slack, _, _) = line_gaps(line, geo.width.0);
     slack >= MIN_SLACK
 }
 
-fn fits_two_lines(geo: &GeometryNode, line: &[&GlyphPosition], font_size: Pt) -> bool {
+fn source_paragraphs(text: &str) -> usize {
+    text.split('\n').count().max(1)
+}
+
+fn fits_n_lines(geo: &GeometryNode, line: &[&GlyphPosition], font_size: Pt, n: usize) -> bool {
     let y = line.iter().map(|g| g.y_offset.0).min().unwrap_or(0).max(0);
     let content_h = geo.height.0.saturating_sub(y);
-    content_h >= font_size.0.saturating_mul(2)
+    let n = i128::try_from(n).unwrap_or(2).max(1);
+    content_h >= font_size.0.saturating_mul(n)
 }
 
 pub(crate) fn line_gaps(glyphs: &[&GlyphPosition], box_w: i128) -> (i128, i128, i128) {
@@ -271,25 +286,25 @@ mod tests {
     fn wrap_only_when_lock_has_slack_or_multiple_lines() {
         let fs = Pt(10_000);
         let tight = geo(40_000, vec![glyph(0, 0, 40_000, 0)]);
-        assert!(!should_wrap_lock(Some(&tight), fs));
+        assert!(!should_wrap_lock(Some(&tight), fs, None));
         let slack = geo(100_000, vec![glyph(0, 0, 40_000, 0)]);
-        assert!(should_wrap_lock(Some(&slack), fs));
+        assert!(should_wrap_lock(Some(&slack), fs, None));
         let wrapped = geo(
             40_000,
             vec![glyph(0, 0, 40_000, 0), glyph(1, 0, 20_000, 14_000)],
         );
-        assert!(should_wrap_lock(Some(&wrapped), fs));
-        assert!(should_wrap_lock(None, fs));
+        assert!(should_wrap_lock(Some(&wrapped), fs, None));
+        assert!(should_wrap_lock(None, fs, None));
     }
 
     #[test]
     fn wrap_off_when_single_line_frame_is_too_short() {
         let mut short = geo(250_000, vec![glyph(0, 0, 220_000, 500)]);
         short.height = Pt(13_000);
-        assert!(!should_wrap_lock(Some(&short), Pt(9_500)));
+        assert!(!should_wrap_lock(Some(&short), Pt(9_500), None));
         let mut padded = geo(87_000, vec![glyph(0, 6_500, 74_000, 2_500)]);
         padded.height = Pt(13_250);
-        assert!(!should_wrap_lock(Some(&padded), Pt(7_500)));
+        assert!(!should_wrap_lock(Some(&padded), Pt(7_500), None));
     }
 
     #[test]
@@ -304,7 +319,27 @@ mod tests {
         );
         g.height = Pt(12_480);
         assert_eq!(source_lines(&g).len(), 2);
-        assert!(should_wrap_lock(Some(&g), fs));
+        assert!(should_wrap_lock(Some(&g), fs, None));
         assert_eq!(line_spacing_spc_pts(Some(&g)), Some(624));
+    }
+
+    #[test]
+    fn wrap_off_when_explicit_lines_fill_the_frame() {
+        let fs = Pt(7_200);
+        let mut g = geo(
+            76_000,
+            vec![glyph(0, 0, 70_000, 0), glyph(1, 0, 74_000, 8_000)],
+        );
+        g.height = Pt(16_000);
+        assert!(!should_wrap_lock(
+            Some(&g),
+            fs,
+            Some("bwHPC Symposium\n23.10.2023 - Mannheim")
+        ));
+        assert!(should_wrap_lock(
+            Some(&g),
+            fs,
+            Some("one paragraph that the lock wrapped onto two lines")
+        ));
     }
 }

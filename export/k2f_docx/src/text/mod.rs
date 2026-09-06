@@ -53,7 +53,7 @@ pub(crate) fn textbox_from_draw_ctx(
         .first()
         .map(|r| r.style.font_size)
         .unwrap_or(k2f_core::Pt(12_000));
-    let wrap = align::should_wrap_lock(geo, font_size);
+    let wrap = align::should_wrap_lock(geo, font_size, Some(text));
     let mut line_twips = metrics::line_spacing_twips(geo);
     if !wrap && line_twips.is_none() {
         // Host default line pitch (~12pt) clips 7–9pt text in one-line-tall
