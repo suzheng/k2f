@@ -4,17 +4,17 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$ROOT/../k2f-private/.env"
 
-if [[ ! -f "$ENV_FILE" ]]; then
-  echo "missing $ENV_FILE (expected CREATE_API_KEY)" >&2
-  exit 1
+if [[ -z "${CARGO_REGISTRY_TOKEN:-}" ]]; then
+  if [[ ! -f "$ENV_FILE" ]]; then
+    echo "missing CARGO_REGISTRY_TOKEN or $ENV_FILE (expected CREATE_API_KEY)" >&2
+    exit 1
+  fi
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
+  export CARGO_REGISTRY_TOKEN="${CREATE_API_KEY:?CREATE_API_KEY missing in k2f-private/.env}"
 fi
-
-set -a
-# shellcheck disable=SC1090
-source "$ENV_FILE"
-set +a
-
-export CARGO_REGISTRY_TOKEN="${CREATE_API_KEY:?CREATE_API_KEY missing in k2f-private/.env}"
 
 # Runtime dependency order. Dev-dependencies are stripped at publish time so
 # path-only test deps do not block the index propagation chain.
