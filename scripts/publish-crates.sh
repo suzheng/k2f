@@ -26,6 +26,8 @@ CRATES=(
   k2f_package
   k2f_markdown
   k2f_paint
+  k2f_pptx
+  k2f_docx
   k2f_pdf
   k2f_sdk
   k2f
@@ -40,6 +42,8 @@ manifest_for() {
     k2f_package) echo "$ROOT/engine/k2f_package/Cargo.toml" ;;
     k2f_markdown) echo "$ROOT/engine/k2f_markdown/Cargo.toml" ;;
     k2f_paint) echo "$ROOT/engine/k2f_paint/Cargo.toml" ;;
+    k2f_pptx) echo "$ROOT/export/k2f_pptx/Cargo.toml" ;;
+    k2f_docx) echo "$ROOT/export/k2f_docx/Cargo.toml" ;;
     k2f_pdf) echo "$ROOT/engine/k2f_pdf/Cargo.toml" ;;
     k2f_sdk) echo "$ROOT/engine/k2f_sdk/Cargo.toml" ;;
     k2f) echo "$ROOT/cli/k2f_cli/Cargo.toml" ;;

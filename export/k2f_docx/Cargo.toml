@@ -2,16 +2,23 @@
 name = "k2f_docx"
 version = "0.1.0"
 edition = "2021"
-description = "Experimental K2F lock → DOCX exporter (isolated; not part of k2f CLI)"
-publish = false
+description = "K2F lock → DOCX exporter"
+license = "Apache-2.0"
+repository = "https://github.com/suzheng/k2f"
+homepage = "https://github.com/suzheng/k2f"
+documentation = "https://docs.rs/k2f_docx"
+readme = "README.md"
+authors = ["K2F Contributors"]
+keywords = ["k2f", "docx", "word", "export"]
+categories = ["text-processing"]
 
 [[bin]]
 name = "k2f-docx"
 path = "src/main.rs"
 
 [dependencies]
-k2f_core = { path = "../../engine/k2f_core" }
-k2f_paint = { path = "../../engine/k2f_paint" }
+k2f_core = { path = "../../engine/k2f_core", version = "0.1.1" }
+k2f_paint = { path = "../../engine/k2f_paint", version = "0.1.1" }
 thiserror = "1.0"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 clap = { version = "4", features = ["derive"] }
