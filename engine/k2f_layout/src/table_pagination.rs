@@ -1,6 +1,6 @@
 use crate::alignment::align_offset_and_size;
 use crate::fixed_size::subtract_if_bounded;
-use crate::grid::{resolve_tracks, sum_with_gaps};
+use crate::grid::{grid_axis_gaps, resolve_tracks, sum_with_gaps};
 use crate::resolved_style::padding_for_role_variant;
 use crate::{LayoutContext, Paginator, Point, Size};
 use k2f_core::{Align, NodeContent, Pt, SemanticNode, TableDataSource, TableSpec};
@@ -23,7 +23,7 @@ pub(crate) fn paginate_table_root_flow_paged(
     }
 
     let padding = padding_for_role_variant(&node.role, node.variant.as_deref(), ctx.theme)?;
-    let gap_pt = Pt(spec.gap as i128);
+    let (row_gap_pt, col_gap_pt) = grid_axis_gaps(spec.gap, spec.row_gap, spec.column_gap);
 
     let rows = match &spec.data {
         TableDataSource::Inline { rows } => rows,
@@ -38,8 +38,8 @@ pub(crate) fn paginate_table_root_flow_paged(
     // Determine the table's natural width (without measuring all rows) and apply the root-flow
     // alignment/stretch rules to produce a stable fragment width.
     let inner_max_w = subtract_if_bounded(content_width, padding.horizontal());
-    let col_sizes_for_width = resolve_tracks(&spec.column_widths, gap_pt, inner_max_w)?;
-    let natural_inner_w = sum_with_gaps(&col_sizes_for_width, gap_pt);
+    let col_sizes_for_width = resolve_tracks(&spec.column_widths, col_gap_pt, inner_max_w)?;
+    let natural_inner_w = sum_with_gaps(&col_sizes_for_width, col_gap_pt);
     let mut natural_outer_w = natural_inner_w + padding.horizontal();
     if natural_outer_w > content_width {
         natural_outer_w = content_width;
@@ -47,7 +47,7 @@ pub(crate) fn paginate_table_root_flow_paged(
 
     let (dx, frag_w) = align_offset_and_size(align_mode, content_width, natural_outer_w);
     let frag_inner_w = subtract_if_bounded(frag_w, padding.horizontal());
-    let col_sizes = resolve_tracks(&spec.column_widths, gap_pt, frag_inner_w)?;
+    let col_sizes = resolve_tracks(&spec.column_widths, col_gap_pt, frag_inner_w)?;
 
     // Empty tables still paint deterministically as an empty (padded) box.
     if rows.is_empty() {
@@ -102,7 +102,7 @@ pub(crate) fn paginate_table_root_flow_paged(
             let add = if frag_row_heights.is_empty() {
                 h
             } else {
-                gap_pt + h
+                row_gap_pt + h
             };
             let needed = padding.vertical() + (*inner_used + add);
             if needed <= remaining {

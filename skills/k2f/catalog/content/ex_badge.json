@@ -1,0 +1,23 @@
+{
+  "id": "ex.badge",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.badge.label",
+          "role": "badge",
+          "content": {
+            "type": "text",
+            "value": "ON VIEW"
+          }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "stack",
+    "gap": 0
+  }
+}

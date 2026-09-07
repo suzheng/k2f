@@ -1,4 +1,6 @@
-use crate::align::{infer_text_align, line_spacing_spc_pts, should_wrap_lock, source_lines};
+use crate::align::{
+    host_wrap, infer_text_align, line_spacing_spc_pts, should_wrap_lock, source_lines,
+};
 use crate::coord::pt_to_emu;
 use crate::ir::{ScriptPos, TextAlign, TextBox, TextRun};
 use k2f_core::{
@@ -16,9 +18,14 @@ pub(crate) struct FontCtx {
 
 impl FontCtx {
     pub(crate) fn new(fonts: &BTreeMap<String, Vec<u8>>) -> Self {
+        let bytes: BTreeMap<String, Vec<u8>> = fonts
+            .iter()
+            .filter(|(k, _)| k2f_core::is_font_face_path(k))
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
         Self {
-            default_family: embedded_family(fonts).unwrap_or_else(|| "Roboto".into()),
-            bytes: fonts.clone(),
+            default_family: embedded_family(&bytes).unwrap_or_else(|| "Roboto".into()),
+            bytes,
         }
     }
 
@@ -110,7 +117,7 @@ pub(crate) fn textbox_from_draw(
         .map(|r| r.style.font_size)
         .unwrap_or(Pt(12_000));
     let (l_ins_emu, r_ins_emu) = h_insets_emu(geo, align);
-    let wrap = !running && should_wrap_lock(geo, font_size, Some(&raw));
+    let wrap = !running && host_wrap(geo, align, should_wrap_lock(geo, font_size, Some(&raw)));
     let mut line_spc_pts = line_spacing_spc_pts(geo);
     if !wrap && line_spc_pts.is_none() {
         line_spc_pts = i32::try_from(font_size.0 / 10).ok().map(|v| v.max(100));
@@ -604,7 +611,12 @@ fn pin_office_srgb(hex: &str) -> String {
 fn embedded_family(fonts: &BTreeMap<String, Vec<u8>>) -> Option<String> {
     fonts
         .get("default")
-        .or_else(|| fonts.values().next())
+        .or_else(|| {
+            fonts
+                .iter()
+                .find(|(k, _)| k2f_core::is_font_face_path(k))
+                .map(|(_, b)| b)
+        })
         .and_then(|b| family_from_bytes(b))
 }
 
@@ -631,6 +643,33 @@ fn family_from_bytes(data: &[u8]) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
+
+    fn roboto() -> Vec<u8> {
+        let path =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts/Roboto-Regular.ttf");
+        std::fs::read(path).expect("Roboto-Regular.ttf")
+    }
+
+    #[test]
+    fn license_sidecar_is_not_first_font() {
+        let mut fonts = BTreeMap::new();
+        fonts.insert(
+            "assets/fonts/licenses/Roboto-Apache.txt".into(),
+            b"Apache-2.0".to_vec(),
+        );
+        fonts.insert("assets/fonts/z.ttf".into(), roboto());
+        let ctx = FontCtx::new(&fonts);
+        let bytes = ctx.bytes_for("default").expect("face");
+        assert!(
+            bytes.len() > 1000,
+            "must be the TTF, not BTreeMap-first license txt"
+        );
+        assert_eq!(ctx.typeface("default"), "Roboto");
+        assert!(ctx
+            .bytes_for("assets/fonts/licenses/Roboto-Apache.txt")
+            .is_none());
+    }
 
     #[test]
     fn emphasis_splits_and_sets_bold() {

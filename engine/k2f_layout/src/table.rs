@@ -1,9 +1,13 @@
 use crate::alignment::align_offset_and_size;
 use crate::fixed_size::subtract_if_bounded;
-use crate::grid::{resolve_tracks, sum_prefix, sum_with_gaps};
+use crate::grid::{grid_axis_gaps, resolve_tracks, sum_prefix, sum_with_gaps};
 use crate::resolved_style::{padding_for_role_variant, resolve_self_align};
 use crate::{arrange_node, measure_node, LayoutContext, Point, Size, SizeConstraint};
 use k2f_core::{Align, GeometryNode, Pt, SemanticNode, TableDataSource, TableSpec};
+
+fn table_axis_gaps(spec: &TableSpec) -> (Pt, Pt) {
+    grid_axis_gaps(spec.gap, spec.row_gap, spec.column_gap)
+}
 
 fn inline_rows(spec: &TableSpec) -> Result<&Vec<Vec<SemanticNode>>, String> {
     match &spec.data {
@@ -67,14 +71,14 @@ pub fn measure_table(
         subtract_if_bounded(constraint.max.height, padding.vertical()),
     );
 
-    let gap_pt = Pt(spec.gap as i128);
-    let col_sizes = resolve_tracks(&spec.column_widths, gap_pt, inner_max.width)?;
+    let (row_gap_pt, col_gap_pt) = table_axis_gaps(spec);
+    let col_sizes = resolve_tracks(&spec.column_widths, col_gap_pt, inner_max.width)?;
 
     let rows = inline_rows(spec)?;
     let row_heights = measure_all_row_heights(&node.id, rows, &col_sizes, inner_max.height, ctx)?;
 
-    let inner_w = sum_with_gaps(&col_sizes, gap_pt);
-    let inner_h = sum_with_gaps(&row_heights, gap_pt);
+    let inner_w = sum_with_gaps(&col_sizes, col_gap_pt);
+    let inner_h = sum_with_gaps(&row_heights, row_gap_pt);
     let measured = Size::new(inner_w + padding.horizontal(), inner_h + padding.vertical());
     Ok(constraint.constrain(measured))
 }
@@ -92,8 +96,8 @@ pub fn arrange_table(
         subtract_if_bounded(size.height, padding.vertical()),
     );
 
-    let gap_pt = Pt(spec.gap as i128);
-    let col_sizes = resolve_tracks(&spec.column_widths, gap_pt, inner_size.width)?;
+    let (_, col_gap_pt) = table_axis_gaps(spec);
+    let col_sizes = resolve_tracks(&spec.column_widths, col_gap_pt, inner_size.width)?;
     let rows = inline_rows(spec)?;
 
     // Re-measure row heights deterministically using the final negotiated inner size.
@@ -127,8 +131,8 @@ pub(crate) fn arrange_table_fragment(
         subtract_if_bounded(size.height, padding.vertical()),
     );
 
-    let gap_pt = Pt(spec.gap as i128);
-    let col_sizes = resolve_tracks(&spec.column_widths, gap_pt, inner_size.width)?;
+    let (row_gap_pt, col_gap_pt) = table_axis_gaps(spec);
+    let col_sizes = resolve_tracks(&spec.column_widths, col_gap_pt, inner_size.width)?;
     let rows = inline_rows(spec)?;
 
     let mut composed_children: Vec<GeometryNode> = Vec::new();
@@ -148,9 +152,9 @@ pub(crate) fn arrange_table_fragment(
             ));
         }
 
-        let cell_y = inner_pos.y + sum_prefix(row_heights, frag_r, gap_pt);
+        let cell_y = inner_pos.y + sum_prefix(row_heights, frag_r, row_gap_pt);
         for (c, cell) in row.iter().enumerate() {
-            let cell_x = inner_pos.x + sum_prefix(&col_sizes, c, gap_pt);
+            let cell_x = inner_pos.x + sum_prefix(&col_sizes, c, col_gap_pt);
             let cell_size = Size::new(col_sizes[c], row_heights[frag_r]);
             let cell_constraint = SizeConstraint::new(Size::ZERO, cell_size);
             let measured = measure_node(cell, cell_constraint, ctx)?;

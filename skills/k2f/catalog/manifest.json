@@ -15,8 +15,35 @@
         "id": "catalog.running.header",
         "role": "running_header",
         "content": {
-          "type": "text",
-          "value": "Catalog — page {{page_current}}"
+          "type": "container",
+          "value": {
+            "children": [
+              {
+                "id": "catalog.running.header.left",
+                "role": "running_header",
+                "content": {
+                  "type": "text",
+                  "value": "Catalog"
+                }
+              },
+              {
+                "id": "catalog.running.header.right",
+                "role": "running_header",
+                "variant": "end",
+                "content": {
+                  "type": "text",
+                  "value": "{{page_current}} / {{page_total}}"
+                }
+              }
+            ]
+          }
+        },
+        "layout": {
+          "type": "grid",
+          "columns": [{ "fr": 1 }, { "auto": true }],
+          "rows": [{ "auto": true }],
+          "column_gap": 12000,
+          "cell_align": { "x": "stretch", "y": "center" }
         }
       }
     },
@@ -26,8 +53,35 @@
         "id": "catalog.running.footer",
         "role": "running_footer",
         "content": {
-          "type": "text",
-          "value": "Page {{page_current}} of {{page_total}}"
+          "type": "container",
+          "value": {
+            "children": [
+              {
+                "id": "catalog.running.footer.left",
+                "role": "running_footer",
+                "content": {
+                  "type": "text",
+                  "value": "UNSIGNED skill catalog"
+                }
+              },
+              {
+                "id": "catalog.running.footer.right",
+                "role": "running_footer",
+                "variant": "end",
+                "content": {
+                  "type": "text",
+                  "value": "Page {{page_current}} of {{page_total}}"
+                }
+              }
+            ]
+          }
+        },
+        "layout": {
+          "type": "grid",
+          "columns": [{ "fr": 1 }, { "auto": true }],
+          "rows": [{ "auto": true }],
+          "column_gap": 12000,
+          "cell_align": { "x": "stretch", "y": "center" }
         }
       }
     }

@@ -12,7 +12,7 @@ fn invoice_pdf_page_size_and_count_match_lock() {
     assert!(pdf.starts_with(b"%PDF-"));
     let parsed = lopdf::Document::load_mem(&pdf).unwrap();
     let pages = parsed.get_pages();
-    assert_eq!(pages.len(), lock.geometry.pages.len() + 1);
+    assert_eq!(pages.len(), lock.geometry.pages.len());
     for (i, id) in pages.values().enumerate() {
         if i >= lock.geometry.pages.len() {
             break;

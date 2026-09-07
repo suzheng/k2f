@@ -83,8 +83,9 @@ impl LayoutEngine {
         // If it's a Container, we care about its children for pagination.
         // If it's a leaf, it just goes on the first page.
 
-        // Vertical stacks paginate at child and line boundaries. Nested padded boxes
-        // stay atomic (no chrome fragmentation). `break_inside: avoid` never splits.
+        // Vertical stacks paginate at child and line boundaries when the
+        // remaining page is too small. Nested padded boxes stay atomic
+        // (no chrome fragmentation). `break_inside: avoid` never splits.
 
         use k2f_core::NodeContent;
         let root_padding = padding_for_role_variant(
@@ -177,6 +178,8 @@ mod arrange_tests;
 mod code_role_tests;
 #[cfg(test)]
 mod columns_tests;
+#[cfg(test)]
+mod compile_svg_tests;
 #[cfg(test)]
 mod grid_tests;
 #[cfg(test)]

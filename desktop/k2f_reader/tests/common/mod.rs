@@ -153,6 +153,8 @@ fn insert_table(ed: &mut Editor, id: &str, columns: &[String], rows: &[Vec<Strin
                 column_widths: widths,
                 header_rows: 1,
                 gap: 4000,
+                row_gap: None,
+                column_gap: None,
                 data: TableDataSource::Inline { rows: all_rows },
             }),
             ..Default::default()

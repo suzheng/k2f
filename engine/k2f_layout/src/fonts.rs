@@ -25,18 +25,23 @@ pub fn is_generic_family(name: &str) -> bool {
 }
 
 pub fn load_font_library(fonts: &BTreeMap<String, Vec<u8>>) -> Result<FontLibrary, String> {
-    if fonts.is_empty() {
+    let faces: Vec<(&String, &Vec<u8>)> = fonts
+        .iter()
+        .filter(|(path, _)| k2f_core::is_font_face_path(path))
+        .collect();
+    if faces.is_empty() {
         return Err("FONT_MISSING: package has no embedded fonts under assets/fonts/".to_string());
     }
     let mut lib = FontLibrary::new();
-    lib.set_path_order(fonts.keys().cloned().collect());
-    for (path, bytes) in fonts {
-        lib.add_embedded(path, bytes.clone());
+    lib.set_path_order(faces.iter().map(|(path, _)| (*path).clone()).collect());
+    for (path, bytes) in &faces {
+        lib.add_embedded(path, (*bytes).clone());
     }
-    // One embedded file may be called "default". Several files must be named in the theme;
+    // One embedded face may be called "default". Several files must be named in the theme;
     // picking BTreeMap::first would silently swap fonts when a second face is added.
-    if lib.get_font("default").is_none() && fonts.len() == 1 {
-        let (_, bytes) = fonts.iter().next().unwrap();
+    // License sidecars under assets/fonts/ do not count toward this.
+    if lib.get_font("default").is_none() && faces.len() == 1 {
+        let (_, bytes) = faces[0];
         lib.add_font("default", bytes.clone());
     }
     Ok(lib)
@@ -116,5 +121,33 @@ mod tests {
         assert!(lib.get_font("default").is_none());
         assert!(lib.get_font("A").is_some());
         assert!(lib.get_font("B").is_some());
+    }
+
+    #[test]
+    fn license_sidecar_does_not_block_single_font_default() {
+        let mut fonts = BTreeMap::new();
+        fonts.insert("assets/fonts/Roboto-Regular.ttf".into(), vec![0, 1, 2]);
+        fonts.insert(
+            "assets/fonts/licenses/Roboto-Apache.txt".into(),
+            b"Apache".to_vec(),
+        );
+        let lib = load_font_library(&fonts).unwrap();
+        assert!(lib.get_font("default").is_some());
+        assert!(lib.get_font("Roboto-Regular").is_some());
+        assert!(lib.get_font("Roboto-Apache").is_none());
+    }
+
+    #[test]
+    fn licenses_only_is_font_missing() {
+        let mut fonts = BTreeMap::new();
+        fonts.insert(
+            "assets/fonts/licenses/Roboto-Apache.txt".into(),
+            b"Apache".to_vec(),
+        );
+        let err = match load_font_library(&fonts) {
+            Ok(_) => panic!("expected FONT_MISSING"),
+            Err(e) => e,
+        };
+        assert!(err.contains("FONT_MISSING"), "{err}");
     }
 }

@@ -589,6 +589,83 @@ fn splittable_body_text_uses_remaining_page_space() {
 }
 
 #[test]
+fn nested_stack_splits_when_remainder_is_too_small() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+
+    let sample = make_text("sample", "Line");
+    let margins = [Pt(10_000), Pt(7_000), Pt(15_000), Pt(11_000)];
+    let width = Pt(200_000);
+    let tmp = PageConfig {
+        width,
+        height: Pt(1_000_000),
+        margin: margins,
+    };
+    let cw = crate::pagination::content_width(&tmp);
+    let line_h = measure_node(
+        &sample,
+        SizeConstraint::new(Size::ZERO, Size::new(cw, Pt(i128::MAX))),
+        &ctx,
+    )
+    .unwrap()
+    .height;
+
+    // Two lines per page. A heading consumes the first; a 4-line inner stack
+    // fits on one full page but not in the remaining line.
+    let page_config = PageConfig {
+        width,
+        height: margins[0] + margins[2] + (line_h * 2),
+        margin: margins,
+    };
+
+    let inner = SemanticNode {
+        id: "sec".to_string(),
+        role: "section".to_string(),
+        content: NodeContent::Container {
+            children: vec![
+                make_text("s0", "A"),
+                make_text("s1", "B"),
+                make_text("s2", "C"),
+                make_text("s3", "D"),
+            ],
+        },
+        ..Default::default()
+    };
+    let root = SemanticNode {
+        id: "root".to_string(),
+        role: "section".to_string(),
+        content: NodeContent::Container {
+            children: vec![make_text("h", "Title"), inner],
+        },
+        ..Default::default()
+    };
+    let manifest = Manifest {
+        title: "stack-split".to_string(),
+        canvas_mode: CanvasMode::Paged,
+        page_config,
+        root,
+        running_blocks: vec![],
+    };
+    let result = LayoutEngine::layout(&manifest, &ctx).unwrap();
+    let p0: Vec<_> = result.pages[0]
+        .root
+        .children
+        .iter()
+        .map(|c| c.id.as_str())
+        .collect();
+    assert!(
+        p0.contains(&"h") && p0.contains(&"s0"),
+        "inner stack should leave its first child on page 0, not jump whole: {p0:?}"
+    );
+    assert!(
+        !p0.contains(&"s3"),
+        "later inner children should continue on the next page: {p0:?}"
+    );
+    assert!(result.pages.len() >= 2);
+}
+
+#[test]
 fn break_before_page_starts_on_fresh_page() {
     let fonts = crate::test_utils::test_fonts();
     let theme = Theme::default();

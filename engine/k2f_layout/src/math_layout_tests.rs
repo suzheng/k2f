@@ -151,6 +151,8 @@ fn table_cell_math_node_arranges() {
             column_widths: vec![GridTrack::Pt { pt: 200_000 }],
             header_rows: 0,
             gap: 0,
+            row_gap: None,
+            column_gap: None,
             data: TableDataSource::Inline {
                 rows: vec![vec![math_node("eq.cell", r"\frac{1}{2}")]],
             },

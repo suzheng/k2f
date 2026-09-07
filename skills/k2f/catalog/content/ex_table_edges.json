@@ -1,6 +1,7 @@
 {
   "id": "ex.table_edges",
   "role": "table",
+  "variant": "ruled",
   "content": {
     "type": "table",
     "value": {

@@ -14,6 +14,7 @@ pub const CODE_NODE_ID: &str = "NODE_ID";
 pub const CODE_UNEXPECTED_PATH: &str = "UNEXPECTED_PATH";
 pub const CODE_UNKNOWN_PAINT_OP: &str = "UNKNOWN_PAINT_OP";
 pub const CODE_PDF_IS_NOT_A_SOURCE: &str = "PDF_IS_NOT_A_SOURCE";
+pub const CODE_IMAGE_SIZE: &str = "IMAGE_SIZE";
 
 #[derive(Debug, Error)]
 pub enum PackageError {
@@ -27,6 +28,8 @@ pub enum PackageError {
     UnexpectedPath(String),
     #[error("{CODE_PDF_IS_NOT_A_SOURCE}: PDF is a drawing of a lock, not a K2F source")]
     PdfIsNotASource,
+    #[error("{CODE_IMAGE_SIZE}: {0}")]
+    ImageSize(String),
     #[error("package error: {0}")]
     Other(String),
 }

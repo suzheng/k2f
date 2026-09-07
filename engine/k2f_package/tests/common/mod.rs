@@ -11,7 +11,8 @@ pub fn repo_root() -> PathBuf {
 }
 
 pub fn load_font() -> Vec<u8> {
-    fs::read(repo_root().join("assets/fonts/NotoSansSC-Regular.otf")).expect("NotoSansSC-Regular.otf")
+    fs::read(repo_root().join("assets/fonts/NotoSansSC-Regular.otf"))
+        .expect("NotoSansSC-Regular.otf")
 }
 
 pub fn packed_contract() -> Vec<u8> {

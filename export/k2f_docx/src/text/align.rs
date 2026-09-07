@@ -111,6 +111,41 @@ pub(crate) fn should_wrap_lock(
     slack >= MIN_SLACK
 }
 
+/// `wrap=none` on a wide center/justify frame makes hosts ignore `w:jc` /
+/// `algn` and paint at `lIns` (lock-left of a page-width box). Turn wrap on
+/// when leftover width is large enough that a host-wider line still fits.
+/// Glyph-tight pills that already fill ≥85% stay `wrap=none` so they do not
+/// clip a second row.
+pub(crate) fn host_wrap(geo: Option<&GeometryNode>, align: TextAlign, wrap: bool) -> bool {
+    if wrap {
+        return true;
+    }
+    if !matches!(align, TextAlign::Center | TextAlign::Justify) {
+        return false;
+    }
+    let Some(geo) = geo else {
+        return false;
+    };
+    let lines = source_lines(geo);
+    if lines.is_empty() {
+        return false;
+    }
+    let box_w = geo.width.0;
+    lines.iter().all(|line| {
+        let (_, left, right) = line_gaps(line, box_w);
+        left >= MIN_SLACK && right >= MIN_SLACK && !line_fills_padded_width(left, right, box_w)
+    })
+}
+
+fn line_fills_padded_width(pad: i128, opposite_slack: i128, box_w: i128) -> bool {
+    let avail = box_w.saturating_sub(pad.max(0));
+    if avail <= 0 {
+        return false;
+    }
+    let content = avail.saturating_sub(opposite_slack.max(0));
+    content.saturating_mul(100) >= avail.saturating_mul(85)
+}
+
 fn source_paragraphs(text: &str) -> usize {
     text.split('\n').count().max(1)
 }
@@ -252,6 +287,33 @@ mod tests {
         let mut padded = geo(87_000, vec![glyph(0, 6_500, 74_000, 2_500)]);
         padded.height = Pt(13_250);
         assert!(!should_wrap_lock(Some(&padded), Pt(7_500), None));
+    }
+
+    #[test]
+    fn host_wrap_square_for_wide_center_one_liner() {
+        let fs = Pt(12_000);
+        let mut wide = geo(100_000, vec![glyph(0, 30_000, 40_000, 0)]);
+        wide.height = Pt(13_000);
+        assert!(!should_wrap_lock(Some(&wide), fs, None));
+        assert!(host_wrap(
+            Some(&wide),
+            TextAlign::Center,
+            should_wrap_lock(Some(&wide), fs, None)
+        ));
+        let mut left = geo(100_000, vec![glyph(0, 0, 40_000, 0)]);
+        left.height = Pt(13_000);
+        assert!(!host_wrap(
+            Some(&left),
+            TextAlign::Left,
+            should_wrap_lock(Some(&left), fs, None)
+        ));
+        let mut pill = geo(87_000, vec![glyph(0, 6_500, 74_000, 0)]);
+        pill.height = Pt(13_250);
+        assert!(!host_wrap(
+            Some(&pill),
+            TextAlign::Center,
+            should_wrap_lock(Some(&pill), fs, None)
+        ));
     }
 
     #[test]

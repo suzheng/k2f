@@ -19,6 +19,7 @@
             {
               "id": "ex.table.h1",
               "role": "table_header_cell",
+              "variant": "end",
               "content": { "type": "text", "value": "Qty" }
             }
           ],
@@ -31,6 +32,7 @@
             {
               "id": "ex.table.r0c1",
               "role": "table_row_cell",
+              "variant": "end",
               "content": { "type": "text", "value": "3" }
             }
           ]

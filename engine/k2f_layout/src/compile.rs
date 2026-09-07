@@ -58,7 +58,7 @@ pub fn compile_outcome(
     fonts: &BTreeMap<String, Vec<u8>>,
     assets: Option<&AssetsMap>,
 ) -> Result<CompileOutcome, String> {
-    if fonts.is_empty() {
+    if !fonts.keys().any(|p| k2f_core::is_font_face_path(p)) {
         return Err("FONT_MISSING: package has no embedded fonts under assets/fonts/".to_string());
     }
 
@@ -70,6 +70,7 @@ pub fn compile_outcome(
         serde_json::from_value(theme_value).map_err(|e| format!("Theme JSON error: {e}"))?;
 
     if let Some(assets) = assets {
+        k2f_core::validate_svg_assets(assets)?;
         manifest = expand_manifest_tables_with_assets(&manifest, assets)?;
     } else if semantic_tree_needs_assets(&manifest.root) {
         return Err(

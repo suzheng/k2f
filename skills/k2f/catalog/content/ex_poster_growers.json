@@ -1,0 +1,117 @@
+{
+  "id": "ex.poster_growers",
+  "role": "page_shell",
+  "break_inside": "avoid",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.poster_growers.header",
+          "role": "h1",
+          "content": { "type": "text", "value": "Header ({auto:true})." }
+        },
+        {
+          "id": "ex.poster_growers.body",
+          "role": "section",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.poster_growers.body.title",
+                  "role": "h2",
+                  "content": { "type": "text", "value": "Title ({auto:true} row)." }
+                },
+                {
+                  "id": "ex.poster_growers.body.figure",
+                  "role": "image",
+                  "content": {
+                    "type": "image",
+                    "value": {
+                      "src": "assets/images/dot.png",
+                      "width": 200000,
+                      "height": 80000
+                    }
+                  }
+                },
+                {
+                  "id": "ex.poster_growers.body.cards",
+                  "role": "section",
+                  "content": {
+                    "type": "container",
+                    "value": {
+                      "children": [
+                        {
+                          "id": "ex.poster_growers.body.cards.left",
+                          "role": "card",
+                          "content": {
+                            "type": "container",
+                            "value": {
+                              "children": [
+                                {
+                                  "id": "ex.poster_growers.body.cards.left.text",
+                                  "role": "body",
+                                  "content": { "type": "text", "value": "Card in a {fr:1} row." }
+                                }
+                              ]
+                            }
+                          },
+                          "layout": { "type": "stack", "gap": 0 }
+                        },
+                        {
+                          "id": "ex.poster_growers.body.cards.right",
+                          "role": "card",
+                          "content": {
+                            "type": "container",
+                            "value": {
+                              "children": [
+                                {
+                                  "id": "ex.poster_growers.body.cards.right.text",
+                                  "role": "body",
+                                  "content": { "type": "text", "value": "Sibling card, same row." }
+                                }
+                              ]
+                            }
+                          },
+                          "layout": { "type": "stack", "gap": 0 }
+                        }
+                      ]
+                    }
+                  },
+                  "layout": {
+                    "type": "grid",
+                    "columns": [{ "fr": 1 }, { "fr": 1 }],
+                    "rows": [{ "fr": 1 }],
+                    "gap": 8000,
+                    "cell_align": { "x": "stretch", "y": "stretch" }
+                  }
+                }
+              ]
+            }
+          },
+          "layout": {
+            "type": "grid",
+            "columns": [{ "fr": 1 }],
+            "rows": [{ "auto": true }, { "fr": 1 }, { "fr": 1 }],
+            "gap": 8000,
+            "cell_align": { "x": "stretch", "y": "stretch" }
+          }
+        },
+        {
+          "id": "ex.poster_growers.footer",
+          "role": "body",
+          "content": { "type": "text", "value": "Footer ({auto:true})." }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "grid",
+    "columns": [{ "fr": 1 }],
+    "rows": [{ "auto": true }, { "fr": 1 }, { "auto": true }],
+    "gap": 8000,
+    "height": 240000,
+    "cell_align": { "x": "stretch", "y": "stretch" }
+  }
+}

@@ -158,6 +158,8 @@ fn table_node(id: &str, columns: &[String], rows: &[Vec<String>]) -> SemanticNod
             column_widths: widths,
             header_rows: 1,
             gap: 4000,
+            row_gap: None,
+            column_gap: None,
             data: TableDataSource::Inline { rows: all_rows },
         }),
         ..Default::default()

@@ -59,7 +59,9 @@ pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, St
                     <w:txbxContent>
 {body}                    </w:txbxContent>
                   </wps:txbx>
-                  <wps:bodyPr wrap="{wrap}" lIns="{l}" tIns="{t}" rIns="{r}" bIns="{b}" anchor="{anchor}"{overflow}/>
+                  <wps:bodyPr wrap="{wrap}" lIns="{l}" tIns="{t}" rIns="{r}" bIns="{b}" anchor="{anchor}"{overflow}>
+                    <a:noAutofit/>
+                  </wps:bodyPr>
                 </wps:wsp>
 "#,
         cx = tb.cx_emu,
@@ -358,6 +360,17 @@ mod tests {
         let xml = paragraph_xml(&tb, &[], &BTreeMap::new());
         child_order(&xml, &["<w:numPr>", "<w:spacing", "<w:ind ", "<w:jc "]);
         assert!(xml.contains(r#"w:hanging="360""#), "{xml}");
+    }
+
+    #[test]
+    fn body_pr_emits_no_autofit() {
+        let mut tb = box_with(false, None);
+        tb.align = TextAlign::Center;
+        tb.wrap = true;
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new());
+        assert!(xml.contains("<a:noAutofit/>"), "{xml}");
+        assert!(xml.contains(r#"wrap="square""#), "{xml}");
+        assert!(xml.contains(r#"w:jc w:val="center""#), "{xml}");
     }
 
     #[test]

@@ -9,24 +9,29 @@ pub(crate) struct FontCtx {
 
 impl FontCtx {
     pub(crate) fn new(fonts: &BTreeMap<String, Vec<u8>>) -> Self {
+        let bytes: BTreeMap<String, Vec<u8>> = fonts
+            .iter()
+            .filter(|(k, _)| k2f_core::is_font_face_path(k))
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
         let mut families = BTreeMap::new();
-        for (key, data) in fonts {
+        for (key, data) in &bytes {
             if let Some(name) = family_from_bytes(data) {
                 families.insert(key.clone(), name);
             }
         }
-        let default_family = fonts
+        let default_family = bytes
             .get("default")
             .and_then(|b| family_from_bytes(b))
             .or_else(|| {
-                fonts
+                bytes
                     .iter()
                     .find(|(k, _)| k.contains("Roboto") || *k == "default")
                     .and_then(|(_, b)| family_from_bytes(b))
             })
             .or_else(|| families.values().next().cloned())
             .unwrap_or_else(|| "Roboto".into());
-        if let Some(data) = fonts.get("default") {
+        if let Some(data) = bytes.get("default") {
             if let Some(name) = family_from_bytes(data) {
                 families.insert("default".into(), name);
             }
@@ -37,7 +42,7 @@ impl FontCtx {
         Self {
             default_family,
             families,
-            bytes: fonts.clone(),
+            bytes,
         }
     }
 
@@ -132,5 +137,25 @@ mod tests {
         assert_eq!(ctx.typeface("default"), "Roboto");
         assert!(ctx.bytes_for("Roboto-Regular").is_some());
         assert!(ctx.bytes_for("default").is_some());
+    }
+
+    #[test]
+    fn license_sidecar_is_not_default_font_bytes() {
+        let mut fonts = BTreeMap::new();
+        fonts.insert(
+            "assets/fonts/licenses/Roboto-Apache.txt".into(),
+            b"Apache-2.0".to_vec(),
+        );
+        fonts.insert("assets/fonts/Roboto-Regular.ttf".into(), roboto());
+        let ctx = FontCtx::new(&fonts);
+        let bytes = ctx.bytes_for("default").expect("face");
+        assert!(
+            bytes.len() > 1000,
+            "must be the TTF, not the shorter license txt"
+        );
+        assert_eq!(ctx.typeface("default"), "Roboto");
+        assert!(ctx
+            .bytes_for("assets/fonts/licenses/Roboto-Apache.txt")
+            .is_none());
     }
 }

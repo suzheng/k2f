@@ -28,6 +28,7 @@ mod semantic_code_blocks;
 mod semantic_lists;
 mod semantic_math;
 mod sha256_hex;
+mod svg_text;
 mod table_assets;
 mod theme_vocab;
 pub mod visual_primitives;
@@ -49,6 +50,21 @@ pub use hit_test::{
     hit_page, semantic_ids, with_text_range, Hit,
 };
 pub use layout_hints::*;
+
+/// True when `path` is a TrueType/OpenType face (filename `.ttf` / `.otf`), case-insensitive.
+/// Sidecar files such as `licenses/Roboto-Apache.txt` are not faces.
+/// The in-memory key `"default"` used by compile/paint helpers counts as a face.
+pub fn is_font_face_path(path: &str) -> bool {
+    let name = path
+        .rsplit(['/', '\\'])
+        .next()
+        .unwrap_or(path);
+    if name.eq_ignore_ascii_case("default") {
+        return true;
+    }
+    let ext = name.rsplit('.').next().unwrap_or("");
+    ext.eq_ignore_ascii_case("ttf") || ext.eq_ignore_ascii_case("otf")
+}
 pub use nfc::{nfc, normalize_manifest_nfc};
 pub use node_edit::{
     apply_role, collect_ids_under, find_in_trees, find_in_trees_mut, insert_child, node_text,
@@ -63,6 +79,10 @@ pub use paint_types::*;
 pub use role_variant_validation::validate_semantic_tree_with_theme_vocab;
 pub use running_blocks::*;
 pub use running_blocks_validation::validate_manifest_running_blocks;
+pub use svg_text::{
+    looks_like_svg, svg_bytes_contain_text_element, svg_image_path, validate_svg_assets,
+    SVG_TEXT_FORBIDDEN_MSG,
+};
 pub use search::{search_tree, search_trees};
 pub use selection::{clipboard_of, selection_of, selection_with_ids, Clipboard, Selection};
 pub use semantic_code_blocks::CodeBlockValue;
@@ -266,6 +286,8 @@ pub enum LayoutHint {
     },
     Grid {
         columns: Vec<GridTrack>,
+        /// Omitted or empty: engine fills `{auto:true}` rows to fit children.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         rows: Vec<GridTrack>,
         /// Gap between tracks in fixed-point units (1/1000th of a point).
         #[serde(default)]
@@ -315,7 +337,7 @@ impl Default for StackDirection {
 }
 
 /// Explicit deterministic track sizes (`pt`, `fr`, or content-sized `auto`).
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum GridTrack {
     /// Fixed track size in Pt (1/1000 pt units)
@@ -332,6 +354,21 @@ impl GridTrack {
     }
 }
 
+/// When `rows` is omitted (empty), synthesize `{auto:true}` tracks so every child has a cell:
+/// `max(1, ceil(n_children / n_columns))`. Declared `rows` are used as-is (not CSS implicit growth).
+pub fn grid_rows_for_children(
+    columns: &[GridTrack],
+    rows: &[GridTrack],
+    n_children: usize,
+) -> Vec<GridTrack> {
+    if !rows.is_empty() {
+        return rows.to_vec();
+    }
+    let n_cols = columns.len().max(1);
+    let n_rows = n_children.div_ceil(n_cols).max(1);
+    vec![GridTrack::Auto { auto: true }; n_rows]
+}
+
 /// Strict table payload for `content.type = "table"` (State A).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TableSpec {
@@ -343,8 +380,15 @@ pub struct TableSpec {
     /// Fixed-point Pt gap between columns/rows (1/1000 pt units).
     ///
     /// Stored as i64 for serde_json compatibility (same rationale as LayoutHint::Stack.gap).
+    /// Omitted `row_gap` / `column_gap` fall back to this value (same as grid).
     #[serde(default)]
     pub gap: i64,
+    /// Optional row gap override. Falls back to `gap` when omitted.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub row_gap: Option<i64>,
+    /// Optional column gap override. Falls back to `gap` when omitted.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub column_gap: Option<i64>,
     /// Table data source (v1: inline rows only).
     pub data: TableDataSource,
 }
@@ -518,6 +562,76 @@ mod tests {
         assert_eq!(b - a, Pt(1000));
         assert_eq!(a * 2, Pt(2000));
         assert_eq!(b / 2, Pt(1000));
+    }
+
+    #[test]
+    fn font_face_path_accepts_ttf_otf_and_default_skips_sidecars() {
+        assert!(is_font_face_path("assets/fonts/Roboto-Regular.ttf"));
+        assert!(is_font_face_path("assets/fonts/Noto.OTF"));
+        assert!(is_font_face_path("default"));
+        assert!(!is_font_face_path("assets/fonts/licenses/Roboto-Apache.txt"));
+        assert!(!is_font_face_path("assets/fonts/licenses/LICENSE"));
+        assert!(!is_font_face_path("assets/fonts/readme.md"));
+    }
+
+    #[test]
+    fn omitted_grid_rows_fill_auto_tracks_to_fit_children() {
+        let cols = vec![GridTrack::Fr { fr: 1 }, GridTrack::Fr { fr: 1 }];
+        let one = grid_rows_for_children(&cols, &[], 2);
+        assert_eq!(one, vec![GridTrack::Auto { auto: true }]);
+        let two = grid_rows_for_children(&cols, &[], 4);
+        assert_eq!(
+            two,
+            vec![
+                GridTrack::Auto { auto: true },
+                GridTrack::Auto { auto: true }
+            ]
+        );
+        let declared = vec![GridTrack::Fr { fr: 1 }];
+        assert_eq!(grid_rows_for_children(&cols, &declared, 4), declared);
+    }
+
+    fn grid_node(n_children: usize, columns: Vec<GridTrack>, rows: Vec<GridTrack>) -> SemanticNode {
+        SemanticNode {
+            id: "g".to_string(),
+            role: "section".to_string(),
+            content: NodeContent::Container {
+                children: (0..n_children)
+                    .map(|i| make_cell_text(&format!("g.c{i}")))
+                    .collect(),
+            },
+            layout: Some(LayoutHint::Grid {
+                columns,
+                rows,
+                gap: 0,
+                row_gap: None,
+                column_gap: None,
+                cell_align: None,
+                size: Default::default(),
+            }),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn omitted_grid_rows_pass_validate_when_children_fit_derived_auto_rows() {
+        validate_semantic_tree(&grid_node(
+            4,
+            vec![GridTrack::Fr { fr: 1 }, GridTrack::Fr { fr: 1 }],
+            vec![],
+        ))
+        .unwrap();
+    }
+
+    #[test]
+    fn declared_grid_rows_still_reject_overflow_children() {
+        let err = validate_semantic_tree(&grid_node(
+            4,
+            vec![GridTrack::Fr { fr: 1 }, GridTrack::Fr { fr: 1 }],
+            vec![GridTrack::Auto { auto: true }],
+        ))
+        .unwrap_err();
+        assert!(matches!(err, K2FError::GridTooManyChildren { children: 4, cells: 2, .. }));
     }
 
     #[test]
@@ -768,6 +882,8 @@ mod tests {
                 column_widths: vec![],
                 header_rows: 0,
                 gap: 0,
+                row_gap: None,
+                column_gap: None,
                 data: TableDataSource::Inline { rows: vec![] },
             }),
             modifiers: vec![],
@@ -806,6 +922,8 @@ mod tests {
                 column_widths: vec![GridTrack::Auto { auto: true }],
                 header_rows: 0,
                 gap: 0,
+                row_gap: None,
+                column_gap: None,
                 data: TableDataSource::Inline {
                     rows: vec![vec![make_cell_text("c0")]],
                 },
@@ -835,6 +953,8 @@ mod tests {
                 column_widths: vec![GridTrack::Pt { pt: 1000 }, GridTrack::Pt { pt: 1000 }],
                 header_rows: 0,
                 gap: 0,
+                row_gap: None,
+                column_gap: None,
                 data: TableDataSource::Inline {
                     rows: vec![vec![make_cell_text("c0")]], // should be 2 cells
                 },
@@ -865,6 +985,8 @@ mod tests {
                 column_widths: vec![GridTrack::Pt { pt: 1000 }],
                 header_rows: 1,
                 gap: 0,
+                row_gap: None,
+                column_gap: None,
                 data: TableDataSource::Inline { rows: vec![] },
             }),
             modifiers: vec![],
@@ -911,6 +1033,8 @@ mod tests {
                 column_widths: vec![GridTrack::Pt { pt: 1000 }],
                 header_rows: 0,
                 gap: 0,
+                row_gap: None,
+                column_gap: None,
                 data: TableDataSource::Inline {
                     rows: vec![vec![bad_cell]],
                 },
@@ -1196,18 +1320,20 @@ fn validate_node(node: &SemanticNode) -> Result<(), K2FError> {
             }) = &node.layout
             {
                 validate_fixed_size_hint(&node.id, size)?;
-                if columns.is_empty() || rows.is_empty() {
+                if columns.is_empty() {
                     return Err(K2FError::GridRequiresTracks {
                         node_id: node.id.clone(),
                     });
                 }
-                let cells = columns.len() * rows.len();
-                if children.len() > cells {
-                    return Err(K2FError::GridTooManyChildren {
-                        node_id: node.id.clone(),
-                        children: children.len(),
-                        cells,
-                    });
+                if !rows.is_empty() {
+                    let cells = columns.len() * rows.len();
+                    if children.len() > cells {
+                        return Err(K2FError::GridTooManyChildren {
+                            node_id: node.id.clone(),
+                            children: children.len(),
+                            cells,
+                        });
+                    }
                 }
             }
             if let Some(LayoutHint::Columns { count, gap }) = &node.layout {
@@ -1230,11 +1356,16 @@ fn validate_node(node: &SemanticNode) -> Result<(), K2FError> {
             }
         }
         NodeContent::Table(spec) => {
-            if spec.gap < 0 {
-                return Err(K2FError::InvalidTableGap {
-                    node_id: node.id.clone(),
-                    gap: spec.gap,
-                });
+            for gap in [Some(spec.gap), spec.row_gap, spec.column_gap]
+                .into_iter()
+                .flatten()
+            {
+                if gap < 0 {
+                    return Err(K2FError::InvalidTableGap {
+                        node_id: node.id.clone(),
+                        gap,
+                    });
+                }
             }
             if spec.column_widths.is_empty() {
                 return Err(K2FError::TableRequiresColumns {

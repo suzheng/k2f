@@ -336,3 +336,73 @@ fn test_grid_auto_plus_fr_fails_when_height_unbounded() {
     let err = measure_node(&container, SizeConstraint::infinite(), &ctx).unwrap_err();
     assert!(err.contains("infinite available size"));
 }
+
+#[test]
+fn omitted_rows_one_auto_row_for_two_column_split() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let container = SemanticNode {
+        id: "g".to_string(),
+        role: "section".to_string(),
+        content: NodeContent::Container {
+            children: vec![make_image("a"), make_image("b")],
+        },
+        layout: Some(LayoutHint::Grid {
+            columns: vec![GridTrack::Fr { fr: 1 }, GridTrack::Fr { fr: 1 }],
+            rows: vec![],
+            gap: 0,
+            row_gap: None,
+            column_gap: None,
+            cell_align: Some(CellAlign::default()),
+            size: FixedSizeHint {
+                width: Some(Pt(200_000)),
+                height: None,
+            },
+        }),
+        ..Default::default()
+    };
+    let measured = measure_node(&container, SizeConstraint::infinite(), &ctx).unwrap();
+    assert_eq!(measured.height, Pt(100_000));
+    let geo = arrange_node(&container, Point::ZERO, measured, &ctx).unwrap();
+    assert_eq!(geo.children.len(), 2);
+    assert_eq!(geo.children[0].y, Pt(0));
+    assert_eq!(geo.children[1].y, Pt(0));
+}
+
+#[test]
+fn omitted_rows_two_auto_rows_for_four_children() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let container = SemanticNode {
+        id: "g".to_string(),
+        role: "section".to_string(),
+        content: NodeContent::Container {
+            children: vec![
+                make_image("a"),
+                make_image("b"),
+                make_image("c"),
+                make_image("d"),
+            ],
+        },
+        layout: Some(LayoutHint::Grid {
+            columns: vec![GridTrack::Fr { fr: 1 }, GridTrack::Fr { fr: 1 }],
+            rows: vec![],
+            gap: 0,
+            row_gap: None,
+            column_gap: None,
+            cell_align: Some(CellAlign::default()),
+            size: FixedSizeHint {
+                width: Some(Pt(200_000)),
+                height: None,
+            },
+        }),
+        ..Default::default()
+    };
+    let measured = measure_node(&container, SizeConstraint::infinite(), &ctx).unwrap();
+    assert_eq!(measured.height, Pt(200_000));
+    let geo = arrange_node(&container, Point::ZERO, measured, &ctx).unwrap();
+    assert_eq!(geo.children.len(), 4);
+    assert_eq!(geo.children[2].y, Pt(100_000));
+}

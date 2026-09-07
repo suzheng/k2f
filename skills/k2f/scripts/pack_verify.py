@@ -63,6 +63,14 @@ def parse_pages(stderr: str) -> int | None:
     return int(matches[-1])
 
 
+def resolve_render_path(render: Path, source: Path) -> Path:
+    """Bare filename (preview.png) → author directory. Otherwise CWD-relative."""
+    path = render.expanduser()
+    if not path.is_absolute() and len(path.parts) == 1:
+        return (source / path).resolve()
+    return path.resolve()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Pack, compile, and verify a K2F source dir")
     parser.add_argument("source_dir", type=Path, help="Unpacked package directory")
@@ -77,7 +85,9 @@ def main() -> int:
         "--render",
         type=Path,
         metavar="PNG",
-        help="Optional: render one page to this PNG after verify",
+        help="Optional: render one page to this PNG after verify. "
+        "A bare filename is written in the author directory (next to manifest.json). "
+        "Paths with a directory are still relative to the shell CWD.",
     )
     parser.add_argument(
         "--page",
@@ -133,7 +143,7 @@ def main() -> int:
     run([*prefix, "verify", str(output)])
 
     if args.render is not None:
-        render_out = args.render.expanduser().resolve()
+        render_out = resolve_render_path(args.render, source)
         render_out.parent.mkdir(parents=True, exist_ok=True)
         run(
             [
@@ -146,6 +156,7 @@ def main() -> int:
                 str(render_out),
             ]
         )
+        print(f"ok: rendered {render_out}", flush=True)
 
     if pages is not None:
         print(f"ok: {output} pages={pages}")

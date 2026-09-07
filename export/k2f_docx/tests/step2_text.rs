@@ -276,6 +276,68 @@ fn align_modes_fixture_writes_w_jc() {
 }
 
 #[test]
+fn wide_center_one_liner_writes_square_wrap_and_no_autofit() {
+    let text = "A";
+    let mut g = geo(100_000, vec![glyph(0, 30_000, 40_000, 0)]);
+    g.height = Pt(13_000);
+    let node = node_with(text, vec![]);
+    let rect = Rect {
+        x: Pt(0),
+        y: Pt(0),
+        width: Pt(100_000),
+        height: Pt(13_000),
+    };
+    let tb = textbox_from_draw(
+        &node,
+        &rect,
+        &[TextGlyphRun {
+            glyph_range: [0, 1],
+            style: style("#111111", 12_000),
+        }],
+        Some(&g),
+        &BTreeMap::new(),
+    )
+    .unwrap();
+    assert_eq!(tb.align, TextAlign::Center);
+    assert!(tb.wrap, "center leftover must wrap so hosts honor jc");
+    let xml = textbox_wml(&tb);
+    assert!(xml.contains(r#"w:jc w:val="center""#), "{xml}");
+    assert!(xml.contains(r#"wrap="square""#), "{xml}");
+    assert!(xml.contains("<a:noAutofit/>"), "{xml}");
+}
+
+#[test]
+fn left_one_liner_keeps_wrap_none() {
+    let text = "A";
+    let mut g = geo(100_000, vec![glyph(0, 0, 40_000, 0)]);
+    g.height = Pt(13_000);
+    let node = node_with(text, vec![]);
+    let rect = Rect {
+        x: Pt(0),
+        y: Pt(0),
+        width: Pt(100_000),
+        height: Pt(13_000),
+    };
+    let tb = textbox_from_draw(
+        &node,
+        &rect,
+        &[TextGlyphRun {
+            glyph_range: [0, 1],
+            style: style("#111111", 12_000),
+        }],
+        Some(&g),
+        &BTreeMap::new(),
+    )
+    .unwrap();
+    assert_eq!(tb.align, TextAlign::Left);
+    assert!(!tb.wrap);
+    let xml = textbox_wml(&tb);
+    assert!(xml.contains(r#"w:jc w:val="left""#), "{xml}");
+    assert!(xml.contains(r#"wrap="none""#), "{xml}");
+    assert!(xml.contains("<a:noAutofit/>"), "{xml}");
+}
+
+#[test]
 fn paint_runs_keep_per_run_color_and_size() {
     let text = "HelloWorld";
     let xml = wml_from(

@@ -105,6 +105,8 @@ mod tests {
                             column_widths: vec![GridTrack::Fr { fr: 1 }],
                             header_rows: 0,
                             gap: 0,
+                            row_gap: None,
+                            column_gap: None,
                             data: TableDataSource::Inline {
                                 rows: vec![vec![text("t.c0", "cell")]],
                             },

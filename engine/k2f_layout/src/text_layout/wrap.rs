@@ -315,7 +315,22 @@ fn push_piece(
             line_len_excluding_ws: len.saturating_sub(1),
             next_start: len,
         });
+    } else if line
+        .last()
+        .map(|p| p.kind == FragKind::Text && is_hyphen_break(&p.run.text))
+        .unwrap_or(false)
+    {
+        let len = line.len();
+        // Keep the hyphen/soft-hyphen on this line.
+        *last_break = Some(BreakPoint {
+            line_len_excluding_ws: len,
+            next_start: len,
+        });
     }
+}
+
+fn is_hyphen_break(text: &str) -> bool {
+    text.ends_with('-') || text.ends_with('\u{00AD}')
 }
 
 fn break_at(

@@ -182,7 +182,9 @@ Use with `role: "math"`. Inline math stays on a text node as U+FFFC plus modifie
       { "fr": 2 }
     ],
     "header_rows": 0,          // Optional, default: 0 (repeat on page breaks in paged mode)
-    "gap": 0,                  // Optional, default: 0 (Pt in 1/1000 units, used for both row/col gaps)
+    "gap": 0,                  // Optional, default: 0 (Pt in 1/1000 units)
+    "row_gap": null,           // Optional; omit/null uses gap (same as grid)
+    "column_gap": null,        // Optional; omit/null uses gap. No colspan/rowspan.
     "data": {
       "type": "inline",
       "rows": [
@@ -232,7 +234,7 @@ Use with `role: "math"`. Inline math stays on a text node as U+FFFC plus modifie
     "columns": [               // Required: Array of track definitions
       { "pt": integer } | { "fr": integer } | { "auto": true }
     ],
-    "rows": [                  // Required: Array of track definitions
+    "rows": [                  // Optional: omit → {auto:true} rows to fit children
       { "pt": integer } | { "fr": integer } | { "auto": true }
     ],
     "gap": integer,            // Optional, default: 0 (Pt in 1/1000 units)
@@ -250,6 +252,7 @@ Use with `role: "math"`. Inline math stays on a text node as U+FFFC plus modifie
 - `{pt: integer}` - Fixed size in Pt (1/1000 pt units)
 - `{fr: integer}` - Fractional unit (distributes remaining space after `pt` and `auto`)
 - `{auto: true}` - Content-sized: max measured min-size of cells in that track, then leftover goes to `fr`. Not CSS `auto-fit`. Layout grids only — table `column_widths` stay `{pt}` / `{fr}`.
+- Omit `rows`: engine fills `ceil(n_children / n_columns)` `{auto:true}` tracks. Declared `rows` do not grow. `fr` rows still need a finite outer height.
 
 ### Overlay Layout
 ```json

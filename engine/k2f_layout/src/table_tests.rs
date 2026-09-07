@@ -48,6 +48,8 @@ fn test_strict_table_resolves_columns_with_fr_and_arranges_cells_with_gap() {
             ],
             header_rows: 0,
             gap,
+            row_gap: None,
+            column_gap: None,
             data: TableDataSource::Inline {
                 rows: vec![vec![
                     make_image("c0", 10_000, 20_000),
@@ -112,6 +114,8 @@ fn test_strict_table_row_heights_are_max_cell_height_and_y_positions_include_gap
             column_widths: vec![GridTrack::Pt { pt: 100_000 }, GridTrack::Pt { pt: 100_000 }],
             header_rows: 0,
             gap,
+            row_gap: None,
+            column_gap: None,
             data: TableDataSource::Inline {
                 rows: vec![
                     vec![
@@ -197,6 +201,8 @@ fn table_cell_self_align_centers_short_child_in_tall_row() {
             column_widths: vec![GridTrack::Pt { pt: 50_000 }, GridTrack::Pt { pt: 50_000 }],
             header_rows: 0,
             gap: 0,
+            row_gap: None,
+            column_gap: None,
             data: TableDataSource::Inline {
                 rows: vec![vec![short, tall]],
             },
@@ -214,4 +220,57 @@ fn table_cell_self_align_centers_short_child_in_tall_row() {
     assert_eq!(geo.children[0].y, Pt(15_000));
     assert_eq!(geo.children[1].height, Pt(40_000));
     assert_eq!(geo.children[1].y, Pt(0));
+}
+
+#[test]
+fn table_row_gap_overrides_gap_for_rows_but_columns_keep_gap() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+
+    let gap = 1_000_i64;
+    let row_gap = 5_000_i64;
+    let table = SemanticNode {
+        id: "tbl".to_string(),
+        role: "table".to_string(),
+        variant: None,
+        preserve_whitespace: None,
+        list_id: None,
+        depth: None,
+        marker_type: None,
+        content: NodeContent::Table(TableSpec {
+            column_widths: vec![GridTrack::Pt { pt: 50_000 }, GridTrack::Pt { pt: 50_000 }],
+            header_rows: 0,
+            gap,
+            row_gap: Some(row_gap),
+            column_gap: None,
+            data: TableDataSource::Inline {
+                rows: vec![
+                    vec![
+                        make_image("r0c0", 10_000, 20_000),
+                        make_image("r0c1", 10_000, 20_000),
+                    ],
+                    vec![
+                        make_image("r1c0", 10_000, 20_000),
+                        make_image("r1c1", 10_000, 20_000),
+                    ],
+                ],
+            },
+        }),
+        modifiers: vec![],
+        layout: None,
+        ..Default::default()
+    };
+
+    let total_w = Pt(50_000 + 50_000 + gap as i128);
+    let constraint = SizeConstraint::new(Size::ZERO, Size::new(total_w, Pt(i128::MAX)));
+    let measured = measure_node(&table, constraint, &ctx).unwrap();
+    assert_eq!(measured.width, total_w);
+    assert_eq!(measured.height, Pt(20_000 + row_gap as i128 + 20_000));
+
+    let geo = arrange_node(&table, Point::ZERO, measured, &ctx).unwrap();
+    assert_eq!(geo.children[0].x, Pt(0));
+    assert_eq!(geo.children[1].x, Pt(50_000 + gap as i128));
+    assert_eq!(geo.children[2].y, Pt(20_000 + row_gap as i128));
+    assert_eq!(geo.children[3].y, Pt(20_000 + row_gap as i128));
 }

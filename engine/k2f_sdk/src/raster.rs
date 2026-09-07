@@ -1,5 +1,6 @@
 use crate::error::{AgentError, IMAGE_SIZE};
 use image::{GenericImageView, ImageFormat};
+use k2f_core::{looks_like_svg, svg_bytes_contain_text_element, SVG_TEXT_FORBIDDEN_MSG};
 
 pub fn raster_size(bytes: &[u8]) -> Result<(u32, u32, &'static str), AgentError> {
     match image::guess_format(bytes) {
@@ -34,19 +35,9 @@ fn size_from_raster(
     Ok((w, h, ext))
 }
 
-fn looks_like_svg(bytes: &[u8]) -> bool {
-    let s = String::from_utf8_lossy(bytes);
-    let trimmed = s.trim_start();
-    let lower = trimmed.to_ascii_lowercase();
-    lower.starts_with("<svg") || (lower.starts_with("<?xml") && lower.contains("<svg"))
-}
-
 fn svg_size(bytes: &[u8]) -> Result<(u32, u32, &'static str), AgentError> {
-    if svg_contains_text_element(bytes) {
-        return Err(AgentError::new(
-            IMAGE_SIZE,
-            "SVG contains <text> — convert labels to <path> (engine rasterizes SVG without system fonts)",
-        ));
+    if svg_bytes_contain_text_element(bytes) {
+        return Err(AgentError::new(IMAGE_SIZE, SVG_TEXT_FORBIDDEN_MSG));
     }
     let opt = resvg::usvg::Options::default();
     let tree = resvg::usvg::Tree::from_data(bytes, &opt)
@@ -55,22 +46,6 @@ fn svg_size(bytes: &[u8]) -> Result<(u32, u32, &'static str), AgentError> {
     let w = size.width().ceil().max(1.0) as u32;
     let h = size.height().ceil().max(1.0) as u32;
     Ok((w, h, "svg"))
-}
-
-fn svg_contains_text_element(bytes: &[u8]) -> bool {
-    let lower = String::from_utf8_lossy(bytes).to_ascii_lowercase();
-    let mut rest = lower.as_str();
-    while let Some(i) = rest.find("<text") {
-        let after = rest.get(i + 5..).unwrap_or("");
-        if after.starts_with('>')
-            || after.starts_with('/')
-            || after.starts_with(|c: char| c.is_ascii_whitespace())
-        {
-            return true;
-        }
-        rest = after;
-    }
-    false
 }
 
 pub fn asset_path(id: &str, ext: &str) -> String {

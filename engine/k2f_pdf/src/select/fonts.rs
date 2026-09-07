@@ -35,7 +35,11 @@ pub struct FontSlot {
 pub fn reserve(alloc: &mut Alloc, fonts: &BTreeMap<String, Vec<u8>>) -> FontSet {
     let mut slots = Vec::new();
     let mut family_to_font = HashMap::new();
-    for (i, (path, bytes)) in fonts.iter().enumerate() {
+    for (i, (path, bytes)) in fonts
+        .iter()
+        .filter(|(path, _)| k2f_core::is_font_face_path(path))
+        .enumerate()
+    {
         let name = format!("F{i}");
         let ps_name = pdf_font_name(path, i);
         let cmap_name = format!("K2FU{i}");
@@ -217,6 +221,33 @@ fn write_cmap(pdf: &mut Pdf, slot: &FontSlot, gid_map: &BTreeMap<u16, String>) {
     let mut c = pdf.cmap(slot.cmap, data.as_ref());
     c.name(Name(slot.cmap_name.as_bytes()));
     c.system_info(SYS);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ids::Alloc;
+
+    #[test]
+    fn reserve_skips_license_sidecars() {
+        let mut fonts = BTreeMap::new();
+        fonts.insert(
+            "assets/fonts/licenses/Roboto-Apache.txt".into(),
+            b"Apache-2.0".to_vec(),
+        );
+        fonts.insert("assets/fonts/z.ttf".into(), vec![0, 1, 0, 0]);
+        let set = reserve(&mut Alloc::new(), &fonts);
+        assert_eq!(set.slots.len(), 1);
+        assert_eq!(set.slots[0].path, "assets/fonts/z.ttf");
+        assert!(!set
+            .family_to_font
+            .contains_key("assets/fonts/licenses/Roboto-Apache.txt"));
+        assert!(set.family_to_font.contains_key("z"));
+        assert_eq!(
+            set.family_to_font.get("default").map(String::as_str),
+            Some("F0")
+        );
+    }
 }
 
 fn pdf_font_name(path: &str, i: usize) -> String {

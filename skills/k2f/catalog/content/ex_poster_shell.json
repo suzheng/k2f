@@ -1,6 +1,6 @@
 {
   "id": "ex.poster_shell",
-  "role": "section",
+  "role": "page_shell",
   "break_inside": "avoid",
   "content": {
     "type": "container",

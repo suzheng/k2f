@@ -47,7 +47,9 @@ pub(crate) fn textbox_sp_xml(
         <a:ln><a:noFill/></a:ln>
       </p:spPr>
       <p:txBody>
-        <a:bodyPr wrap="{wrap}" lIns="{lins}" tIns="{tins}" rIns="{rins}" bIns="0" rtlCol="0" anchor="t"{overflow}/>
+        <a:bodyPr wrap="{wrap}" lIns="{lins}" tIns="{tins}" rIns="{rins}" bIns="0" rtlCol="0" anchor="t"{overflow}>
+          <a:noAutofit/>
+        </a:bodyPr>
         <a:lstStyle/>
 {body}      </p:txBody>
     </p:sp>
@@ -311,5 +313,32 @@ mod tests {
         assert!(xml.contains(r#"marL="200000""#), "{xml}");
         assert!(xml.contains(r#"indent="-200000""#), "{xml}");
         assert!(xml.contains(r#"startAt="3""#), "{xml}");
+    }
+
+    #[test]
+    fn body_pr_emits_no_autofit_and_center_algn() {
+        let tb = crate::ir::TextBox {
+            node_id: "title".into(),
+            x_emu: 0,
+            y_emu: 0,
+            cx_emu: 1_000_000,
+            cy_emu: 200_000,
+            runs: vec![run("Title")],
+            align: TextAlign::Center,
+            bullet: false,
+            numbered: false,
+            preserve_whitespace: false,
+            wrap: true,
+            line_spc_pts: None,
+            t_ins_emu: 0,
+            l_ins_emu: 0,
+            r_ins_emu: 0,
+            mar_l_emu: 0,
+            list_start: 1,
+        };
+        let xml = textbox_sp_xml(&tb, 2, &BTreeMap::new());
+        assert!(xml.contains("<a:noAutofit/>"), "{xml}");
+        assert!(xml.contains(r#"wrap="square""#), "{xml}");
+        assert!(xml.contains(r#"algn="ctr""#), "{xml}");
     }
 }

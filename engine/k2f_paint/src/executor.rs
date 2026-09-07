@@ -20,28 +20,51 @@ pub fn single_font_map(bytes: &[u8]) -> BTreeMap<String, Vec<u8>> {
 pub fn load_faces<'a>(
     fonts: &'a BTreeMap<String, Vec<u8>>,
 ) -> Result<HashMap<String, Face<'a>>, PaintError> {
-    if fonts.is_empty() {
+    let entries: Vec<(&String, &Vec<u8>)> = fonts
+        .iter()
+        .filter(|(name, _)| k2f_core::is_font_face_path(name))
+        .collect();
+    if entries.is_empty() {
         return Err(PaintError::Font("package has no embedded font".into()));
     }
     let mut faces: HashMap<String, Face<'_>> = HashMap::new();
-    for (name, bytes) in fonts {
-        let face = Face::parse(bytes, 0).map_err(|e| PaintError::Font(format!("{name}: {e:?}")))?;
-        faces.insert(name.clone(), face);
+    for (name, bytes) in &entries {
+        let face = Face::parse(bytes, 0).map_err(|_| {
+            PaintError::Font(format!(
+                "FONT_INVALID: '{name}' is not a valid TTF/OTF"
+            ))
+        })?;
+        faces.insert((*name).clone(), face);
         if let Some(stem) = std::path::Path::new(name).file_stem() {
             let stem = stem.to_string_lossy().into_owned();
             if !faces.contains_key(&stem) {
-                let face = Face::parse(bytes, 0)
-                    .map_err(|e| PaintError::Font(format!("{stem}: {e:?}")))?;
+                let face = Face::parse(bytes, 0).map_err(|_| {
+                    PaintError::Font(format!(
+                        "FONT_INVALID: '{stem}' is not a valid TTF/OTF"
+                    ))
+                })?;
                 faces.insert(stem, face);
             }
         }
     }
     if !faces.contains_key("default") {
-        let (name, bytes) = fonts.iter().next().unwrap();
-        let face = Face::parse(bytes, 0).map_err(|e| PaintError::Font(format!("{name}: {e:?}")))?;
+        let (name, bytes) = entries[0];
+        let face = Face::parse(bytes, 0).map_err(|_| {
+            PaintError::Font(format!(
+                "FONT_INVALID: '{name}' is not a valid TTF/OTF"
+            ))
+        })?;
         faces.insert("default".into(), face);
     }
     Ok(faces)
+}
+
+fn require_positive_scale(scale: f32) -> Result<(), PaintError> {
+    if !scale.is_finite() || scale <= 0.0 {
+        Err(PaintError::InvalidScale)
+    } else {
+        Ok(())
+    }
 }
 
 pub fn render_lockfile_page_rgb(
@@ -54,9 +77,7 @@ pub fn render_lockfile_page_rgb(
     if lock.has_unknown_paint_ops() {
         return Err(PaintError::UnknownOp);
     }
-    if !scale.is_finite() || scale <= 0.0 {
-        return Err(PaintError::InvalidScale);
-    }
+    require_positive_scale(scale)?;
     let faces = load_faces(fonts)?;
     let pixmap = render_lockfile_page_to_pixmap(lock, page_idx, scale, &faces, images)?;
     Ok((
@@ -73,6 +94,7 @@ pub fn render_lockfile_page_to_png(
     fonts: &BTreeMap<String, Vec<u8>>,
     images: &BTreeMap<String, Vec<u8>>,
 ) -> Result<Vec<u8>, PaintError> {
+    require_positive_scale(scale)?;
     let faces = load_faces(fonts)?;
     let pixmap = render_lockfile_page_to_pixmap(lock, page_idx, scale, &faces, images)?;
     pixmap

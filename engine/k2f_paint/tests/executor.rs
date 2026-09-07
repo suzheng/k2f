@@ -83,3 +83,54 @@ fn non_positive_scale_is_hard_failure() {
         Err(PaintError::InvalidScale)
     ));
 }
+
+#[test]
+fn load_faces_skips_license_txt() {
+    let mut fonts = std::collections::BTreeMap::new();
+    fonts.insert(
+        "assets/fonts/Roboto-Regular.ttf".into(),
+        common::font_bytes(),
+    );
+    fonts.insert(
+        "assets/fonts/licenses/Roboto-Apache.txt".into(),
+        b"Apache-2.0".to_vec(),
+    );
+    k2f_paint::load_faces(&fonts).unwrap();
+}
+
+#[test]
+fn load_faces_rejects_invalid_ttf() {
+    let mut fonts = std::collections::BTreeMap::new();
+    fonts.insert("assets/fonts/bad.ttf".into(), b"not-a-font".to_vec());
+    let err = k2f_paint::load_faces(&fonts).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("FONT_INVALID"), "{msg}");
+    assert!(!msg.contains("UnknownMagic"), "{msg}");
+}
+
+#[test]
+fn starter_with_license_txt_renders() {
+    let mut pkg = k2f_package::load_dir(&common::repo_root().join("skills/k2f/starter")).unwrap();
+    let assets: std::collections::HashMap<_, _> = pkg.assets.clone().into_iter().collect();
+    let lock = k2f_layout::compile_manifest(
+        pkg.engine_manifest(),
+        &pkg.theme_json,
+        &pkg.fonts,
+        if assets.is_empty() {
+            None
+        } else {
+            Some(&assets)
+        },
+    )
+    .unwrap();
+    pkg.set_lock(&lock).unwrap();
+    let png = k2f_paint::render_lockfile_page_to_png(
+        &lock,
+        0,
+        OFFICIAL_PNG_SCALE,
+        &pkg.fonts,
+        &pkg.assets,
+    )
+    .unwrap();
+    assert!(png.starts_with(b"\x89PNG"));
+}

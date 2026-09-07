@@ -251,6 +251,8 @@ fn nested_cell_returns_none() {
         column_widths: vec![GridTrack::Fr { fr: 1 }],
         header_rows: 0,
         gap: 0,
+        row_gap: None,
+        column_gap: None,
         data: TableDataSource::Inline {
             rows: vec![vec![SemanticNode {
                 id: "img".into(),
@@ -269,6 +271,8 @@ fn nested_cell_returns_none() {
         column_widths: vec![GridTrack::Fr { fr: 1 }],
         header_rows: 0,
         gap: 0,
+        row_gap: None,
+        column_gap: None,
         data: TableDataSource::Inline {
             rows: vec![vec![SemanticNode {
                 id: "wrap".into(),
@@ -285,6 +289,8 @@ fn nested_cell_returns_none() {
         column_widths: vec![GridTrack::Fr { fr: 1 }],
         header_rows: 0,
         gap: 0,
+        row_gap: None,
+        column_gap: None,
         data: TableDataSource::Inline {
             rows: vec![vec![text_cell("c")]],
         },
@@ -294,6 +300,8 @@ fn nested_cell_returns_none() {
         column_widths: vec![GridTrack::Fr { fr: 1 }],
         header_rows: 0,
         gap: 0,
+        row_gap: None,
+        column_gap: None,
         data: TableDataSource::Asset {
             source: "assets/data/t.json".into(),
         },

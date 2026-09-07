@@ -161,3 +161,116 @@ fn invoice_template_compiles_and_verifies() {
     assert_eq!(packed, pack_bytes(&unpack_bytes(&packed).unwrap()).unwrap());
     assert_eq!(verify_package(&pkg).unwrap(), VerifyStatus::Valid);
 }
+
+#[test]
+fn licenses_only_fonts_are_font_missing() {
+    let (engine, theme) = load_contract_engine();
+    let mut fonts = std::collections::BTreeMap::new();
+    fonts.insert(
+        "assets/fonts/licenses/Roboto-Apache.txt".into(),
+        b"Apache-2.0".to_vec(),
+    );
+    let err = k2f_package::Package::from_engine_parts(
+        engine.title.clone(),
+        None,
+        Some(0),
+        engine,
+        theme,
+        fonts,
+        Default::default(),
+    )
+    .unwrap_err();
+    assert!(err.to_string().contains("FONT_MISSING"), "got {err}");
+}
+
+#[test]
+fn starter_keeps_license_files_and_has_a_face() {
+    let pkg = k2f_package::load_dir(&repo_root().join("skills/k2f/starter")).unwrap();
+    assert!(pkg
+        .fonts
+        .keys()
+        .any(|p| p.contains("licenses/") && p.ends_with(".txt")));
+    assert!(k2f_package::paths::has_font_face(&pkg.fonts));
+}
+
+#[test]
+fn pack_rejects_svg_text_element() {
+    let (engine, theme) = load_contract_engine();
+    let mut pkg = package_from_engine(
+        engine,
+        theme,
+        "assets/fonts/NotoSansSC-Regular.otf",
+        load_font(),
+    )
+    .unwrap();
+    pkg.assets.insert(
+        "assets/images/mark.svg".into(),
+        br#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><text x="1" y="2">A</text></svg>"#.to_vec(),
+    );
+    let err = pack_bytes(&pkg).unwrap_err();
+    assert!(
+        err.to_string().contains(k2f_package::CODE_IMAGE_SIZE),
+        "got {err}"
+    );
+    assert!(err.to_string().contains("<text>"), "got {err}");
+}
+
+#[test]
+fn pack_allows_svg_comment_mentioning_text() {
+    let (engine, theme) = load_contract_engine();
+    let mut pkg = package_from_engine(
+        engine,
+        theme,
+        "assets/fonts/NotoSansSC-Regular.otf",
+        load_font(),
+    )
+    .unwrap();
+    pkg.assets.insert(
+        "assets/images/mark.svg".into(),
+        br##"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><!-- <text> converted to path --><rect width="4" height="4" fill="#00f"/></svg>"##.to_vec(),
+    );
+    pack_bytes(&pkg).unwrap();
+}
+
+#[test]
+fn pack_rejects_svg_textpath() {
+    let (engine, theme) = load_contract_engine();
+    let mut pkg = package_from_engine(
+        engine,
+        theme,
+        "assets/fonts/NotoSansSC-Regular.otf",
+        load_font(),
+    )
+    .unwrap();
+    pkg.assets.insert(
+        "assets/images/mark.svg".into(),
+        br##"<svg xmlns="http://www.w3.org/2000/svg"><textPath href="#p">A</textPath></svg>"##
+            .to_vec(),
+    );
+    let err = pack_bytes(&pkg).unwrap_err();
+    assert!(
+        err.to_string().contains(k2f_package::CODE_IMAGE_SIZE),
+        "got {err}"
+    );
+}
+
+#[test]
+fn pack_rejects_svg_foreign_object() {
+    let (engine, theme) = load_contract_engine();
+    let mut pkg = package_from_engine(
+        engine,
+        theme,
+        "assets/fonts/NotoSansSC-Regular.otf",
+        load_font(),
+    )
+    .unwrap();
+    pkg.assets.insert(
+        "assets/images/mark.svg".into(),
+        br##"<svg xmlns="http://www.w3.org/2000/svg"><foreignObject width="4" height="4">A</foreignObject></svg>"##.to_vec(),
+    );
+    let err = pack_bytes(&pkg).unwrap_err();
+    assert!(
+        err.to_string().contains(k2f_package::CODE_IMAGE_SIZE),
+        "got {err}"
+    );
+}

@@ -337,6 +337,8 @@ pub(crate) fn grid_track_sizes(
     children: &[SemanticNode],
     ctx: &LayoutContext,
 ) -> Result<(Vec<Pt>, Vec<Pt>), String> {
+    let resolved_rows = k2f_core::grid_rows_for_children(columns, rows, children.len());
+    let rows = resolved_rows.as_slice();
     let n_cols = columns.len();
     let n_rows = rows.len();
     if n_cols == 0 || n_rows == 0 {

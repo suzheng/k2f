@@ -260,6 +260,45 @@ mod tests {
     }
 
     #[test]
+    fn grid_omitted_rows_are_valid() {
+        let node = json!({
+            "id": "root",
+            "role": "document",
+            "content": {
+                "type": "container",
+                "value": {
+                    "children": [{
+                        "id": "root.grid",
+                        "role": "body",
+                        "content": {
+                            "type": "container",
+                            "value": {
+                                "children": [
+                                    {
+                                        "id": "root.grid.a",
+                                        "role": "body",
+                                        "content": { "type": "text", "value": "a" }
+                                    },
+                                    {
+                                        "id": "root.grid.b",
+                                        "role": "body",
+                                        "content": { "type": "text", "value": "b" }
+                                    }
+                                ]
+                            }
+                        },
+                        "layout": {
+                            "type": "grid",
+                            "columns": [{ "fr": 1 }, { "fr": 1 }]
+                        }
+                    }]
+                }
+            }
+        });
+        validate_root_json(&node).unwrap();
+    }
+
+    #[test]
     fn signatures_schema_rejects_version_two_extra_field_and_empty_list() {
         let valid = json!({
             "version": 1,

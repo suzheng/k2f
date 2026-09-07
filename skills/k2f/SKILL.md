@@ -17,11 +17,11 @@ npm i @openk2f/k2f           # only when embedding <k2f-viewer> in a web app
 # cargo install k2f          # optional: CLI without Python
 ```
 
-**Writing:** one loop — get an unpacked author directory, edit JSON like source code, copy shapes from [`catalog/content/ex_*.json`](catalog/content/), and `scripts/pack_verify.py`. The working directory comes from `k2f unpack` (user `.K2F` or a Gallery package), or [`starter/`](starter/) via `scripts/init_package.py` when nothing matches. Do **not** use `Editor.insert_node` on an unpacked author directory — that API follows a narrower agent dialect; JSON authoring uses the full format schema validated at pack time.
+**Writing:** one loop — get an unpacked author directory, edit JSON like source code, copy shapes from [`catalog/content/ex_*.json`](catalog/content/), and `scripts/pack_verify.py`. The working directory comes from `k2f unpack` (user `.K2F` or a Gallery package), or [`starter/`](starter/) via `scripts/init_package.py` when nothing matches. Do **not** use `Editor.insert_node` on an unpacked author directory — that API follows a narrower agent dialect; JSON authoring uses the full format schema validated at pack time. Text `modifiers` need `intent` plus UTF-8 **byte** `range` — always run [`scripts/modifier_range.py`](scripts/modifier_range.py); never hand-count (especially across `\n`).
 
 **MCP** is optional. Writing does not require it and does not install it. If a site MCP with `list_templates` / `download_template` is already connected, use it in step 2 of [writing.md](references/writing.md). Missing tools, kind mismatch, or download failure → continue from `starter/`; do not stop the task.
 
-Run scripts from this skill directory (or pass absolute paths to them). The author directory may live anywhere. `pack_verify.py` needs `k2f` on PATH (`pip install k2f`) or `K2F_CLI` — it does not walk a git checkout or build directory for a binary.
+Run scripts from this skill directory (or pass absolute paths to them). Skill scripts (`init_package.py`, `pack_verify.py`, `modifier_range.py`) are **stdlib-only** — `python scripts/…`; no `uv` and no extra pip packages. The author directory may live anywhere. `pack_verify.py` needs `k2f` on PATH (`pip install k2f`) or `K2F_CLI` — it does not walk a git checkout or build directory for a binary.
 
 ## What K2F is
 
@@ -49,11 +49,11 @@ The engine — not the agent — turns A into C by running `pack` / `compile`. O
 3. **PDF, PPTX, and DOCX are one-way drawings of the lock, not a second source.** (`PDF_IS_NOT_A_SOURCE`, `PPTX_IS_NOT_A_SOURCE`, `DOCX_IS_NOT_A_SOURCE`)
 4. **Signing is a separate human/org step.** Agent output is `UNSIGNED` by design.
 5. **Validate after every edit.** Fix from error codes in [writing/errors.md](references/writing/errors.md); do not patch the lock.
-6. **Look at the pixels.** `verify` only checks hashes. After pack, render a PNG and open the image. Poster/slide empty bottom: copy [`catalog/content/ex_poster_shell.json`](catalog/content/ex_poster_shell.json); compile may print `LAYOUT_SLACK` → [writing/errors.md](references/writing/errors.md). Type too large/small: role styles in `theme.json`. Commands: [writing.md](references/writing.md#visual-check).
+6. **Look at the pixels.** After pack, render a PNG and open it — including **inside** painted cards, not only whether chrome hits the footer. Composed page: leftover `{fr:1}` goes to a **figure** or several **dense** siblings ([`ex_poster_growers.json`](catalog/content/ex_poster_growers.json)). `{fr:1}` stretches the **box**, not type; never the only leftover on a short quote/card. No `LAYOUT_SLACK` ≠ filled. Flow: no `break_before: page` on a figure unless it must start a page; padded section does not split. Type size: theme roles. Commands: [writing.md](references/writing.md#visual-check).
 
 ## Design first
 
-Before editing `content/` or `styles/theme.json`, write a **design specification** as Markdown (e.g. `design.md` next to the author directory).
+Before editing `content/` or `styles/theme.json`, write a **design specification** as Markdown **beside** the author directory (e.g. `./out/doc.design.md` — not inside `./out/doc/`). Then `python scripts/init_package.py --dir ./out/doc …`. A directory that only has notes (`design.md`) can still be initialized in place.
 
 - **User gave design constraints** — the spec follows their requirements.
 - **User did not specify** — design to the highest aesthetic standard for the deliverable type (report, poster, slide deck, flyer, …). Do not ship the starter theme unchanged for styled work.

@@ -191,3 +191,70 @@ fn wrapping_is_deterministic_across_runs() {
         assert_eq!(reference, current);
     }
 }
+
+fn line_text(layout: &crate::text_layout::TextLayout, i: usize) -> String {
+    layout.lines[i]
+        .runs
+        .iter()
+        .map(|r| r.text.as_str())
+        .collect()
+}
+
+#[test]
+fn wraps_after_hyphen_minus() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let style = crate::style::resolve_base_style("body", &theme);
+    let well_hyphen = measure_text_run_width("well-", &style, &ctx).unwrap();
+    let known_w = measure_text_run_width("known", &style, &ctx).unwrap();
+    let max_w = well_hyphen.max(known_w) + Pt(1);
+    let constraint = SizeConstraint::new(Size::ZERO, Size::new(max_w, Pt(i128::MAX)));
+    let modifiers: Vec<Modifier> = vec![];
+    let layout =
+        crate::text_layout::layout_text("well-known", "body", None, &modifiers, constraint, &ctx)
+            .unwrap();
+    assert_eq!(layout.lines.len(), 2, "expected hyphen break, got {:?}", layout.lines);
+    assert_eq!(line_text(&layout, 0), "well-");
+    assert_eq!(line_text(&layout, 1), "known");
+}
+
+#[test]
+fn wraps_after_soft_hyphen() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let style = crate::style::resolve_base_style("body", &theme);
+    let text = "LATEN\u{00AD}CY";
+    let head = "LATEN\u{00AD}";
+    let head_w = measure_text_run_width(head, &style, &ctx).unwrap();
+    let max_w = head_w + Pt(1);
+    let constraint = SizeConstraint::new(Size::ZERO, Size::new(max_w, Pt(i128::MAX)));
+    let modifiers: Vec<Modifier> = vec![];
+    let layout = crate::text_layout::layout_text(text, "body", None, &modifiers, constraint, &ctx)
+        .unwrap();
+    assert_eq!(layout.lines.len(), 2, "expected soft-hyphen break, got {:?}", layout.lines);
+    assert_eq!(line_text(&layout, 0), head);
+    assert_eq!(line_text(&layout, 1), "CY");
+}
+
+#[test]
+fn unbreakable_word_still_splits_by_character() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let style = crate::style::resolve_base_style("body", &theme);
+    let three = measure_text_run_width("LAT", &style, &ctx).unwrap();
+    let constraint = SizeConstraint::new(Size::ZERO, Size::new(three, Pt(i128::MAX)));
+    let modifiers: Vec<Modifier> = vec![];
+    let layout =
+        crate::text_layout::layout_text("LATENCY", "body", None, &modifiers, constraint, &ctx)
+            .unwrap();
+    assert!(layout.lines.len() >= 2);
+    let first = line_text(&layout, 0);
+    assert!(!first.is_empty());
+    assert!(
+        first.chars().all(|c| c.is_ascii_alphabetic()),
+        "emergency split should keep letters, got {first:?}"
+    );
+}

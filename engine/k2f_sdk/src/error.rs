@@ -85,6 +85,7 @@ impl From<PackageError> for AgentError {
         match e {
             PackageError::FontMissing(m) => Self::new(FONT_MISSING, m),
             PackageError::SchemaInvalid(m) => Self::new(SCHEMA_INVALID, m),
+            PackageError::ImageSize(m) => Self::new(IMAGE_SIZE, m),
             PackageError::PdfIsNotASource => Self::new(
                 PDF_IS_NOT_A_SOURCE,
                 "PDF is a drawing of a lock, not a K2F source",
@@ -112,7 +113,9 @@ pub(crate) fn map_compile_message(msg: &str) -> AgentError {
         AgentError::new(INVALID_ID, msg)
     } else if msg.contains("row") && msg.contains("cells") {
         AgentError::new(TABLE_ROW_MISMATCH, msg)
-    } else if msg.contains("image") && msg.contains("positive size") {
+    } else if msg.contains("image") && msg.contains("positive size")
+        || msg.contains("SVG contains <text>")
+    {
         AgentError::new(IMAGE_SIZE, msg)
     } else if msg.contains("modifier") {
         AgentError::new(INVALID_MODIFIER, msg)

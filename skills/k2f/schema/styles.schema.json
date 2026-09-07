@@ -128,9 +128,9 @@
             "description": "Overrides the parent container's cross-axis alignment for this item.",
             "default": null
           },
-          "box_decoration": {
+            "box_decoration": {
             "$ref": "k2f://schema/visual_primitives.schema.json#/$defs/box_decoration",
-            "description": "Optional box decoration applied when the role is used on containers or decorated boxes."
+            "description": "Optional box decoration for any node using this role (text, table, container, image). Lives on the role, never on the node. Text badges: background + padding + corner_radius on the role."
           },
           "list_style": {
             "$ref": "#/$defs/list_style",
@@ -138,7 +138,7 @@
           },
           "variants": {
             "type": "object",
-            "description": "Variant name -> style additions/overrides for this role.",
+            "description": "Variant name -> skin for this role. Keys: box_decoration, self_align, text_overrides, list_style. Text fields (bold, color, text_align, font_size, …) go in text_overrides, not at the variant root.",
             "additionalProperties": {
               "type": "object",
               "additionalProperties": false,
@@ -148,7 +148,10 @@
                    "enum": ["start", "center", "end", "stretch"],
                    "description": "Overrides the parent container's cross-axis alignment for this item."
                 },
-                "text_overrides": { "$ref": "k2f://schema/visual_primitives.schema.json#/$defs/text_style_patch" },
+                "text_overrides": {
+                  "$ref": "k2f://schema/visual_primitives.schema.json#/$defs/text_style_patch",
+                  "description": "Optional text patch (bold, color, text_align, font_size, …). Not valid at the variant root."
+                },
                 "list_style": {
                   "$ref": "#/$defs/list_style",
                   "description": "Optional list layout token overrides for this role variant."
@@ -162,7 +165,7 @@
     },
     "font_aliases": {
       "type": "object",
-      "description": "Human font names -> loaded font family keys (e.g. 'Helvetica' -> 'default').",
+      "description": "Role font_family names -> embedded font file stems under assets/fonts/ (e.g. 'Roboto-Regular' -> 'Roboto-Regular'). Lives in styles/theme.json, not manifest.json. One face also registers as 'default'; two or more faces: alias every stem, no auto-default.",
       "additionalProperties": { "type": "string" }
     },
     "modifiers": {

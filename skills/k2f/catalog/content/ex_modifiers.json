@@ -54,8 +54,24 @@
               "intent": "keyword"
             }
           ]
+        },
+        {
+          "id": "ex.modifiers.multiline",
+          "role": "h2",
+          "content": {
+            "type": "text",
+            "value": "Lead line\nthen bold"
+          },
+          "modifiers": [
+            {
+              "range": [15, 19],
+              "type": "emphasis",
+              "intent": "strong"
+            }
+          ]
         }
       ]
     }
-  }
+  },
+  "layout": { "type": "stack", "direction": "vertical", "gap": 8000 }
 }

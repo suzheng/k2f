@@ -33,7 +33,7 @@ pub fn case_images(name: &str) -> std::collections::BTreeMap<String, Vec<u8>> {
         .join(name)
         .join("assets");
     let mut out = std::collections::BTreeMap::new();
-    let Ok(walk) = fs::read_dir(&dir) else {
+    let Ok(_) = fs::read_dir(&dir) else {
         return out;
     };
     fn rec(
@@ -73,5 +73,11 @@ pub fn assert_png_golden(rel: &str, bytes: &[u8]) {
             path
         )
     });
-    assert_eq!(expected, bytes, "paint golden mismatch: {}", rel);
+    if expected != bytes {
+        panic!(
+            "paint golden mismatch: {rel} (expected {} bytes, got {} bytes); re-run with UPDATE_PAINT_GOLDENS=1",
+            expected.len(),
+            bytes.len()
+        );
+    }
 }

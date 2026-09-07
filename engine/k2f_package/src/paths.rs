@@ -22,6 +22,16 @@ pub fn is_font_path(path: &str) -> bool {
     path.starts_with(FONTS_DIR) && path.len() > FONTS_DIR.len()
 }
 
+/// TrueType/OpenType face (`.ttf` / `.otf`), including the in-memory `"default"` key.
+pub fn is_font_face_path(path: &str) -> bool {
+    k2f_core::is_font_face_path(path)
+}
+
+/// At least one face (not a licenses-only `assets/fonts/` tree).
+pub fn has_font_face(fonts: &std::collections::BTreeMap<String, Vec<u8>>) -> bool {
+    fonts.keys().any(|p| is_font_face_path(p))
+}
+
 pub fn is_schema_path(path: &str) -> bool {
     FORMAT_SCHEMA_FILES.contains(&path)
 }

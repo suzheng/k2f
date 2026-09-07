@@ -6,7 +6,7 @@ use k2f_core::{
 };
 
 pub fn verify_package(package: &Package) -> Result<VerifyStatus, PackageError> {
-    if package.fonts.is_empty() {
+    if !crate::paths::has_font_face(&package.fonts) {
         return Ok(VerifyStatus::FontMissing);
     }
     let Some(lock_json) = &package.lock_json else {

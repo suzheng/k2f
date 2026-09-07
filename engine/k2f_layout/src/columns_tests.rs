@@ -287,3 +287,47 @@ fn nested_columns_rejected_by_validate() {
     let err = k2f_core::validate_semantic_tree(&outer).unwrap_err();
     assert!(matches!(err, k2f_core::K2FError::ColumnsNested { .. }));
 }
+
+#[test]
+fn unpadded_columns_fill_page_then_continue() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let mut kids = Vec::new();
+    for i in 0..40 {
+        kids.push(make_text(
+            &format!("p{i}"),
+            "Paragraph of body text for column flow.",
+        ));
+    }
+    let root = columns_root(kids);
+    let page_config = page(Pt(200_000), Pt(80_000));
+    let manifest = Manifest {
+        title: "cols-flow".into(),
+        canvas_mode: CanvasMode::Paged,
+        page_config,
+        root,
+        running_blocks: vec![],
+    };
+    let result = LayoutEngine::layout(&manifest, &ctx).unwrap();
+    assert!(
+        result.pages.len() >= 2,
+        "expected columns to continue onto a later page, got {} pages",
+        result.pages.len()
+    );
+    let page0_has_body = result.pages[0]
+        .root
+        .children
+        .iter()
+        .any(|c| c.id.starts_with('p'));
+    assert!(
+        page0_has_body,
+        "unpadded columns must keep text on the first page, not push the whole block; page0 ids: {:?}",
+        result.pages[0]
+            .root
+            .children
+            .iter()
+            .map(|c| c.id.as_str())
+            .collect::<Vec<_>>()
+    );
+}

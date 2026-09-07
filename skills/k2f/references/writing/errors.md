@@ -10,10 +10,10 @@ Fix the **semantic tree** or **theme**. Shapes: [`catalog/content/ex_*.json`](..
 | `DUPLICATE_ID` | Rename; ids must be globally unique |
 | `INVALID_ID` | Pattern `segment.segment` — alphanumeric + underscore |
 | `TABLE_ROW_MISMATCH` | Every row same length as columns; header_rows ≤ rows; table `column_widths` cannot be `{auto:true}` |
-| `IMAGE_SIZE` | Provide image bytes + declared width/height millipt. Formats: PNG, JPEG, WebP, SVG — not GIF. SVG `<text>` / `<tspan>` fails — convert labels to `<path>` |
-| `FONT_MISSING` | Embed TTF/OTF under `assets/fonts/`; map role `font_family` via `font_aliases` to the file **stem** (e.g. `"DejaVuSans"`). One font auto-registers as `"default"`; with two+ fonts you must alias **every** stem (see `catalog/styles/theme.json`). `--add-font` adds the alias only — retarget the `math` (or heading) role yourself. No CSS generic families. |
-| `INVALID_MODIFIER` | Range on UTF-8 **byte** boundaries (`python scripts/modifier_range.py --text … --find …`); max 50 modifiers. For multi-line titles, pass the full `value` including `\n` (`\n` = 1 byte). |
-| `SCHEMA_INVALID` | Open [`schema/`](../../schema/) for the failing file. Key in schema but rejected → `pip install -U k2f`. Key not in schema → remove it. Optional layout keys may be omitted or `null`. |
+| `IMAGE_SIZE` | Provide image bytes + declared width/height millipt. Formats: PNG, JPEG, WebP, SVG — not GIF. SVG `<text>` / `<tspan>` / `<textPath>` / `<foreignObject>` fail at **compile** (paint still fail-closed) — convert labels to `<path>`. Mentions inside XML comments or CDATA do not count. |
+| `FONT_MISSING` | Embed TTF/OTF under `assets/fonts/`; map role `font_family` via **`styles/theme.json` `font_aliases`** (not manifest) to the file **stem** (e.g. `"DejaVuSans"`). One **face** auto-registers as `"default"`; license/sidecar `.txt` under `fonts/` is packed but ignored at load (not a second face). With two+ faces you must alias **every** stem and retarget role `font_family` (see `catalog/styles/theme.json`). `--add-font` adds the alias only. No CSS generic families. Invalid `.ttf`/`.otf` → `FONT_INVALID` (path in the message), not a parser dump. |
+| `INVALID_MODIFIER` | Range on UTF-8 **byte** boundaries (`python scripts/modifier_range.py --text … --find …`); max 50 modifiers. For multi-line titles, pass the full `value` including `\n` (`\n` = 1 byte). Missing `intent` is `SCHEMA_INVALID`, not this code. |
+| `SCHEMA_INVALID` | Open [`schema/`](../../schema/) for the failing file. Key in schema but rejected → `pip install -U k2f`. Key **not** in schema → remove it (`colspan`, `space-between`, node-level `box_decoration`/`padding`/`text_align` are not keys). Modifier objects need `range`, `type`, and `intent`. Optional layout keys (including grid `rows`) may be omitted or `null`. |
 | `UNKNOWN_ID` | Id not in tree — search outline; do not guess |
 | `WRONG_CONTENT` | Wrong content type for the edit (e.g. text API on a table) |
 | `UNEXPECTED_PATH` | Extra ZIP path (e.g. `schema/agent_v0.schema.json`) — remove it; assets must live only under `assets/fonts/`, `assets/images/`, or `assets/data/` |
@@ -21,11 +21,11 @@ Fix the **semantic tree** or **theme**. Shapes: [`catalog/content/ex_*.json`](..
 | `FONT_MISSING_GLYPH` | Glyph not in **any** embedded face — add a covering font (`init_package.py --add-font`), or change that character. No OS fallback. Roboto lacks arrows, dingbats, math (`∈` `∑`), and **CJK/kana**. Formulas (`role: "math"`, inline math modifiers, or math glyphs in body) need **NotoSansMath** from [`catalog/assets/fonts/`](../../catalog/assets/fonts/) plus `font_aliases` (starter is Roboto only). NotoSansSC ≠ Japanese. Do not rewrite the user's language to English. |
 | `INVALID_ARGUMENT` | Catch-all for many compile failures — read **message** |
 | `PDF_IS_NOT_A_SOURCE` | Do not import PDF as K2F source |
-| `UNSPLITTABLE_OVERFLOW` | Unsplittable node (e.g. `break_inside: avoid`, overlay, grid) taller than one page content box. Often `layout.height` shell + role padding + a child also sized to full page, or a page-height `avoid` **stack** with large `padding_pt` — use `ex_poster_shell.json` / `ex_cover.json` first; shrink padding/gap; size children to the inner box |
+| `UNSPLITTABLE_OVERFLOW` | Unsplittable node (e.g. `break_inside: avoid`, overlay, grid, **padded columns**) taller than one page content box. Often `layout.height` shell + role padding + a child also sized to full page, or a page-height `avoid` **stack** with large `padding_pt` — copy `ex_poster_shell.json` (`page_shell`); `inner_h = height − pad_t − pad_b`; do not re-declare page height on children. Article columns: unpadded `columns` + `column_span: "all"`, not a padded role |
 
 ## Compile stderr (not AgentError)
 
-`k2f compile` may print `LAYOUT_SLACK id=… unused_below=… (%) … after=…`. Warning only (exit 0) — compile, verify, and `pack_verify.py` do **not** fail. A height-pinned box ≥40% of the page content box is empty at the bottom. If that was not intended, copy `ex_poster_shell.json` (`{fr:1}` grower); do not add spacer nodes. Not stored in the lock. Reports without a page-height shell are not flagged.
+`k2f compile` may print `LAYOUT_SLACK id=… unused_below=… (%) … after=…`. Warning only (exit 0). A large stretched box is empty at the bottom — usually a grower, not the shell. `{fr:1}` grows the **box**; text stays top-packed. Put leftover on a figure or dense siblings ([`ex_poster_growers.json`](../../catalog/content/ex_poster_growers.json)), not a 2-line card. Silence does not mean interiors are filled — open the PNG. Not stored in the lock.
 
 ## Math messages (not separate codes)
 

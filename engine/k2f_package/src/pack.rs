@@ -37,7 +37,7 @@ pub fn validate_package_schema(package: &Package) -> Result<(), PackageError> {
             return Err(PackageError::Other(format!("missing {path}")));
         }
     }
-    if package.fonts.is_empty() {
+    if !paths::has_font_face(&package.fonts) {
         return Err(PackageError::FontMissing(
             "at least one font is required under assets/fonts/".to_string(),
         ));

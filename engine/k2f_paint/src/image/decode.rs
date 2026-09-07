@@ -1,4 +1,5 @@
 use image::{DynamicImage, ImageBuffer, ImageFormat, RgbaImage};
+use k2f_core::{looks_like_svg, svg_bytes_contain_text_element, SVG_TEXT_FORBIDDEN_MSG};
 use tiny_skia::Pixmap;
 
 use super::letterbox::letterbox_dest;
@@ -15,13 +16,6 @@ pub fn decode_raster(bytes: &[u8]) -> Result<DynamicImage, PaintError> {
         Err(_) if looks_like_svg(bytes) => decode_svg(bytes),
         Err(e) => Err(PaintError::Image(e.to_string())),
     }
-}
-
-fn looks_like_svg(bytes: &[u8]) -> bool {
-    let s = String::from_utf8_lossy(bytes);
-    let trimmed = s.trim_start();
-    let lower = trimmed.to_ascii_lowercase();
-    lower.starts_with("<svg") || (lower.starts_with("<?xml") && lower.contains("<svg"))
 }
 
 /// Rasterize SVG with a fixed-version resvg.
@@ -43,42 +37,12 @@ pub fn decode_svg(bytes: &[u8]) -> Result<DynamicImage, PaintError> {
     premul_pixmap_to_dynamic(&pixmap)
 }
 
-/// `<text>` / `<tspan>` need host fonts. Fail closed instead of dropping glyphs.
+/// Text-bearing SVG elements need host fonts. Fail closed instead of dropping glyphs.
 pub(crate) fn reject_svg_text(bytes: &[u8]) -> Result<(), PaintError> {
-    if svg_contains_text_element(bytes) {
-        return Err(PaintError::Image(
-            "SVG contains <text> — convert labels to <path> (engine rasterizes SVG without system fonts)"
-                .into(),
-        ));
+    if svg_bytes_contain_text_element(bytes) {
+        return Err(PaintError::Image(SVG_TEXT_FORBIDDEN_MSG.into()));
     }
     Ok(())
-}
-
-fn svg_contains_text_element(bytes: &[u8]) -> bool {
-    let lower = String::from_utf8_lossy(bytes).to_ascii_lowercase();
-    let mut rest = lower.as_str();
-    while let Some(i) = rest.find("<text") {
-        let after = rest.get(i + 5..).unwrap_or("");
-        if after.starts_with('>')
-            || after.starts_with('/')
-            || after.starts_with(|c: char| c.is_ascii_whitespace())
-        {
-            return true;
-        }
-        rest = after;
-    }
-    let mut rest = lower.as_str();
-    while let Some(i) = rest.find("<tspan") {
-        let after = rest.get(i + 6..).unwrap_or("");
-        if after.starts_with('>')
-            || after.starts_with('/')
-            || after.starts_with(|c: char| c.is_ascii_whitespace())
-        {
-            return true;
-        }
-        rest = after;
-    }
-    false
 }
 
 fn premul_pixmap_to_dynamic(pixmap: &Pixmap) -> Result<DynamicImage, PaintError> {
@@ -151,5 +115,26 @@ mod tests {
         let err = decode_svg(svg).unwrap_err().to_string();
         assert!(err.contains("<text>"), "{err}");
         assert!(err.contains("<path>"), "{err}");
+    }
+
+    #[test]
+    fn svg_comment_mentioning_text_decodes() {
+        let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><!-- <text> converted to path --><rect width="4" height="4" fill="#00f"/></svg>"##;
+        decode_svg(svg).unwrap();
+    }
+
+    #[test]
+    fn svg_with_textpath_fails_closed() {
+        let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><textPath href="#p">A</textPath></svg>"##;
+        let err = decode_svg(svg).unwrap_err().to_string();
+        assert!(err.contains("<text>"), "{err}");
+        assert!(err.contains("<path>"), "{err}");
+    }
+
+    #[test]
+    fn svg_with_foreign_object_fails_closed() {
+        let svg = br##"<svg xmlns="http://www.w3.org/2000/svg"><foreignObject width="4" height="4">A</foreignObject></svg>"##;
+        let err = decode_svg(svg).unwrap_err().to_string();
+        assert!(err.contains("foreignObject"), "{err}");
     }
 }

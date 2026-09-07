@@ -22,6 +22,7 @@ Do not teach CommonMark/GFM here. Only K2F bridge quirks below.
 
 ```bash
 python scripts/init_package.py --dir ./out/doc --title "From Markdown" --page a4
+# dest may be new, empty, or notes-only; not an existing package
 k2f markdown README.md -o readme.K2F --template ./out/doc
 k2f markdown ./notes -o ./out --template ./out/doc   # directory: mirrors .md → .K2F
 k2f verify readme.K2F

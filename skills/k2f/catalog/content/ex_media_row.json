@@ -1,0 +1,60 @@
+{
+  "id": "ex.media_row",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.media_row.figure",
+          "role": "image",
+          "content": {
+            "type": "image",
+            "value": {
+              "src": "assets/images/dot.png",
+              "width": 160000,
+              "height": 120000
+            }
+          }
+        },
+        {
+          "id": "ex.media_row.copy",
+          "role": "section",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.media_row.copy.kicker",
+                  "role": "h2",
+                  "content": { "type": "text", "value": "Fixed image, flowing copy" }
+                },
+                {
+                  "id": "ex.media_row.copy.body",
+                  "role": "body",
+                  "content": {
+                    "type": "text",
+                    "value": "Left track is a pt width; the {fr:1} column takes leftover. Not a symmetric two-col grid and not columns flow."
+                  }
+                },
+                {
+                  "id": "ex.media_row.copy.quote",
+                  "role": "quote",
+                  "content": { "type": "text", "value": "Pull quote sits in the adaptive column." }
+                }
+              ]
+            }
+          },
+          "layout": { "type": "stack", "direction": "vertical", "gap": 8000 }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "grid",
+    "columns": [{ "pt": 160000 }, { "fr": 1 }],
+    "rows": [{ "auto": true }],
+    "column_gap": 16000,
+    "cell_align": { "x": "stretch", "y": "start" }
+  }
+}

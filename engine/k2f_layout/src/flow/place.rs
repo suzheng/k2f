@@ -319,7 +319,7 @@ fn place_splittable_stack(
     ctx: &LayoutContext,
 ) -> Result<(), String> {
     let full_h = text_frag::measure_full_height(node, content_width, ctx)?;
-    if full_h <= paginator.page_content_height() {
+    if full_h <= paginator.remaining_height() {
         return place_unsplittable(
             node,
             paginator,

@@ -92,7 +92,10 @@
       "font_family": "Roboto-Regular",
       "font_size": 11000,
       "line_height_mult": 1350,
-      "color": "ink"
+      "color": "ink",
+      "variants": {
+        "on_dark": { "text_overrides": { "color": "header_ink" } }
+      }
     },
     "image": {
       "font_family": "Roboto-Regular",
@@ -106,14 +109,20 @@
       "font_size": 24000,
       "line_height_mult": 1250,
       "color": "ink",
-      "bold": true
+      "bold": true,
+      "variants": {
+        "on_dark": { "text_overrides": { "color": "header_ink" } }
+      }
     },
     "h2": {
       "font_family": "Roboto-Regular",
       "font_size": 18000,
       "line_height_mult": 1300,
       "color": "ink",
-      "bold": true
+      "bold": true,
+      "variants": {
+        "on_dark": { "text_overrides": { "color": "header_ink" } }
+      }
     },
     "h3": {
       "font_family": "Roboto-Regular",
@@ -140,17 +149,42 @@
         "padding_pt": 12000
       }
     },
+    "badge": {
+      "font_family": "Roboto-Regular",
+      "font_size": 9000,
+      "line_height_mult": 1200,
+      "color": "ink",
+      "bold": true,
+      "self_align": "start",
+      "box_decoration": {
+        "background": "signature",
+        "corner_radius": "small",
+        "padding_pt": { "top": 3000, "right": 8000, "bottom": 3000, "left": 8000 }
+      }
+    },
     "section": {
       "font_family": "Roboto-Regular",
       "font_size": 11000,
       "line_height_mult": 1350,
       "color": "ink"
     },
+    "page_shell": {
+      "font_family": "Roboto-Regular",
+      "font_size": 11000,
+      "line_height_mult": 1350,
+      "color": "ink",
+      "box_decoration": {
+        "padding_pt": 36000
+      }
+    },
     "table": {
       "font_family": "Roboto-Regular",
       "font_size": 11000,
       "line_height_mult": 1400,
-      "color": "ink"
+      "color": "ink",
+      "variants": {
+        "ruled": { "box_decoration": { "border": "subtle_hbar" } }
+      }
     },
     "table_header_cell": {
       "font_family": "Roboto-Regular",
@@ -164,8 +198,10 @@
       },
       "variants": {
         "center": { "self_align": "center" },
+        "end": { "text_overrides": { "text_align": "end" } },
         "bottom": { "box_decoration": { "border": "subtle_bottom" } },
-        "hbar": { "box_decoration": { "border": "subtle_hbar" } }
+        "hbar": { "box_decoration": { "border": "subtle_hbar" } },
+        "compact": { "box_decoration": { "padding_pt": 3000 } }
       }
     },
     "table_row_cell": {
@@ -176,8 +212,14 @@
       "box_decoration": { "padding_pt": 6000 },
       "variants": {
         "center": { "self_align": "center" },
+        "end": { "text_overrides": { "text_align": "end" } },
         "bottom": { "box_decoration": { "border": "subtle_bottom" } },
-        "hbar": { "box_decoration": { "border": "subtle_hbar" } }
+        "hbar": { "box_decoration": { "border": "subtle_hbar" } },
+        "compact": { "box_decoration": { "padding_pt": 3000 } },
+        "on_dark": {
+          "text_overrides": { "color": "header_ink" },
+          "box_decoration": { "padding_pt": 3000 }
+        }
       }
     },
     "list_item": {
@@ -224,13 +266,19 @@
       "font_family": "Roboto-Regular",
       "font_size": 9000,
       "line_height_mult": 1200,
-      "color": "muted"
+      "color": "muted",
+      "variants": {
+        "end": { "text_overrides": { "text_align": "end" } }
+      }
     },
     "running_footer": {
       "font_family": "Roboto-Regular",
       "font_size": 9000,
       "line_height_mult": 1200,
-      "color": "muted"
+      "color": "muted",
+      "variants": {
+        "end": { "text_overrides": { "text_align": "end" } }
+      }
     },
     "signature_block": {
       "font_family": "Roboto-Regular",
@@ -266,6 +314,14 @@
             "corner_radius": "medium",
             "padding_pt": 16000,
             "shadow": "elevation.1"
+          }
+        },
+        "on_dark": {
+          "text_overrides": { "color": "header_ink" },
+          "box_decoration": {
+            "background": "header_bg",
+            "corner_radius": "medium",
+            "padding_pt": 16000
           }
         }
       }

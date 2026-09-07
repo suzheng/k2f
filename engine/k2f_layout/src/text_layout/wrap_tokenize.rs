@@ -92,6 +92,23 @@ pub(crate) fn split_run_for_wrapping(run: &TextRun) -> Vec<Fragment> {
             continue;
         }
 
+        // Optional break after hyphen-minus or soft hyphen (UAX #14 BA).
+        if ch == '-' || ch == '\u{00AD}' {
+            i += ch_len;
+            out.push(Fragment {
+                kind: FragKind::Text,
+                run: Some(TextRun {
+                    start: run.start + seg_start,
+                    end: run.start + i,
+                    style: run.style.clone(),
+                    text: s[seg_start..i].to_string(),
+                    math_tex: None,
+                }),
+            });
+            seg_start = i;
+            continue;
+        }
+
         i += ch_len;
     }
 

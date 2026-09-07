@@ -24,6 +24,8 @@ PAGES = {
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 STARTER = SKILL_ROOT / "starter"
+# Presence of any of these means dest is already an author package — do not overwrite.
+PACKAGE_MARKERS = frozenset({"manifest.json", "content", "styles", "assets", "changelog.json"})
 
 
 def parse_margin(raw: str) -> list[int]:
@@ -61,18 +63,21 @@ def patch_manifest(
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
 
-def replace_font(out: Path, font: Path) -> None:
+def replace_font(out: Path, font: Path) -> str | None:
     fonts_dir = out / "assets" / "fonts"
     for old in fonts_dir.glob("*.ttf"):
         old.unlink()
     for old in fonts_dir.glob("*.otf"):
         old.unlink()
     dest = fonts_dir / font.name
-    shutil.copy2(font, dest)
+    err = copy_font_file(font, dest)
+    if err:
+        return err
     patch_theme_primary_font(out, font.stem)
+    return None
 
 
-def add_fonts(out: Path, fonts: list[Path]) -> None:
+def add_fonts(out: Path, fonts: list[Path]) -> str | None:
     fonts_dir = out / "assets" / "fonts"
     fonts_dir.mkdir(parents=True, exist_ok=True)
     stems: list[str] = []
@@ -81,9 +86,12 @@ def add_fonts(out: Path, fonts: list[Path]) -> None:
         if dest.exists() and dest.resolve() != font.resolve():
             dest.unlink()
         if dest.resolve() != font.resolve():
-            shutil.copy2(font, dest)
+            err = copy_font_file(font, dest)
+            if err:
+                return err
         stems.append(font.stem)
     patch_theme_add_font_aliases(out, stems)
+    return None
 
 
 def patch_theme_primary_font(out: Path, new_stem: str) -> None:
@@ -118,6 +126,68 @@ def require_font_file(font: Path) -> str | None:
     if font.suffix.lower() not in {".ttf", ".otf"}:
         return f"expected .ttf or .otf, got {font.suffix}"
     return None
+
+
+def copy_font_file(src: Path, dest: Path) -> str | None:
+    """Copy one face into the package. Fail closed — K2F cannot use OS fonts at render."""
+    try:
+        shutil.copy(src, dest)
+    except OSError as e:
+        return (
+            f"cannot copy font {src}: {e}\n"
+            "K2F embeds fonts in the package (no system-font fallback at render). "
+            "Copy the .ttf/.otf to a path you can read, then pass --font/--add-font. "
+            "Do not point at locked OS font dirs (e.g. /System/Library/Fonts)."
+        )
+    return None
+
+
+def dir_names(path: Path) -> set[str]:
+    return {p.name for p in path.iterdir()}
+
+
+def prepare_dest(out: Path) -> set[str] | None:
+    """Return preexisting names when reusing a notes-only dir; None if `out` is created.
+
+    Empty dirs and sidecar-only dirs (e.g. design.md) are OK. Refuse files and
+    directories that already look like a K2F author package.
+    """
+    if not out.exists():
+        return None
+    if not out.is_dir():
+        raise DestError(f"error: --dir is a file: {out}")
+    names = dir_names(out)
+    markers = names & PACKAGE_MARKERS
+    if markers:
+        listed = ", ".join(sorted(markers))
+        raise DestError(
+            f"error: exists as a package ({listed}): {out}\n"
+            "Edit JSON in place, or choose another --dir. "
+            "Write design.md beside the author directory (e.g. ./out/doc.design.md). "
+            "A directory that only has notes is OK."
+        )
+    return names
+
+
+def cleanup_init(out: Path, preexisting: set[str] | None) -> None:
+    """On failure: delete a directory we created; otherwise remove only starter files."""
+    if preexisting is None:
+        if out.exists():
+            shutil.rmtree(out)
+        return
+    if not out.is_dir():
+        return
+    for child in list(out.iterdir()):
+        if child.name in preexisting:
+            continue
+        if child.is_dir() and not child.is_symlink():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+
+
+class DestError(Exception):
+    pass
 
 
 def main() -> int:
@@ -156,7 +226,8 @@ def main() -> int:
         type=Path,
         default=None,
         help="Replace bundled Roboto with this covering TTF/OTF and retarget theme roles "
-        "(use a CJK face that includes Latin, e.g. Noto Sans JP)",
+        "(readable .ttf/.otf you can copy — not a locked OS font dir; "
+        "use a CJK face that includes Latin, e.g. Noto Sans JP)",
     )
     parser.add_argument(
         "--add-font",
@@ -194,11 +265,18 @@ def main() -> int:
             return 1
 
     out = args.dir.expanduser().resolve()
-    if out.exists():
-        print(f"error: exists (remove or choose another path): {out}", file=sys.stderr)
+    try:
+        preexisting = prepare_dest(out)
+    except DestError as e:
+        print(str(e), file=sys.stderr)
         return 1
 
-    shutil.copytree(STARTER, out)
+    shutil.copytree(STARTER, out, dirs_exist_ok=True)
+
+    def fail(msg: str) -> int:
+        print(msg, file=sys.stderr)
+        cleanup_init(out, preexisting)
+        return 1
 
     if args.author:
         manifest_path = out / "manifest.json"
@@ -213,34 +291,30 @@ def main() -> int:
         extra = raw.expanduser().resolve()
         err = require_font_file(extra)
         if err:
-            print(f"error: --add-font: {err}", file=sys.stderr)
-            shutil.rmtree(out)
-            return 1
+            return fail(f"error: --add-font: {err}")
         extra_fonts.append(extra)
 
     if args.font is not None:
         font = args.font.expanduser().resolve()
         err = require_font_file(font)
         if err:
-            print(
-                f"error: {err}\nPass --font to a TTF/OTF, or reinstall the skill starter bundle.",
-                file=sys.stderr,
+            return fail(
+                f"error: {err}\nPass --font to a TTF/OTF, or reinstall the skill starter bundle."
             )
-            shutil.rmtree(out)
-            return 1
-        replace_font(out, font)
+        err = replace_font(out, font)
+        if err:
+            return fail(f"error: --font: {err}")
     else:
         font = default_font.expanduser().resolve()
         if not font.is_file():
-            print(
-                f"error: bundled Roboto missing: {font}\nReinstall the skill starter bundle.",
-                file=sys.stderr,
+            return fail(
+                f"error: bundled Roboto missing: {font}\nReinstall the skill starter bundle."
             )
-            shutil.rmtree(out)
-            return 1
 
     if extra_fonts:
-        add_fonts(out, extra_fonts)
+        err = add_fonts(out, extra_fonts)
+        if err:
+            return fail(f"error: --add-font: {err}")
 
     page = PAGES[args.page]
     width = args.width if args.width is not None else page["width"]
@@ -256,13 +330,13 @@ def main() -> int:
         print("  extra fonts (glyph fallback): " + ", ".join(p.name for p in extra_fonts))
     if args.page in ("widescreen", "widescreen-43") and applied_margin != [0, 0, 0, 0]:
         print(
-            "  tip: for full-bleed slide decks use --margin 0, then inner role padding_pt "
-            "+ per-slide grid shell from catalog/content/ex_poster_shell.json (see writing/package.md)"
+            "  tip: for full-bleed slide decks use --margin 0 + catalog/content/ex_poster_shell.json "
+            "(role page_shell is the safe inset; set layout.height to 540000 — see writing/package.md)"
         )
     if args.width is not None and applied_margin != [0, 0, 0, 0]:
         print(
             "  tip: full-bleed posters often use --margin 0 + catalog/content/ex_poster_shell.json "
-            "(see single-page poster recipe in writing/package.md)"
+            "(role page_shell; set layout.height to page height — see writing/package.md)"
         )
     print(
         "Next: edit content/root.json (+ optional content/*.json includes) and styles/theme.json; "

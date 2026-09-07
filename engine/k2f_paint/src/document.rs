@@ -88,7 +88,7 @@ impl OpenedDocument {
 
     pub fn render_page(&self, page_idx: usize, scale: f32) -> Result<Vec<u8>, PaintError> {
         let lock = self.lock.as_ref().ok_or(PaintError::Unlocked)?;
-        if self.package.fonts.is_empty() {
+        if !k2f_package::paths::has_font_face(&self.package.fonts) {
             return Err(PaintError::Font("package has no embedded font".into()));
         }
         render_lockfile_page_to_png(
@@ -106,7 +106,7 @@ impl OpenedDocument {
         scale: f32,
     ) -> Result<(u32, u32, Vec<u8>), PaintError> {
         let lock = self.lock.as_ref().ok_or(PaintError::Unlocked)?;
-        if self.package.fonts.is_empty() {
+        if !k2f_package::paths::has_font_face(&self.package.fonts) {
             return Err(PaintError::Font("package has no embedded font".into()));
         }
         render_lockfile_page_rgb(

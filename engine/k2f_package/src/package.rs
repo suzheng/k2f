@@ -43,11 +43,15 @@ impl Package {
         validate_manifest_node_ids(&engine).map_err(|e| PackageError::NodeId(e.to_string()))?;
         self.root = engine.root;
         self.manifest.running_blocks = engine.running_blocks;
-        if self.fonts.is_empty() {
+        if !paths::has_font_face(&self.fonts) {
             return Err(PackageError::FontMissing(
                 "at least one font is required under assets/fonts/".to_string(),
             ));
         }
+        k2f_core::validate_svg_assets(&self.assets).map_err(|e| {
+            let rest = e.strip_prefix("IMAGE_SIZE: ").unwrap_or(e.as_str());
+            PackageError::ImageSize(rest.to_string())
+        })?;
         Ok(())
     }
 

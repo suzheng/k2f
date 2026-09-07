@@ -165,6 +165,8 @@ fn project_table(
         column_widths: widths,
         header_rows: if header_n > 0 { 1.min(new_rows.len()) } else { 0 },
         gap: spec.gap,
+        row_gap: spec.row_gap,
+        column_gap: spec.column_gap,
         data: TableDataSource::Inline { rows: new_rows },
     });
     Some(out)
@@ -236,6 +238,8 @@ mod tests {
                 ],
                 header_rows: 1,
                 gap: 0,
+                row_gap: None,
+                column_gap: None,
                 data: TableDataSource::Inline { rows },
             }),
             ..Default::default()
