@@ -67,7 +67,10 @@ pub(crate) fn shape_wsp_xml(shape: &ShapeBox) -> String {
         "                  <wps:cNvSpPr/>\n"
     };
     let tail = if as_tx {
-        "                  <wps:txbx>\n                    <w:txbxContent>\n                      <w:p/>\n                    </w:txbxContent>\n                  </wps:txbx>\n                  <wps:bodyPr wrap=\"none\"/>\n"
+        // Word treats wrap=none empty txBoxes as size-to-text, so a page-width
+        // shell (cover body, accent band) collapses to a leftover strip on the
+        // left. Pin lock extent the same way leftover-width text frames do.
+        "                  <wps:txbx>\n                    <w:txbxContent>\n                      <w:p/>\n                    </w:txbxContent>\n                  </wps:txbx>\n                  <wps:bodyPr wrap=\"square\" lIns=\"0\" tIns=\"0\" rIns=\"0\" bIns=\"0\" anchor=\"t\">\n                    <a:noAutofit/>\n                  </wps:bodyPr>\n"
     } else {
         "                  <wps:bodyPr/>\n"
     };
@@ -261,10 +264,13 @@ mod tests {
         let xml = shape_wsp_xml(&box_at(0));
         assert!(xml.contains("txBox=\"1\""), "{xml}");
         assert!(xml.contains("<w:txbxContent>"), "{xml}");
+        assert!(xml.contains(r#"wrap="square""#), "{xml}");
+        assert!(xml.contains("<a:noAutofit/>"), "{xml}");
         let mut behind = box_at(0);
         behind.behind_doc = true;
         let xml = shape_wsp_xml(&behind);
         assert!(!xml.contains("txBox="), "{xml}");
         assert!(!xml.contains("txbxContent"), "{xml}");
+        assert!(!xml.contains("<a:noAutofit/>"), "{xml}");
     }
 }

@@ -24,7 +24,9 @@ pub(crate) fn shape_sp_xml(shape: &ShapeBox, cnv_id: u32) -> String {
         </a:xfrm>
 {geom}{fill}{ln}      </p:spPr>
       <p:txBody>
-        <a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" rtlCol="0"/>
+        <a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" rtlCol="0">
+          <a:noAutofit/>
+        </a:bodyPr>
         <a:lstStyle/>
         <a:p><a:endParaRPr lang="en-US"/></a:p>
       </p:txBody>

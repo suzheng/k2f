@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `export-docx`: static running-header/footer paint (logos, labels without `{{page_*}}`) is drawn in the body at lock coordinates. LibreOffice Writer does not paint `header1.xml` / `footer1.xml` when `pgMar` header/footer is 0. PAGE/NUMPAGES fields stay in the footer part so invoice page numbers are not duplicated.
 - `export-docx`: native table row height follows lock y-delta (cell box plus `gap`), matching PPTX. Cell-only height plus `atLeast` was collapsing gapped rows (cover meta grids, invoice line items) in Writer. Invoice/text/corpus tests still pass.
 - `export-docx`: large fills use `behindDoc=1` only when they match the page paper color (white containers covering stamps). Contrasting shells (cover body, yellow band) stay in front as empty text boxes so LibreOffice does not hide them under white `w:background` and does not paint the fill over later labels. Thin fills and fill/stroke split are unchanged. Invoice/text/corpus tests still pass.
+- `export-docx` / `export-pptx`: empty in-front fill shells (cover body, accent band) also pin `a:noAutofit` and `wrap=square`. Word was size-to-fitting those empty `wrap=none` txBoxes to a leftover strip on the left while label underlays stayed full width. Behind-doc paper fills are unchanged. Invoice/text/corpus tests still pass.
 
 ### Removed
 
