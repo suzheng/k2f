@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-07
+
 ### Added
 
 - Agent skill **design-first workflow** — write a design specification Markdown before authoring K2F JSON; implement `theme.json` + content from the spec, then render and iterate until the output matches.
@@ -87,3 +89,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [0.1.2]: https://github.com/suzheng/k2f/releases/tag/v0.1.2
 [0.1.1]: https://github.com/suzheng/k2f/releases/tag/v0.1.1
 [0.1.0]: https://github.com/suzheng/k2f/releases/tag/v0.1.0
+[0.2.0]: https://github.com/suzheng/k2f/releases/tag/v0.2.0

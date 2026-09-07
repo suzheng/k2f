@@ -1,6 +1,6 @@
 [package]
 name = "k2f_package"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 description = "K2F ZIP package pack/verify/sign"
 license = "Apache-2.0"
@@ -12,7 +12,7 @@ keywords = ["k2f", "zip", "package", "signatures"]
 categories = ["parser-implementations"]
 
 [dependencies]
-k2f_core = { path = "../k2f_core", version = "0.1.1" }
+k2f_core = { path = "../k2f_core", version = "0.2.0" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -22,4 +22,4 @@ ed25519-dalek = { version = "2", default-features = false, features = ["std", "a
 getrandom = "0.3"
 
 [dev-dependencies]
-k2f_layout = { path = "../k2f_layout", version = "0.1.1" }
+k2f_layout = { path = "../k2f_layout", version = "0.2.0" }

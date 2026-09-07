@@ -1,6 +1,6 @@
 [package]
 name = "k2f_markdown"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 description = "K2F semantic tree to Markdown"
 license = "Apache-2.0"
@@ -12,9 +12,9 @@ keywords = ["k2f", "markdown", "document"]
 categories = ["text-processing"]
 
 [dependencies]
-k2f_core = { path = "../k2f_core", version = "0.1.1" }
+k2f_core = { path = "../k2f_core", version = "0.2.0" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]
-k2f_package = { path = "../k2f_package", version = "0.1.1" }
+k2f_package = { path = "../k2f_package", version = "0.2.0" }
