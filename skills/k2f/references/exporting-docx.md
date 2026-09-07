@@ -17,6 +17,7 @@ DOCX is a **drawing of the published lock**, not a flowing “Save as Word” la
 
 ```bash
 k2f export-docx file.K2F -o out.docx
+k2f export-docx ./out/doc/doc.K2F -o ./out/doc/doc.docx   # workspace: deliverable next to .K2F, not in source/
 ```
 
 No `--scale`. No `--trust-pack`. Draws the published lock; does not compile.

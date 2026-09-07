@@ -21,11 +21,11 @@ Do not teach CommonMark/GFM here. Only K2F bridge quirks below.
 ## CLI (default)
 
 ```bash
-python scripts/init_package.py --dir ./out/doc --title "From Markdown" --page a4
-# dest may be new, empty, or notes-only; not an existing package
-k2f markdown README.md -o readme.K2F --template ./out/doc
-k2f markdown ./notes -o ./out --template ./out/doc   # directory: mirrors .md → .K2F
-k2f verify readme.K2F
+python scripts/init_package.py --workspace ./out/doc --title "From Markdown" --page a4
+# dest may be new, empty, or notes-only source/; not an existing package
+k2f markdown README.md -o ./out/doc/doc.K2F --template ./out/doc/source
+k2f markdown ./notes -o ./out/doc --template ./out/doc/source   # directory: mirrors .md → .K2F
+k2f verify ./out/doc/doc.K2F
 ```
 
 `--template` is an unpacked author directory (fonts + `styles/theme.json`). Optional covering font: `--font path/to/subset.otf`. CLI writes the package and **does not print warnings**.
@@ -35,8 +35,8 @@ k2f verify readme.K2F
 | Surface | Call | Report |
 |---------|------|--------|
 | CLI `k2f markdown` | writes package; `--template` = author dir | Discarded |
-| Python | `markdown_to_k2f(md, title=…, template="./out/doc")` / `k2f_to_markdown(bytes)` | Discarded (bytes only) |
-| JS | `markdownToK2f(md, { title, template: "./out/doc" })` / `k2fToMarkdown(bytes)` after `initWasm` — filesystem surfaces only; otherwise [writing.md](writing.md) | Discarded (bytes only) |
+| Python | `markdown_to_k2f(md, title=…, template="./out/doc/source")` / `k2f_to_markdown(bytes)` | Discarded (bytes only) |
+| JS | `markdownToK2f(md, { title, template: "./out/doc/source" })` / `k2fToMarkdown(bytes)` after `initWasm` — filesystem surfaces only; otherwise [writing.md](writing.md) | Discarded (bytes only) |
 | Rust | `markdown_to_k2f(md, opts) → MarkdownResult { bytes, report }` | Yes — `report.warnings` |
 
 No CLI command for K2F → MD; use Python/JS/Rust `k2f_to_markdown`.

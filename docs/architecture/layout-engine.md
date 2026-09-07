@@ -435,7 +435,7 @@ Glass and transparency require unambiguous composition:
 
 ## Formal rendering test suite
 
-Mandatory for every engine PR. Golden suite: `tests/runner` compares lock geometry and render plan; a small PNG appearance gate covers shadows, cards, running footers, and the paint contract page.
+Mandatory for every engine PR. Golden suite: `tests/runner` compares lock geometry and render plan; a small PNG appearance gate covers shadows, cards, and running footers. Published examples are not pixel-golden — the lock is the canonical artifact.
 
 ## How K2F fits the design philosophy
 

@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 PAGES_RE = re.compile(r"pages=(\d+)")
+SOURCE_ROOT_WARN_SUFFIXES = (".K2F", ".k2f", ".pdf", ".png", ".docx", ".pptx")
 
 
 def k2f_binary() -> list[str]:
@@ -63,12 +64,28 @@ def parse_pages(stderr: str) -> int | None:
     return int(matches[-1])
 
 
-def resolve_render_path(render: Path, source: Path) -> Path:
-    """Bare filename (preview.png) → author directory. Otherwise CWD-relative."""
+def resolve_render_path(render: Path, output: Path) -> Path:
+    """Bare filename (preview.png) → {output.parent}/tmp/. Otherwise CWD-relative."""
     path = render.expanduser()
     if not path.is_absolute() and len(path.parts) == 1:
-        return (source / path).resolve()
+        return (output.parent / "tmp" / path).resolve()
     return path.resolve()
+
+
+def warn_source_root_extras(source: Path) -> None:
+    extras = sorted(
+        p.name
+        for p in source.iterdir()
+        if p.is_file() and p.name.endswith(SOURCE_ROOT_WARN_SUFFIXES)
+    )
+    if not extras:
+        return
+    listed = ", ".join(extras)
+    print(
+        f"warning: deliverable/debug files in author dir (move to workspace root or tmp/): {listed}",
+        file=sys.stderr,
+        flush=True,
+    )
 
 
 def main() -> int:
@@ -86,7 +103,8 @@ def main() -> int:
         type=Path,
         metavar="PNG",
         help="Optional: render one page to this PNG after verify. "
-        "A bare filename is written in the author directory (next to manifest.json). "
+        "A bare filename is written under tmp/ next to the output .K2F "
+        "(e.g. --render preview.png → <out-dir>/tmp/preview.png). "
         "Paths with a directory are still relative to the shell CWD.",
     )
     parser.add_argument(
@@ -119,6 +137,7 @@ def main() -> int:
 
     output = args.output.expanduser().resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
+    warn_source_root_extras(source)
 
     prefix = k2f_binary()
     print(f"using: {' '.join(prefix)}", flush=True)
@@ -143,7 +162,7 @@ def main() -> int:
     run([*prefix, "verify", str(output)])
 
     if args.render is not None:
-        render_out = resolve_render_path(args.render, source)
+        render_out = resolve_render_path(args.render, output)
         render_out.parent.mkdir(parents=True, exist_ok=True)
         run(
             [

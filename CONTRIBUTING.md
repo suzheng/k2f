@@ -55,8 +55,8 @@ cargo test -p k2f_sdk -p k2f_package -p k2f
 ```
 
 **CI:** five compiles per case (determinism) plus a small PNG appearance gate
-(`elevation_shadows`, `card_variants`, `running_footer_page_numbers`, and
-`tests/fixtures/paint/`).
+(`elevation_shadows`, `card_variants`, `running_footer_page_numbers`).
+Published examples (`examples/published/*.K2F`) are not PNG-golden.
 
 **Visual-gate PNG** (optional locally):
 

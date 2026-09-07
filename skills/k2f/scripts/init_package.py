@@ -149,8 +149,8 @@ def dir_names(path: Path) -> set[str]:
 def prepare_dest(out: Path) -> set[str] | None:
     """Return preexisting names when reusing a notes-only dir; None if `out` is created.
 
-    Empty dirs and sidecar-only dirs (e.g. design.md) are OK. Refuse files and
-    directories that already look like a K2F author package.
+    Empty dirs and sidecar-only dirs (e.g. design.md inside the author dir) are OK.
+    Refuse files and directories that already look like a K2F author package.
     """
     if not out.exists():
         return None
@@ -162,8 +162,8 @@ def prepare_dest(out: Path) -> set[str] | None:
         listed = ", ".join(sorted(markers))
         raise DestError(
             f"error: exists as a package ({listed}): {out}\n"
-            "Edit JSON in place, or choose another --dir. "
-            "Write design.md beside the author directory (e.g. ./out/doc.design.md). "
+            "Edit JSON in place, or choose another --dir / --workspace. "
+            "Write design.md inside the author directory (e.g. ./out/doc/source/design.md). "
             "A directory that only has notes is OK."
         )
     return names
@@ -192,7 +192,20 @@ class DestError(Exception):
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Init an unpacked K2F package from skill starter/")
-    parser.add_argument("--dir", required=True, type=Path, help="Output package directory")
+    parser.add_argument(
+        "--dir",
+        type=Path,
+        default=None,
+        help="Author package directory (manifest.json, content/, styles/, assets/). "
+        "Prefer --workspace; use --dir for an existing unpacked tree.",
+    )
+    parser.add_argument(
+        "--workspace",
+        type=Path,
+        default=None,
+        help="Create PATH/source (author package) and PATH/tmp. "
+        "Deliverables (.K2F, PDF, DOCX, PPTX) go in PATH. Mutually exclusive with --dir.",
+    )
     parser.add_argument("--title", required=True, help="Document title")
     parser.add_argument(
         "--page",
@@ -249,6 +262,10 @@ def main() -> int:
         print(f"error: starter template missing: {STARTER}", file=sys.stderr)
         return 1
 
+    if (args.dir is None) == (args.workspace is None):
+        print("error: pass exactly one of --dir or --workspace", file=sys.stderr)
+        return 1
+
     if (args.width is None) ^ (args.height is None):
         print("error: --width and --height must be set together", file=sys.stderr)
         return 1
@@ -264,7 +281,18 @@ def main() -> int:
             print(f"error: --margin: {e}", file=sys.stderr)
             return 1
 
-    out = args.dir.expanduser().resolve()
+    workspace: Path | None = None
+    if args.workspace is not None:
+        workspace = args.workspace.expanduser().resolve()
+        if workspace.exists() and not workspace.is_dir():
+            print(f"error: --workspace is a file: {workspace}", file=sys.stderr)
+            return 1
+        workspace.mkdir(parents=True, exist_ok=True)
+        (workspace / "tmp").mkdir(exist_ok=True)
+        out = workspace / "source"
+    else:
+        assert args.dir is not None
+        out = args.dir.expanduser().resolve()
     try:
         preexisting = prepare_dest(out)
     except DestError as e:
@@ -342,6 +370,13 @@ def main() -> int:
         "Next: edit content/root.json (+ optional content/*.json includes) and styles/theme.json; "
         "copy shapes from catalog/content/ex_*.json; then pack_verify.py"
     )
+    if workspace is not None:
+        stem = workspace.name
+        packed = workspace / f"{stem}.K2F"
+        print(
+            f"  python scripts/pack_verify.py {out} -o {packed} --render preview.png"
+        )
+        print(f"  preview → {workspace / 'tmp' / 'preview.png'}")
     return 0
 
 

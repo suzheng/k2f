@@ -217,7 +217,7 @@ Viewers never depend on `k2f_layout` at open time.
 - **Unit tests** — individual components (text measure, stack height, etc.)
 - **Integration tests** — full JSON → lock pipeline
 - **Determinism tests** — identical output across repeated runs and platforms
-- **Golden suite** — `tests/runner` compares lock **geometry / render plan / content hash** (not engine SHA). A small set of PNG files is the appearance gate.
+- **Golden suite** — `tests/runner` compares lock **geometry / render plan / content hash** (not engine SHA). A small set of PNG files is the appearance gate for frozen paint-algorithm fixtures (shadows, cards, running footers), not published examples.
 
 Local (fast):
 

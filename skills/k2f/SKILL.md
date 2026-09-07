@@ -17,9 +17,9 @@ npm i @openk2f/k2f           # only when embedding <k2f-viewer> in a web app
 # cargo install k2f          # optional: CLI without Python
 ```
 
-**Writing:** one loop — get an unpacked author directory, edit JSON like source code, copy shapes from [`catalog/content/ex_*.json`](catalog/content/), and `scripts/pack_verify.py`. The working directory comes from `k2f unpack` (user `.K2F` or a Gallery package), or [`starter/`](starter/) via `scripts/init_package.py` when nothing matches. Do **not** use `Editor.insert_node` on an unpacked author directory — that API follows a narrower agent dialect; JSON authoring uses the full format schema validated at pack time. Text `modifiers` need `intent` plus UTF-8 **byte** `range` — always run [`scripts/modifier_range.py`](scripts/modifier_range.py); never hand-count (especially across `\n`).
+**Writing:** one loop — get a workspace (`source/` author package + deliverables at the root), edit JSON like source code, copy shapes from [`catalog/content/ex_*.json`](catalog/content/), and `scripts/pack_verify.py`. The author directory is `k2f unpack … -o ./out/doc/source` (user `.K2F` or a Gallery package), or [`starter/`](starter/) via `scripts/init_package.py --workspace ./out/doc` when nothing matches. Do **not** use `Editor.insert_node` on an unpacked author directory — that API follows a narrower agent dialect; JSON authoring uses the full format schema validated at pack time. Text `modifiers` need `intent` plus UTF-8 **byte** `range` — always run [`scripts/modifier_range.py`](scripts/modifier_range.py); never hand-count (especially across `\n`).
 
-**MCP** is optional. Writing does not require it and does not install it. If a site MCP with `list_templates` / `download_template` is already connected, use it in step 2 of [writing.md](references/writing.md). Missing tools, kind mismatch, or download failure → continue from `starter/`; do not stop the task.
+**MCP** is optional. Writing does not require it and does not install it. If the user gave a Gallery package URL, fetch it to a `.K2F` on disk and `k2f unpack` — do not load the ZIP into context. If a site MCP with `list_templates` / `download_template` is already connected, `download_template` returns the same kind of `packageUrl`; fetch + unpack as in step 2 of [writing.md](references/writing.md). Missing tools, kind mismatch, or download failure → continue from `starter/`; do not stop the task.
 
 Run scripts from this skill directory (or pass absolute paths to them). Skill scripts (`init_package.py`, `pack_verify.py`, `modifier_range.py`) are **stdlib-only** — `python scripts/…`; no `uv` and no extra pip packages. The author directory may live anywhere. `pack_verify.py` needs `k2f` on PATH (`pip install k2f`) or `K2F_CLI` — it does not walk a git checkout or build directory for a binary.
 
@@ -53,7 +53,20 @@ The engine — not the agent — turns A into C by running `pack` / `compile`. O
 
 ## Design first
 
-Before editing `content/` or `styles/theme.json`, write a **design specification** as Markdown **beside** the author directory (e.g. `./out/doc.design.md` — not inside `./out/doc/`). Then `python scripts/init_package.py --dir ./out/doc …`. A directory that only has notes (`design.md`) can still be initialized in place.
+Before editing `content/` or `styles/theme.json`, write a **design specification** as Markdown **inside** the author directory (e.g. `./out/doc/source/design.md`). Then `python scripts/init_package.py --workspace ./out/doc …` (creates `source/` + `tmp/`; a notes-only `source/design.md` can still be initialized in place).
+
+Workspace layout:
+
+```
+./out/doc/
+  doc.K2F                 # deliverable
+  doc.pdf                 # optional exports, same stem
+  source/                 # author package (edit this)
+    design.md
+    manifest.json
+    content/ styles/ assets/ changelog.json
+  tmp/                    # preview.png and other debug renders
+```
 
 - **User gave design constraints** — the spec follows their requirements.
 - **User did not specify** — design to the highest aesthetic standard for the deliverable type (report, poster, slide deck, flyer, …). Do not ship the starter theme unchanged for styled work.
@@ -82,7 +95,7 @@ Read-only format JSON Schemas live in [`schema/`](schema/) (same bytes the engin
 | Path | Purpose |
 |------|---------|
 | [`schema/`](schema/) | Read-only format JSON Schemas — lookup after [writing/fields.md](references/writing/fields.md); never copy into author dirs |
-| [`starter/`](starter/) | Empty tree + core theme + Roboto — the working directory when there is no existing `.K2F` and no matching Gallery package |
+| [`starter/`](starter/) | Empty tree + core theme + Roboto — copied into `source/` when there is no existing `.K2F` and no matching Gallery package |
 | [`catalog/`](catalog/) | Golden shape dictionary — copy `ex_*.json` nodes into the author dir; not a deliverable ([index](catalog/README.md)) |
 
 ## Choose the workflow

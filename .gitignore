@@ -50,7 +50,8 @@ golden.json
 # ==========================================
 *.png
 # Visual-gate pages only (geometry locks are the full regression).
-!tests/fixtures/paint/**/*.png
+# Published examples (invoice/contract) are not PNG-golden: content redesigns
+# are not paint-engine regressions.
 !tests/fixtures/cases/elevation_shadows/page_*.png
 !tests/fixtures/cases/card_variants/page_*.png
 !tests/fixtures/cases/running_footer_page_numbers/page_*.png

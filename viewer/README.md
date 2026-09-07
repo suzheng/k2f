@@ -28,4 +28,4 @@ UI zoom is CSS scale of a raster produced at **2×** (`OFFICIAL_PNG_SCALE`). Pix
 
 ## Native reader
 
-A native lock executor is [in development](../desktop/k2f_reader/README.md) (`desktop/k2f_reader`). Same contract: opening does not recompile; pixels and PDF come from `document.K2F.lock`. Build from source — not a packaged installer.
+A native lock executor lives in [`desktop/k2f_reader`](../desktop/k2f_reader/README.md). Same contract: opening does not recompile; pixels and PDF come from `document.K2F.lock`. Packaged builds: website `/download`. Build from source with `cargo run -p k2f_reader`.

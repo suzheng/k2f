@@ -4,15 +4,6 @@ use common::{assert_png_golden, compile_case, contract_k2f_bytes};
 use k2f_paint::{render_lockfile_page_to_png, single_font_map, OpenedDocument, OFFICIAL_PNG_SCALE};
 
 #[test]
-fn contract_homepage_matches_golden_png() {
-    let png = OpenedDocument::open(&contract_k2f_bytes())
-        .unwrap()
-        .render_page(0, OFFICIAL_PNG_SCALE)
-        .unwrap();
-    assert_png_golden("tests/fixtures/paint/contract/page_1.png", &png);
-}
-
-#[test]
 fn contract_logo_is_not_a_gray_box() {
     let bytes = contract_k2f_bytes();
     let pkg = k2f_package::unpack_bytes(&bytes).unwrap();

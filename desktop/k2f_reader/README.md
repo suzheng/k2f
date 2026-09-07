@@ -8,6 +8,8 @@ Native lock executor for `.K2F` files. Same rules as the web viewer:
 - PPTX / DOCX export also draws the lock (not a second layout engine)
 - A PDF is not a K2F source (`PDF_IS_NOT_A_SOURCE`)
 
+Packaged builds: [k2f.dev/download](https://k2f.dev/download).
+
 Links `k2f_paint` + `k2f_package` plus the PDF / PPTX / DOCX / Markdown exporters. The official raster is `render_page` at `OFFICIAL_PNG_SCALE` (2×). Zoom is a blit-time UI scale of that bitmap (same idea as the web viewer's CSS scale); it does not re-paint the lock. Surgical edit is not in v0.
 
 This crate is a workspace member but **not a default-member** (same pattern as `k2f_py`), so root `cargo test` does not pull GUI crates. CI runs `cargo test -p k2f_reader`.

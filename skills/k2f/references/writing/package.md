@@ -47,7 +47,7 @@ v0.1 is still `canvas_mode: "paged"` — widescreen is a page size, not a slide 
 
 There is **no** `canvas_mode: "slide"` and no separate `slide_deck_starter`. Use paged pages as slides:
 
-1. `python scripts/init_package.py --dir ./out/deck --title "Deck" --page widescreen --margin 0` → `960000×540000`, zero page margin.
+1. `python scripts/init_package.py --workspace ./out/deck --title "Deck" --page widescreen --margin 0` → `960000×540000`, zero page margin. Author JSON lives in `./out/deck/source/`.
 2. Under `root`, each top-level sibling is one slide.
 3. Each slide: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json) — role `page_shell`, `break_inside: "avoid"`, `layout.height: 540000` (replace the demo `240000`). Rows: `{auto:true}` header, `{fr:1}` body (the grower), `{auto:true}` footer. Do **not** use a vertical stack as the slide shell. Inside the grower: leftover on a **figure** or dense `{fr:1}` siblings ([`ex_poster_growers.json`](../../catalog/content/ex_poster_growers.json)) — not a short quote; `{fr:1}` does not enlarge type.
 4. Safe inset = role `page_shell` `padding_pt` (starter `36000`). Keep **root** padding at 0 — root padding is added into `page_config.margin` and shrinks the content box. Do not pad shared `section`/`body`.
@@ -61,7 +61,7 @@ Two-column body: nested grid `{fr:1},{fr:1}` **inside** the grower row (already 
 2. Under `root`, **one** child: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json) (role `page_shell`). Set `layout.height` = content box (A4 / margin 0 → `842000`). Same grid as slides: `{auto:true}` + `{fr:1}` + `{auto:true}`.
 3. Header/footer are measured; leftover height goes to `{fr:1}`. Do **not** pre-assign millipt to every band — that fights `auto`+`fr`. Do not use a vertical stack as the page shell; no empty spacer containers.
 4. Full-bleed background: wrap the shell in `overlay` with the background child first (`ex_overlay.json`). The shell still carries the inset; the image child sets `layout.height` to the page.
-5. Verify with `python scripts/pack_verify.py <dir> -o out.K2F --expect-pages 1 --render preview.png`. Bare `preview.png` is written next to `manifest.json`. `compile`/`verify` print `pages=N`. Open the PNG: leftover must sit on a figure or dense `{fr:1}` siblings, not a hollow card. `LAYOUT_SLACK` is warning-only and can miss interiors. `preview.png` is **only page 0**. A page-height `break_inside: avoid` **stack** with large `padding_pt` is the usual `UNSPLITTABLE_OVERFLOW` path — use the grid shell first, then tune inner `gap` / padding.
+5. Verify with `python scripts/pack_verify.py <source> -o <workspace>/<name>.K2F --expect-pages 1 --render preview.png`. Bare `preview.png` is written to `<workspace>/tmp/preview.png`. `compile`/`verify` print `pages=N`. Open the PNG: leftover must sit on a figure or dense `{fr:1}` siblings, not a hollow card. `LAYOUT_SLACK` is warning-only and can miss interiors. `preview.png` is **only page 0**. A page-height `break_inside: avoid` **stack** with large `padding_pt` is the usual `UNSPLITTABLE_OVERFLOW` path — use the grid shell first, then tune inner `gap` / padding.
 
 ### Thesis / report cover
 
@@ -176,19 +176,20 @@ From this skill directory. Default font is `starter/assets/fonts/Roboto-Regular.
 Always use `scripts/pack_verify.py`. It uses `k2f` on PATH or `K2F_CLI`. A stale binary may reject documented keys — `pip install -U k2f`; do not strip valid JSON. The author directory can live outside this skill folder; pass its path. The script does **not** search a git checkout or cargo build directory.
 
 ```bash
-python scripts/init_package.py --dir <out_dir> --title "..." --page a4|letter|a4-landscape|widescreen|widescreen-43
+python scripts/init_package.py --workspace <workspace> --title "..." --page a4|letter|a4-landscape|widescreen|widescreen-43
+# or --dir <source> for an existing author path
 # slides: --page widescreen --margin 0
 # posters: --page a4 --margin 0
 # custom size: --width 1984252 --height 2834646  (with --page for margin defaults)
 # optional: --margin 36000   or   --margin 56000,56000,56000,56000
-# edit content/root.json and styles/theme.json (copy from catalog/content/ex_*.json)
-python scripts/pack_verify.py <out_dir> -o <out.K2F>
+# edit source/content/root.json and source/styles/theme.json (copy from catalog/content/ex_*.json)
+python scripts/pack_verify.py <workspace>/source -o <workspace>/<name>.K2F
 # preview + single-page gate (compile stderr includes pages=N)
-# bare --render preview.png → <out_dir>/preview.png (next to manifest.json)
-python scripts/pack_verify.py <out_dir> -o <out.K2F> --expect-pages 1 --render preview.png
+# bare --render preview.png → <workspace>/tmp/preview.png
+python scripts/pack_verify.py <workspace>/source -o <workspace>/<name>.K2F --expect-pages 1 --render preview.png
 ```
 
-`init_package.py` copies [`starter/`](../../starter/). Empty dirs and notes-only dirs (a lone `design.md`) are OK; an existing package is not. `--font` replaces Roboto and rewrites role `font_family`. `--add-font` copies extra faces beside Roboto for glyph fallback (CJK, math). Both copy bytes into `assets/fonts/` — pass a **readable** `.ttf`/`.otf` you can embed. Do not `--font` locked OS dirs (`/System/Library/Fonts`); copy the face to a writable path first. Copy failure prints the error and rolls back starter files only (it does **not** skip the font). Render never uses system fonts.
+`init_package.py --workspace` copies [`starter/`](../../starter/) into `PATH/source` and creates `PATH/tmp`. Empty dirs and notes-only dirs (a lone `design.md` in `source/`) are OK; an existing package is not. `--font` replaces Roboto and rewrites role `font_family`. `--add-font` copies extra faces beside Roboto for glyph fallback (CJK, math). Both copy bytes into `assets/fonts/` — pass a **readable** `.ttf`/`.otf` you can embed. Do not `--font` locked OS dirs (`/System/Library/Fonts`); copy the face to a writable path first. Copy failure prints the error and rolls back starter files only (it does **not** skip the font). Render never uses system fonts.
 
 ## Capability limits
 

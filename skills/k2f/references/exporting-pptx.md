@@ -17,6 +17,7 @@ PPTX is a **drawing of the published lock**, not a second layout engine. `.K2F` 
 
 ```bash
 k2f export-pptx file.K2F -o out.pptx
+k2f export-pptx ./out/doc/doc.K2F -o ./out/doc/doc.pptx   # workspace: deliverable next to .K2F, not in source/
 ```
 
 No `--scale`. No `--trust-pack`. Draws the published lock; does not compile.

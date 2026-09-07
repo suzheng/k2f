@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[3]
 INVOICE = ROOT / "examples/published/invoice.K2F"
 CATALOG = ROOT / "skills/k2f/catalog"
 PACK_VERIFY = ROOT / "skills/k2f/scripts/pack_verify.py"
+INIT_PACKAGE = ROOT / "skills/k2f/scripts/init_package.py"
 
 
 def k2f_cmd(*args: str) -> subprocess.CompletedProcess[str]:
@@ -119,7 +120,6 @@ def test_pack_verify_catalog_without_k2f_cli_env() -> None:
 
 
 def test_init_package_pack_verify() -> None:
-    init = ROOT / "skills/k2f/scripts/init_package.py"
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
         doc = tmp_path / "doc"
@@ -127,7 +127,7 @@ def test_init_package_pack_verify() -> None:
         init_proc = subprocess.run(
             [
                 sys.executable,
-                str(init),
+                str(INIT_PACKAGE),
                 "--dir",
                 str(doc),
                 "--title",
@@ -159,10 +159,9 @@ def test_init_package_pack_verify() -> None:
 
 
 def _run_init(dest: Path, extra: list[str] | None = None) -> subprocess.CompletedProcess[str]:
-    init = ROOT / "skills/k2f/scripts/init_package.py"
     cmd = [
         sys.executable,
-        str(init),
+        str(INIT_PACKAGE),
         "--dir",
         str(dest),
         "--title",
@@ -173,6 +172,12 @@ def _run_init(dest: Path, extra: list[str] | None = None) -> subprocess.Complete
     if extra:
         cmd.extend(extra)
     return subprocess.run(cmd, capture_output=True, text=True, check=False)
+
+
+def _strip_font_sidecars(doc: Path) -> None:
+    for extra in (doc / "assets" / "fonts").rglob("*"):
+        if extra.is_file() and extra.suffix.lower() not in {".ttf", ".otf"}:
+            extra.unlink()
 
 
 def test_init_package_into_empty_and_sidecar_dir() -> None:
@@ -215,19 +220,19 @@ def test_init_package_font_fail_keeps_sidecar() -> None:
         assert not (dest / "manifest.json").exists()
 
 
-def test_pack_verify_bare_render_writes_to_author_dir() -> None:
+def test_pack_verify_bare_render_writes_to_workspace_tmp() -> None:
     import importlib.util
 
     spec = importlib.util.spec_from_file_location("pack_verify", PACK_VERIFY)
     assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    source = Path("/tmp/k2f-author-dir")
-    assert mod.resolve_render_path(Path("preview.png"), source) == (
-        source / "preview.png"
+    output = Path("/tmp/elsewhere/doc.K2F")
+    assert mod.resolve_render_path(Path("preview.png"), output) == (
+        output.parent / "tmp" / "preview.png"
     ).resolve()
-    nested = mod.resolve_render_path(Path("out/preview.png"), source)
-    assert nested != (source / "preview.png").resolve()
+    nested = mod.resolve_render_path(Path("out/preview.png"), output)
+    assert nested != (output.parent / "tmp" / "preview.png").resolve()
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
@@ -235,11 +240,8 @@ def test_pack_verify_bare_render_writes_to_author_dir() -> None:
         out = tmp_path / "elsewhere" / "doc.K2F"
         init_proc = _run_init(doc)
         assert init_proc.returncode == 0, init_proc.stderr
-        # Render still parses every fonts/ file on some CLI builds; licenses are
-        # sidecars (Issue 1), not this path-resolution test.
-        for extra in (doc / "assets" / "fonts").rglob("*"):
-            if extra.is_file() and extra.suffix.lower() not in {".ttf", ".otf"}:
-                extra.unlink()
+        _strip_font_sidecars(doc)
+        (doc / "stray.png").write_bytes(b"not-a-png")
         pack_proc = subprocess.run(
             [
                 sys.executable,
@@ -258,6 +260,122 @@ def test_pack_verify_bare_render_writes_to_author_dir() -> None:
             cwd=tmp_path,
         )
         assert pack_proc.returncode == 0, pack_proc.stdout + pack_proc.stderr
-        preview = doc / "preview.png"
+        preview = out.parent / "tmp" / "preview.png"
         assert preview.is_file() and preview.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+        assert not (doc / "preview.png").exists()
         assert not (tmp_path / "preview.png").exists()
+        assert "stray.png" in pack_proc.stderr
+
+
+def test_init_package_workspace_preserves_design_md() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        workspace = tmp_path / "report"
+        source = workspace / "source"
+        source.mkdir(parents=True)
+        design = source / "design.md"
+        design.write_text("# spec\n", encoding="utf-8")
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(INIT_PACKAGE),
+                "--workspace",
+                str(workspace),
+                "--title",
+                "Q3 Report",
+                "--page",
+                "a4",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert proc.returncode == 0, proc.stderr
+        assert design.read_text(encoding="utf-8") == "# spec\n"
+        assert (source / "manifest.json").is_file()
+        assert (workspace / "tmp").is_dir()
+        assert "pack_verify.py" in proc.stdout
+        assert str(workspace / "report.K2F") in proc.stdout
+
+        both = subprocess.run(
+            [
+                sys.executable,
+                str(INIT_PACKAGE),
+                "--dir",
+                str(source),
+                "--workspace",
+                str(workspace),
+                "--title",
+                "Nope",
+                "--page",
+                "a4",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert both.returncode != 0
+        assert "exactly one" in both.stderr
+
+
+def test_workspace_pack_export_layout() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        workspace = tmp_path / "report"
+        init_proc = subprocess.run(
+            [
+                sys.executable,
+                str(INIT_PACKAGE),
+                "--workspace",
+                str(workspace),
+                "--title",
+                "Layout smoke",
+                "--page",
+                "a4",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert init_proc.returncode == 0, init_proc.stderr
+        source = workspace / "source"
+        _strip_font_sidecars(source)
+        packed = workspace / "report.K2F"
+        pack_proc = subprocess.run(
+            [
+                sys.executable,
+                str(PACK_VERIFY),
+                str(source),
+                "-o",
+                str(packed),
+                "--expect-pages",
+                "1",
+                "--render",
+                "preview.png",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert pack_proc.returncode == 0, pack_proc.stdout + pack_proc.stderr
+        assert packed.is_file()
+        preview = workspace / "tmp" / "preview.png"
+        assert preview.is_file() and preview.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+        assert not (source / "preview.png").exists()
+
+        pdf = workspace / "report.pdf"
+        docx = workspace / "report.docx"
+        pptx = workspace / "report.pptx"
+        for cmd, dest in (
+            (["export-pdf", str(packed), "-o", str(pdf)], pdf),
+            (["export-docx", str(packed), "-o", str(docx)], docx),
+            (["export-pptx", str(packed), "-o", str(pptx)], pptx),
+        ):
+            export = k2f_cmd(*cmd)
+            assert export.returncode == 0, export.stderr
+            assert dest.is_file() and dest.stat().st_size > 0
+        assert pdf.read_bytes().startswith(b"%PDF-")
+        assert docx.read_bytes().startswith(b"PK")
+        assert pptx.read_bytes().startswith(b"PK")
+        assert not (source / "report.K2F").exists()
+        assert not (source / "report.pdf").exists()

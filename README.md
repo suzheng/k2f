@@ -168,7 +168,7 @@ Full container also includes embedded fonts, embedded schemas, and `changelog.js
 
 | Shipped | Not shipped |
 |---------|-------------|
-| `.K2F` package format (ZIP + semantic tree + theme + lock) | Desktop installer (source crate only — [desktop reader](desktop/k2f_reader/README.md)) |
+| `.K2F` package format (ZIP + semantic tree + theme + lock) | Desktop installer (source crate only — [desktop reader (in development)](desktop/k2f_reader/README.md)) |
 | Web viewer (`<k2f-viewer>`) | Remote HTTP MCP (stdio MCP is shipped) |
 | Python SDK (`pip install k2f`) | Slide / infinite canvas modes |
 | JS / WASM SDK (`npm i @openk2f/k2f`) | PDF import (`PDF_IS_NOT_A_SOURCE`) |

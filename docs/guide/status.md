@@ -14,7 +14,7 @@
 
 ## In development
 
-- **[`desktop/k2f_reader`](../../desktop/k2f_reader/README.md)** — native lock executor (same rules as the web viewer: opening does not recompile; pixels and PDF come from `document.K2F.lock`). Build from source with `cargo run -p k2f_reader -- path/to/file.K2F`. CI runs `cargo test -p k2f_reader`. Source crate only — not a packaged installer.
+- **[`desktop/k2f_reader`](../../desktop/k2f_reader/README.md)** — native lock executor (same rules as the web viewer: opening does not recompile; pixels and PDF come from `document.K2F.lock`). Packaged builds are on the website [`/download`](https://k2f.dev/download). Build from source with `cargo run -p k2f_reader -- path/to/file.K2F`. CI runs `cargo test -p k2f_reader`.
 
 ## Roadmap (not shipped)
 
@@ -22,7 +22,7 @@
 |------|-------|
 | Remote HTTP MCP | OAuth, multi-tenant; stdio is shipped |
 | Slide / infinite canvas | Product surface TBD |
-| Desktop file association / installers | OS registration and packaged binaries |
+| Desktop file association / installers | OS registration and packaged installers |
 
 Internal implementation tracks live outside this public repository. They are not part of the public contract.
 

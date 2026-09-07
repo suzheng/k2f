@@ -18,6 +18,7 @@ If the PDF looks wrong or you are checking bytes: [exporting-pdf/pdf-contract.md
 
 ```bash
 k2f export-pdf file.K2F -o out.pdf
+k2f export-pdf ./out/doc/doc.K2F -o ./out/doc/doc.pdf   # workspace: deliverable next to .K2F, not in source/
 k2f export-pdf file.K2F -o out.pdf --scale 4   # higher-res stamp pages only
 ```
 

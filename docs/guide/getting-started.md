@@ -115,7 +115,7 @@ Then open the served URL in a browser.
 
 ![Invoice first page rendered at official 2× scale](images/invoice-page-1.png)
 
-**Native reader** ([in development](../../desktop/k2f_reader/README.md)) — same lock-executor rules as the web viewer; source crate, not a packaged installer:
+**Native reader** ([k2f_reader](../../desktop/k2f_reader/README.md)) — same lock-executor rules as the web viewer. Packaged builds: website `/download`. Build from source:
 
 ```bash
 cargo run -p k2f_reader -- examples/published/invoice.K2F

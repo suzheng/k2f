@@ -18,7 +18,7 @@ jobs:
       - name: Golden suite (5x determinism)
         run: cargo run -p k2f-test-runner -- run --dataset-runs 5
 
-      - name: Paint goldens
+      - name: Paint crate tests
         run: cargo test -p k2f_paint
 
       - name: PNG appearance gate

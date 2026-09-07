@@ -8,7 +8,7 @@ Deliverable is an **UNSIGNED** `.K2F` — signing stays a human step.
 
 | Situation | Path |
 |-----------|------|
-| New CV, flyer, cheatsheet, slide deck, poster, custom layout | Get a working directory (below), then this loop |
+| New CV, flyer, cheatsheet, slide deck, poster, custom layout | Get a workspace (below), then this loop |
 | Existing `.K2F` to patch | Same loop — unpack (or use the open dir) at step 2 |
 | Already have an unpacked author directory | Edit JSON → `pack_verify.py` |
 | Source is Markdown | [converting-markdown.md](converting-markdown.md), then patch JSON here if needed |
@@ -28,7 +28,7 @@ pip install k2f    # unpack, pack, compile, verify, render, schema dump — on P
 
 ### Steps
 
-1. **Write a design spec (Markdown).** Before any K2F JSON, produce a concrete design document **beside** the author directory (e.g. `./out/doc.design.md` — not `./out/doc/design.md`). If the user named a style or brand, follow it. If not, design to the highest aesthetic standard for this deliverable. Outline:
+1. **Write a design spec (Markdown).** Before any K2F JSON, produce a concrete design document **inside** the author directory (e.g. `./out/doc/source/design.md`). If the user named a style or brand, follow it. If not, design to the highest aesthetic standard for this deliverable. Outline:
 
    - `## Intent` — audience, tone, one-page vs multi-page
    - `## Typography` — fonts, roles, size intent for this canvas
@@ -38,14 +38,15 @@ pip install k2f    # unpack, pack, compile, verify, render, schema dump — on P
    - `## Components` — cards, metrics, captions, tables as needed
 
    See [Design first](../SKILL.md#design-first) in the skill entry.
-2. **Get a working directory.** Probe once, stop at the first hit. Kind mismatch, missing tools, or download failure → do not retry; go to the next row.
-   1. User gave a `.K2F` or an unpacked author dir → `k2f unpack existing.K2F -o ./out/doc` (do **not** use `--include-lock`; author dirs must not contain lock or embedded `schema/`) or use the existing directory. For patches, skip step 1 unless the brief changes visual design.
-   2. Site MCP already connected (`list_templates` / `download_template`) **and** a catalog `kind` matches the deliverable → download the package URL to a `.K2F`, then unpack as in (1). See [Optional Gallery](#optional-gallery-mcp).
-   3. Otherwise: `python scripts/init_package.py --dir ./out/doc --title "…" --page a4` — copies [`starter/`](../starter/) (empty tree + core theme + Roboto). Empty dirs and notes-only dirs (a lone `design.md`) are OK; an existing package is not.
+2. **Get a workspace.** Probe once, stop at the first hit. Kind mismatch, missing tools, or download failure → do not retry; go to the next row.
+   1. User gave a `.K2F` or an unpacked author dir → `k2f unpack existing.K2F -o ./out/doc/source` (do **not** use `--include-lock`; author dirs must not contain lock or embedded `schema/`) or use the existing `source/` directory. For patches, skip step 1 unless the brief changes visual design.
+   2. User gave a Gallery **package URL** → fetch it (`curl`/`fetch`) to `./out/doc/template.K2F`, then unpack as in (1). Do not load the ZIP into context.
+   3. Site MCP already connected (`list_templates` / `download_template`) **and** a catalog `kind` matches the deliverable → download the package URL to a `.K2F`, then unpack as in (1). See [Optional Gallery](#optional-gallery-mcp).
+   4. Otherwise: `python scripts/init_package.py --workspace ./out/doc --title "…" --page a4` — creates `source/` (starter tree + core theme + Roboto) and `tmp/`. Empty dirs and notes-only dirs (a lone `design.md` in `source/`) are OK; an existing package is not. `--dir` still inits a package tree directly when you already have the author path.
 3. Implement the spec: edit `content/root.json` (+ optional `content/*.json` includes) and `styles/theme.json`. **Minimal diff** on patches — change only what the task requires.
 4. **Copy shapes** from [`catalog/content/ex_*.json`](../catalog/content/) — one file per construct (stack, grid, table, …). See [`catalog/README.md`](../catalog/README.md). Do not ship the catalog as your document. The **current package** `styles/theme.json` must already define every role, modifier type, and font those nodes use. Starter already includes `image` and the modifier styles used by `ex_modifiers.json`. Copying [`ex_math.json`](../catalog/content/ex_math.json) still needs NotoSansMath from [`catalog/assets/fonts/`](../catalog/assets/fonts/) plus a `font_aliases` / `math` role font update — starter ships Roboto only.
 5. **Unsure about a key?** Read [writing/fields.md](writing/fields.md), then open the matching file under [`schema/`](../schema/) before writing JSON.
-6. `python scripts/pack_verify.py ./out/doc -o ./out/doc.K2F --render preview.png` — bare `preview.png` is written next to `manifest.json` in the author directory. Paths that contain a directory (`--render ./out/preview.png`) stay relative to the shell CWD. The script prints `ok: rendered <abs>`.
+6. `python scripts/pack_verify.py ./out/doc/source -o ./out/doc/doc.K2F --render preview.png` — bare `preview.png` is written to `./out/doc/tmp/preview.png` (next to the output `.K2F`, not next to `manifest.json`). Paths that contain a directory (`--render ./out/preview.png`) stay relative to the shell CWD. The script prints `ok: rendered <abs>`. Do not write `.K2F`, PDF, DOCX, PPTX, or preview PNGs into `source/`.
 7. Expect `verify` → **`UNSIGNED`**. Then **open the PNG** — [visual check](#visual-check). If the image does not match the design spec, revise the spec or implementation and pack again.
 
 Page presets: `a4` | `letter` | `a4-landscape` | `widescreen` | `widescreen-43`. Slides/posters: see [writing/package.md](writing/package.md).
@@ -55,32 +56,33 @@ Page presets: `a4` | `letter` | `a4-landscape` | `widescreen` | `widescreen-43`.
 **New report**
 
 ```bash
-# write ./out/report.design.md first (typography, spacing, layout, color) — beside the package
-python scripts/init_package.py --dir ./out/report --title "Q3 Report" --page a4
+# write ./out/report/source/design.md first (typography, spacing, layout, color)
+python scripts/init_package.py --workspace ./out/report --title "Q3 Report" --page a4
 # CJK/kana: --add-font /path/to/NotoSansJP.otf   (keeps Roboto; not NotoSansSC for Japanese)
 # math: copy catalog NotoSansMath + font_aliases; or --add-font that ttf
 # slides: --page widescreen --margin 0 | widescreen-43; copy ex_poster_shell.json (page_shell, height 540000)
 # posters: --page a4 --margin 0; copy catalog/content/ex_poster_shell.json; set height to 842000
 # --margin 36000  or  --margin 36000,48000,36000,48000
-# edit content/root.json — copy nodes from catalog/content/ex_*.json
-# edit styles/theme.json — implement the design spec
-python scripts/pack_verify.py ./out/report -o ./out/report.K2F --render preview.png
-# preview.png lands in ./out/report/ (next to manifest.json), not CWD
+# edit source/content/root.json — copy nodes from catalog/content/ex_*.json
+# edit source/styles/theme.json — implement the design spec
+python scripts/pack_verify.py ./out/report/source -o ./out/report/report.K2F --render preview.png
+# preview.png lands in ./out/report/tmp/ (not source/, not CWD)
+k2f export-pdf ./out/report/report.K2F -o ./out/report/report.pdf
 ```
 
 **Patch an existing package**
 
 ```bash
-k2f unpack existing.K2F -o ./out/doc
-# grep or read content/*.json for stable ids — never guess
+k2f unpack existing.K2F -o ./out/doc/source
+# grep or read source/content/*.json for stable ids — never guess
 # edit the text node (or cell id for tables); roles from this package's theme.json
-python scripts/pack_verify.py ./out/doc -o ./out/doc-edited.K2F --render preview.png
+python scripts/pack_verify.py ./out/doc/source -o ./out/doc/doc.K2F --render preview.png
 ```
 
 **Single-page poster check** (`compile` prints `pages=N`; preview is page 0 only):
 
 ```bash
-python scripts/pack_verify.py ./out/poster -o ./out/poster.K2F --expect-pages 1 --render preview.png
+python scripts/pack_verify.py ./out/poster/source -o ./out/poster/poster.K2F --expect-pages 1 --render preview.png
 ```
 
 ### Includes (long documents)
@@ -91,10 +93,11 @@ Keep structure in `content/root.json`; add `{ "include": "content/ch01.json" }` 
 
 | Task | Call |
 |------|------|
-| New author dir | `init_package.py --dir … --title … --page …` |
-| Unpack `.K2F` | `k2f unpack file.K2F -o ./dir` |
-| Pack + compile + verify + PNG | `pack_verify.py <dir> -o out.K2F --render preview.png` (PNG next to `manifest.json`) |
-| Extra pages | `k2f render file.K2F --page 1 -o preview-1.png` |
+| New workspace | `init_package.py --workspace … --title … --page …` (creates `source/` + `tmp/`) |
+| New author dir | `init_package.py --dir … --title … --page …` (package tree only) |
+| Unpack `.K2F` | `k2f unpack file.K2F -o ./dir/source` |
+| Pack + compile + verify + PNG | `pack_verify.py <source> -o <workspace>/<name>.K2F --render preview.png` (PNG → `<workspace>/tmp/`) |
+| Extra pages | `k2f render file.K2F --page 1 -o <workspace>/tmp/preview-1.png` |
 | Single-page poster check | `pack_verify.py … --expect-pages 1 --render preview.png` |
 | Custom font | `init_package.py --font /path/to/Covering.ttf` (replaces Roboto) or `--add-font` (fallback beside Roboto). Readable `.ttf`/`.otf` only — not `/System/Library/Fonts` |
 | Modifier byte ranges | `python scripts/modifier_range.py --text "…" --find "…"` |
@@ -105,9 +108,9 @@ Keep structure in `content/root.json`; add `{ "include": "content/ch01.json" }` 
 `verify` is not a layout review. After every pack, render the lock to PNG and **open the image**. Do not ship a file you have not looked at.
 
 ```bash
-python scripts/pack_verify.py ./out/doc -o ./out/doc.K2F --render preview.png
-# compile prints pages=N; --render is page 0 only; bare preview.png → ./out/doc/preview.png:
-k2f render ./out/doc.K2F --page 1 -o ./out/doc/preview-1.png
+python scripts/pack_verify.py ./out/doc/source -o ./out/doc/doc.K2F --render preview.png
+# compile prints pages=N; --render is page 0 only; bare preview.png → ./out/doc/tmp/preview.png:
+k2f render ./out/doc/doc.K2F --page 1 -o ./out/doc/tmp/preview-1.png
 ```
 
 Inspect every page. Two authoring modes:
@@ -135,7 +138,7 @@ If the PNG does not match the design spec, update the spec or JSON/theme and run
 | Situation | Action |
 |-----------|--------|
 | Missing `k2f` CLI | `pip install k2f` or set `K2F_CLI`. CWD does not matter. The script does not search a git checkout or build dir |
-| `error: exists as a package` | Dest already has `manifest.json` / `content/` / `styles/` / `assets/`. Edit in place, or another `--dir`. Notes-only dirs (design.md) are OK. Spec file: `./out/doc.design.md` beside the package |
+| `error: exists as a package` | Dest already has `manifest.json` / `content/` / `styles/` / `assets/`. Edit in place, or another `--dir` / `--workspace`. Notes-only dirs (`source/design.md`) are OK. Spec file: `./out/doc/source/design.md` |
 | validate / compile fails | [writing/errors.md](writing/errors.md); never edit lock |
 | `SCHEMA_INVALID` | Open [`schema/`](../schema/); key in schema but rejected → `pip install -U k2f`; key not in schema → remove |
 | `UNKNOWN_ID` | Read `content/` or grep for the id; never invent ids |
@@ -149,7 +152,7 @@ If the PNG does not match the design spec, update the spec or JSON/theme and run
 
 ## Optional Gallery (MCP)
 
-Not required. Do not install or configure MCP for this skill. If `list_templates` and `download_template` are already available:
+Not required. Do not install or configure MCP for this skill. If the user already gave a Gallery package URL, fetch it directly — skip `list_templates`. If `list_templates` and `download_template` are already available:
 
 1. `list_templates` (optional filters: `kind`, `style`) — metadata only, not package bytes.
 2. Use an entry only when `kind` matches the deliverable. Otherwise skip to `init_package.py`.
@@ -187,7 +190,7 @@ Missing tools, empty list, kind mismatch, or fetch error → `init_package.py`. 
 | Require `rows: [{"auto":true}]` on a one-row grid | Optional. Omit `rows` → engine fills `{auto:true}`. Write `rows` only for `fr`/`pt` or a fixed track list (`ex_split_bar.json` / `ex_poster_shell.json`). |
 | Symmetric `ex_grid.json` for a magazine image+copy row | Copy `ex_media_row.json` — `columns: [{pt:N},{fr:1}]`. Title+logo hug-right → `ex_split_bar.json`. |
 | Dense dashboard table from `ex_table.json` only | Copy `ex_table_dense.json` (weighted `fr` + cell `compact`). Wrap in `card` / `on_dark` / `ex_glass.json` as needed. Long English tokens still need a wider column or U+00AD. |
-| `--render preview.png` missing in CWD | Bare name lands in the **author dir** (next to `manifest.json`). Open the path printed as `ok: rendered …`. |
+| `--render preview.png` missing in CWD | Bare name lands in **`<output.K2F parent>/tmp/`**, not CWD and not `source/`. Open the path printed as `ok: rendered …`. |
 | `fr` rows without fixed grid height | Fails: `Cannot resolve fr tracks with infinite available size`. Not CSS Grid — `fr` ≠ content-auto height. Set grid `layout.height`, use `pt`/`auto` rows, or nest under a fixed-height stack (`ex_grid.json` / `ex_poster_shell.json`) |
 | Omit grid `rows` like CSS implicit tracks | Allowed only as content-auto wrapping (`ceil(n/cols)` `{auto:true}`). `fr`/`pt` must be written; declared `rows` do not grow (`ex_split_bar.json` / `ex_poster_shell.json`) |
 | Poster/slide shell is a vertical stack | Content piles at the top. Copy `ex_poster_shell.json`: pinned `height` + `{fr:1}` body row |
