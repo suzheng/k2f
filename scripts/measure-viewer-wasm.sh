@@ -16,6 +16,7 @@ measure() {
   local label="$1"
   local features="$2"
   local out_dir="$3"
+  export CARGO_TARGET_DIR="$root/target/wasm-measure-$label"
   if command -v wasm-pack >/dev/null 2>&1; then
     wasm-pack build "$root/engine/k2f_wasm" --target web --out-dir "$out_dir" --release \
       -- --no-default-features --features "$features"
@@ -23,7 +24,7 @@ measure() {
     cargo build -p k2f_wasm --target "$target" --release --no-default-features --features "$features"
     mkdir -p "$out_dir"
     wasm-bindgen --target web --out-dir "$out_dir" \
-      "$root/target/$target/release/k2f_wasm.wasm"
+      "$CARGO_TARGET_DIR/$target/release/k2f_wasm.wasm"
   fi
   local wasm="$out_dir/k2f_wasm_bg.wasm"
   if [[ ! -f "$wasm" ]]; then

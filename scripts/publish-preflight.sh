@@ -11,6 +11,7 @@ bash scripts/check-cargo-package.sh
 
 bash scripts/build-sdk-js.sh
 bash scripts/build-viewer-only-js.sh
+bash scripts/check-js-wasm.sh
 cd sdk/js
 npm test
 npm pack --dry-run

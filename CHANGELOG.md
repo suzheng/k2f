@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-07
+
+### Fixed
+
+- npm `@openk2f/k2f` 0.2.0 shipped the viewer-only WASM as the SDK binary (identical `wasm/` and `wasm-viewer/` files), so `markdown_to_k2f` and `Editor` were missing. SDK and viewer-only builds now use isolated cargo target dirs.
+
 ## [0.2.0] - 2026-09-07
 
 ### Added
@@ -90,3 +96,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [0.1.1]: https://github.com/suzheng/k2f/releases/tag/v0.1.1
 [0.1.0]: https://github.com/suzheng/k2f/releases/tag/v0.1.0
 [0.2.0]: https://github.com/suzheng/k2f/releases/tag/v0.2.0
+[0.2.1]: https://github.com/suzheng/k2f/releases/tag/v0.2.1
