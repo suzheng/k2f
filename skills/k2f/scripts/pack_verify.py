@@ -76,6 +76,14 @@ def resolve_render_path(render: Path, output: Path) -> Path:
     return path.resolve()
 
 
+def path_is_inside(inner: Path, outer: Path) -> bool:
+    try:
+        inner.resolve().relative_to(outer.resolve())
+        return True
+    except ValueError:
+        return False
+
+
 def warn_source_root_extras(source: Path) -> None:
     extras = sorted(
         p.name
@@ -87,6 +95,17 @@ def warn_source_root_extras(source: Path) -> None:
     listed = ", ".join(extras)
     print(
         f"warning: deliverable/debug files in author dir (move to workspace root or tmp/): {listed}",
+        file=sys.stderr,
+        flush=True,
+    )
+
+
+def warn_path_inside_source(source: Path, path: Path, what: str) -> None:
+    if not path_is_inside(path, source):
+        return
+    print(
+        f"warning: {what} is inside the author directory; write deliverables at the workspace "
+        "root (e.g. ./out/doc/doc.K2F, tmp/preview.png), not under source/",
         file=sys.stderr,
         flush=True,
     )
@@ -141,6 +160,7 @@ def main() -> int:
 
     output = args.output.expanduser().resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
+    warn_path_inside_source(source, output, "-o")
     warn_source_root_extras(source)
 
     prefix = k2f_binary()
@@ -167,6 +187,7 @@ def main() -> int:
 
     if args.render is not None:
         render_out = resolve_render_path(args.render, output)
+        warn_path_inside_source(source, render_out, "--render")
         render_out.parent.mkdir(parents=True, exist_ok=True)
         run(
             [

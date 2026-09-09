@@ -28,9 +28,7 @@ impl K2fEditor {
     }
 
     pub fn outline(&self) -> String {
-        self.inner
-            .outline_json()
-            .unwrap_or_else(|_| "[]".into())
+        self.inner.outline_json().unwrap_or_else(|_| "[]".into())
     }
 
     pub fn diff(&self) -> String {

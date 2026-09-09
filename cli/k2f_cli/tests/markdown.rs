@@ -35,7 +35,10 @@ fn markdown_file_compiles_to_zip_package() {
     let bytes = fs::read(&out).unwrap();
     assert_eq!(&bytes[..2], b"PK");
 
-    let verify = k2f().args(["verify", out.to_str().unwrap()]).output().unwrap();
+    let verify = k2f()
+        .args(["verify", out.to_str().unwrap()])
+        .output()
+        .unwrap();
     assert!(
         verify.status.success(),
         "{}",

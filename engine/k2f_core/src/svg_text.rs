@@ -6,7 +6,7 @@
 /// would otherwise drop silently (resvg is built without the `text` feature).
 
 pub const SVG_TEXT_FORBIDDEN_MSG: &str =
-    "SVG contains <text> / <tspan> / <textPath> / <foreignObject> — convert labels to <path> (engine rasterizes SVG without system fonts)";
+    "SVG contains <text> / <tspan> / <textPath> / <foreignObject> — remove those tags (no system fonts). Put labels in a K2F text node beside the image, or convert glyphs to <path>";
 
 pub fn looks_like_svg(bytes: &[u8]) -> bool {
     let s = String::from_utf8_lossy(bytes);

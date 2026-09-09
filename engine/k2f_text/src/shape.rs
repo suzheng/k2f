@@ -101,7 +101,7 @@ fn shape_run(
         }
     }
     if !missing.is_empty() {
-        return Err(missing_glyph_error(text, &missing));
+        return Err(crate::fallback::missing_glyph_error(text, &missing));
     }
 
     let mut output = Vec::with_capacity(glyph_infos.len());
@@ -138,18 +138,6 @@ pub fn byte_to_char_index(text: &str, byte: usize) -> u32 {
         b -= 1;
     }
     text[..b].chars().count() as u32
-}
-
-fn missing_glyph_error(text: &str, missing: &[(u32, char)]) -> String {
-    let list = missing
-        .iter()
-        .map(|(cp, ch)| format!("U+{cp:04X} {ch:?}"))
-        .collect::<Vec<_>>()
-        .join(", ");
-    format!(
-        "FONT_MISSING_GLYPH: font has no glyph for {list} (text {:?})",
-        text.chars().take(16).collect::<String>()
-    )
 }
 
 #[cfg(test)]
@@ -206,6 +194,8 @@ mod tests {
             err.contains("FONT_MISSING_GLYPH"),
             "expected missing glyph, got {err}"
         );
+        assert!(err.contains("--add-font"), "{err}");
+        assert!(err.contains("no OS fallback"), "{err}");
     }
 
     #[test]

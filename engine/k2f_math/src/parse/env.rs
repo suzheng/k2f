@@ -51,11 +51,7 @@ impl Parser<'_> {
                     self.parse_end(expected)?;
                     break;
                 }
-                None => {
-                    return Err(MathError::Parse(format!(
-                        "missing \\end{{{expected}}}"
-                    )))
-                }
+                None => return Err(MathError::Parse(format!("missing \\end{{{expected}}}"))),
                 Some(Token::GroupClose) => {
                     return Err(MathError::Parse("unexpected '}' in environment".into()))
                 }
@@ -66,7 +62,10 @@ impl Parser<'_> {
                 }
             }
         }
-        if rows.last().is_some_and(|r| r.len() == 1 && is_empty_cell(&r[0])) {
+        if rows
+            .last()
+            .is_some_and(|r| r.len() == 1 && is_empty_cell(&r[0]))
+        {
             rows.pop();
         }
         if rows.is_empty() {
@@ -91,10 +90,8 @@ impl Parser<'_> {
 }
 
 fn is_cell_stop(t: &Token) -> bool {
-    matches!(
-        t,
-        Token::AlignTab | Token::LineBreak | Token::GroupClose
-    ) || matches!(t, Token::Command(s) if s == "end")
+    matches!(t, Token::AlignTab | Token::LineBreak | Token::GroupClose)
+        || matches!(t, Token::Command(s) if s == "end")
 }
 
 fn is_empty_cell(n: &MathNode) -> bool {

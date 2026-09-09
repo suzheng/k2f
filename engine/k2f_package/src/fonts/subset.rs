@@ -9,9 +9,8 @@ use ttf_parser::Face;
 const SHAPING_TABLES: &str = "gpos,gsub,gdef,cvt,fpgm,prep";
 
 pub fn coverage_subset_face(path: &str, bytes: &[u8]) -> Result<Vec<u8>, PackageError> {
-    let face = Face::parse(bytes, 0).map_err(|e| {
-        PackageError::Other(format!("FONT_INVALID: {path}: {e}"))
-    })?;
+    let face = Face::parse(bytes, 0)
+        .map_err(|e| PackageError::Other(format!("FONT_INVALID: {path}: {e}")))?;
     let Some(gids) = keep_glyph_ids(&face) else {
         return Ok(bytes.to_vec());
     };

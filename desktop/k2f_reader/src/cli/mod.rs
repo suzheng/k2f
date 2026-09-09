@@ -94,11 +94,7 @@ fn should_open_window() -> bool {
 
 fn cli_args() -> Vec<OsString> {
     std::env::args_os()
-        .filter(|a| {
-            a.to_str()
-                .map(|s| !s.starts_with("-psn_"))
-                .unwrap_or(true)
-        })
+        .filter(|a| a.to_str().map(|s| !s.starts_with("-psn_")).unwrap_or(true))
         .collect()
 }
 

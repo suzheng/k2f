@@ -12,11 +12,7 @@ pub struct WriteDirOpts {
     pub include_schema: bool,
 }
 
-pub fn write_dir(
-    package: &Package,
-    dest: &Path,
-    opts: WriteDirOpts,
-) -> Result<(), PackageError> {
+pub fn write_dir(package: &Package, dest: &Path, opts: WriteDirOpts) -> Result<(), PackageError> {
     if dest.exists() {
         let mut entries = fs::read_dir(dest)?;
         if entries.next().is_some() {
@@ -39,8 +35,7 @@ pub fn write_dir(
         }
         let path = dest.join(&rel);
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)
-                .map_err(|e| PackageError::Other(format!("mkdir: {e}")))?;
+            fs::create_dir_all(parent).map_err(|e| PackageError::Other(format!("mkdir: {e}")))?;
         }
         fs::write(&path, bytes).map_err(|e| PackageError::Other(format!("write {rel}: {e}")))?;
     }

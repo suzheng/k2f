@@ -452,7 +452,7 @@ Map human-readable font names to loaded font keys:
 
 ## Common Errors to Avoid
 
-1. **Missing required role fields:** Always include font_family, font_size, line_height_mult, color
+1. **Missing required role fields:** `default` must include font_family, font_size, line_height_mult, color; other roles inherit omitted text fields from `default`
 2. **Decimal Pt values:** Use integers (12000 not 12.0)
 3. **Invalid color format:** Use hex strings or palette keys
 4. **Undefined role:** Role must exist before use in content

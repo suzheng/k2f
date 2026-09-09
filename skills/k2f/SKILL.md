@@ -21,7 +21,7 @@ npm i @openk2f/k2f           # only when embedding <k2f-viewer> in a web app
 
 **MCP** is optional. Writing does not require it and does not install it. If the user gave a Gallery package URL, fetch it to a `.K2F` on disk and `k2f unpack` — do not load the ZIP into context. If a site MCP with `list_templates` / `download_template` is already connected, `download_template` returns the same kind of `packageUrl`; fetch + unpack as in step 2 of [writing.md](references/writing.md). Missing tools, kind mismatch, or download failure → continue from `starter/`; do not stop the task.
 
-Run scripts from this skill directory (or pass absolute paths to them). Skill scripts (`init_package.py`, `pack_verify.py`, `modifier_range.py`) are **stdlib-only** — `python scripts/…`; no `uv` and no extra pip packages. The author directory may live anywhere. `pack_verify.py` needs `k2f` on PATH (`pip install k2f`) or `K2F_CLI` — it does not walk a git checkout or build directory for a binary.
+Run scripts from this skill directory (or pass absolute paths to them). Core scripts (`init_package.py`, `pack_verify.py`, `modifier_range.py`) are **stdlib-only** — `python scripts/…`. Optional `compare_images.py` needs `uv run` ([visual check](references/writing.md#reference-image-overlay-optional)). The author directory may live anywhere. `pack_verify.py` needs `k2f` on PATH (`pip install k2f`) or `K2F_CLI` — it does not walk a git checkout or build directory for a binary.
 
 ## What K2F is
 
@@ -49,7 +49,7 @@ The engine — not the agent — turns A into C by running `pack` / `compile`. O
 3. **PDF, PPTX, and DOCX are one-way drawings of the lock, not a second source.** (`PDF_IS_NOT_A_SOURCE`, `PPTX_IS_NOT_A_SOURCE`, `DOCX_IS_NOT_A_SOURCE`)
 4. **Signing is a separate human/org step.** Agent output is `UNSIGNED` by design.
 5. **Validate after every edit.** Fix from error codes in [writing/errors.md](references/writing/errors.md); do not patch the lock.
-6. **Look at the pixels.** After pack, open every rendered page (`--render` writes `preview-1.png` …). Invoice/CV/flyer/poster/slide → filled page ([`ex_filled_page.json`](catalog/content/ex_filled_page.json)); treat `PAGE_UNDERFILL` as must-fix. Short letter may stay top-packed. Contract/report/thesis → one flow tree; do not invent `p1`/`p2` page containers. `break_before: page` is fine on a chapter, annex, or signature page. Details: [writing.md](references/writing.md#visual-check).
+6. **Look at the pixels.** After pack, open every rendered page (`--render` writes `preview-1.png` …). Invoice/CV/flyer/poster/slide/card/social → filled page ([`ex_filled_page.json`](catalog/content/ex_filled_page.json)); treat `PAGE_UNDERFILL` as must-fix (skipped on canvases whose content box is shorter than 180pt). Short letter may stay top-packed. Contract/report/thesis → one flow tree; do not invent `p1`/`p2` page containers. `break_before: page` is fine on a chapter, annex, signature page, slide 2+, or card back. Details: [writing.md](references/writing.md#visual-check).
 
 ## Design first
 

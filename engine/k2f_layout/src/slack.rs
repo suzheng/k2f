@@ -21,6 +21,11 @@ const UNUSED_DEN: i128 = 100;
 /// Unused below as a share of the page content box (`PAGE_UNDERFILL`).
 const PAGE_UNUSED_NUM: i128 = 25;
 const PAGE_UNUSED_DEN: i128 = 100;
+/// Skip fill diagnostics on miniature canvases (e.g. 252×144pt cards).
+/// Percentage leftover there is inset, not a hollow A4 grower.
+const MIN_PAGE_FOR_DIAGS: i128 = 180_000;
+/// Absolute unused floor so a few points of breathing room never warn.
+const MIN_UNUSED_ABS: i128 = 36_000;
 
 const GROWER_HINT: &str = "nest {fr:1} in the grower; do not pack an auto-height stack";
 const PAGE_HINT_ONE: &str =
@@ -89,7 +94,7 @@ pub fn layout_slack_diags(
     theme: &Theme,
 ) -> Vec<LayoutDiag> {
     let content_h = content_height(&manifest.page_config);
-    if content_h.0 <= 0 {
+    if content_h.0 < MIN_PAGE_FOR_DIAGS {
         return vec![];
     }
     let min_h = Pt(content_h.0 * MIN_HEIGHT_NUM / MIN_HEIGHT_DEN);
@@ -210,7 +215,7 @@ fn slack_for_box(
         (above, below, Some(last.id.clone()))
     };
 
-    if unused_below.0 * UNUSED_DEN < inner_h.0 * UNUSED_NUM {
+    if unused_below.0 < MIN_UNUSED_ABS || unused_below.0 * UNUSED_DEN < inner_h.0 * UNUSED_NUM {
         return None;
     }
     if unused_above.0 > 0 && unused_below.0 <= unused_above.0 * 2 {
@@ -249,8 +254,9 @@ fn consider_pages(
     if n == 0 {
         return;
     }
-    let pad = padding_for_role_variant(&manifest.root.role, manifest.root.variant.as_deref(), theme)
-        .unwrap_or(crate::resolved_style::EdgeInsets::ZERO);
+    let pad =
+        padding_for_role_variant(&manifest.root.role, manifest.root.variant.as_deref(), theme)
+            .unwrap_or(crate::resolved_style::EdgeInsets::ZERO);
     let content_top = manifest.page_config.margin[0] + pad.top;
     let content_h = content_height(&manifest.page_config) - pad.vertical();
     if content_h.0 <= 0 {
@@ -286,14 +292,12 @@ fn consider_pages(
         };
         let unused_below = Pt((content_bottom.0 - last_bottom.0).max(0));
         let unused_above = Pt((highest_top.unwrap_or(content_top).0 - content_top.0).max(0));
-        if unused_below.0 * PAGE_UNUSED_DEN < content_h.0 * PAGE_UNUSED_NUM {
+        if unused_below.0 < MIN_UNUSED_ABS
+            || unused_below.0 * PAGE_UNUSED_DEN < content_h.0 * PAGE_UNUSED_NUM
+        {
             continue;
         }
-        let hint = if n == 1 {
-            PAGE_HINT_ONE
-        } else {
-            PAGE_HINT_MID
-        };
+        let hint = if n == 1 { PAGE_HINT_ONE } else { PAGE_HINT_MID };
         diags.push(LayoutDiag {
             kind: LayoutDiagKind::PageUnderfill,
             node_id: page.root.id.clone(),

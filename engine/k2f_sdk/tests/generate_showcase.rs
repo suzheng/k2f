@@ -64,16 +64,12 @@ let package_bytes = ed.save_bytes()?;
 3. **Lossless Roundtrip**: Bidirectional conversion between Markdown and K2F packages.
 "#;
 
-    let res = markdown_to_k2f(
-        sample_md,
-        {
-            let mut opts =
-                MarkdownOptions::new("K2F Typography & Visual Style Specification", "report")
-                    .unwrap();
-            opts.page_size = PageSize::A4;
-            opts
-        },
-    )
+    let res = markdown_to_k2f(sample_md, {
+        let mut opts =
+            MarkdownOptions::new("K2F Typography & Visual Style Specification", "report").unwrap();
+        opts.page_size = PageSize::A4;
+        opts
+    })
     .unwrap();
 
     let k2f_path = artifact_dir.join("showcase_report.K2F");
@@ -96,14 +92,11 @@ let package_bytes = ed.save_bytes()?;
 
     let contract_md =
         fs::read_to_string(root.join("tests/fixtures/markdown/contract_cn.md")).unwrap();
-    let contract_res = markdown_to_k2f(
-        &contract_md,
-        {
-            let mut opts = MarkdownOptions::new("独立顾问协议", "legal").unwrap();
-            opts.page_size = PageSize::A4;
-            opts
-        },
-    )
+    let contract_res = markdown_to_k2f(&contract_md, {
+        let mut opts = MarkdownOptions::new("独立顾问协议", "legal").unwrap();
+        opts.page_size = PageSize::A4;
+        opts
+    })
     .unwrap();
 
     let contract_doc = OpenedDocument::open(&contract_res.bytes).unwrap();

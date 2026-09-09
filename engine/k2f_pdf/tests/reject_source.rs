@@ -13,15 +13,9 @@ fn export_and_unpack_refuse_pdf_as_source() {
     .unwrap();
     assert!(pdf.starts_with(b"%PDF-"));
     let err = unpack_bytes(&pdf).unwrap_err();
-    assert!(
-        err.to_string().contains("PDF_IS_NOT_A_SOURCE"),
-        "got {err}"
-    );
+    assert!(err.to_string().contains("PDF_IS_NOT_A_SOURCE"), "got {err}");
     let err = export_bytes(&pdf).unwrap_err();
-    assert!(
-        err.to_string().contains("PDF_IS_NOT_A_SOURCE"),
-        "got {err}"
-    );
+    assert!(err.to_string().contains("PDF_IS_NOT_A_SOURCE"), "got {err}");
 }
 
 #[test]

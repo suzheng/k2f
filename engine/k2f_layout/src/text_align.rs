@@ -38,7 +38,9 @@ pub(crate) fn line_start_offset(align: TextAlign, node_width: Pt, line_width: Pt
 }
 
 /// Count U+0020 characters in a line (justification gap slots).
-pub(crate) fn count_justify_spaces(line_text_parts: impl Iterator<Item = impl AsRef<str>>) -> usize {
+pub(crate) fn count_justify_spaces(
+    line_text_parts: impl Iterator<Item = impl AsRef<str>>,
+) -> usize {
     line_text_parts
         .map(|s| s.as_ref().chars().filter(|c| *c == ' ').count())
         .sum()
@@ -61,10 +63,7 @@ pub(crate) fn justify_space_extras(
         return (Pt::ZERO, 0);
     }
     let free = node_width.0 - line_width.0;
-    (
-        Pt(free / space_count as i128),
-        free % space_count as i128,
-    )
+    (Pt(free / space_count as i128), free % space_count as i128)
 }
 
 #[cfg(test)]

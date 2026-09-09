@@ -2128,7 +2128,7 @@ dependencies = [
 
 [[package]]
 name = "k2f"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -2143,7 +2143,7 @@ dependencies = [
 
 [[package]]
 name = "k2f-test-runner"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -2161,7 +2161,7 @@ dependencies = [
 
 [[package]]
 name = "k2f_core"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -2172,7 +2172,7 @@ dependencies = [
 
 [[package]]
 name = "k2f_docx"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "clap",
  "image 0.25.6",
@@ -2186,7 +2186,7 @@ dependencies = [
 
 [[package]]
 name = "k2f_layout"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "k2f_core",
  "k2f_math",
@@ -2197,7 +2197,7 @@ dependencies = [
 
 [[package]]
 name = "k2f_markdown"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "k2f_core",
  "k2f_package",
@@ -2207,7 +2207,7 @@ dependencies = [
 
 [[package]]
 name = "k2f_math"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "k2f_core",
  "k2f_text",
@@ -2215,7 +2215,7 @@ dependencies = [
 
 [[package]]
 name = "k2f_mcp"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "k2f_paint",
@@ -2232,7 +2232,7 @@ dependencies = [
 
 [[package]]
 name = "k2f_package"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "allsorts",
  "boon",
@@ -2249,7 +2249,7 @@ dependencies = [
 
 [[package]]
 name = "k2f_paint"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "image 0.25.6",
  "k2f_core",
@@ -2267,7 +2267,7 @@ dependencies = [
 
 [[package]]
 name = "k2f_pdf"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "image 0.25.6",
  "k2f_core",
@@ -2285,7 +2285,7 @@ dependencies = [
 
 [[package]]
 name = "k2f_pptx"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "clap",
  "image 0.25.6",
@@ -2299,7 +2299,7 @@ dependencies = [
 
 [[package]]
 name = "k2f_py"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "k2f",
  "k2f_sdk",
@@ -2336,7 +2336,7 @@ dependencies = [
 
 [[package]]
 name = "k2f_sdk"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "boon",
  "image 0.25.6",
@@ -2361,7 +2361,7 @@ dependencies = [
 
 [[package]]
 name = "k2f_text"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "k2f_core",
  "rustybuzz",
@@ -2371,7 +2371,7 @@ dependencies = [
 
 [[package]]
 name = "k2f_wasm"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.3.4",

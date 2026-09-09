@@ -2,9 +2,7 @@ mod common;
 
 use common::{compile_pkg, load_font, packed_contract, repo_root};
 use k2f_core::{for_each_node_mut, NodeContent};
-use k2f_package::{
-    apply_coverage_subset, pack_bytes, unpack_bytes, verify_package, VerifyStatus,
-};
+use k2f_package::{apply_coverage_subset, pack_bytes, unpack_bytes, verify_package, VerifyStatus};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
@@ -37,9 +35,10 @@ fn full_sc_face() -> Option<(String, Vec<u8>)> {
     let deck = Path::new("/Users/suzheng/Downloads/soft-morning-light-deck.K2F");
     if deck.exists() {
         let pkg = unpack_bytes(&fs::read(deck).ok()?).ok()?;
-        return pkg.fonts.into_iter().find(|(path, bytes)| {
-            k2f_core::is_font_face_path(path) && bytes.len() > 1_500_000
-        });
+        return pkg
+            .fonts
+            .into_iter()
+            .find(|(path, bytes)| k2f_core::is_font_face_path(path) && bytes.len() > 1_500_000);
     }
     let cache = repo_root().join("target/font-src/NotoSansSC-Regular-full.otf");
     let bytes = fs::read(cache).ok()?;
@@ -79,10 +78,16 @@ fn compile_with_text(fonts: BTreeMap<String, Vec<u8>>, text: &str) -> Result<(),
 #[test]
 fn full_sc_coverage_subset_shrinks_and_keeps_union() {
     let Some((path, full)) = full_sc_face() else {
-        eprintln!("skip full_sc_coverage_subset_shrinks_and_keeps_union: no full Noto Sans SC fixture");
+        eprintln!(
+            "skip full_sc_coverage_subset_shrinks_and_keeps_union: no full Noto Sans SC fixture"
+        );
         return;
     };
-    assert!(full.len() > 10_000_000, "expected full CJK face, got {}", full.len());
+    assert!(
+        full.len() > 10_000_000,
+        "expected full CJK face, got {}",
+        full.len()
+    );
     let mut fonts = BTreeMap::new();
     fonts.insert(path.clone(), full);
     apply_coverage_subset(&mut fonts).unwrap();
@@ -92,7 +97,11 @@ fn full_sc_coverage_subset_shrinks_and_keeps_union() {
         "coverage subset still large: {}",
         cut.len()
     );
-    assert!(cut.len() > 1_000_000, "coverage subset unexpectedly tiny: {}", cut.len());
+    assert!(
+        cut.len() > 1_000_000,
+        "coverage subset unexpectedly tiny: {}",
+        cut.len()
+    );
 
     compile_with_text(fonts.clone(), "你體灣").expect("GB2312/Big5 daily Han must compile");
 

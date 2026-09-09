@@ -109,7 +109,9 @@ fn read_map_text(files: &BTreeMap<String, Vec<u8>>, path: &str) -> Result<String
     String::from_utf8(bytes.clone()).map_err(|e| PackageError::Other(e.to_string()))
 }
 
-fn read_map_content_json(files: &BTreeMap<String, Vec<u8>>) -> Result<BTreeMap<String, String>, PackageError> {
+fn read_map_content_json(
+    files: &BTreeMap<String, Vec<u8>>,
+) -> Result<BTreeMap<String, String>, PackageError> {
     let mut out = BTreeMap::new();
     for (path, bytes) in files {
         if !path.starts_with("content/") || !path.ends_with(".json") {
@@ -118,7 +120,8 @@ fn read_map_content_json(files: &BTreeMap<String, Vec<u8>>) -> Result<BTreeMap<S
         if !paths::is_content_json_path(path) && path.as_str() != paths::ROOT {
             return Err(PackageError::UnexpectedPath(format!("{path}")));
         }
-        let text = String::from_utf8(bytes.clone()).map_err(|e| PackageError::Other(e.to_string()))?;
+        let text =
+            String::from_utf8(bytes.clone()).map_err(|e| PackageError::Other(e.to_string()))?;
         out.insert(path.clone(), text);
     }
     Ok(out)
@@ -335,19 +338,14 @@ mod tests {
 
     #[test]
     fn rejects_assets_outside_allowed_subdirs() {
-        let base = std::env::temp_dir().join(format!(
-            "k2f_pack_assets_test_{}",
-            std::process::id()
-        ));
+        let base =
+            std::env::temp_dir().join(format!("k2f_pack_assets_test_{}", std::process::id()));
         let _ = fs::remove_dir_all(&base);
         fs::create_dir_all(base.join("assets/fonts")).unwrap();
         fs::write(base.join("assets/logo.png"), b"fake").unwrap();
 
         let err = validate_assets_tree(&base).unwrap_err();
-        assert!(
-            err.to_string().contains(CODE_UNEXPECTED_PATH),
-            "got {err}"
-        );
+        assert!(err.to_string().contains(CODE_UNEXPECTED_PATH), "got {err}");
         let _ = fs::remove_dir_all(&base);
     }
 }

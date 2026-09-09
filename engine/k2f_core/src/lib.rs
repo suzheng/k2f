@@ -55,10 +55,7 @@ pub use layout_hints::*;
 /// Sidecar files such as `licenses/Roboto-Apache.txt` are not faces.
 /// The in-memory key `"default"` used by compile/paint helpers counts as a face.
 pub fn is_font_face_path(path: &str) -> bool {
-    let name = path
-        .rsplit(['/', '\\'])
-        .next()
-        .unwrap_or(path);
+    let name = path.rsplit(['/', '\\']).next().unwrap_or(path);
     if name.eq_ignore_ascii_case("default") {
         return true;
     }
@@ -79,16 +76,16 @@ pub use paint_types::*;
 pub use role_variant_validation::validate_semantic_tree_with_theme_vocab;
 pub use running_blocks::*;
 pub use running_blocks_validation::validate_manifest_running_blocks;
-pub use svg_text::{
-    looks_like_svg, svg_bytes_contain_text_element, svg_image_path, validate_svg_assets,
-    SVG_TEXT_FORBIDDEN_MSG,
-};
 pub use search::{search_tree, search_trees};
 pub use selection::{clipboard_of, selection_of, selection_with_ids, Clipboard, Selection};
 pub use semantic_code_blocks::CodeBlockValue;
 pub use semantic_lists::ListMarkerType;
 pub use semantic_math::ROLE_MATH;
 pub use sha256_hex::sha256_hex;
+pub use svg_text::{
+    looks_like_svg, svg_bytes_contain_text_element, svg_image_path, validate_svg_assets,
+    SVG_TEXT_FORBIDDEN_MSG,
+};
 pub use table_assets::{
     collapse_tables_to_assets, expand_manifest_tables_with_assets, semantic_tree_needs_assets,
     table_asset_sources, AssetsMap,
@@ -223,7 +220,7 @@ pub struct SemanticNode {
     #[serde(default)]
     pub modifiers: Vec<Modifier>,
     /// Optional deterministic layout hint for containers (stack/grid). If absent, engine uses defaults.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "layout_hints::deserialize_layout_hint")]
     pub layout: Option<LayoutHint>,
     /// Page-split policy. Agents choose an enum; they cannot invent break math.
     #[serde(default, skip_serializing_if = "BreakInside::is_auto")]
@@ -419,6 +416,7 @@ pub enum NodeContent {
         height: Pt,
     },
     Container {
+        #[serde(default)]
         children: Vec<SemanticNode>,
     },
     /// Native strict table node (v1: inline rows only).
@@ -569,7 +567,9 @@ mod tests {
         assert!(is_font_face_path("assets/fonts/Roboto-Regular.ttf"));
         assert!(is_font_face_path("assets/fonts/Noto.OTF"));
         assert!(is_font_face_path("default"));
-        assert!(!is_font_face_path("assets/fonts/licenses/Roboto-Apache.txt"));
+        assert!(!is_font_face_path(
+            "assets/fonts/licenses/Roboto-Apache.txt"
+        ));
         assert!(!is_font_face_path("assets/fonts/licenses/LICENSE"));
         assert!(!is_font_face_path("assets/fonts/readme.md"));
     }
@@ -631,7 +631,14 @@ mod tests {
             vec![GridTrack::Auto { auto: true }],
         ))
         .unwrap_err();
-        assert!(matches!(err, K2FError::GridTooManyChildren { children: 4, cells: 2, .. }));
+        assert!(matches!(
+            err,
+            K2FError::GridTooManyChildren {
+                children: 4,
+                cells: 2,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -1372,7 +1379,11 @@ fn validate_node(node: &SemanticNode) -> Result<(), K2FError> {
                     node_id: node.id.clone(),
                 });
             }
-            if spec.column_widths.iter().any(|t| matches!(t, GridTrack::Auto { .. })) {
+            if spec
+                .column_widths
+                .iter()
+                .any(|t| matches!(t, GridTrack::Auto { .. }))
+            {
                 return Err(K2FError::TableAutoTrack {
                     node_id: node.id.clone(),
                 });

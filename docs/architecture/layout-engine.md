@@ -126,7 +126,7 @@ There is no `k2f_visual` crate.
 Responsibilities:
 
 - Resolve role + variant → `box_decoration` + text styles via theme primitives
-- Apply canvas/page background (manifest-level; some global background features are roadmap)
+- Apply page sheet fill from the root role's `box_decoration` (full page, including margins)
 - Produce explicit draw order (stacking contexts) and blending rules for transparency
 - Compute or bake blur and shadow deterministically
 
@@ -383,7 +383,7 @@ LockFile {
 
 Respects `page_config` width/height/margin. Header/footer repetition uses `running_blocks`. Node-level `break_inside` / `keep_with_next` exist on the semantic tree.
 
-Compile may print `LAYOUT_SLACK` on stderr when a large stretched box (≥40% of the page content box) is empty at the bottom — typically the `{fr:1}` grower, not the page shell. `PAGE_UNDERFILL` reports a page content box ≥25% empty below (skipped on the last page of a multi-page document). Diagnostics are not stored in the lock; compile and `pack_verify.py` exit 0. Last page of a flow document may be short.
+Compile may print `LAYOUT_SLACK` on stderr when a large stretched box (≥40% of the page content box) is empty at the bottom — typically the `{fr:1}` grower, not the page shell. `PAGE_UNDERFILL` reports a page content box ≥25% empty below (skipped on the last page of a multi-page document). Both require at least 36pt of unused space, and are omitted when the page content box is shorter than 180pt (business-card canvases). Diagnostics are not stored in the lock; compile and `pack_verify.py` exit 0. Last page of a flow document may be short.
 
 ## Modifier limits
 

@@ -80,7 +80,9 @@ fn title_node(lock: &LockFile) -> &GeometryNode {
 }
 
 fn run_advance(node: &GeometryNode) -> Pt {
-    node.glyphs.iter().fold(Pt::ZERO, |acc, g| acc + g.x_advance)
+    node.glyphs
+        .iter()
+        .fold(Pt::ZERO, |acc, g| acc + g.x_advance)
 }
 
 #[test]

@@ -80,14 +80,11 @@ fn noto_report_covers_ascii_and_sample_cjk() {
 fn font_bytes_override_embeds_a_face_that_covers_cjk() {
     let md = "合同\n";
     let roboto = fs::read(repo_root().join("assets/fonts/Roboto-Regular.ttf")).unwrap();
-    let err = markdown_to_k2f(
-        md,
-        {
-            let mut opts = MarkdownOptions::new("Document", "invoice").unwrap();
-            opts.font_bytes = Some(roboto);
-            opts
-        },
-    )
+    let err = markdown_to_k2f(md, {
+        let mut opts = MarkdownOptions::new("Document", "invoice").unwrap();
+        opts.font_bytes = Some(roboto);
+        opts
+    })
     .unwrap_err();
     assert!(
         err.to_string().contains("FONT_MISSING_GLYPH"),
@@ -95,14 +92,11 @@ fn font_bytes_override_embeds_a_face_that_covers_cjk() {
     );
 
     let noto = fs::read(repo_root().join("assets/fonts/NotoSansSC-Regular.otf")).unwrap();
-    let ok = markdown_to_k2f(
-        md,
-        {
-            let mut opts = MarkdownOptions::new("Document", "invoice").unwrap();
-            opts.font_bytes = Some(noto);
-            opts
-        },
-    )
+    let ok = markdown_to_k2f(md, {
+        let mut opts = MarkdownOptions::new("Document", "invoice").unwrap();
+        opts.font_bytes = Some(noto);
+        opts
+    })
     .unwrap_or_else(|e| panic!("{e}"));
     assert_eq!(ok.bytes[0], 0x50);
     assert_eq!(ok.bytes[1], 0x4b);

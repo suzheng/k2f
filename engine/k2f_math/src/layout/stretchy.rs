@@ -26,7 +26,14 @@ pub(crate) fn wrap_delims(
     font: &Font,
     size: Pt,
 ) -> Result<MathBox, MathError> {
-    let left_box = stretch_delim(left, inner.ascent, inner.descent, font, size, AtomClass::Open)?;
+    let left_box = stretch_delim(
+        left,
+        inner.ascent,
+        inner.descent,
+        font,
+        size,
+        AtomClass::Open,
+    )?;
     let right_box = stretch_delim(
         right,
         inner.ascent,
@@ -75,7 +82,9 @@ fn stretch_delim(
             Ok(b)
         }
         Delim::Char('|') => stretch_bar(false, inner_ascent, inner_descent, font, size, class),
-        Delim::Char('\u{2016}') => stretch_bar(true, inner_ascent, inner_descent, font, size, class),
+        Delim::Char('\u{2016}') => {
+            stretch_bar(true, inner_ascent, inner_descent, font, size, class)
+        }
         Delim::Char(ch) => stretch_glyph(ch, inner_ascent, inner_descent, font, size, class),
     }
 }

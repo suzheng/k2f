@@ -1,6 +1,4 @@
-use k2f_core::{
-    BreakInside, CanvasMode, Manifest, NodeContent, SemanticNode, StackDirection,
-};
+use k2f_core::{BreakInside, CanvasMode, Manifest, NodeContent, SemanticNode, StackDirection};
 
 use super::super::node_builders::{default_page_config, stack_container};
 

@@ -543,15 +543,7 @@ pub fn draw_hud(
         PRIMARY
     };
     fill_round_rect(buf, width, height, layout.open, radius, open_bg);
-    draw_text_centered(
-        buf,
-        width,
-        height,
-        layout.open,
-        "Open",
-        PRIMARY_FG,
-        body,
-    );
+    draw_text_centered(buf, width, height, layout.open, "Open", PRIMARY_FG, body);
 
     let title_h = em_height(title_px);
     let sub_h = em_height(cap);
@@ -562,7 +554,9 @@ pub fn draw_hud(
     let title_x = layout.open.x + layout.open.w as i32 + dip(12, scale) as i32;
     let title_max = (layout.zoom_out.x - title_x - dip(12, scale) as i32).max(48) as u32;
     let title = ellipsize_to_width(app.title(), title_max, title_px);
-    draw_text_px(buf, width, height, title_x, title_y, &title, TITLE, title_px);
+    draw_text_px(
+        buf, width, height, title_x, title_y, &title, TITLE, title_px,
+    );
     let sub = page_status_label(app);
     draw_text_px(buf, width, height, title_x, sub_y, &sub, SUBTITLE, cap);
 

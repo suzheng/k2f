@@ -183,7 +183,7 @@ fn edge(b: &Border, e: BorderEdge, stroke: &BorderStroke) -> Option<BorderStroke
 fn srgb_hex(color: &str) -> Result<String, PptxError> {
     let [r, g, b, _] = parse_hex_rgba(color)
         .ok_or_else(|| PptxError::Write(format!("unparseable color '{color}'")))?;
-    Ok(format!("{r:02X}{g:02X}{b:02X}"))
+    Ok(crate::text::pin_office_srgb(&format!("{r:02X}{g:02X}{b:02X}")))
 }
 
 fn opaque_solid_hex(decoration: &k2f_core::BoxDecoration) -> Result<Option<String>, PptxError> {
@@ -194,7 +194,9 @@ fn opaque_solid_hex(decoration: &k2f_core::BoxDecoration) -> Result<Option<Strin
             if a < 255 {
                 return Ok(None);
             }
-            Ok(Some(format!("{r:02X}{g:02X}{b:02X}")))
+            Ok(Some(crate::text::pin_office_srgb(&format!(
+                "{r:02X}{g:02X}{b:02X}"
+            ))))
         }
         Ok(_) => Ok(None),
         Err(k2f_paint::PaintError::UnresolvedRef(name)) => {

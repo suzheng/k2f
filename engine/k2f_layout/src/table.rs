@@ -161,8 +161,7 @@ pub(crate) fn arrange_table_fragment(
             // Cross-axis of the row: role `self_align` (default stretch = v1 full cell).
             let align_y = resolve_self_align(&cell.role, cell.variant.as_deref(), ctx.theme)
                 .unwrap_or(Align::Stretch);
-            let (dy, child_h) =
-                align_offset_and_size(align_y, cell_size.height, measured.height);
+            let (dy, child_h) = align_offset_and_size(align_y, cell_size.height, measured.height);
             let child_geo = arrange_node(
                 cell,
                 Point::new(cell_x, cell_y + dy),

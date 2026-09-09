@@ -45,12 +45,7 @@ fn contract_clause_edit_flow_via_state() {
         .replace_text(&session_id, "contract.clause_4", CLAUSE_4_AFTER)
         .unwrap();
     state
-        .set_role(
-            &session_id,
-            "contract.clause_4",
-            "critical_warning",
-            None,
-        )
+        .set_role(&session_id, "contract.clause_4", "critical_warning", None)
         .unwrap();
 
     let diff = state.diff(&session_id).unwrap();
@@ -59,7 +54,9 @@ fn contract_clause_edit_flow_via_state() {
     assert_eq!(diff_arr[0]["id"], "contract.clause_4");
 
     let out = tempfile_path("contract-edited.K2F");
-    let save_json = state.save(&session_id, None, out.to_str().unwrap()).unwrap();
+    let save_json = state
+        .save(&session_id, None, out.to_str().unwrap())
+        .unwrap();
     assert!(save_json.get("bytes_base64").is_none());
     assert_eq!(save_json["banner"].as_str().unwrap(), "UNSIGNED");
     assert!(save_json["size"].as_u64().unwrap() > 0);
@@ -86,9 +83,7 @@ fn insert_and_delete_roundtrip() {
         "role": "body",
         "content": { "type": "text", "value": "probe" }
     });
-    state
-        .insert_node(&session_id, "root", 1, &node)
-        .unwrap();
+    state.insert_node(&session_id, "root", 1, &node).unwrap();
     state
         .delete_node(&session_id, "contract.mcp_probe")
         .unwrap();
@@ -109,9 +104,7 @@ fn create_from_template_then_insert() {
         "role": "body",
         "content": { "type": "text", "value": "hello" }
     });
-    state
-        .insert_node(session_id, "root", 0, &node)
-        .unwrap();
+    state.insert_node(session_id, "root", 0, &node).unwrap();
     let _ = std::fs::remove_dir_all(&dest);
 }
 
@@ -136,9 +129,7 @@ fn publish_dry_run_skips_http() {
         .enable_all()
         .build()
         .unwrap();
-    let out = rt
-        .block_on(state.publish(&session_id, None, true))
-        .unwrap();
+    let out = rt.block_on(state.publish(&session_id, None, true)).unwrap();
     assert_eq!(out["dry_run"], true);
     assert!(out["appearance_hash"].as_str().unwrap().len() > 10);
     assert!(out.get("url").is_none());
@@ -167,11 +158,7 @@ async fn tools_list_excludes_sign() {
             .get(tool.name.as_ref())
             .unwrap_or_else(|| panic!("missing catalog entry for {}", tool.name));
         let got = tool.description.as_deref().unwrap_or("");
-        assert_eq!(
-            got, expected,
-            "description drift for tool {}",
-            tool.name
-        );
+        assert_eq!(got, expected, "description drift for tool {}", tool.name);
         assert!(
             tool.output_schema.is_some(),
             "tool {} should advertise outputSchema",
@@ -197,13 +184,10 @@ async fn tools_list_excludes_sign() {
                 .get("properties")
                 .and_then(|p| p.get("node"))
                 .expect("insert_node.node");
-            let ty = node
-                .get("type")
-                .and_then(|t| t.as_str())
-                .or_else(|| {
-                    // $ref to a definition that is an object
-                    node.get("$ref").and_then(|_| Some("object"))
-                });
+            let ty = node.get("type").and_then(|t| t.as_str()).or_else(|| {
+                // $ref to a definition that is an object
+                node.get("$ref").and_then(|_| Some("object"))
+            });
             assert!(
                 ty == Some("object")
                     || node.get("additionalProperties").is_some()

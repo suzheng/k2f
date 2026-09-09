@@ -30,18 +30,14 @@ pub fn load_faces<'a>(
     let mut faces: HashMap<String, Face<'_>> = HashMap::new();
     for (name, bytes) in &entries {
         let face = Face::parse(bytes, 0).map_err(|_| {
-            PaintError::Font(format!(
-                "FONT_INVALID: '{name}' is not a valid TTF/OTF"
-            ))
+            PaintError::Font(format!("FONT_INVALID: '{name}' is not a valid TTF/OTF"))
         })?;
         faces.insert((*name).clone(), face);
         if let Some(stem) = std::path::Path::new(name).file_stem() {
             let stem = stem.to_string_lossy().into_owned();
             if !faces.contains_key(&stem) {
                 let face = Face::parse(bytes, 0).map_err(|_| {
-                    PaintError::Font(format!(
-                        "FONT_INVALID: '{stem}' is not a valid TTF/OTF"
-                    ))
+                    PaintError::Font(format!("FONT_INVALID: '{stem}' is not a valid TTF/OTF"))
                 })?;
                 faces.insert(stem, face);
             }
@@ -50,9 +46,7 @@ pub fn load_faces<'a>(
     if !faces.contains_key("default") {
         let (name, bytes) = entries[0];
         let face = Face::parse(bytes, 0).map_err(|_| {
-            PaintError::Font(format!(
-                "FONT_INVALID: '{name}' is not a valid TTF/OTF"
-            ))
+            PaintError::Font(format!("FONT_INVALID: '{name}' is not a valid TTF/OTF"))
         })?;
         faces.insert("default".into(), face);
     }

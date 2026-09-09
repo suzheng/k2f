@@ -1,7 +1,7 @@
 use super::draw::{blend_over, fill_rect, fill_round_rect, Rect};
 use super::font::{draw_text_px, em_height, text_width_px, BODY_PX, TITLE_PX};
 use super::hud::dip;
-use k2f_pdf::{DEFAULT_EXPORT_SCALE, PdfScale};
+use k2f_pdf::{PdfScale, DEFAULT_EXPORT_SCALE};
 
 pub const DEFAULT_PDF_DIALOG_SCALE: f32 = DEFAULT_EXPORT_SCALE;
 
@@ -264,8 +264,19 @@ fn draw_scale_row(
     let rx = row.x + dip(12, ui_scale) as i32;
     let ry = row.y + (row.h as i32 - radio as i32) / 2;
     let r = Rect::new(rx, ry, radio, radio);
-    fill_round_rect(buf, win_w, win_h, r, radio / 2, if selected { PRIMARY } else { BORDER });
-    let inner = if selected { dip(8, ui_scale) } else { dip(10, ui_scale) };
+    fill_round_rect(
+        buf,
+        win_w,
+        win_h,
+        r,
+        radio / 2,
+        if selected { PRIMARY } else { BORDER },
+    );
+    let inner = if selected {
+        dip(8, ui_scale)
+    } else {
+        dip(10, ui_scale)
+    };
     let ix = rx + (radio as i32 - inner as i32) / 2;
     let iy = ry + (radio as i32 - inner as i32) / 2;
     fill_round_rect(

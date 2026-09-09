@@ -2,8 +2,8 @@ use crate::Theme;
 use crate::{measure_node, Size, SizeConstraint};
 use crate::{LayoutContext, LayoutEngine};
 use k2f_core::{
-    CanvasMode, Manifest, NodeContent, PageConfig, Pt, RunningBlockNode, RunningBlockPosition,
-    SemanticNode,
+    CanvasMode, CellAlign, FixedSizeHint, GridTrack, LayoutHint, Manifest, NodeContent, PageConfig,
+    Pt, RunningBlockNode, RunningBlockPosition, SemanticNode,
 };
 
 fn make_text(id: &str, content: &str) -> SemanticNode {
@@ -697,4 +697,56 @@ fn break_before_page_starts_on_fresh_page() {
     assert_eq!(result.pages[0].root.children.len(), 1);
     assert_eq!(result.pages[0].root.children[0].id, "a");
     assert_eq!(result.pages[1].root.children[0].id, "b");
+}
+
+fn paged_manifest(root: SemanticNode) -> Manifest {
+    Manifest {
+        title: "Test".to_string(),
+        canvas_mode: CanvasMode::Paged,
+        page_config: PageConfig {
+            width: Pt(200_000),
+            height: Pt(200_000),
+            margin: [Pt(10_000), Pt(10_000), Pt(10_000), Pt(10_000)],
+        },
+        root,
+        running_blocks: vec![],
+    }
+}
+
+#[test]
+fn root_grid_layout_is_an_error() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let mut root = make_content(2);
+    root.layout = Some(LayoutHint::Grid {
+        columns: vec![GridTrack::Fr { fr: 1 }, GridTrack::Fr { fr: 1 }],
+        rows: vec![],
+        gap: 0,
+        row_gap: None,
+        column_gap: None,
+        cell_align: Some(CellAlign::default()),
+        size: FixedSizeHint::default(),
+    });
+    let err = LayoutEngine::layout(&paged_manifest(root), &ctx).unwrap_err();
+    assert!(err.contains("root layout type grid"), "{err}");
+    assert!(err.contains("root.grid"), "{err}");
+}
+
+#[test]
+fn root_overlay_and_columns_layout_are_errors() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let mut overlay = make_content(2);
+    overlay.layout = Some(LayoutHint::Overlay {
+        size: FixedSizeHint::default(),
+    });
+    let err = LayoutEngine::layout(&paged_manifest(overlay), &ctx).unwrap_err();
+    assert!(err.contains("root layout type overlay"), "{err}");
+
+    let mut columns = make_content(2);
+    columns.layout = Some(LayoutHint::Columns { count: 2, gap: 0 });
+    let err = LayoutEngine::layout(&paged_manifest(columns), &ctx).unwrap_err();
+    assert!(err.contains("root layout type columns"), "{err}");
 }

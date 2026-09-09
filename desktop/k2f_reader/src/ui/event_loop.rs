@@ -241,8 +241,9 @@ impl ApplicationHandler<Wake> for Gui {
                     self.redraw();
                 }
                 ElementState::Released => {
-                    if let Some(hit) =
-                        self.session.take_pdf_dialog_click(self.cursor.0, self.cursor.1)
+                    if let Some(hit) = self
+                        .session
+                        .take_pdf_dialog_click(self.cursor.0, self.cursor.1)
                     {
                         match hit {
                             PdfDialogHit::Cancel => {

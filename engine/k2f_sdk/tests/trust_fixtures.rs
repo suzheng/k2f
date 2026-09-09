@@ -2,9 +2,7 @@
 //! Site demo fixtures are written by `k2f-site/scripts/write-trust-fixtures.mjs` (JS SDK only).
 
 use k2f_core::find_node_mut;
-use k2f_package::{
-    inspect_package, sign_package, unpack_bytes, IntegrityStatus, SecretKey,
-};
+use k2f_package::{inspect_package, sign_package, unpack_bytes, IntegrityStatus, SecretKey};
 use k2f_sdk::Editor;
 use std::fs;
 use std::path::PathBuf;

@@ -77,7 +77,10 @@ fn scroll_changes_current_page_on_published_invoice() {
         "scrolling to the end must leave page 0, got {}",
         session.app().unwrap().page()
     );
-    assert_eq!(session.app().unwrap().page(), session.app().unwrap().page_count() - 1);
+    assert_eq!(
+        session.app().unwrap().page(),
+        session.app().unwrap().page_count() - 1
+    );
 }
 
 #[test]

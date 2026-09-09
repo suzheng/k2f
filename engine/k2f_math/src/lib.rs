@@ -125,6 +125,31 @@ mod tests {
     }
 
     #[test]
+    fn mid_parallel_and_relation_cluster_layout() {
+        for tex in [
+            r"P \mid Q",
+            r"P \parallel Q",
+            r"A \perp B",
+            r"x \sim y",
+            r"a \propto b",
+            r"A \otimes B",
+            r"A \oplus B",
+            r"A \wedge B",
+            r"A \vee B",
+        ] {
+            let m = layout(tex);
+            assert!(!m.glyphs.is_empty(), "{tex}");
+        }
+    }
+
+    #[test]
+    fn big_sizing_is_unsupported_hints_left_right() {
+        let err = layout_tex(r"\big[x\big]", &font(), Pt(12000), MathStyle::Display).unwrap_err();
+        assert!(err.to_string().starts_with("MATH_UNSUPPORTED:"), "{err}");
+        assert!(err.to_string().contains("\\left"), "hint missing: {err}");
+    }
+
+    #[test]
     fn unmatched_brace_is_parse() {
         let err = layout_tex("{x", &font(), Pt(12000), MathStyle::Display).unwrap_err();
         assert!(matches!(err, MathError::Parse(_)), "{err}");

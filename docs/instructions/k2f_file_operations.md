@@ -132,7 +132,7 @@ Styles are defined in `theme.json` under:
 
 **Add new role:**
 - Add entry to `roles` object
-- Must include: `font_family`, `font_size`, `line_height_mult`, `color`
+- `default` must include: `font_family`, `font_size`, `line_height_mult`, `color`. Other roles inherit omitted text fields from `default`.
 
 **Update/add variant:**
 - Add to `roles[role_name].variants[variant_name]`
@@ -312,4 +312,4 @@ For understanding the K2F system architecture:
 - **Theme Modifiers**: Must be nested as `modifiers: { "precedence": [], "styles": { "type": { "intent": { patch... } } } }`. Direct mapping fails.
 - **Padding**: `padding_pt` may be a uniform integer or `{top, right, bottom, left}` (not an array).
 - **Gradients**: `linear_gradient` primitives must include `"type": "linear"`.
-- **Roles**: `line_height_mult` is required for all roles.
+- **Roles**: `default` must set `font_family`, `font_size`, `line_height_mult`, and `color`. Other roles inherit omitted text fields from `default`.

@@ -41,15 +41,14 @@ impl ToolError {
             "PATH_REQUIRED",
             format!("{tool} requires path (writes file; never returns package bytes)"),
         )
-        .with_hint(format!("Call {tool} again with path set to a local file path"))
+        .with_hint(format!(
+            "Call {tool} again with path set to a local file path"
+        ))
     }
 
     pub fn wrong_session_kind(need: &str, how: &str) -> Self {
-        Self::new(
-            "WRONG_SESSION_KIND",
-            format!("{need} session required"),
-        )
-        .with_hint(how.to_string())
+        Self::new("WRONG_SESSION_KIND", format!("{need} session required"))
+            .with_hint(how.to_string())
     }
 
     pub fn not_found(message: impl Into<String>) -> Self {

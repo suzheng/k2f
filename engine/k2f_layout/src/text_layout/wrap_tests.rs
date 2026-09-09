@@ -148,8 +148,7 @@ fn line_width_includes_tracking_between_wrapped_fragments() {
     let constraint = SizeConstraint::infinite();
     let modifiers: Vec<Modifier> = vec![];
     let layout =
-        crate::text_layout::layout_text("A B", "body", None, &modifiers, constraint, &ctx)
-            .unwrap();
+        crate::text_layout::layout_text("A B", "body", None, &modifiers, constraint, &ctx).unwrap();
     assert_eq!(layout.lines.len(), 1);
     let shaped = measure_text_run_width("A B", &style, &ctx).unwrap();
     assert_eq!(
@@ -214,7 +213,12 @@ fn wraps_after_hyphen_minus() {
     let layout =
         crate::text_layout::layout_text("well-known", "body", None, &modifiers, constraint, &ctx)
             .unwrap();
-    assert_eq!(layout.lines.len(), 2, "expected hyphen break, got {:?}", layout.lines);
+    assert_eq!(
+        layout.lines.len(),
+        2,
+        "expected hyphen break, got {:?}",
+        layout.lines
+    );
     assert_eq!(line_text(&layout, 0), "well-");
     assert_eq!(line_text(&layout, 1), "known");
 }
@@ -231,9 +235,14 @@ fn wraps_after_soft_hyphen() {
     let max_w = head_w + Pt(1);
     let constraint = SizeConstraint::new(Size::ZERO, Size::new(max_w, Pt(i128::MAX)));
     let modifiers: Vec<Modifier> = vec![];
-    let layout = crate::text_layout::layout_text(text, "body", None, &modifiers, constraint, &ctx)
-        .unwrap();
-    assert_eq!(layout.lines.len(), 2, "expected soft-hyphen break, got {:?}", layout.lines);
+    let layout =
+        crate::text_layout::layout_text(text, "body", None, &modifiers, constraint, &ctx).unwrap();
+    assert_eq!(
+        layout.lines.len(),
+        2,
+        "expected soft-hyphen break, got {:?}",
+        layout.lines
+    );
     assert_eq!(line_text(&layout, 0), head);
     assert_eq!(line_text(&layout, 1), "CY");
 }

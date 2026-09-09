@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -251,10 +252,54 @@ def _run_init(dest: Path, extra: list[str] | None = None) -> subprocess.Complete
     return subprocess.run(cmd, capture_output=True, text=True, check=False)
 
 
-def _strip_font_sidecars(doc: Path) -> None:
-    for extra in (doc / "assets" / "fonts").rglob("*"):
-        if extra.is_file() and extra.suffix.lower() not in {".ttf", ".otf"}:
-            extra.unlink()
+def test_init_square_keeps_license_and_renders() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        dest = Path(tmp) / "post"
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(INIT_PACKAGE),
+                "--dir",
+                str(dest),
+                "--title",
+                "Square post",
+                "--page",
+                "square",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert proc.returncode == 0, proc.stderr
+        assert (dest / "assets" / "fonts" / "licenses" / "Roboto-Apache.txt").is_file()
+        page = json.loads((dest / "manifest.json").read_text(encoding="utf-8"))["page_config"]
+        assert page["width"] == 600000
+        assert page["height"] == 600000
+        assert page["margin"] == [0, 0, 0, 0]
+        assert "ex_poster_shell.json" in proc.stdout
+        out = Path(tmp) / "post.K2F"
+        pack_proc = subprocess.run(
+            [
+                sys.executable,
+                str(PACK_VERIFY),
+                str(dest),
+                "-o",
+                str(out),
+                "--expect-pages",
+                "1",
+                "--render",
+                "preview.png",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            env=pack_verify_env(),
+        )
+        combined = pack_proc.stdout + pack_proc.stderr
+        assert pack_proc.returncode == 0, combined
+        assert "UnknownMagic" not in combined
+        preview = out.parent / "tmp" / "preview.png"
+        assert preview.is_file() and preview.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
 
 
 def test_init_package_into_empty_and_sidecar_dir() -> None:
@@ -320,7 +365,6 @@ def test_pack_verify_bare_render_writes_to_workspace_tmp() -> None:
         out = tmp_path / "elsewhere" / "doc.K2F"
         init_proc = _run_init(doc)
         assert init_proc.returncode == 0, init_proc.stderr
-        _strip_font_sidecars(doc)
         (doc / "stray.png").write_bytes(b"not-a-png")
         pack_proc = subprocess.run(
             [
@@ -420,7 +464,6 @@ def test_workspace_pack_export_layout() -> None:
         )
         assert init_proc.returncode == 0, init_proc.stderr
         source = workspace / "source"
-        _strip_font_sidecars(source)
         packed = workspace / "report.K2F"
         pack_proc = subprocess.run(
             [

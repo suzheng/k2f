@@ -18,7 +18,10 @@ fn prepared_manifest(package: &Package) -> Result<Manifest, PackageError> {
 }
 
 /// Appearance binding using the lock's recorded engine identity, not the reader's.
-pub fn appearance_hash_for_lock(package: &Package, lock: &LockFile) -> Result<String, PackageError> {
+pub fn appearance_hash_for_lock(
+    package: &Package,
+    lock: &LockFile,
+) -> Result<String, PackageError> {
     let manifest = prepared_manifest(package)?;
     hash_appearance_binding(&AppearanceHashInput {
         content_hash: &lock.content_hash,

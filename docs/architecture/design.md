@@ -76,7 +76,8 @@ Bindings include native CLI, desktop reader, Python (`k2f_py`), and WASM (`k2f_w
 | Slide mode | — | Design target |
 | Infinite canvas (`canvas_mode: "infinite"`) | — | Design target; tile streaming like map viewers |
 | Per-chapter `content/*.json` include chunking | Shipped | Explicit `{ "include": "content/...." }` stubs in `content/root.json`; no `index.json` |
-| Global `document_background` / `canvas_style` in manifest | — | Design target |
+| Page sheet fill | Shipped | Root role `box_decoration.background` paints the full page (including margins). Not a `page_config` field. |
+| `canvas_style` in manifest | — | Design target |
 
 See [status.md](../guide/status.md) for the current shipped surface.
 

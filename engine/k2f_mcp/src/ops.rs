@@ -69,8 +69,8 @@ impl K2fState {
                 "outline": outline,
             }));
         }
-        let bytes = fs::read(&path)
-            .map_err(|e| ToolError::invalid(format!("read {path:?}: {e}")))?;
+        let bytes =
+            fs::read(&path).map_err(|e| ToolError::invalid(format!("read {path:?}: {e}")))?;
         let editor = Editor::open(&bytes).map_err(ToolError::from_agent)?;
         let outline = parse_outline(&editor)?;
         let meta = SessionMeta {
@@ -147,9 +147,8 @@ impl K2fState {
         node: &Value,
     ) -> Result<Value, ToolError> {
         if !node.is_object() {
-            return Err(ToolError::invalid("node must be a JSON object").with_hint(
-                "Pass semantic node JSON without x/y geometry fields",
-            ));
+            return Err(ToolError::invalid("node must be a JSON object")
+                .with_hint("Pass semantic node JSON without x/y geometry fields"));
         }
         let node_json =
             serde_json::to_string(node).map_err(|e| ToolError::invalid(e.to_string()))?;
@@ -209,8 +208,7 @@ impl K2fState {
                 .map_err(ToolError::from_agent)?
         };
         let path = resolve_path(path)?;
-        fs::write(&path, &bytes)
-            .map_err(|e| ToolError::invalid(format!("write {path:?}: {e}")))?;
+        fs::write(&path, &bytes).map_err(|e| ToolError::invalid(format!("write {path:?}: {e}")))?;
         let banner = OpenedDocument::open(&bytes)
             .map(|d| d.banner().as_str().to_string())
             .unwrap_or_else(|_| "UNKNOWN".into());
@@ -278,10 +276,11 @@ impl K2fState {
         let id = SessionStore::parse_id(session_id)?;
         let session = self.sessions.get(&id)?;
         let SessionKind::Editor(ed) = &session.kind;
-        let pdf = ed.export_pdf_bytes_at(scale).map_err(ToolError::from_agent)?;
+        let pdf = ed
+            .export_pdf_bytes_at(scale)
+            .map_err(ToolError::from_agent)?;
         let path = resolve_path(path)?;
-        fs::write(&path, &pdf)
-            .map_err(|e| ToolError::invalid(format!("write {path:?}: {e}")))?;
+        fs::write(&path, &pdf).map_err(|e| ToolError::invalid(format!("write {path:?}: {e}")))?;
         Ok(json!({
             "path": path.display().to_string(),
             "size": pdf.len(),
@@ -308,10 +307,10 @@ impl K2fState {
             }
             return self.verify_path(&path.display().to_string());
         }
-        Err(ToolError::invalid(
-            "session has no source file; pass path= to verify saved bytes",
+        Err(
+            ToolError::invalid("session has no source file; pass path= to verify saved bytes")
+                .with_hint("Call save with path, then verify with that path"),
         )
-        .with_hint("Call save with path, then verify with that path"))
     }
 
     fn verify_path(&self, path: &str) -> Result<Value, ToolError> {
@@ -362,9 +361,11 @@ impl K2fState {
         }
         let resp = publish_bytes(&self.publish_origin, &bytes)
             .await
-            .map_err(|e| ToolError::internal(e).with_hint(
-                "Check K2F_PUBLISH_ORIGIN and that the site /api/publish is reachable",
-            ))?;
+            .map_err(|e| {
+                ToolError::internal(e).with_hint(
+                    "Check K2F_PUBLISH_ORIGIN and that the site /api/publish is reachable",
+                )
+            })?;
         Ok(json!({
             "appearanceHash": resp.appearance_hash,
             "url": resp.url,

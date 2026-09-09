@@ -209,7 +209,7 @@ mod tests {
                 bold: false,
                 italic: false,
                 letter_spacing_pt: Pt::ZERO,
-            first_line_indent_pt: Pt::ZERO,
+                first_line_indent_pt: Pt::ZERO,
                 variants: HashMap::from([(
                     "spacious".to_string(),
                     RoleVariant {
@@ -268,7 +268,7 @@ mod tests {
                 bold: false,
                 italic: false,
                 letter_spacing_pt: Pt::ZERO,
-            first_line_indent_pt: Pt::ZERO,
+                first_line_indent_pt: Pt::ZERO,
                 variants: HashMap::from([(
                     "compact".to_string(),
                     RoleVariant {

@@ -82,8 +82,7 @@ impl Session {
     }
 
     pub fn load_path(&mut self, path: &Path) -> anyhow::Result<()> {
-        let bytes =
-            std::fs::read(path).with_context(|| format!("read {}", path.display()))?;
+        let bytes = std::fs::read(path).with_context(|| format!("read {}", path.display()))?;
         self.load(&bytes)
     }
 
@@ -151,7 +150,11 @@ impl Session {
     }
 
     pub fn page_view(&self, win_w: u32, win_h: u32) -> PageView {
-        self.view_at(self.app.as_ref().map(|a| a.page()).unwrap_or(0), win_w, win_h)
+        self.view_at(
+            self.app.as_ref().map(|a| a.page()).unwrap_or(0),
+            win_w,
+            win_h,
+        )
     }
 
     pub fn set_window_size(&mut self, w: u32, h: u32) {
@@ -610,7 +613,10 @@ impl Session {
             Some(app) => super::chrome::chrome_top_at(app, self.scale),
             None => dip(super::hud::TOOLBAR_HEIGHT, self.scale),
         };
-        f64::from(self.win_h.saturating_sub(top.saturating_add(dip(STATUS_HEIGHT, self.scale))))
+        f64::from(
+            self.win_h
+                .saturating_sub(top.saturating_add(dip(STATUS_HEIGHT, self.scale))),
+        )
     }
 
     fn clamp_scroll(&mut self) {
@@ -641,12 +647,7 @@ impl Session {
             pw,
             ph,
             zoom,
-            origin_y(
-                page,
-                &self.tops(),
-                self.scroll_y,
-                f64::from(inset),
-            ),
+            origin_y(page, &self.tops(), self.scroll_y, f64::from(inset)),
         )
     }
 

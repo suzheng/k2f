@@ -1,6 +1,4 @@
-use crate::style::{
-    apply_patch, apply_script_geometry, modifier_precedence, patch_for_modifier,
-};
+use crate::style::{apply_patch, apply_script_geometry, modifier_precedence, patch_for_modifier};
 use crate::Theme;
 use k2f_core::Modifier;
 

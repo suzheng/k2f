@@ -74,14 +74,14 @@ pub fn split_by_coverage(
     Ok(out)
 }
 
-fn missing_glyph_error(text: &str, missing: &[(u32, char)]) -> String {
+pub(crate) fn missing_glyph_error(text: &str, missing: &[(u32, char)]) -> String {
     let list = missing
         .iter()
         .map(|(cp, ch)| format!("U+{cp:04X} {ch:?}"))
         .collect::<Vec<_>>()
         .join(", ");
     format!(
-        "FONT_MISSING_GLYPH: font has no glyph for {list} (text {:?})",
+        "FONT_MISSING_GLYPH: no embedded face covers {list} (text {:?}); add a covering TTF/OTF (--add-font); no OS fallback",
         text.chars().take(16).collect::<String>()
     )
 }
@@ -106,10 +106,7 @@ mod tests {
             "assets/fonts/NotoEmoji-Regular.ttf".to_string(),
         ]);
         lib.add_embedded(primary_path, (*primary.data).clone());
-        lib.add_embedded(
-            "assets/fonts/NotoEmoji-Regular.ttf",
-            (*emoji.data).clone(),
-        );
+        lib.add_embedded("assets/fonts/NotoEmoji-Regular.ttf", (*emoji.data).clone());
         lib
     }
 
@@ -121,6 +118,8 @@ mod tests {
         let err = split_by_coverage("OK ✅", "Roboto-Regular", &lib).unwrap_err();
         assert!(err.contains("FONT_MISSING_GLYPH"), "{err}");
         assert!(err.contains("U+2705"), "{err}");
+        assert!(err.contains("--add-font"), "{err}");
+        assert!(err.contains("no OS fallback"), "{err}");
     }
 
     #[test]

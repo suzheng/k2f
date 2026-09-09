@@ -228,10 +228,7 @@ fn measure_container(
             let _ = measure_node(child, child_constraint, ctx)?;
         }
 
-        let measured = Size::new(
-            total_w + padding.horizontal(),
-            total_h + padding.vertical(),
-        );
+        let measured = Size::new(total_w + padding.horizontal(), total_h + padding.vertical());
         return Ok(apply_fixed_min_outer(measured, fixed, constraint));
     }
 

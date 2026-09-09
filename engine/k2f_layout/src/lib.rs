@@ -32,19 +32,45 @@ mod slack_tests;
 
 pub use arrange::arrange_node;
 pub use compile::{compile_chunk_with_fonts, compile_manifest, compile_outcome, CompileOutcome};
-pub use slack::LayoutDiag;
 pub use k2f_core::AssetsMap;
 pub use layout_context::{LayoutContext, Point, Size, SizeConstraint};
 pub use list_style::*;
 pub use measure::measure_node;
 pub use pagination::Paginator;
 pub use resolved_style::*;
+pub use slack::LayoutDiag;
 pub use style::*;
 pub use text_layout::{layout_text, TextLayout};
 pub use theme::*;
 pub use visual_primitives::*;
 
-use k2f_core::{CanvasMode, LayoutResult, Manifest, Pt};
+use k2f_core::{Align, CanvasMode, LayoutHint, LayoutResult, Manifest, Pt, StackDirection};
+
+/// Root is document flow: omitted/`stack` only. Grid/overlay/columns on root are not paginated
+/// as those layout types — they used to degrade silently to a vertical stack.
+fn root_flow_layout(layout: Option<&LayoutHint>) -> Result<(StackDirection, i64, Align), String> {
+    match layout {
+        None => Ok((StackDirection::Vertical, 0, Align::Stretch)),
+        Some(LayoutHint::Stack {
+            direction,
+            gap,
+            align_items,
+            ..
+        }) => Ok((*direction, *gap, *align_items)),
+        Some(LayoutHint::Grid { .. }) => Err(
+            "root layout type grid is not document flow (children would paginate as a vertical stack). Nest the grid under a child, e.g. root → root.grid"
+                .to_string(),
+        ),
+        Some(LayoutHint::Overlay { .. }) => Err(
+            "root layout type overlay is not document flow. Nest the overlay under a child container"
+                .to_string(),
+        ),
+        Some(LayoutHint::Columns { .. }) => Err(
+            "root layout type columns is not document flow. Nest the columns container under a child, e.g. root → root.columns"
+                .to_string(),
+        ),
+    }
+}
 
 pub struct LayoutEngine;
 
@@ -115,19 +141,8 @@ impl LayoutEngine {
             // Current pagination model paginates root's immediate children; we still do that,
             // but we apply the same stack semantics (gap + cross-axis alignment) that
             // `arrange_container` would apply if the root itself were arranged.
-            let (direction, gap_i64, align_items) = match &manifest.root.layout {
-                Some(k2f_core::LayoutHint::Stack {
-                    direction,
-                    gap,
-                    align_items,
-                    ..
-                }) => (*direction, *gap, *align_items),
-                _ => (
-                    k2f_core::StackDirection::Vertical,
-                    0_i64,
-                    k2f_core::Align::Stretch,
-                ),
-            };
+            let (direction, gap_i64, align_items) =
+                root_flow_layout(manifest.root.layout.as_ref())?;
 
             // Only vertical stack behaves like document flow today.
             // If the root declares horizontal, we fall back to the previous behavior.

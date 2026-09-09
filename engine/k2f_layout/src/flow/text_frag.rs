@@ -39,12 +39,9 @@ pub(crate) fn prepare_text(
         constraint,
         ctx,
     )?;
-    let first_line_indent = crate::resolved_style::resolve_text_style(
-        &node.role,
-        node.variant.as_deref(),
-        ctx.theme,
-    )
-    .first_line_indent;
+    let first_line_indent =
+        crate::resolved_style::resolve_text_style(&node.role, node.variant.as_deref(), ctx.theme)
+            .first_line_indent;
     Ok(TextPages {
         layout,
         padding_top: padding.top,

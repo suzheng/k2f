@@ -151,8 +151,8 @@ impl K2fViewer {
     }
 
     pub fn export_pdf_at(&self, scale: f32) -> Result<Vec<u8>, JsValue> {
-        let scale = k2f_pdf::PdfScale::from_f32(scale)
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let scale =
+            k2f_pdf::PdfScale::from_f32(scale).map_err(|e| JsValue::from_str(&e.to_string()))?;
         k2f_pdf::export_opened(&self.doc, scale).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 

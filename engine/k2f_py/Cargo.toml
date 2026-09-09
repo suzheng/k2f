@@ -1,6 +1,6 @@
 [package]
 name = "k2f_py"
-version = "0.2.0"
+version = "0.2.2"
 edition = "2021"
 description = "K2F PyO3 bindings (distributed via sdk/python)"
 license = "Apache-2.0"
@@ -12,6 +12,6 @@ name = "k2f"
 crate-type = ["cdylib"]
 
 [dependencies]
-k2f_cli = { package = "k2f", path = "../../cli/k2f_cli", version = "0.2.0" }
-k2f_sdk = { path = "../k2f_sdk", version = "0.2.0" }
+k2f_cli = { package = "k2f", path = "../../cli/k2f_cli", version = "0.2.2" }
+k2f_sdk = { path = "../k2f_sdk", version = "0.2.2" }
 pyo3 = { version = "0.23", features = ["extension-module", "abi3-py39"] }

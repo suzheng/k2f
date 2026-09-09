@@ -205,12 +205,7 @@ impl K2fServer {
     )]
     fn create(&self, Parameters(args): Parameters<CreateArgs>) -> Result<Json<Value>, String> {
         let mut state = self.state.lock().unwrap();
-        map_ok(state.create(
-            &args.title,
-            &args.dest_dir,
-            &args.template,
-            &args.page_size,
-        ))
+        map_ok(state.create(&args.title, &args.dest_dir, &args.template, &args.page_size))
     }
 
     #[tool(
@@ -327,12 +322,7 @@ impl K2fServer {
     ) -> Result<Json<Value>, String> {
         let mut state = self.state.lock().unwrap();
         let node = Value::Object(args.node);
-        map_ok(state.insert_node(
-            &args.session_id,
-            &args.parent_id,
-            args.index,
-            &node,
-        ))
+        map_ok(state.insert_node(&args.session_id, &args.parent_id, args.index, &node))
     }
 
     #[tool(
@@ -417,12 +407,7 @@ impl K2fServer {
         Parameters(args): Parameters<MarkdownArgs>,
     ) -> Result<Json<Value>, String> {
         let mut state = self.state.lock().unwrap();
-        map_ok(state.markdown_to_k2f(
-            &args.markdown,
-            &args.title,
-            &args.template,
-            &args.page_size,
-        ))
+        map_ok(state.markdown_to_k2f(&args.markdown, &args.title, &args.template, &args.page_size))
     }
 
     #[tool(

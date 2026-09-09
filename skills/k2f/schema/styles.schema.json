@@ -84,7 +84,7 @@
     },
     "roles": {
       "type": "object",
-      "description": "Role -> base style mapping. Must include 'default'.",
+      "description": "Role -> base style mapping. Must include 'default' with font_family, font_size, line_height_mult, and color. Other roles inherit omitted text fields from default.",
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
@@ -159,8 +159,7 @@
               }
             }
           }
-        },
-        "required": ["font_family", "font_size", "line_height_mult", "color"]
+        }
       }
     },
     "font_aliases": {

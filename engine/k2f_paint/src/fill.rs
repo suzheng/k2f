@@ -85,18 +85,16 @@ fn fill_path_with_linear_gradient(
     let start = Point::from_xy(cx + dir_x * min_t, cy + dir_y * min_t);
     let end = Point::from_xy(cx + dir_x * max_t, cy + dir_y * max_t);
 
-    let ts_stops: Vec<GradientStop> = stops
-        .iter()
-        .filter_map(|s| {
-            let c = parse_hex_color_rgba8(&s.color)?;
-            Some(GradientStop::new(
-                (s.pos as f32 / 1000.0).clamp(0.0, 1.0),
-                c,
-            ))
-        })
-        .collect();
-    if ts_stops.is_empty() {
-        return Ok(());
+    let mut ts_stops: Vec<GradientStop> = Vec::with_capacity(stops.len());
+    for s in stops {
+        let c = parse_hex_color_rgba8(&s.color).ok_or(PaintError::Gradient)?;
+        ts_stops.push(GradientStop::new(
+            (s.pos as f32 / 1000.0).clamp(0.0, 1.0),
+            c,
+        ));
+    }
+    if ts_stops.len() < 2 {
+        return Err(PaintError::Gradient);
     }
 
     let shader =

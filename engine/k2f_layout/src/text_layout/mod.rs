@@ -73,7 +73,7 @@ mod tests {
                 bold: false,
                 italic: false,
                 letter_spacing_pt: Pt::ZERO,
-            first_line_indent_pt: Pt::ZERO,
+                first_line_indent_pt: Pt::ZERO,
                 variants: HashMap::from([(
                     "muted".to_string(),
                     RoleVariant {

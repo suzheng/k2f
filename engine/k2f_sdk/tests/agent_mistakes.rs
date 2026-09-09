@@ -2,8 +2,8 @@ mod common;
 
 use k2f_core::{NodeContent, Pt, SemanticNode};
 use k2f_sdk::{
-    validate_agent_json, AgentError, Editor, DUPLICATE_ID, INVALID_ARGUMENT,
-    INVALID_ID, SCHEMA_INVALID, TABLE_ROW_MISMATCH, UNKNOWN_ROLE,
+    validate_agent_json, AgentError, Editor, DUPLICATE_ID, INVALID_ARGUMENT, INVALID_ID,
+    SCHEMA_INVALID, TABLE_ROW_MISMATCH, UNKNOWN_ROLE,
 };
 use serde_json::json;
 

@@ -11,8 +11,7 @@ pub fn draw_full_page_stamp(page: &mut PageDraw, stamp: &ImageRes) {
     let w = page.page_w as f32;
     let h = page.page_h as f32;
     page.content.save_state();
-    page.content
-        .transform([w, 0.0, 0.0, h, pdf_x, pdf_y]);
+    page.content.transform([w, 0.0, 0.0, h, pdf_x, pdf_y]);
     page.content.x_object(Name(stamp.name.as_bytes()));
     page.content.restore_state();
 }

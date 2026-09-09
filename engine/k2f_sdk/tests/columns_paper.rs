@@ -36,9 +36,7 @@ fn paper_manuscript_columns_saves_and_exports_pdf() {
             role: "warning".to_string(),
             break_inside: BreakInside::Avoid,
             column_span: ColumnSpan::All,
-            content: NodeContent::Text(
-                "Figure 1. Full-width callout inside columns.".to_string(),
-            ),
+            content: NodeContent::Text("Figure 1. Full-width callout inside columns.".to_string()),
             ..Default::default()
         },
     );

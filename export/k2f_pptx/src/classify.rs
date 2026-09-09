@@ -178,7 +178,7 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DeckIR, PptxError> {
 }
 
 fn page_bg_hex(page: &Page, ops: &[PaintOp]) -> String {
-    match ops.first() {
+    let raw = match ops.first() {
         Some(PaintOp::DrawBox {
             rect, decoration, ..
         }) if is_full_page(page, rect) => match resolve_fill(decoration) {
@@ -188,7 +188,8 @@ fn page_bg_hex(page: &Page, ops: &[PaintOp]) -> String {
             _ => "FFFFFF".into(),
         },
         _ => "FFFFFF".into(),
-    }
+    };
+    crate::text::pin_office_srgb(&raw)
 }
 
 fn is_full_page(page: &Page, rect: &Rect) -> bool {

@@ -110,7 +110,7 @@ impl Border {
 }
 
 /// Padding / insets in fixed-point Pt (1/1000 pt units).
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum EdgeInsetsPt {
     Uniform(i64),
@@ -120,6 +120,75 @@ pub enum EdgeInsetsPt {
         bottom: i64,
         left: i64,
     },
+}
+
+impl<'de> Deserialize<'de> for EdgeInsetsPt {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        match value {
+            serde_json::Value::Number(n) => {
+                let v = n
+                    .as_i64()
+                    .ok_or_else(|| serde::de::Error::custom("padding_pt must be an integer"))?;
+                if v < 0 {
+                    return Err(serde::de::Error::custom(
+                        "padding_pt must be non-negative",
+                    ));
+                }
+                Ok(EdgeInsetsPt::Uniform(v))
+            }
+            serde_json::Value::Array(items) => {
+                if items.len() != 4 {
+                    return Err(serde::de::Error::custom(
+                        "padding_pt array must be [top, right, bottom, left]",
+                    ));
+                }
+                let mut edges = [0i64; 4];
+                for (i, item) in items.iter().enumerate() {
+                    let v = item.as_i64().ok_or_else(|| {
+                        serde::de::Error::custom("padding_pt array values must be integers")
+                    })?;
+                    if v < 0 {
+                        return Err(serde::de::Error::custom(
+                            "padding_pt must be non-negative",
+                        ));
+                    }
+                    edges[i] = v;
+                }
+                Ok(EdgeInsetsPt::PerEdge {
+                    top: edges[0],
+                    right: edges[1],
+                    bottom: edges[2],
+                    left: edges[3],
+                })
+            }
+            serde_json::Value::Object(map) => {
+                let get = |k: &str| {
+                    map.get(k)
+                        .and_then(|v| v.as_i64())
+                        .ok_or_else(|| serde::de::Error::custom(format!("padding_pt missing '{k}'")))
+                };
+                let top = get("top")?;
+                let right = get("right")?;
+                let bottom = get("bottom")?;
+                let left = get("left")?;
+                if top < 0 || right < 0 || bottom < 0 || left < 0 {
+                    return Err(serde::de::Error::custom(
+                        "padding_pt must be non-negative",
+                    ));
+                }
+                Ok(EdgeInsetsPt::PerEdge {
+                    top,
+                    right,
+                    bottom,
+                    left,
+                })
+            }
+            _ => Err(serde::de::Error::custom(
+                "padding_pt must be an integer, [top,right,bottom,left], or {top,right,bottom,left}",
+            )),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -177,4 +246,23 @@ pub struct BoxDecoration {
     /// (e.g. `PaintOp::BackdropBlur`) so the executor applies a deterministic algorithm.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub blur: Option<BlurRef>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::EdgeInsetsPt;
+
+    #[test]
+    fn padding_array_is_trbl() {
+        let v: EdgeInsetsPt = serde_json::from_value(serde_json::json!([10, 20, 30, 40])).unwrap();
+        assert_eq!(
+            v,
+            EdgeInsetsPt::PerEdge {
+                top: 10,
+                right: 20,
+                bottom: 30,
+                left: 40
+            }
+        );
+    }
 }

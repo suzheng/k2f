@@ -99,8 +99,7 @@ impl OutlineBuilder for PdfOutline<'_> {
         let y2 = self.ty(y2);
         let x = self.tx(x, y);
         let y = self.ty(y);
-        self.content
-            .cubic_to(x1, y1, x2, y2, x, y);
+        self.content.cubic_to(x1, y1, x2, y2, x, y);
         self.last_x = x;
         self.last_y = y;
     }

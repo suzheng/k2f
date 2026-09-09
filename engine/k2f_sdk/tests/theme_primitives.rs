@@ -89,10 +89,7 @@ fn official_themes_define_named_visual_atoms() {
             p["surfaces"]["glass_light"].is_object(),
             "{name} glass_light"
         );
-        assert!(
-            p["surfaces"]["glass_dark"].is_object(),
-            "{name} glass_dark"
-        );
+        assert!(p["surfaces"]["glass_dark"].is_object(), "{name} glass_dark");
         assert!(p["surfaces"]["inverse"].is_object(), "{name} inverse");
         assert!(
             v["palette"]["disabled"].as_str().unwrap().ends_with("61"),

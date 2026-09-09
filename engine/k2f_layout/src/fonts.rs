@@ -48,8 +48,18 @@ pub fn load_font_library(fonts: &BTreeMap<String, Vec<u8>>) -> Result<FontLibrar
 }
 
 pub fn validate_theme_fonts(theme: &Theme, fonts: &FontLibrary) -> Result<(), String> {
+    crate::style::validate_role_text_fields(theme)?;
+    let default = theme.roles.get("default");
     for (role, style) in &theme.roles {
-        check_family(&style.font_family, theme, fonts, &format!("role '{role}'"))?;
+        let family = if style.font_family.is_empty() {
+            default.map(|d| d.font_family.as_str()).unwrap_or("")
+        } else {
+            style.font_family.as_str()
+        };
+        if family.is_empty() {
+            continue;
+        }
+        check_family(family, theme, fonts, &format!("role '{role}'"))?;
         for (variant, vs) in &style.variants {
             if let Some(patch) = &vs.text_overrides {
                 if let Some(ff) = &patch.font_family {

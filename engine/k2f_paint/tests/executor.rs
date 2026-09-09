@@ -1,8 +1,8 @@
 mod common;
 
 use k2f_core::{
-    Border, BorderEdge, BorderStyle, BoxDecoration, Fill, FillRef, GeometryNode, LayoutResult,
-    LockFile, Page, PageRenderPlan, PaintOp, Pt, Rect, RenderPlan,
+    Border, BorderEdge, BorderStyle, BoxDecoration, Fill, FillRef, GeometryNode, GradientStop,
+    LayoutResult, LinearGradient, LockFile, Page, PageRenderPlan, PaintOp, Pt, Rect, RenderPlan,
 };
 use k2f_paint::{render_lockfile_page_to_png, single_font_map, PaintError, OFFICIAL_PNG_SCALE};
 
@@ -196,4 +196,83 @@ fn four_edge_border_follows_corner_radius() {
         interior[1] > 150 && interior[0] < 80,
         "interior should stay green fill, got {interior:?}"
     );
+}
+
+fn gradient_lock(angle_degrees: i64, stops: Vec<GradientStop>) -> LockFile {
+    box_lock(BoxDecoration {
+        background: Some(FillRef::Inline(Fill::LinearGradient {
+            value: LinearGradient::Linear {
+                angle_degrees,
+                stops,
+            },
+        })),
+        ..Default::default()
+    })
+}
+
+fn render_box_png(lock: &LockFile) -> image::RgbaImage {
+    let png = render_lockfile_page_to_png(
+        lock,
+        0,
+        OFFICIAL_PNG_SCALE,
+        &single_font_map(&common::font_bytes()),
+        &Default::default(),
+    )
+    .unwrap();
+    image::load_from_memory(&png).unwrap().to_rgba8()
+}
+
+#[test]
+fn linear_gradient_90_is_top_red_bottom_blue() {
+    let lock = gradient_lock(
+        90,
+        vec![
+            GradientStop {
+                pos: 0,
+                color: "#FF0000".into(),
+            },
+            GradientStop {
+                pos: 1000,
+                color: "#0000FF".into(),
+            },
+        ],
+    );
+    let decoded = render_box_png(&lock);
+    // scale 2: 50pt box at origin → [0,0]–[100,100] px
+    let top = decoded.get_pixel(50, 8);
+    let bottom = decoded.get_pixel(50, 92);
+    assert!(
+        top[0] > 180 && top[2] < 80,
+        "90° must paint red at the top, got {top:?}"
+    );
+    assert!(
+        bottom[2] > 180 && bottom[0] < 80,
+        "90° must paint blue at the bottom, got {bottom:?}"
+    );
+}
+
+#[test]
+fn linear_gradient_bad_stop_color_fails_closed() {
+    let lock = gradient_lock(
+        90,
+        vec![
+            GradientStop {
+                pos: 0,
+                color: "#FF0000".into(),
+            },
+            GradientStop {
+                pos: 1000,
+                color: "not-a-hex".into(),
+            },
+        ],
+    );
+    let err = render_lockfile_page_to_png(
+        &lock,
+        0,
+        OFFICIAL_PNG_SCALE,
+        &single_font_map(&common::font_bytes()),
+        &Default::default(),
+    )
+    .unwrap_err();
+    assert!(matches!(err, PaintError::Gradient), "{err}");
 }

@@ -406,3 +406,84 @@ fn omitted_rows_two_auto_rows_for_four_children() {
     assert_eq!(geo.children.len(), 4);
     assert_eq!(geo.children[2].y, Pt(100_000));
 }
+
+fn make_text(id: &str, content: &str) -> SemanticNode {
+    SemanticNode {
+        id: id.to_string(),
+        role: "body".to_string(),
+        content: NodeContent::Text(content.to_string()),
+        ..Default::default()
+    }
+}
+
+fn two_col_grid(children: Vec<SemanticNode>, columns: Vec<GridTrack>, width: i128) -> SemanticNode {
+    SemanticNode {
+        id: "g".to_string(),
+        role: "section".to_string(),
+        content: NodeContent::Container { children },
+        layout: Some(LayoutHint::Grid {
+            columns,
+            rows: vec![],
+            gap: 1000,
+            row_gap: None,
+            column_gap: None,
+            cell_align: Some(CellAlign::default()),
+            size: FixedSizeHint {
+                width: Some(Pt(width)),
+                height: None,
+            },
+        }),
+        ..Default::default()
+    }
+}
+
+#[test]
+fn two_auto_text_columns_do_not_overlap() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let long = "SETTLEMENT REFERENCE VALUE WITH TRACKING AND LARGE TYPE";
+    let container = two_col_grid(
+        vec![make_text("a", long), make_text("b", long)],
+        vec![
+            GridTrack::Auto { auto: true },
+            GridTrack::Auto { auto: true },
+        ],
+        80_000,
+    );
+    let measured = measure_node(&container, SizeConstraint::infinite(), &ctx).unwrap();
+    let geo = arrange_node(&container, Point::ZERO, measured, &ctx).unwrap();
+    assert_eq!(geo.children.len(), 2);
+    let a = &geo.children[0];
+    let b = &geo.children[1];
+    assert!(
+        a.x + a.width <= b.x,
+        "auto columns overlap: left={}..{} right={}..{}",
+        a.x.0,
+        (a.x + a.width).0,
+        b.x.0,
+        (b.x + b.width).0
+    );
+    assert!(a.width.0 > 0 && b.width.0 > 0);
+}
+
+#[test]
+fn fr_plus_short_auto_still_hugs_the_auto_column() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let container = two_col_grid(
+        vec![make_text("label", "Total"), make_text("val", "$48")],
+        vec![GridTrack::Fr { fr: 1 }, GridTrack::Auto { auto: true }],
+        200_000,
+    );
+    let measured = measure_node(&container, SizeConstraint::infinite(), &ctx).unwrap();
+    let geo = arrange_node(&container, Point::ZERO, measured, &ctx).unwrap();
+    let auto_w = geo.children[1].width;
+    let fr_w = geo.children[0].width;
+    assert!(
+        auto_w.0 < fr_w.0,
+        "auto should hug, fr should take leftover"
+    );
+    assert!(auto_w.0 > 0);
+}

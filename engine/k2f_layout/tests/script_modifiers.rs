@@ -56,7 +56,11 @@ fn subscript_glyph_is_smaller_and_lower() {
     }"#;
     let lock = compile(content);
     let node = body_node(&lock);
-    assert!(node.text_runs.len() >= 2, "expected split runs, got {}", node.text_runs.len());
+    assert!(
+        node.text_runs.len() >= 2,
+        "expected split runs, got {}",
+        node.text_runs.len()
+    );
 
     let base_size = Pt(12000);
     let script_size = Pt(base_size.0 * 7 / 10);

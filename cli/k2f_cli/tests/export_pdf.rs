@@ -18,7 +18,10 @@ fn export_pdf_draws_invoice_lock_not_a_second_layout() {
     let export = k2f()
         .args([
             "export-pdf",
-            repo_root().join("examples/published/invoice.K2F").to_str().unwrap(),
+            repo_root()
+                .join("examples/published/invoice.K2F")
+                .to_str()
+                .unwrap(),
             "-o",
             out.to_str().unwrap(),
         ])
@@ -46,7 +49,10 @@ fn export_pdf_accepts_scale_4() {
     let export = k2f()
         .args([
             "export-pdf",
-            repo_root().join("examples/published/invoice.K2F").to_str().unwrap(),
+            repo_root()
+                .join("examples/published/invoice.K2F")
+                .to_str()
+                .unwrap(),
             "-o",
             out.to_str().unwrap(),
             "--scale",
@@ -102,8 +108,5 @@ fn export_pdf_refuses_pdf_as_input() {
         .unwrap();
     assert!(!export.status.success());
     let err = String::from_utf8_lossy(&export.stderr);
-    assert!(
-        err.contains("PDF_IS_NOT_A_SOURCE"),
-        "got {err}"
-    );
+    assert!(err.contains("PDF_IS_NOT_A_SOURCE"), "got {err}");
 }

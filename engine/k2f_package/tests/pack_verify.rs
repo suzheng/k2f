@@ -26,8 +26,7 @@ fn unpack_roundtrip_preserves_title() {
     let pkg = unpack_bytes(&packed_contract()).unwrap();
     assert_eq!(pkg.manifest.title, "独立顾问协议");
     assert_eq!(pkg.manifest.canvas_mode, CanvasMode::Paged);
-    let lock: k2f_core::LockFile =
-        serde_json::from_str(pkg.lock_json.as_ref().unwrap()).unwrap();
+    let lock: k2f_core::LockFile = serde_json::from_str(pkg.lock_json.as_ref().unwrap()).unwrap();
     assert_eq!(pkg.manifest.engine_version, lock.engine_version);
     assert!(!lock.engine_version.is_empty());
     assert!(pkg

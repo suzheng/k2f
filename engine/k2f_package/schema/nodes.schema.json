@@ -105,7 +105,7 @@
     "marker_type": {
       "type": ["string", "null"],
       "enum": ["bullet", "number", null],
-      "description": "Optional marker style for list items."
+      "description": "Optional marker style for list items. If omitted, the engine treats it as bullet."
     },
     "content": {
       "type": "object",
@@ -150,7 +150,7 @@
               "properties": {
                 "src": {
                   "type": "string",
-                  "description": "Package path under assets/images/. Supported: PNG, JPEG, WebP, SVG (engine rasterizes SVG). GIF is not supported."
+                  "description": "Package path under assets/images/ (field name is src, not path). Supported: PNG, JPEG, WebP, SVG (engine rasterizes SVG). GIF is not supported."
                 },
                 "width": {
                   "type": "integer",
@@ -178,10 +178,10 @@
               "properties": {
                 "children": {
                   "type": "array",
-                  "items": { "$ref": "#/$defs/container_child" }
+                  "items": { "$ref": "#/$defs/container_child" },
+                  "description": "Optional. Omitted or empty: no children (dividers, spacers)."
                 }
-              },
-              "required": ["children"]
+              }
             }
           },
           "required": ["type", "value"]
@@ -325,7 +325,10 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "type": { "const": "stack" },
+            "type": {
+              "const": "stack",
+              "description": "Optional. Omitted layout type is stack (same as omitting layout entirely, plus size/gap)."
+            },
             "direction": { "enum": ["vertical", "horizontal"], "default": "vertical" },
             "gap": {
               "type": "integer",
@@ -354,8 +357,7 @@
               ],
               "description": "Optional fixed outer height in fixed-point Pt (1/1000 pt units)."
             }
-          },
-          "required": ["type"]
+          }
         },
         {
           "type": "object",

@@ -1,6 +1,6 @@
 [package]
 name = "k2f_sdk"
-version = "0.2.0"
+version = "0.2.2"
 edition = "2021"
 description = "K2F agent Editor SDK"
 license = "Apache-2.0"
@@ -13,13 +13,13 @@ keywords = ["k2f", "document", "agent", "editor", "sdk"]
 categories = ["text-processing"]
 
 [dependencies]
-k2f_core = { path = "../k2f_core", version = "0.2.0" }
-k2f_layout = { path = "../k2f_layout", version = "0.2.0" }
-k2f_markdown = { path = "../k2f_markdown", version = "0.2.0" }
-k2f_package = { path = "../k2f_package", version = "0.2.0" }
-k2f_pdf = { path = "../k2f_pdf", version = "0.2.0" }
-k2f_pptx = { path = "../../export/k2f_pptx", version = "0.2.0" }
-k2f_docx = { path = "../../export/k2f_docx", version = "0.2.0" }
+k2f_core = { path = "../k2f_core", version = "0.2.2" }
+k2f_layout = { path = "../k2f_layout", version = "0.2.2" }
+k2f_markdown = { path = "../k2f_markdown", version = "0.2.2" }
+k2f_package = { path = "../k2f_package", version = "0.2.2" }
+k2f_pdf = { path = "../k2f_pdf", version = "0.2.2" }
+k2f_pptx = { path = "../../export/k2f_pptx", version = "0.2.2" }
+k2f_docx = { path = "../../export/k2f_docx", version = "0.2.2" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -33,9 +33,9 @@ include_dir = "0.7"
 js-sys = "0.3"
 
 [dev-dependencies]
-k2f_paint = { path = "../k2f_paint", version = "0.2.0" }
-k2f_package = { path = "../k2f_package", version = "0.2.0" }
-k2f_core = { path = "../k2f_core", version = "0.2.0" }
+k2f_paint = { path = "../k2f_paint", version = "0.2.2" }
+k2f_package = { path = "../k2f_package", version = "0.2.2" }
+k2f_core = { path = "../k2f_core", version = "0.2.2" }
 serde_json = { workspace = true }
 lopdf = "0.34"
 zip = { version = "2", default-features = false, features = ["deflate"] }

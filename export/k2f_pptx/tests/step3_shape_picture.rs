@@ -228,6 +228,51 @@ fn no_ppt_media_from_effects_yet() {
 }
 
 #[test]
+fn slide_bg_and_shape_fills_pin_exact_black_white() {
+    let pptx = export_opened(&common::invoice()).unwrap();
+    let xml = common::xml_in(&pptx, "ppt/slides/slide1.xml");
+    let parsed = roxmltree::Document::parse(&xml).unwrap();
+    let bg = parsed
+        .descendants()
+        .find(|n| n.has_tag_name("bgPr"))
+        .expect("p:bgPr");
+    let bg_fill = bg
+        .descendants()
+        .find(|n| n.has_tag_name("srgbClr"))
+        .and_then(|n| n.attribute("val"))
+        .expect("slide bg srgbClr");
+    assert_ne!(bg_fill, "FFFFFF");
+    assert_ne!(bg_fill, "000000");
+    let shape_fills: Vec<_> = parsed
+        .descendants()
+        .filter(|n| n.has_tag_name("sp") && !is_txbox(*n))
+        .filter_map(|sp| {
+            sp.children()
+                .find(|c| c.has_tag_name("spPr"))
+                .and_then(|pr| {
+                    pr.descendants()
+                        .find(|n| n.has_tag_name("solidFill"))
+                        .and_then(|sf| {
+                            sf.descendants()
+                                .find(|n| n.has_tag_name("srgbClr"))
+                                .and_then(|n| n.attribute("val"))
+                        })
+                })
+        })
+        .collect();
+    assert!(
+        !shape_fills.is_empty(),
+        "expected at least one non-textbox shape fill"
+    );
+    assert!(
+        !shape_fills
+            .iter()
+            .any(|c| *c == "000000" || *c == "FFFFFF"),
+        "shape RGB 000000/FFFFFF remaps in Dark Mode, got {shape_fills:?}"
+    );
+}
+
+#[test]
 fn paint_plan_z_order_preserved_on_invoice_slide1() {
     let doc = common::invoice();
     let pptx = export_opened(&doc).unwrap();

@@ -4,8 +4,7 @@ use k2f_pdf::{export_opened, PdfScale};
 use k2f_sdk::Editor;
 
 fn child_count(ed: &Editor) -> usize {
-    let root: serde_json::Value =
-        serde_json::from_str(&ed.get_node_json("root").unwrap()).unwrap();
+    let root: serde_json::Value = serde_json::from_str(&ed.get_node_json("root").unwrap()).unwrap();
     root["content"]["value"]["children"]
         .as_array()
         .map(|a| a.len())

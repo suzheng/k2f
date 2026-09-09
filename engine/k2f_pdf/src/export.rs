@@ -111,15 +111,9 @@ pub fn export_opened(
         let mut page_stamps = Vec::new();
         let mut page_draw = if stamp_ops {
             let (w_px, h_px, rgb) = doc.render_page_rgb(i, paint_scale)?;
-            let stamp = embed_rgb(
-                &mut pdf,
-                &mut alloc,
-                w_px,
-                h_px,
-                &rgb,
-                &format!("St{i}"),
-            );
-            let mut out = crate::draw::PageDraw::new(page.width.as_f64_pt(), page.height.as_f64_pt());
+            let stamp = embed_rgb(&mut pdf, &mut alloc, w_px, h_px, &rgb, &format!("St{i}"));
+            let mut out =
+                crate::draw::PageDraw::new(page.width.as_f64_pt(), page.height.as_f64_pt());
             draw_full_page_stamp(&mut out, &stamp);
             page_stamps.push(stamp);
             out

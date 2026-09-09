@@ -31,13 +31,8 @@ pub fn layout_text(
 
     // Wrap into lines (hard newlines always apply; width constraint applies when finite).
     let max_width = constraint.max.width;
-    let lines: Vec<TextLine> = wrap_runs(
-        &runs,
-        max_width,
-        base_line_height,
-        first_line_indent,
-        ctx,
-    )?;
+    let lines: Vec<TextLine> =
+        wrap_runs(&runs, max_width, base_line_height, first_line_indent, ctx)?;
 
     // Compute layout width/height from wrapped lines.
     let mut width = Pt::ZERO;

@@ -6,11 +6,11 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use k2f_layout::compile_outcome;
 use k2f_package::{
-    bundled_schema_files, generate_secret_key, inspect_package, load_dir, pack_bytes,
-    sign_package, unpack_bytes, utc_unix_seconds, write_dir, SecretKey, WriteDirOpts,
+    bundled_schema_files, generate_secret_key, inspect_package, load_dir, pack_bytes, sign_package,
+    unpack_bytes, utc_unix_seconds, write_dir, SecretKey, WriteDirOpts,
 };
 use k2f_paint::{OpenedDocument, OFFICIAL_PNG_SCALE};
-use k2f_pdf::{export_opened, DEFAULT_EXPORT_SCALE, PdfExportOptions, PdfScale};
+use k2f_pdf::{export_opened, PdfExportOptions, PdfScale, DEFAULT_EXPORT_SCALE};
 
 use markdown::{collect_md, convert_markdown};
 
@@ -277,7 +277,12 @@ fn dispatch(command: Commands) -> anyhow::Result<()> {
                 std::process::exit(1);
             }
         }
-        Commands::HitTest { package, page, x, y } => {
+        Commands::HitTest {
+            package,
+            page,
+            x,
+            y,
+        } => {
             let doc = OpenedDocument::open(&fs::read(&package)?)?;
             let milli = |pt: f64| (pt * 1000.0).round() as i64;
             match doc.hit_test(page, milli(x), milli(y)) {

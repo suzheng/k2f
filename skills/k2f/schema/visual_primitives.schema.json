@@ -34,7 +34,7 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 360,
-          "description": "Gradient angle in degrees."
+          "description": "Degrees; 0 = toward +x (right), 90 = toward +y (down). Not CSS (CSS 180° = down)."
         },
         "stops": {
           "type": "array",
@@ -125,6 +125,13 @@
           "type": "integer",
           "minimum": 0,
           "description": "Uniform padding in fixed-point Pt (1/1000 pt units)."
+        },
+        {
+          "type": "array",
+          "description": "[top, right, bottom, left] in fixed-point Pt — same order as page_config.margin.",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": { "$ref": "#/$defs/pt_nonneg" }
         }
       ]
     },

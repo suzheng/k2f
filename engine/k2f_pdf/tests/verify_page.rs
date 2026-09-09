@@ -2,8 +2,8 @@ mod common;
 
 use k2f_core::NodeContent;
 use k2f_package::{inspect_package, pack_bytes, unpack_bytes, IntegrityStatus};
-use k2f_pdf::{export_opened, PdfExportOptions, PdfScale};
 use k2f_paint::{Banner, OpenedDocument};
+use k2f_pdf::{export_opened, PdfExportOptions, PdfScale};
 use k2f_sdk::{generate_key, sign, Editor};
 
 fn insert_text(ed: &mut Editor, id: &str, text: &str) {
@@ -14,8 +14,7 @@ fn insert_text(ed: &mut Editor, id: &str, text: &str) {
         ..Default::default()
     };
     let json = serde_json::to_string(&node).unwrap();
-    let root: serde_json::Value =
-        serde_json::from_str(&ed.get_node_json("root").unwrap()).unwrap();
+    let root: serde_json::Value = serde_json::from_str(&ed.get_node_json("root").unwrap()).unwrap();
     let index = root["content"]["value"]["children"]
         .as_array()
         .map(|a| a.len())
@@ -47,7 +46,11 @@ fn signed_pdf_verify_page_lists_hashes_and_status() {
     );
 
     let opened = OpenedDocument::open(&signed).unwrap();
-    let pdf = export_opened(&opened, PdfExportOptions::new(PdfScale::DEFAULT).with_trust_pack()).unwrap();
+    let pdf = export_opened(
+        &opened,
+        PdfExportOptions::new(PdfScale::DEFAULT).with_trust_pack(),
+    )
+    .unwrap();
     let parsed = lopdf::Document::load_mem(&pdf).unwrap();
     let lock_pages = opened.lock().unwrap().geometry.pages.len();
     assert_eq!(parsed.get_pages().len(), lock_pages + 1);
@@ -82,7 +85,11 @@ fn unsigned_pdf_verify_page_matches_banner() {
     let opened = OpenedDocument::open(&ed.save_bytes().unwrap()).unwrap();
     assert_eq!(opened.banner(), Banner::Unsigned);
 
-    let pdf = export_opened(&opened, PdfExportOptions::new(PdfScale::DEFAULT).with_trust_pack()).unwrap();
+    let pdf = export_opened(
+        &opened,
+        PdfExportOptions::new(PdfScale::DEFAULT).with_trust_pack(),
+    )
+    .unwrap();
     let parsed = lopdf::Document::load_mem(&pdf).unwrap();
     let last_id = *parsed.get_pages().values().last().unwrap();
     let content = parsed.get_page_content(last_id).unwrap();

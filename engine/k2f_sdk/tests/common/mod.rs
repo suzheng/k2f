@@ -1,7 +1,5 @@
 //! Integration-test helpers (not public SDK API).
-use k2f_core::{
-    GridTrack, ListMarkerType, NodeContent, SemanticNode, TableDataSource, TableSpec,
-};
+use k2f_core::{GridTrack, ListMarkerType, NodeContent, SemanticNode, TableDataSource, TableSpec};
 use k2f_sdk::Editor;
 
 pub fn open(template: &str) -> Editor {
@@ -9,8 +7,7 @@ pub fn open(template: &str) -> Editor {
 }
 
 pub fn child_count(ed: &Editor) -> usize {
-    let root: serde_json::Value =
-        serde_json::from_str(&ed.get_node_json("root").unwrap()).unwrap();
+    let root: serde_json::Value = serde_json::from_str(&ed.get_node_json("root").unwrap()).unwrap();
     root["content"]["value"]["children"]
         .as_array()
         .map(|a| a.len())
@@ -178,11 +175,7 @@ fn body_row(table_id: &str, ri: usize, row: &[String], alt: bool) -> Vec<Semanti
     row.iter()
         .enumerate()
         .map(|(ci, value)| {
-            let mut n = text_node(
-                &format!("{table_id}.r{ri}.c{ci}"),
-                "table_row_cell",
-                value,
-            );
+            let mut n = text_node(&format!("{table_id}.r{ri}.c{ci}"), "table_row_cell", value);
             if alt {
                 n.variant = Some("alt".to_string());
             }

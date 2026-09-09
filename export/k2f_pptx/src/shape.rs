@@ -64,7 +64,7 @@ fn line_from(decoration: &BoxDecoration) -> Result<(Option<String>, i64, LineDas
 fn srgb_hex(color: &str) -> Result<String, PptxError> {
     let [r, g, b, _] = parse_hex_rgba(color)
         .ok_or_else(|| PptxError::Write(format!("unparseable color '{color}'")))?;
-    Ok(format!("{r:02X}{g:02X}{b:02X}"))
+    Ok(crate::text::pin_office_srgb(&format!("{r:02X}{g:02X}{b:02X}")))
 }
 
 pub(crate) fn round_rect_adj(corner_emu: i64, cx: i64, cy: i64) -> i64 {
@@ -118,7 +118,7 @@ mod tests {
         let s = shape_from_box("root::page_0::background", &rect(), &dec)
             .unwrap()
             .expect("page bg");
-        assert_eq!(s.fill_hex.as_deref(), Some("FFFFFF"));
+        assert_eq!(s.fill_hex.as_deref(), Some("FFFFFE"));
         assert_eq!(s.corner_emu, 0);
     }
 

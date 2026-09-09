@@ -18,13 +18,20 @@ fn export_pptx_writes_zip() {
     let export = k2f()
         .args([
             "export-pptx",
-            repo_root().join("examples/published/invoice.K2F").to_str().unwrap(),
+            repo_root()
+                .join("examples/published/invoice.K2F")
+                .to_str()
+                .unwrap(),
             "-o",
             out.to_str().unwrap(),
         ])
         .output()
         .unwrap();
-    assert!(export.status.success(), "{}", String::from_utf8_lossy(&export.stderr));
+    assert!(
+        export.status.success(),
+        "{}",
+        String::from_utf8_lossy(&export.stderr)
+    );
     assert!(fs::read(&out).unwrap().starts_with(b"PK"));
 }
 
@@ -36,7 +43,10 @@ fn export_pptx_refuses_pptx_as_input() {
     assert!(k2f()
         .args([
             "export-pptx",
-            repo_root().join("examples/published/invoice.K2F").to_str().unwrap(),
+            repo_root()
+                .join("examples/published/invoice.K2F")
+                .to_str()
+                .unwrap(),
             "-o",
             good.to_str().unwrap(),
         ])
@@ -46,13 +56,21 @@ fn export_pptx_refuses_pptx_as_input() {
     let out = dir.join("out.pptx");
     let _ = fs::remove_file(&out);
     let export = k2f()
-        .args(["export-pptx", good.to_str().unwrap(), "-o", out.to_str().unwrap()])
+        .args([
+            "export-pptx",
+            good.to_str().unwrap(),
+            "-o",
+            out.to_str().unwrap(),
+        ])
         .output()
         .unwrap();
     assert!(!export.status.success());
     let err = String::from_utf8_lossy(&export.stderr);
     assert!(err.contains("PPTX_IS_NOT_A_SOURCE"), "got {err}");
-    assert!(!out.is_file(), "failed export must not write an output file");
+    assert!(
+        !out.is_file(),
+        "failed export must not write an output file"
+    );
 }
 
 #[test]

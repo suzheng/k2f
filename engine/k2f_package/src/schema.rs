@@ -81,10 +81,9 @@ fn validate_against(
     label: &str,
 ) -> Result<(), PackageError> {
     let compiled = compiled()?;
-    compiled
-        .schemas
-        .validate(instance, index)
-        .map_err(|e| PackageError::SchemaInvalid(format!("{label}: {e}")))
+    compiled.schemas.validate(instance, index).map_err(|e| {
+        PackageError::SchemaInvalid(crate::schema_error::format_schema_error(label, &e))
+    })
 }
 
 pub fn validate_manifest_json(v: &Value) -> Result<(), PackageError> {
@@ -321,5 +320,86 @@ mod tests {
 
         let empty = json!({ "version": 1, "signatures": [] });
         assert!(validate_signatures_json(&empty).is_err());
+    }
+
+    #[test]
+    fn container_role_may_omit_text_fields() {
+        let theme = json!({
+            "palette": { "ink": "#111111" },
+            "roles": {
+                "default": {
+                    "font_family": "default",
+                    "font_size": 12000,
+                    "line_height_mult": 1200,
+                    "color": "ink"
+                },
+                "rule": {
+                    "box_decoration": { "padding_pt": 0 }
+                }
+            }
+        });
+        validate_theme_json(&theme).unwrap();
+    }
+
+    #[test]
+    fn stack_layout_may_omit_type() {
+        let node = json!({
+            "id": "root",
+            "role": "document",
+            "content": {
+                "type": "container",
+                "value": {
+                    "children": [{
+                        "id": "root.rule",
+                        "role": "rule",
+                        "content": { "type": "container", "value": {} },
+                        "layout": { "height": 1500 }
+                    }]
+                }
+            }
+        });
+        validate_root_json(&node).unwrap();
+    }
+
+    #[test]
+    fn image_path_error_is_compact_and_names_src() {
+        let node = json!({
+            "id": "root",
+            "role": "image",
+            "content": {
+                "type": "image",
+                "value": {
+                    "path": "assets/images/dot.png",
+                    "width": 24000,
+                    "height": 24000
+                }
+            }
+        });
+        let err = validate_root_json(&node).unwrap_err().to_string();
+        assert!(err.contains(crate::CODE_SCHEMA_INVALID), "got {err}");
+        assert!(err.contains("path"), "got {err}");
+        assert!(err.contains("src"), "got {err}");
+        assert!(
+            err.len() < 800,
+            "oneOf dump should be summarized, got {} chars: {err}",
+            err.len()
+        );
+    }
+
+    #[test]
+    fn padding_pt_accepts_trbl_array() {
+        let theme = json!({
+            "palette": { "ink": "#111111" },
+            "roles": {
+                "default": {
+                    "font_family": "default",
+                    "font_size": 12000,
+                    "line_height_mult": 1200,
+                    "color": "ink",
+                    "box_decoration": { "padding_pt": [1000, 2000, 3000, 4000] }
+                }
+            }
+        });
+        validate_theme_json(&theme).unwrap();
     }
 }

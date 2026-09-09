@@ -13,19 +13,24 @@ import shutil
 import sys
 from pathlib import Path
 
-# Width × height in millipt. Print pages default to 56pt margins; slide sizes 36pt.
+# Width × height in millipt. Print 56pt margins; slides 36pt; social/card 0.
 PAGES = {
     "a4": {"width": 595000, "height": 842000, "margin": [56000, 56000, 56000, 56000]},
     "letter": {"width": 612000, "height": 792000, "margin": [56000, 56000, 56000, 56000]},
     "a4-landscape": {"width": 842000, "height": 595000, "margin": [56000, 56000, 56000, 56000]},
     "widescreen": {"width": 960000, "height": 540000, "margin": [36000, 36000, 36000, 36000]},
     "widescreen-43": {"width": 720000, "height": 540000, "margin": [36000, 36000, 36000, 36000]},
+    "square": {"width": 600000, "height": 600000, "margin": [0, 0, 0, 0]},
+    "portrait-45": {"width": 600000, "height": 750000, "margin": [0, 0, 0, 0]},
+    "card": {"width": 252000, "height": 144000, "margin": [0, 0, 0, 0]},
 }
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 STARTER = SKILL_ROOT / "starter"
-# Presence of any of these means dest is already an author package — do not overwrite.
-PACKAGE_MARKERS = frozenset({"manifest.json", "content", "styles", "assets", "changelog.json"})
+# Files that mean dest is already an author package — do not overwrite.
+PACKAGE_FILE_MARKERS = frozenset({"manifest.json", "changelog.json"})
+# Scaffold dirs: empty is OK (design-first mkdir); non-empty means a package.
+PACKAGE_DIR_MARKERS = frozenset({"content", "styles", "assets"})
 
 
 def parse_margin(raw: str) -> list[int]:
@@ -146,6 +151,31 @@ def dir_names(path: Path) -> set[str]:
     return {p.name for p in path.iterdir()}
 
 
+def drop_empty_scaffold_dirs(out: Path) -> None:
+    """Remove empty content/styles/assets so copytree can recreate them.
+
+    Design-first `mkdir` of those names is not a package. Non-empty dirs stay
+    and `prepare_dest` will refuse. Dropping empties keeps failure cleanup
+    accurate (preexisting snapshot would otherwise keep a dir we filled).
+    """
+    for name in PACKAGE_DIR_MARKERS:
+        path = out / name
+        if path.is_dir() and not any(path.iterdir()):
+            path.rmdir()
+
+
+def blocking_markers(out: Path, names: set[str]) -> list[str]:
+    blocked: list[str] = []
+    for name in sorted(names & PACKAGE_FILE_MARKERS):
+        if (out / name).is_file():
+            blocked.append(name)
+    for name in sorted(names & PACKAGE_DIR_MARKERS):
+        path = out / name
+        if path.is_file() or (path.is_dir() and any(path.iterdir())):
+            blocked.append(name)
+    return blocked
+
+
 def prepare_dest(out: Path) -> set[str] | None:
     """Return preexisting names when reusing a notes-only dir; None if `out` is created.
 
@@ -156,15 +186,16 @@ def prepare_dest(out: Path) -> set[str] | None:
         return None
     if not out.is_dir():
         raise DestError(f"error: --dir is a file: {out}")
+    drop_empty_scaffold_dirs(out)
     names = dir_names(out)
-    markers = names & PACKAGE_MARKERS
+    markers = blocking_markers(out, names)
     if markers:
-        listed = ", ".join(sorted(markers))
+        listed = ", ".join(markers)
         raise DestError(
             f"error: exists as a package ({listed}): {out}\n"
             "Edit JSON in place, or choose another --dir / --workspace. "
             "Write design.md inside the author directory (e.g. ./out/doc/source/design.md). "
-            "A directory that only has notes is OK."
+            "Notes-only dirs and empty content/styles/assets are OK. There is no --force."
         )
     return names
 
@@ -219,7 +250,8 @@ def main() -> int:
         default=None,
         metavar="MILLIPT",
         help="Override page_config.width in millipt (must pair with --height). "
-        "mm→millipt: round(mm * 72000 / 254)",
+        "mm→millipt: round(mm * 72000 / 254). Prefer a --page preset when one fits "
+        "(square, portrait-45, card).",
     )
     parser.add_argument(
         "--height",
@@ -360,6 +392,16 @@ def main() -> int:
         print(
             "  tip: for full-bleed slide decks use --margin 0 + catalog/content/ex_poster_shell.json "
             "(role page_shell is the safe inset; set layout.height to 540000 — see writing/package.md)"
+        )
+    if args.page in ("square", "portrait-45", "card"):
+        print(
+            "  tip: copy catalog/content/ex_poster_shell.json "
+            f"(role page_shell; set layout.height to {height} — see writing/package.md)"
+        )
+    if args.page == "card":
+        print(
+            "  tip: duplex = two page-height shells; back also break_before=page; "
+            "--expect-pages 2 (see writing/package.md)"
         )
     if args.width is not None and applied_margin != [0, 0, 0, 0]:
         print(

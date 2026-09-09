@@ -34,9 +34,13 @@ pub struct ModifierTheme {
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct RoleStyle {
+    #[serde(default)]
     pub font_family: String,
+    #[serde(default)]
     pub font_size: Pt,
+    #[serde(default)]
     pub line_height_mult: i128,
+    #[serde(default)]
     pub color: String,
     #[serde(default)]
     pub text_align: TextAlign,

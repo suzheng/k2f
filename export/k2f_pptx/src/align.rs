@@ -217,11 +217,7 @@ pub(crate) fn vert_center(geo: &GeometryNode, font_size: Pt) -> bool {
     if h <= 0 {
         return false;
     }
-    let first_y = lines[0]
-        .iter()
-        .map(|g| g.y_offset.0)
-        .min()
-        .unwrap_or(0);
+    let first_y = lines[0].iter().map(|g| g.y_offset.0).min().unwrap_or(0);
     let last_y = lines[lines.len() - 1]
         .iter()
         .map(|g| g.y_offset.0)

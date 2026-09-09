@@ -30,8 +30,8 @@ pub fn read_resource(state: &K2fState, uri: &str) -> Result<ReadResourceResponse
         if let Some((session_raw, node_part)) = rest.split_once("/node/") {
             let id = SessionStore::parse_id(session_raw)?;
             let node = state.get_node(&id.to_string(), node_part)?;
-            let body = serde_json::to_string(&node)
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            let body =
+                serde_json::to_string(&node).map_err(|e| ToolError::internal(e.to_string()))?;
             return Ok(ReadResourceResponse::Complete(
                 rmcp::model::ReadResourceResult::new(vec![ResourceContents::text(
                     body,

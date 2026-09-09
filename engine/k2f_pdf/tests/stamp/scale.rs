@@ -1,6 +1,6 @@
 mod helpers;
 
-use k2f_pdf::{export_opened, PdfScale, PdfError};
+use k2f_pdf::{export_opened, PdfError, PdfScale};
 
 #[test]
 fn scale_4_doubles_stamp_width_vs_2() {

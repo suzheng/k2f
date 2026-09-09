@@ -1,8 +1,6 @@
 use crate::emit::{nodes_to_markdown, MarkdownEmitOptions};
 use crate::slice::slice_text_node;
-use k2f_core::{
-    NodeContent, RunningBlockNode, SemanticNode, TableDataSource, TableSpec,
-};
+use k2f_core::{NodeContent, RunningBlockNode, SemanticNode, TableDataSource, TableSpec};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 
@@ -23,7 +21,8 @@ pub fn selection_to_markdown(
     if ranges.is_empty() {
         return String::new();
     }
-    let by_id: HashMap<&str, &NodeCharRange> = ranges.iter().map(|r| (r.node_id.as_str(), r)).collect();
+    let by_id: HashMap<&str, &NodeCharRange> =
+        ranges.iter().map(|r| (r.node_id.as_str(), r)).collect();
     let selected: HashSet<&str> = by_id.keys().copied().collect();
 
     let mut nodes = Vec::new();
@@ -163,7 +162,11 @@ fn project_table(
     let mut out = table.clone();
     out.content = NodeContent::Table(TableSpec {
         column_widths: widths,
-        header_rows: if header_n > 0 { 1.min(new_rows.len()) } else { 0 },
+        header_rows: if header_n > 0 {
+            1.min(new_rows.len())
+        } else {
+            0
+        },
         gap: spec.gap,
         row_gap: spec.row_gap,
         column_gap: spec.column_gap,
@@ -287,9 +290,7 @@ mod tests {
         let root = SemanticNode {
             id: "root".into(),
             role: "document".into(),
-            content: NodeContent::Container {
-                children: vec![n],
-            },
+            content: NodeContent::Container { children: vec![n] },
             ..Default::default()
         };
         let md = selection_to_markdown(
@@ -317,9 +318,7 @@ mod tests {
         let root = SemanticNode {
             id: "root".into(),
             role: "document".into(),
-            content: NodeContent::Container {
-                children: vec![n],
-            },
+            content: NodeContent::Container { children: vec![n] },
             ..Default::default()
         };
         let md = selection_to_markdown(

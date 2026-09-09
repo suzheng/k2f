@@ -44,12 +44,12 @@ pip install k2f    # unpack, pack, compile, verify, render, schema dump — on P
    3. Site MCP already connected (`list_templates` / `download_template`) **and** a catalog `kind` matches the deliverable → download the package URL to a `.K2F`, then unpack as in (1). See [Optional Gallery](#optional-gallery-mcp).
    4. Otherwise: `python scripts/init_package.py --workspace ./out/doc --title "…" --page a4` — creates `source/` (starter tree + core theme + Roboto) and `tmp/`. Empty dirs and notes-only dirs (a lone `design.md` in `source/`) are OK; an existing package is not. `--dir` still inits a package tree directly when you already have the author path.
 3. Implement the spec: edit `content/root.json` (+ optional `content/*.json` includes) and `styles/theme.json`. **Minimal diff** on patches — change only what the task requires.
-4. **Copy shapes** from [`catalog/content/ex_*.json`](../catalog/content/) — one file per construct (stack, grid, table, …). See [`catalog/README.md`](../catalog/README.md). Do not ship the catalog as your document. The **current package** `styles/theme.json` must already define every role, modifier type, and font those nodes use. Starter already includes `image` and the modifier styles used by `ex_modifiers.json`. Copying [`ex_math.json`](../catalog/content/ex_math.json) still needs NotoSansMath from [`catalog/assets/fonts/`](../catalog/assets/fonts/) plus a `font_aliases` / `math` role font update — starter ships Roboto only.
+4. **Copy shapes** from [`catalog/content/ex_*.json`](../catalog/content/) — one file per construct (stack, grid, table, …). See [`catalog/README.md`](../catalog/README.md). Do not ship the catalog as your document. The **current package** `styles/theme.json` must already define every role, modifier type, and font those nodes use. Starter already includes `image` and the modifier styles used by `ex_modifiers.json`. Copying [`ex_math.json`](../catalog/content/ex_math.json) still needs NotoSansMath from [`catalog/assets/fonts/`](../catalog/assets/fonts/) plus a `font_aliases` / `math` role font update — starter ships Roboto only. TeX is a **whitelist** ([writing/errors.md](writing/errors.md)); unknown commands → `MATH_UNSUPPORTED` (`\big` → `\left`/`\right`).
 5. **Unsure about a key?** Read [writing/fields.md](writing/fields.md), then open the matching file under [`schema/`](../schema/) before writing JSON.
 6. `python scripts/pack_verify.py ./out/doc/source -o ./out/doc/doc.K2F --render preview.png` — bare `preview.png` is written to `./out/doc/tmp/preview.png` (next to the output `.K2F`, not next to `manifest.json`). Paths that contain a directory (`--render ./out/preview.png`) stay relative to the shell CWD. The script prints `ok: rendered <abs>`. Do not write `.K2F`, PDF, DOCX, PPTX, or preview PNGs into `source/`.
 7. Expect `verify` → **`UNSIGNED`**. Then **open the PNG** — [visual check](#visual-check). If the image does not match the design spec, revise the spec or implementation and pack again.
 
-Page presets: `a4` | `letter` | `a4-landscape` | `widescreen` | `widescreen-43`. Slides/posters: see [writing/package.md](writing/package.md).
+Page presets: `a4` | `letter` | `a4-landscape` | `widescreen` | `widescreen-43` | `square` | `portrait-45` | `card`. Slides/posters/social/cards: see [writing/package.md](writing/package.md).
 
 ### Examples
 
@@ -62,6 +62,8 @@ python scripts/init_package.py --workspace ./out/report --title "Q3 Report" --pa
 # math: copy catalog NotoSansMath + font_aliases; or --add-font that ttf
 # slides: --page widescreen --margin 0 | widescreen-43; copy ex_poster_shell.json (page_shell, height 540000)
 # posters: --page a4 --margin 0; copy catalog/content/ex_poster_shell.json; set height to 842000
+# social: --page square | portrait-45 (margin 0); copy ex_poster_shell.json; height = page height
+# duplex card: --page card; two shells; back break_before=page; pack --expect-pages 2
 # --margin 36000  or  --margin 36000,48000,36000,48000
 # edit source/content/root.json — copy nodes from catalog/content/ex_*.json
 # edit source/styles/theme.json — implement the design spec
@@ -114,13 +116,23 @@ python scripts/pack_verify.py ./out/doc/source -o ./out/doc/doc.K2F --render pre
 
 Inspect every page — especially the **bottom third**. Do not millipt-budget “this is a 3-page contract”; `pages=N` is compile output.
 
-- **Composed** (invoice, CV, flyer, poster, slide) — [`ex_filled_page.json`](../catalog/content/ex_filled_page.json) or [`ex_poster_shell.json`](../catalog/content/ex_poster_shell.json). `height` = content box. `--expect-pages` = page count. `{fr:1}` eats leftover whenever outer height is known (not a poster feature). Leftover → table/notes/figure or dense `{fr:1}` siblings ([`ex_poster_growers.json`](../catalog/content/ex_poster_growers.json)), not a short quote. `{fr:1}` stretches the **box**, not type. No spacers / `space-between`. Short letter may stay a top-packed stack.
+- **Composed** (invoice, CV, flyer, poster, slide, card, social) — [`ex_filled_page.json`](../catalog/content/ex_filled_page.json) or [`ex_poster_shell.json`](../catalog/content/ex_poster_shell.json). `height` = content box. `--expect-pages` = page count. Duplex card: two shells; back `break_before: page`. `{fr:1}` eats leftover whenever outer height is known (not a poster feature). Leftover → table/notes/figure or dense `{fr:1}` siblings ([`ex_poster_growers.json`](../catalog/content/ex_poster_growers.json)), not a short quote. `{fr:1}` stretches the **box**, not type. No spacers / `space-between`. Short letter may stay a top-packed stack.
 - **Flow** (contract, report, thesis, paper) — **one** tree (vertical stack or one unpadded `columns`). Do not wrap each page in `p1.container` / `p2.container`. `break_before: page` on a chapter, annex, or signature page is correct. Last page may be short. Padded/grid/overlay sections do not split.
 - **Type size** — `font_size` on the **role** in `styles/theme.json`, never on the node.
 
-`PAGE_UNDERFILL` / `LAYOUT_SLACK` are compile warnings (`pack_verify.py` still exits 0). Invoice/CV/flyer/poster: treat `PAGE_UNDERFILL` as must-fix. Auto-height stacks never produced `LAYOUT_SLACK`; the page check is `PAGE_UNDERFILL`.
+`PAGE_UNDERFILL` / `LAYOUT_SLACK` are compile warnings (`pack_verify.py` still exits 0). Invoice/CV/flyer/poster: treat `PAGE_UNDERFILL` as must-fix. Auto-height stacks never produced `LAYOUT_SLACK`; the page check is `PAGE_UNDERFILL`. Both are omitted when the page content box is shorter than 180pt (business cards) — do not pad those with dummy copy.
 
 If the PNG does not match the design spec, update the spec or JSON/theme and run `pack_verify.py --render` again.
+
+### Reference image overlay (optional)
+
+If the user supplied a reference image, after `--render` stack it on the preview:
+
+```bash
+uv run scripts/compare_images.py reference.png ./out/doc/tmp/preview.png
+```
+
+Writes `tmp/compare_overlay.png` and `tmp/compare_diff.png` (default `--align fit`). Pillow + NumPy — use `uv run`, not `python3`.
 
 ## Rules (non-negotiable)
 
@@ -139,7 +151,7 @@ If the PNG does not match the design spec, update the spec or JSON/theme and run
 | Situation | Action |
 |-----------|--------|
 | Missing `k2f` CLI | `pip install k2f` or set `K2F_CLI`. CWD does not matter. The script does not search a git checkout or build dir |
-| `error: exists as a package` | Dest already has `manifest.json` / `content/` / `styles/` / `assets/`. Edit in place, or another `--dir` / `--workspace`. Notes-only dirs (`source/design.md`) are OK. Spec file: `./out/doc/source/design.md` |
+| `error: exists as a package` | Dest already has `manifest.json` or a non-empty `content/` / `styles/` / `assets/`. Edit in place, or another `--dir` / `--workspace`. Notes-only dirs (`source/design.md`) and empty scaffold dirs are OK. No `--force`. Spec file: `./out/doc/source/design.md` |
 | validate / compile fails | [writing/errors.md](writing/errors.md); never edit lock |
 | `SCHEMA_INVALID` | Open [`schema/`](../schema/); key in schema but rejected → `pip install -U k2f`; key not in schema → remove |
 | `UNKNOWN_ID` | Read `content/` or grep for the id; never invent ids |
@@ -196,12 +208,13 @@ Missing tools, empty list, kind mismatch, or fetch error → `init_package.py`. 
 | Omit grid `rows` like CSS implicit tracks | Allowed only as content-auto wrapping (`ceil(n/cols)` `{auto:true}`). `fr`/`pt` must be written; declared `rows` do not grow (`ex_split_bar.json` / `ex_poster_shell.json`) |
 | Poster/slide/invoice shell is a vertical stack | Content piles at the top. Copy `ex_filled_page.json` / `ex_poster_shell.json`: pinned `height` + `{fr:1}` body row |
 | `{fr:1}` on a short quote / last thin card; no `LAYOUT_SLACK` | Box grew; type did not. Leftover → figure or **equal** `{fr:1}` siblings with enough copy (`ex_poster_growers.json`). Silence / footer at the bottom ≠ interiors filled |
-| `p1`/`p2` page containers | Don’t invent pages. One flow tree; engine fills. `break_before: page` on a chapter / annex / signature node is fine |
+| `p1`/`p2` page containers | Don’t invent pages. One flow tree; engine fills. `break_before: page` on a chapter / annex / signature / slide 2+ / card back is fine |
 | Cover year in the footer / vertical space-between | Copy `ex_cover.json` / `ex_poster_shell.json` (`{auto:true}` + `{fr:1}` + `{auto:true}`), not padding guesses or empty spacers. Flow-only (footer not at page bottom) → vertical stack, not the `{fr:1}` shell |
 | Letter sender / right-flush cell | Copy `ex_end_block.json` (horizontal `justify_content: end` wrapping a content-width vertical stack). Left+right pair → `ex_split_bar.json`. Do not `text_align: end` on each line |
+| Image `path` rejected | Field is `src` (plus millipt `width`/`height`). Copy `ex_image.json`. |
 | Expect small-caps / `font_variant` / drop cap | Not in v0.1. Small-caps: content uppercase + role `letter_spacing_pt`. Drop cap: large first-letter text node beside body in a 2-col grid — not a modifier |
 | Badge stretched across a grid cell | `{auto:true}` sizes the **track**, default `cell_align.x` is still stretch. Copy `ex_badge.json` (stack wrapper + role `self_align: start`). Whole grid hug → `cell_align.x: "start"`. Grid does **not** read `self_align` on a direct child. |
-| Empty `role: "rule"` is a square dot / width 0 | Stack `align_items` **defaults to stretch**, not start. Collapse = parent `align_items: start` / horizontal stack / overlay without `width`. Keep the rule in a vertical stretch stack (`ex_rule.json`). |
+| Empty `role: "rule"` is a square dot / width 0 | Stack `align_items` **defaults to stretch**, not start. Collapse = parent `align_items: start` / horizontal stack / overlay without `width`. Keep the rule in a vertical stretch stack (`ex_rule.json`). Omit `layout.type` → stack. |
 | Hide header on cover / odd-even page numbers | `running_blocks` repeat on **every** page (no skip-first / odd-even). Cover-only: omit them, chrome in `ex_cover.json`. Signature: content `signature_block`, not a last-page footer. Split title + page: copy `catalog/manifest.json` Grid. No `{{chapter}}` placeholder. |
 | Child paint past a rounded parent | `corner_radius` clips **that box's** fill only — no `overflow`. Same corner name on the full-bleed child, or parent `padding_pt`. |
 | Square outline around a rounded fill | Four-edge `border` follows `corner_radius`. Do not wrap a second box. Stale CLI: `pip install -U k2f`. Partial `edges` (`subtle_bottom` / `hbar`) stay square by design. |
@@ -221,7 +234,8 @@ Missing tools, empty list, kind mismatch, or fetch error → `init_package.py`. 
 | Simulate margin with padding / empty spacer stacks | No node margin or node `padding_pt`. Even rhythm: parent `gap`. Uneven: nested stacks with different `gap`, or a **dedicated** role's `padding_pt`. Shared `h1`/`body` padding applies to every such node |
 | Dingbat/arrow/CJK glyphs (★ ◆ → ↗ ↑ 中文 かな) in Roboto | `FONT_MISSING_GLYPH` — `--add-font` a covering face (JP/KR/SC as needed). NotoSansSC ≠ Japanese. Math formulas → NotoSansMath. Do not rewrite user language to English |
 | Expect `canvas_mode: "slide"` | v0.1 is `paged` only — use `--page widescreen --margin 0` + `ex_poster_shell.json` (`page_shell`, height `540000`) + `break_inside: avoid` |
-| Expect `justify_content: space-between` or page `background` | Copy `ex_split_bar.json` / `ex_end_block.json` / `ex_poster_shell.json` / `ex_overlay.json` — not Flexbox or `page_config` |
+| Expect `justify_content: space-between` | Copy `ex_split_bar.json` / `ex_end_block.json` / `ex_poster_shell.json` — not Flexbox |
+| Expect `page_config.background` / white margin ring | Root `document` `box_decoration.background` paints the **sheet** including margins (starter `paper`). Dark invoice/social: retarget `paper` — do not zero `margin` just to hide a white ring. Overlay is a background **image** (`ex_overlay.json`). Full-bleed (paint to the trim) still `--margin 0` + `page_shell`. |
 | Overlay nested stack `align_items: end` not on the page right | Overlay children shrink to content unless that layer sets `width`; left/right bars → `ex_split_bar.json`; trailing-edge block (letter sender) → `ex_end_block.json` |
 | Hand-count modifier ranges across `\n` | `\n` is 1 UTF-8 byte — run `modifier_range.py --text` with the exact node `value` |
 | Pixel formula for cover padding vs line-height | Copy `ex_cover.json`; iterate the PNG. Line boxes + `padding_pt` + `gap` **add**; do not invent spacer nodes or cancel line boxes with padding math |

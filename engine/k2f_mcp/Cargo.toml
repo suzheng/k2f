@@ -1,6 +1,6 @@
 [package]
 name = "k2f_mcp"
-version = "0.2.0"
+version = "0.2.2"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/suzheng/k2f"
@@ -12,8 +12,8 @@ name = "k2f_mcp"
 path = "src/main.rs"
 
 [dependencies]
-k2f_sdk = { path = "../k2f_sdk", version = "0.2.0" }
-k2f_paint = { path = "../k2f_paint", version = "0.2.0" }
+k2f_sdk = { path = "../k2f_sdk", version = "0.2.2" }
+k2f_paint = { path = "../k2f_paint", version = "0.2.2" }
 rmcp = { version = "3.1", features = ["server", "transport-io", "schemars"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 serde = { version = "1", features = ["derive"] }

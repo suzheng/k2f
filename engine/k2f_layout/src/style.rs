@@ -104,16 +104,98 @@ pub fn resolve_font_family_key(font_family: &str, theme: &Theme) -> String {
         .unwrap_or_else(|| font_family.to_string())
 }
 
+fn role_text_complete(rs: &crate::theme::RoleStyle) -> bool {
+    !rs.font_family.is_empty()
+        && rs.font_size.0 != 0
+        && rs.line_height_mult != 0
+        && !rs.color.is_empty()
+}
+
+fn coalesced_font_family<'a>(
+    rs: &'a crate::theme::RoleStyle,
+    default: Option<&'a crate::theme::RoleStyle>,
+) -> &'a str {
+    if !rs.font_family.is_empty() {
+        rs.font_family.as_str()
+    } else {
+        default.map(|d| d.font_family.as_str()).unwrap_or("")
+    }
+}
+
+fn coalesced_font_size(
+    rs: &crate::theme::RoleStyle,
+    default: Option<&crate::theme::RoleStyle>,
+) -> Pt {
+    if rs.font_size.0 != 0 {
+        rs.font_size
+    } else {
+        default.map(|d| d.font_size).unwrap_or(Pt::ZERO)
+    }
+}
+
+fn coalesced_line_height_mult(
+    rs: &crate::theme::RoleStyle,
+    default: Option<&crate::theme::RoleStyle>,
+) -> i128 {
+    if rs.line_height_mult != 0 {
+        rs.line_height_mult
+    } else {
+        default.map(|d| d.line_height_mult).unwrap_or(0)
+    }
+}
+
+fn coalesced_color<'a>(
+    rs: &'a crate::theme::RoleStyle,
+    default: Option<&'a crate::theme::RoleStyle>,
+) -> &'a str {
+    if !rs.color.is_empty() {
+        rs.color.as_str()
+    } else {
+        default.map(|d| d.color.as_str()).unwrap_or("")
+    }
+}
+
+/// `default` must declare the four text fields. Other roles may omit any of them
+/// and inherit the missing ones from `default` (not a second role type).
+pub fn validate_role_text_fields(theme: &Theme) -> Result<(), String> {
+    let default = theme.roles.get("default");
+    if let Some(d) = default {
+        if !role_text_complete(d) {
+            return Err(
+                "role 'default' must set font_family, font_size, line_height_mult, and color"
+                    .to_string(),
+            );
+        }
+    }
+    for (name, rs) in &theme.roles {
+        if name == "default" {
+            continue;
+        }
+        if !role_text_complete(rs) && default.is_none() {
+            return Err(format!(
+                "role '{name}' omitted text fields; set them or define role 'default' with font_family, font_size, line_height_mult, and color"
+            ));
+        }
+    }
+    Ok(())
+}
+
 /// Base style from role. No modifiers applied here.
 pub fn resolve_base_style(role: &str, theme: &Theme) -> Style {
-    let base = theme.roles.get(role).or_else(|| theme.roles.get("default"));
+    let default_rs = theme.roles.get("default");
+    let base = theme.roles.get(role).or(default_rs);
 
     if let Some(rs) = base {
+        let inherit_from = if theme.roles.contains_key(role) && role != "default" {
+            default_rs
+        } else {
+            None
+        };
         Style {
-            font_family: resolve_font_family_key(&rs.font_family, theme),
-            font_size: rs.font_size,
-            line_height_mult: rs.line_height_mult,
-            color: rs.color.clone(),
+            font_family: resolve_font_family_key(coalesced_font_family(rs, inherit_from), theme),
+            font_size: coalesced_font_size(rs, inherit_from),
+            line_height_mult: coalesced_line_height_mult(rs, inherit_from),
+            color: coalesced_color(rs, inherit_from).to_string(),
             text_align: rs.text_align,
             bold: rs.bold,
             italic: rs.italic,
@@ -256,7 +338,7 @@ mod tests {
                 bold: false,
                 italic: false,
                 letter_spacing_pt: Pt::ZERO,
-            first_line_indent_pt: Pt::ZERO,
+                first_line_indent_pt: Pt::ZERO,
                 variants: HashMap::new(),
             },
         );
@@ -274,7 +356,7 @@ mod tests {
                 bold: false,
                 italic: false,
                 letter_spacing_pt: Pt::ZERO,
-            first_line_indent_pt: Pt::ZERO,
+                first_line_indent_pt: Pt::ZERO,
                 variants: HashMap::new(),
             },
         );
@@ -407,5 +489,62 @@ mod tests {
         let s = resolve_base_style("body", &theme);
         assert!(s.italic);
         assert!(!s.bold);
+    }
+
+    #[test]
+    fn omitted_text_fields_inherit_from_default() {
+        let theme: Theme = serde_json::from_str(
+            r#"{
+      "palette": {},
+      "roles": {
+        "default": {
+          "font_family": "default", "font_size": 12000,
+          "line_height_mult": 1400, "color": "black"
+        },
+        "rule": {
+          "box_decoration": { "background": "paper" }
+        },
+        "h1": { "font_size": 24000, "bold": true }
+      }
+    }"#,
+        )
+        .unwrap();
+        validate_role_text_fields(&theme).unwrap();
+        let rule = resolve_base_style("rule", &theme);
+        assert_eq!(rule.font_family, "default");
+        assert_eq!(rule.font_size, Pt(12000));
+        assert_eq!(rule.line_height_mult, 1400);
+        assert_eq!(rule.color, "black");
+        let h1 = resolve_base_style("h1", &theme);
+        assert_eq!(h1.font_size, Pt(24000));
+        assert_eq!(h1.line_height_mult, 1400);
+        assert!(h1.bold);
+    }
+
+    #[test]
+    fn default_role_must_declare_text_fields() {
+        let theme: Theme = serde_json::from_str(
+            r#"{
+      "palette": {},
+      "roles": { "default": { "box_decoration": {} }, "rule": {} }
+    }"#,
+        )
+        .unwrap();
+        let err = validate_role_text_fields(&theme).unwrap_err();
+        assert!(err.contains("default"), "{err}");
+    }
+
+    #[test]
+    fn omitted_text_fields_without_default_fail() {
+        let theme: Theme = serde_json::from_str(
+            r#"{
+      "palette": {},
+      "roles": { "rule": { "box_decoration": {} } }
+    }"#,
+        )
+        .unwrap();
+        let err = validate_role_text_fields(&theme).unwrap_err();
+        assert!(err.contains("rule"), "{err}");
+        assert!(err.contains("default"), "{err}");
     }
 }

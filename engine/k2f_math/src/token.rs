@@ -80,9 +80,7 @@ pub fn tokenize(src: &str) -> Result<Vec<Token>, MathError> {
                 out.push(Token::AlignTab);
                 i += 1;
             }
-            '#' | '%' | '~' => {
-                return Err(MathError::Unsupported(format!("character {c:?}")))
-            }
+            '#' | '%' | '~' => return Err(MathError::Unsupported(format!("character {c:?}"))),
             _ => {
                 out.push(Token::Char(c));
                 i += 1;

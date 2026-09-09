@@ -10,11 +10,15 @@ fn contract_with_includes_loads_and_maps_paths() {
     let pkg = load_dir(&repo_root().join("examples/contract")).expect("load contract");
     assert_eq!(pkg.include_map.len(), 3);
     assert_eq!(
-        pkg.include_map.get("contract.clauses_1_3").map(String::as_str),
+        pkg.include_map
+            .get("contract.clauses_1_3")
+            .map(String::as_str),
         Some("content/clauses_1_3.json")
     );
     assert_eq!(
-        pkg.include_map.get("contract.signatures").map(String::as_str),
+        pkg.include_map
+            .get("contract.signatures")
+            .map(String::as_str),
         Some("content/signatures.json")
     );
 }
@@ -75,11 +79,7 @@ fn rejects_unreferenced_content_file() {
         for entry in fs::read_dir(contract.join("assets/fonts")).unwrap() {
             let entry = entry.unwrap();
             let name = entry.file_name();
-            fs::copy(
-                entry.path(),
-                base.join("assets/fonts").join(name),
-            )
-            .unwrap();
+            fs::copy(entry.path(), base.join("assets/fonts").join(name)).unwrap();
         }
     }
     fs::write(
@@ -89,9 +89,6 @@ fn rejects_unreferenced_content_file() {
     .unwrap();
 
     let err = load_dir(&base).unwrap_err();
-    assert!(
-        err.to_string().contains("UNEXPECTED_PATH"),
-        "got {err}"
-    );
+    assert!(err.to_string().contains("UNEXPECTED_PATH"), "got {err}");
     let _ = fs::remove_dir_all(&base);
 }

@@ -169,7 +169,9 @@ impl Parser<'_> {
             Token::GroupClose => Err(MathError::Parse("unexpected '}'".into())),
             Token::Sup | Token::Sub => Err(MathError::Parse("script with no base atom".into())),
             Token::AlignTab => Err(MathError::Parse("'&' outside alignment environment".into())),
-            Token::LineBreak => Err(MathError::Parse("'\\\\' outside alignment environment".into())),
+            Token::LineBreak => Err(MathError::Parse(
+                "'\\\\' outside alignment environment".into(),
+            )),
             Token::Command(name) => self.parse_command(&name),
         }
     }
@@ -202,10 +204,13 @@ impl Parser<'_> {
             }
             "right" => Err(MathError::Parse("unexpected '\\right'".into())),
             "end" => Err(MathError::Parse("unexpected '\\end'".into())),
+            "big" | "Big" | "bigg" | "Bigg" => Err(MathError::Unsupported(
+                "\\big is not in v1; use \\left[ ... \\right]".into(),
+            )),
             "over" | "underline" | "overline" | "hat" | "vec" | "color" | "textcolor" | "tag"
-            | "def" | "newcommand" => {
-                Err(MathError::Unsupported(format!("unknown command '\\{name}'")))
-            }
+            | "def" | "newcommand" => Err(MathError::Unsupported(format!(
+                "unknown command '\\{name}'"
+            ))),
             _ => {
                 if let Some((ch, class)) = symbol_atom(name) {
                     return Ok(MathNode::Atom { ch, class });
@@ -246,7 +251,9 @@ impl Parser<'_> {
 
     fn parse_delimiter(&mut self) -> Result<Delim, MathError> {
         let Some(tok) = self.bump().cloned() else {
-            return Err(MathError::Parse("missing delimiter after \\left/\\right".into()));
+            return Err(MathError::Parse(
+                "missing delimiter after \\left/\\right".into(),
+            ));
         };
         match tok {
             Token::Char('.') => Ok(Delim::Null),
@@ -259,9 +266,7 @@ impl Parser<'_> {
                 "langle" => Ok(Delim::Char('\u{27E8}')),
                 "rangle" => Ok(Delim::Char('\u{27E9}')),
                 "backslash" => Ok(Delim::Char('\\')),
-                other => Err(MathError::Parse(format!(
-                    "invalid delimiter '\\{other}'"
-                ))),
+                other => Err(MathError::Parse(format!("invalid delimiter '\\{other}'"))),
             },
             other => Err(MathError::Parse(format!("invalid delimiter {other:?}"))),
         }

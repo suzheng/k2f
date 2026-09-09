@@ -182,7 +182,9 @@ fn short_grid_demo_is_below_height_threshold() {
     let layout = LayoutEngine::layout(&manifest, &ctx).unwrap();
     let diags = layout_slack_diags(&manifest, &layout, &theme);
     assert!(
-        diags.iter().all(|d| d.kind == LayoutDiagKind::PageUnderfill),
+        diags
+            .iter()
+            .all(|d| d.kind == LayoutDiagKind::PageUnderfill),
         "small grids must not warn LAYOUT_SLACK: {diags:?}"
     );
 }
@@ -246,5 +248,48 @@ fn break_before_underfilled_page_reports_page_underfill() {
     assert_eq!(pages.len(), 1, "{diags:?}");
     assert_eq!(pages[0].page, Some(0));
     let line = pages[0].to_string();
-    assert!(line.contains("hint=do not pre-paginate with break_before"), "{line}");
+    assert!(
+        line.contains("hint=do not pre-paginate with break_before"),
+        "{line}"
+    );
+}
+
+fn page_card() -> PageConfig {
+    PageConfig {
+        width: Pt(252_000),
+        height: Pt(144_000),
+        margin: [Pt::ZERO; 4],
+    }
+}
+
+#[test]
+fn miniature_card_page_does_not_report_fill_diags() {
+    let (fonts, theme) = fonts_ctx();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let shell = SemanticNode {
+        id: "doc.shell".to_string(),
+        role: "section".to_string(),
+        content: NodeContent::Container {
+            children: vec![image("doc.hero", 20_000)],
+        },
+        layout: Some(LayoutHint::Stack {
+            direction: StackDirection::Vertical,
+            gap: 0,
+            align_items: Default::default(),
+            justify_content: Default::default(),
+            size: FixedSizeHint {
+                width: Some(Pt(252_000)),
+                height: Some(Pt(144_000)),
+            },
+        }),
+        ..Default::default()
+    };
+    let mut manifest = wrap_root(shell);
+    manifest.page_config = page_card();
+    let layout = LayoutEngine::layout(&manifest, &ctx).unwrap();
+    let diags = layout_slack_diags(&manifest, &layout, &theme);
+    assert!(
+        diags.is_empty(),
+        "252×144pt card leftover is inset, not a hollow grower: {diags:?}"
+    );
 }

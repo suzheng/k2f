@@ -192,14 +192,13 @@ fn arrange_text(
             } else {
                 inner_w
             };
-            let space_count =
-                count_justify_spaces(line.runs.iter().filter_map(|r| {
-                    if r.math_tex.is_some() {
-                        None
-                    } else {
-                        Some(r.text.as_str())
-                    }
-                }));
+            let space_count = count_justify_spaces(line.runs.iter().filter_map(|r| {
+                if r.math_tex.is_some() {
+                    None
+                } else {
+                    Some(r.text.as_str())
+                }
+            }));
             let (extra_per, rem) =
                 justify_space_extras(text_align, line_inner_w, line.width, space_count, is_last);
             let mut budget = JustifyBudget { extra_per, rem };

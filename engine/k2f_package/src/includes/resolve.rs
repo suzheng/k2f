@@ -19,7 +19,13 @@ pub fn resolve_content_files(
         .map_err(|e| PackageError::Other(format!("content/root.json: {e}")))?;
     let mut include_map = BTreeMap::new();
     let mut referenced_paths = BTreeSet::new();
-    let expanded = resolve_value(&root_v, content_files, &mut include_map, &mut referenced_paths, 0)?;
+    let expanded = resolve_value(
+        &root_v,
+        content_files,
+        &mut include_map,
+        &mut referenced_paths,
+        0,
+    )?;
     let root: SemanticNode = serde_json::from_value(expanded)
         .map_err(|e| PackageError::Other(format!("content/root.json: {e}")))?;
     Ok(ResolvedContent {
@@ -50,37 +56,53 @@ fn resolve_value(
                 )));
             }
             referenced_paths.insert(include_path.to_string());
-            let raw = content_files.get(include_path).ok_or_else(|| {
-                PackageError::Other(format!("INCLUDE_MISSING: {include_path}"))
-            })?;
+            let raw = content_files
+                .get(include_path)
+                .ok_or_else(|| PackageError::Other(format!("INCLUDE_MISSING: {include_path}")))?;
             let node_v: Value = serde_json::from_str(raw)
                 .map_err(|e| PackageError::Other(format!("{include_path}: {e}")))?;
             let id = node_v
                 .get("id")
                 .and_then(|v| v.as_str())
-                .ok_or_else(|| {
-                    PackageError::Other(format!("{include_path}: missing node id"))
-                })?;
-            if include_map.insert(id.to_string(), include_path.to_string()).is_some() {
+                .ok_or_else(|| PackageError::Other(format!("{include_path}: missing node id")))?;
+            if include_map
+                .insert(id.to_string(), include_path.to_string())
+                .is_some()
+            {
                 return Err(PackageError::Other(format!(
                     "INCLUDE_DUPLICATE_ID: node id '{id}' mapped to more than one include file"
                 )));
             }
-            return resolve_value(&node_v, content_files, include_map, referenced_paths, depth + 1);
+            return resolve_value(
+                &node_v,
+                content_files,
+                include_map,
+                referenced_paths,
+                depth + 1,
+            );
         }
     }
     match value {
         Value::Object(map) => {
             let mut out = serde_json::Map::new();
             for (k, v) in map {
-                out.insert(k.clone(), resolve_value(v, content_files, include_map, referenced_paths, depth)?);
+                out.insert(
+                    k.clone(),
+                    resolve_value(v, content_files, include_map, referenced_paths, depth)?,
+                );
             }
             Ok(Value::Object(out))
         }
         Value::Array(items) => {
             let mut out = Vec::with_capacity(items.len());
             for item in items {
-                out.push(resolve_value(item, content_files, include_map, referenced_paths, depth)?);
+                out.push(resolve_value(
+                    item,
+                    content_files,
+                    include_map,
+                    referenced_paths,
+                    depth,
+                )?);
             }
             Ok(Value::Array(out))
         }
@@ -122,9 +144,13 @@ mod tests {
         let mut content = files(&[("content/ch01.json", &ch01.to_string())]);
         let mut include_map = BTreeMap::new();
         let mut referenced = BTreeSet::new();
-        let expanded = resolve_value(&root, &content, &mut include_map, &mut referenced, 0).unwrap();
+        let expanded =
+            resolve_value(&root, &content, &mut include_map, &mut referenced, 0).unwrap();
         assert_eq!(expanded["content"]["value"]["children"][0]["id"], "ch01");
-        assert_eq!(include_map.get("ch01").map(String::as_str), Some("content/ch01.json"));
+        assert_eq!(
+            include_map.get("ch01").map(String::as_str),
+            Some("content/ch01.json")
+        );
         content.insert("content/root.json".into(), root.to_string());
         let resolved = resolve_content_files(&root.to_string(), &content).unwrap();
         assert_eq!(resolved.root.id, "root");
