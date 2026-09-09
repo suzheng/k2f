@@ -48,13 +48,6 @@ impl Editor {
         Self::from_package(load_dir(dir).map_err(AgentError::from)?)
     }
 
-    pub fn open_template(template: impl AsRef<Path>) -> Result<Self, AgentError> {
-        let mut package = crate::templates::load_package(template)?;
-        package.lock_json = None;
-        package.signatures_json = None;
-        Self::from_package(package)
-    }
-
     fn from_package(mut package: Package) -> Result<Self, AgentError> {
         let table_assets = package.expand_table_assets().map_err(AgentError::from)?;
         let base_content_hash = package

@@ -2,7 +2,6 @@ use k2f_sdk::SYSTEM_PROMPT;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
-use std::path::Path;
 
 mod cli;
 mod editor;
@@ -14,24 +13,6 @@ pub(crate) fn py_err(e: k2f_sdk::AgentError) -> PyErr {
 #[pyfunction]
 fn system_prompt() -> &'static str {
     SYSTEM_PROMPT
-}
-
-#[pyfunction]
-fn official_templates() -> Vec<&'static str> {
-    k2f_sdk::OFFICIAL_IDS.to_vec()
-}
-
-#[pyfunction]
-fn resolve_template(template: &str) -> PyResult<String> {
-    Ok(k2f_sdk::resolve(template)
-        .map_err(py_err)?
-        .display()
-        .to_string())
-}
-
-#[pyfunction]
-fn copy_template(template: &str, dest: &str) -> PyResult<()> {
-    k2f_sdk::copy_to(template, Path::new(dest)).map_err(py_err)
 }
 
 #[pyfunction]
@@ -54,12 +35,12 @@ fn sign<'py>(
 }
 
 #[pyfunction]
-#[pyo3(signature = (md, title="Document", template="report"))]
+#[pyo3(signature = (md, template, title="Document"))]
 fn markdown_to_k2f<'py>(
     py: Python<'py>,
     md: &str,
-    title: &str,
     template: &str,
+    title: &str,
 ) -> PyResult<Bound<'py, PyBytes>> {
     let opts = k2f_sdk::MarkdownOptions::new(title, template).map_err(py_err)?;
     let result = k2f_sdk::markdown_to_k2f(md, opts).map_err(py_err)?;
@@ -81,9 +62,6 @@ fn k2f(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<editor::Editor>()?;
     m.add_function(wrap_pyfunction!(system_prompt, m)?)?;
     m.add_function(wrap_pyfunction!(format_schemas, m)?)?;
-    m.add_function(wrap_pyfunction!(official_templates, m)?)?;
-    m.add_function(wrap_pyfunction!(resolve_template, m)?)?;
-    m.add_function(wrap_pyfunction!(copy_template, m)?)?;
     m.add_function(wrap_pyfunction!(generate_signing_key, m)?)?;
     m.add_function(wrap_pyfunction!(sign, m)?)?;
     m.add_function(wrap_pyfunction!(markdown_to_k2f, m)?)?;

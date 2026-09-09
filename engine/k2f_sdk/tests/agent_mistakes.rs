@@ -2,8 +2,8 @@ mod common;
 
 use k2f_core::{NodeContent, Pt, SemanticNode};
 use k2f_sdk::{
-    validate_agent_json, AgentError, Editor, DUPLICATE_ID, INVALID_ARGUMENT, INVALID_ID,
-    SCHEMA_INVALID, TABLE_ROW_MISMATCH, UNKNOWN_ROLE,
+    validate_agent_json, AgentError, Editor, DUPLICATE_ID, INVALID_ID, SCHEMA_INVALID,
+    TABLE_ROW_MISMATCH, UNKNOWN_ROLE,
 };
 use serde_json::json;
 
@@ -154,23 +154,6 @@ fn save_error_is_machine_readable() {
     let err: AgentError = ed.insert_node("root", 0, &json).unwrap_err();
     let s = err.to_string();
     assert!(s.starts_with("INVALID_ID:"), "{s}");
-}
-
-#[test]
-fn unknown_template_is_rejected() {
-    let Err(err) = Editor::open_template("not-a-theme") else {
-        panic!("expected unknown template error");
-    };
-    assert_eq!(err.code, INVALID_ARGUMENT);
-    assert!(err.to_string().contains("unknown template"));
-}
-
-#[test]
-fn clinical_alias_is_not_accepted() {
-    let Err(err) = Editor::open_template("clinical") else {
-        panic!("expected unknown template error");
-    };
-    assert_eq!(err.code, INVALID_ARGUMENT);
 }
 
 #[test]

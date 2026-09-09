@@ -1,9 +1,14 @@
 //! Integration-test helpers (not public SDK API).
 use k2f_core::{GridTrack, ListMarkerType, NodeContent, SemanticNode, TableDataSource, TableSpec};
 use k2f_sdk::Editor;
+use std::path::PathBuf;
 
-pub fn open(template: &str) -> Editor {
-    Editor::open_template(template).unwrap()
+fn templates_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../templates")
+}
+
+pub fn open(name: &str) -> Editor {
+    Editor::open_dir(&templates_root().join(name)).unwrap()
 }
 
 pub fn child_count(ed: &Editor) -> usize {

@@ -120,8 +120,9 @@ fn invoice_allows_add_math() {
 
 #[test]
 fn system_prompt_is_short_and_forbids_geometry() {
-    assert!(k2f_sdk::SYSTEM_PROMPT.contains("Do not write theme JSON"));
+    assert!(k2f_sdk::SYSTEM_PROMPT.contains("Do not look up named official templates"));
+    assert!(k2f_sdk::SYSTEM_PROMPT.contains("Do not write paint, lock, x/y"));
     assert!(k2f_sdk::SYSTEM_PROMPT.contains("invoice.total"));
-    assert!(k2f_sdk::SYSTEM_PROMPT.contains("report"));
+    assert!(k2f_sdk::SYSTEM_PROMPT.contains("open_dir"));
     assert!(k2f_sdk::SYSTEM_PROMPT.len() < 4000);
 }

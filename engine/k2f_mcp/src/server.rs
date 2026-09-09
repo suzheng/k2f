@@ -26,8 +26,7 @@ struct CreateArgs {
     title: String,
     #[schemars(description = "Output directory for author source (must not exist)")]
     dest_dir: String,
-    #[serde(default = "default_template")]
-    #[schemars(description = "blank | invoice | legal | clinical_summary | report")]
+    #[schemars(description = "Existing author directory to copy (fonts + theme)")]
     template: String,
     #[serde(default = "default_page_size")]
     #[schemars(description = "A4 or Letter")]
@@ -36,9 +35,6 @@ struct CreateArgs {
 
 fn default_page_size() -> String {
     "A4".into()
-}
-fn default_template() -> String {
-    "blank".into()
 }
 
 #[derive(Debug, Clone, schemars::JsonSchema, Deserialize)]
@@ -107,14 +103,10 @@ struct SaveArgs {
 struct MarkdownArgs {
     markdown: String,
     title: String,
-    #[serde(default = "default_report_template")]
+    #[schemars(description = "Author directory used as the document shell (fonts + theme)")]
     template: String,
     #[serde(default = "default_page_size")]
     page_size: String,
-}
-
-fn default_report_template() -> String {
-    "report".into()
 }
 
 #[derive(Debug, Clone, schemars::JsonSchema, Deserialize)]
@@ -194,9 +186,9 @@ impl Default for K2fServer {
 #[tool_router]
 impl K2fServer {
     #[tool(
-        description = "Copy an official template to dest_dir and open an Editor session. dest_dir must not exist.",
+        description = "Copy an author directory to dest_dir and open an Editor session. dest_dir must not exist.",
         annotations(
-            title = "Create from template",
+            title = "Create from author directory",
             read_only_hint = false,
             destructive_hint = false,
             idempotent_hint = false,
@@ -501,7 +493,7 @@ impl K2fServer {
     }
 }
 
-const SERVER_INSTRUCTIONS: &str = "K2F MCP: copy template (create) or open/markdown_to_k2f → Editor. insert_node/replace_text/set_role on Editor. save writes .K2F (relock); save_dir writes author source. export_pdf requires path. sign is not a tool.";
+const SERVER_INSTRUCTIONS: &str = "K2F MCP: copy an author directory (create) or open/markdown_to_k2f → Editor. insert_node/replace_text/set_role on Editor. save writes .K2F (relock); save_dir writes author source. export_pdf requires path. sign is not a tool.";
 
 #[tool_handler(router = self.tool_router)]
 impl ServerHandler for K2fServer {

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "forbidden": ["sign"],
-  "instructions": "K2F MCP: copy template (create) or open/markdown_to_k2f → Editor. insert_node/replace_text/set_role on Editor. save writes .K2F (relock); save_dir writes author source. export_pdf requires path. sign is not a tool.",
+  "instructions": "K2F MCP: copy an author directory (create) or open/markdown_to_k2f → Editor. insert_node/replace_text/set_role on Editor. save writes .K2F (relock); save_dir writes author source. export_pdf requires path. sign is not a tool.",
   "rules": [
     {
       "id": "no_lock_json",
@@ -22,9 +22,9 @@
   "tools": [
     {
       "name": "create",
-      "description": "Copy an official template to dest_dir and open an Editor session. dest_dir must not exist.",
+      "description": "Copy an author directory to dest_dir and open an Editor session. dest_dir must not exist.",
       "skill": "k2f",
-      "mapsTo": "copy_template + Editor.open_dir",
+      "mapsTo": "copy author dir + Editor.open_dir",
       "shipped": true,
       "mcp": true,
       "op": "write",
@@ -44,12 +44,11 @@
           },
           "template": {
             "type": "string",
-            "enum": ["blank", "invoice", "legal", "clinical_summary", "report"],
-            "default": "blank"
+            "description": "Existing author directory to copy (fonts + theme)"
           },
           "page_size": { "type": "string", "enum": ["A4", "Letter"], "default": "A4" }
         },
-        "required": ["title", "dest_dir"]
+        "required": ["title", "dest_dir", "template"]
       },
       "output": {
         "session_id": "string",
@@ -336,12 +335,11 @@
           "title": { "type": "string" },
           "template": {
             "type": "string",
-            "enum": ["blank", "invoice", "legal", "clinical_summary", "report"],
-            "default": "report"
+            "description": "Author directory used as the document shell (fonts + theme)"
           },
           "page_size": { "type": "string", "enum": ["A4", "Letter"], "default": "A4" }
         },
-        "required": ["markdown", "title"]
+        "required": ["markdown", "title", "template"]
       }
     },
     {

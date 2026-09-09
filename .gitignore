@@ -59,6 +59,8 @@ golden.json
 !skills/k2f/**/*.png
 !skills/k2f/**/*.ttf
 !skills/k2f/**/*.otf
+!templates/**/assets/fonts/*.ttf
+!templates/**/assets/fonts/*.otf
 !.github/assets/**
 *.jpg
 *.jpeg
@@ -175,3 +177,12 @@ ehthumbs.db
 !docs/guide/images/**
 !docs/guide/images/*.png
 *.tsbuildinfo
+
+# ==========================================
+# templates/ (repo fixtures — NOT SDK bundles)
+# ==========================================
+# Do NOT add templates/ or templates/** below. Engine, CLI, and SDK tests
+# open_dir these author trees; gitignoring breaks CI. Published SDKs must
+# not include_dir! this tree into WASM (no official_templates / openTemplate).
+# External agents use skills/k2f/starter/ — see templates/README.md and
+# docs/architecture/design.md.

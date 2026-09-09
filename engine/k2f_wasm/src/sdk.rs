@@ -11,24 +11,6 @@ pub fn system_prompt() -> String {
 }
 
 #[wasm_bindgen]
-pub fn official_templates() -> String {
-    serde_json::to_string(k2f_sdk::OFFICIAL_IDS).unwrap_or_else(|_| "[]".into())
-}
-
-#[wasm_bindgen]
-pub fn resolve_template(template: &str) -> Result<String, JsValue> {
-    Ok(k2f_sdk::resolve(template)
-        .map_err(js_err)?
-        .display()
-        .to_string())
-}
-
-#[wasm_bindgen]
-pub fn copy_template(template: &str, dest: &str) -> Result<(), JsValue> {
-    k2f_sdk::copy_to(template, std::path::Path::new(dest)).map_err(js_err)
-}
-
-#[wasm_bindgen]
 pub fn generate_signing_key() -> Result<String, JsValue> {
     let key = k2f_sdk::generate_key().map_err(js_err)?;
     serde_json::to_string(&serde_json::json!({
@@ -50,8 +32,8 @@ pub fn sign_k2f(
 }
 
 #[wasm_bindgen]
-pub fn markdown_to_k2f(md: &str, title: &str, template: &str) -> Result<Vec<u8>, JsValue> {
-    let opts = k2f_sdk::MarkdownOptions::new(title, template).map_err(js_err)?;
+pub fn markdown_to_k2f(md: &str, title: &str, template_bytes: &[u8]) -> Result<Vec<u8>, JsValue> {
+    let opts = k2f_sdk::MarkdownOptions::from_bytes(title, template_bytes.to_vec());
     Ok(k2f_sdk::markdown_to_k2f(md, opts).map_err(js_err)?.bytes)
 }
 

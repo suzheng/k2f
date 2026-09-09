@@ -54,12 +54,15 @@ function appendNode(ed, parentId, node) {
   ed.insertNode(parentId, childCount(ed, parentId), node);
 }
 
-export function invoiceDocument(k2f, data) {
+export function invoiceDocument(k2f, data, shellBytes) {
+  if (!shellBytes) {
+    throw new Error("invoiceDocument requires shellBytes (a packed .K2F)");
+  }
   const headers = data.rows[0].map((cell) => cell.content.value);
   const rows = data.rows.slice(1).map((row) =>
     row.map((cell) => cell.content.value),
   );
-  const ed = k2f.Editor.openTemplate("invoice");
+  const ed = k2f.Editor.open(shellBytes);
   appendNode(ed, "root", headingNode("invoice.header", 1, "STATEMENT #2025-001"));
   appendNode(
     ed,

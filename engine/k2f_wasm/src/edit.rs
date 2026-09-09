@@ -20,13 +20,6 @@ impl K2fEditor {
         })
     }
 
-    #[wasm_bindgen(js_name = openTemplate)]
-    pub fn open_template(template: &str) -> Result<K2fEditor, JsValue> {
-        Ok(Self {
-            inner: Editor::open_template(template).map_err(js_err)?,
-        })
-    }
-
     pub fn outline(&self) -> String {
         self.inner.outline_json().unwrap_or_else(|_| "[]".into())
     }

@@ -60,7 +60,7 @@ The reference engine is a family of Rust crates. It is **not** a file inside the
 | Execute | `k2f_paint` | Rasterizes the lock; viewers do not re-layout |
 | Package | `k2f_package` | ZIP pack/unpack, schema validation, signatures |
 
-Bindings include native CLI, desktop reader, Python (`k2f_py`), and WASM (`k2f_wasm`). WASM is one binding, not the only runtime.
+Bindings include native CLI, desktop reader, Python (`k2f_py`), and WASM (`k2f_wasm`). WASM is one binding, not the only runtime. Published SDKs must not embed or name-lookup this repository’s `templates/` tree (in-repo test fixtures only); callers pass an author directory or packed `.K2F` bytes.
 
 ### State C — render lock
 

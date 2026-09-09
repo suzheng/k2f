@@ -24,6 +24,8 @@ fn markdown_file_compiles_to_zip_package() {
                 .unwrap(),
             "-o",
             out.to_str().unwrap(),
+            "--template",
+            repo_root().join("templates/report").to_str().unwrap(),
         ])
         .output()
         .unwrap();
@@ -62,6 +64,8 @@ fn markdown_dir_mirrors_md_to_k2f() {
             src.to_str().unwrap(),
             "-o",
             out.to_str().unwrap(),
+            "--template",
+            repo_root().join("templates/report").to_str().unwrap(),
         ])
         .output()
         .unwrap();

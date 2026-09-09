@@ -25,13 +25,6 @@ impl Editor {
         })
     }
 
-    #[staticmethod]
-    fn open_template(template: &str) -> PyResult<Self> {
-        Ok(Self {
-            inner: Inner::open_template(template).map_err(py_err)?,
-        })
-    }
-
     fn outline(&self) -> PyResult<String> {
         self.inner.outline_json().map_err(py_err)
     }

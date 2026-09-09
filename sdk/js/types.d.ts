@@ -11,7 +11,7 @@ export function exportPptx(packageBytes: Uint8Array): Promise<Uint8Array>;
 export function exportDocx(packageBytes: Uint8Array): Promise<Uint8Array>;
 export function markdownToK2f(
   md: string,
-  opts?: { title?: string; template?: string },
+  opts: { title?: string; templateBytes: Uint8Array },
 ): Promise<Uint8Array>;
 export function k2fToMarkdown(bytes: Uint8Array): Promise<string>;
 
@@ -30,7 +30,6 @@ export interface WasmModule {
   default: (module_or_path?: unknown) => Promise<unknown>;
   K2fEditor: {
     new (bytes: Uint8Array): unknown;
-    openTemplate(template: string): unknown;
   };
   K2fViewer: typeof Viewer;
   generate_signing_key: () => string;
@@ -40,10 +39,7 @@ export interface WasmModule {
     signedBy?: string | null,
     signedAt?: bigint | null,
   ) => Uint8Array;
-  official_templates: () => string;
-  resolve_template: (template: string) => string;
-  copy_template: (template: string, dest: string) => void;
-  markdown_to_k2f: (md: string, title: string, template: string) => Uint8Array;
+  markdown_to_k2f: (md: string, title: string, templateBytes: Uint8Array) => Uint8Array;
   k2f_to_markdown: (bytes: Uint8Array) => string;
 }
 
@@ -55,9 +51,6 @@ export interface GeneratedKey {
 
 export interface K2fApi {
   systemPrompt(): string;
-  officialTemplates(): string[];
-  resolveTemplate(template: string): string;
-  copyTemplate(template: string, dest: string): void;
   Editor: typeof Editor;
   Viewer: typeof Viewer;
   generateSigningKey(): GeneratedKey;
@@ -67,13 +60,12 @@ export interface K2fApi {
     signedBy?: string | null,
     signedAt?: bigint | null,
   ): Uint8Array;
-  markdownToK2f(md: string, opts?: { title?: string; template?: string }): Uint8Array;
+  markdownToK2f(md: string, opts: { title?: string; templateBytes: Uint8Array }): Uint8Array;
   k2fToMarkdown(bytes: Uint8Array): string;
 }
 
 export class Editor {
   static open(bytes: Uint8Array): Editor;
-  static openTemplate(template: string): Editor;
   outline(): OutlineNode[];
   diff(): SemanticChange[];
   getNode(id: string): unknown;

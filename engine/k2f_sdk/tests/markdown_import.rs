@@ -2,7 +2,7 @@ mod common;
 
 use k2f_core::{for_each_node, NodeContent, SemanticNode};
 use k2f_package::unpack_bytes;
-use k2f_sdk::{k2f_to_markdown, markdown_to_k2f, MarkdownOptions, PageSize};
+use k2f_sdk::{k2f_to_markdown, markdown_to_k2f, MarkdownOptions};
 use std::fs;
 use std::path::PathBuf;
 
@@ -14,8 +14,12 @@ fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
+fn report_opts() -> MarkdownOptions {
+    MarkdownOptions::new("Document", repo_root().join("templates/report")).unwrap()
+}
+
 fn import(md: &str) -> k2f_sdk::MarkdownResult {
-    markdown_to_k2f(md, MarkdownOptions::default()).unwrap()
+    markdown_to_k2f(md, report_opts()).unwrap()
 }
 
 fn root_of(bytes: &[u8]) -> SemanticNode {
@@ -195,9 +199,10 @@ fn import_local_png_from_invoice_example() {
     fs::write(dir.join("logo.png"), &png).unwrap();
     let result = markdown_to_k2f(
         "# Logo\n\n![Company logo](logo.png)\n",
-        MarkdownOptions {
-            image_base: dir,
-            ..MarkdownOptions::default()
+        {
+            let mut opts = report_opts();
+            opts.image_base = dir;
+            opts
         },
     )
     .unwrap();

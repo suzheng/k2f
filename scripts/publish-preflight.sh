@@ -12,6 +12,14 @@ bash scripts/check-cargo-package.sh
 bash scripts/build-sdk-js.sh
 bash scripts/build-viewer-only-js.sh
 bash scripts/check-js-wasm.sh
+if grep -R --include='*.rs' -l 'include_dir!' engine/k2f_sdk/src >/dev/null 2>&1; then
+  echo "k2f_sdk must not use include_dir! (that embedded k2f/templates into WASM)" >&2
+  exit 1
+fi
+if grep -q 'include_dir' engine/k2f_sdk/Cargo.toml; then
+  echo "k2f_sdk Cargo.toml must not depend on include_dir" >&2
+  exit 1
+fi
 cd sdk/js
 npm test
 npm pack --dry-run

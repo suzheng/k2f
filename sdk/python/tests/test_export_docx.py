@@ -34,7 +34,7 @@ def test_editor_export_docx_bytes_matches_saved_package():
 
 
 def test_export_docx_unlocked_template_maps_error_code():
-    ed = k2f.Editor.open_template("invoice")
+    ed = k2f.Editor.open_dir(str(ROOT / "templates" / "invoice"))
     try:
         ed.export_docx_bytes()
         raise AssertionError("expected UNLOCKED on template without lock")

@@ -29,6 +29,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Four-edge box borders follow `corner_radius` in PNG/viewer (and dashed/dotted PDF), matching fill/shadow. Partial-edge borders stay straight.
 - `export-docx`: LibreOffice Writer paints `pic:pic` above every DrawingML shape, so a full-page gradient/glass raster hid later text. Linear gradients and translucent solids are native `a:gradFill` / `a:solidFill`+`a:alpha`. A full-page fill is `behindDoc=1` (and `w:background` uses the first gradient stop) so it is not an in-front empty text frame covering labels. Remaining blur/shadow/math slices (`k2f-raster:`) use `wps:wsp` + `a:blipFill`. Text boxes skip the paper-white Dark Mode underlay when a gradient, glass, or raster already covers the box. Lock `DrawImage` stays `pic:pic`. Invoice/text/corpus tests still pass.
 
+### Removed
+
+- Named official templates from every published SDK (`official_templates`, `copy_template`, `resolve_template`, `Editor.open_template` / `openTemplate`). WASM no longer `include_dir`s `k2f/templates/`. Create with `init_package.py` / unpack / Gallery, then `Editor.open_dir` or `Editor.open` / `open_bytes`. CLI `k2f markdown --template` is a required author directory. JS `markdownToK2f` takes `templateBytes`.
+
 ## [0.2.1] - 2026-09-07
 
 ### Fixed

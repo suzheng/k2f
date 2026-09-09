@@ -58,7 +58,7 @@ pub fn assert_ok(out: &Output) {
 
 /// Small Invoice package compiled in-process (engine-current, UNSIGNED).
 pub fn invoice_bytes() -> Vec<u8> {
-    let mut ed = Editor::open_template("invoice").unwrap();
+    let mut ed = Editor::open_dir(&repo_root().join("templates/invoice")).unwrap();
     insert_heading(&mut ed, "invoice.title", 1, "STATEMENT");
     insert_table(
         &mut ed,

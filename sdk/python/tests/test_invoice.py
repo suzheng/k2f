@@ -7,6 +7,10 @@ import k2f
 ROOT = Path(__file__).resolve().parents[3]
 
 
+def _open(name):
+    return k2f.Editor.open_dir(str(ROOT / "templates" / name))
+
+
 def _text_node(node_id, role, text, **extra):
     node = {"id": node_id, "role": role, "content": {"type": "text", "value": text}}
     node.update(extra)
@@ -65,7 +69,7 @@ def _build_invoice(data):
     headers = [cell["content"]["value"] for cell in data["rows"][0]]
     rows = [[cell["content"]["value"] for cell in row] for row in data["rows"][1:]]
 
-    ed = k2f.Editor.open_template("invoice")
+    ed = _open("invoice")
     _append_node(ed, "root", _heading_node("invoice.header", 1, "STATEMENT #2025-001"))
     _append_node(
         ed,
@@ -112,7 +116,7 @@ def test_invoice_from_real_json():
 
 
 def test_duplicate_id_code():
-    ed = k2f.Editor.open_template("legal")
+    ed = _open("legal")
     _append_node(ed, "root", _text_node("n", "body", "a"))
     try:
         _append_node(ed, "root", _text_node("n", "body", "b"))
@@ -123,7 +127,7 @@ def test_duplicate_id_code():
 
 def test_system_prompt():
     text = k2f.system_prompt()
-    assert "Do not write theme JSON" in text
+    assert "Do not look up named official templates" in text
     assert not hasattr(k2f, "invoice_system_prompt")
 
 

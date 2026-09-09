@@ -23,14 +23,14 @@ Both ship WASM under `@openk2f/k2f/wasm/` (full) and `@openk2f/k2f/wasm-viewer/`
 
 ## Editor API
 
-Open an official template and insert semantic nodes:
+Open a packed `.K2F` and insert semantic nodes:
 
 ```javascript
 import { initWasm, createK2f, exportPdf } from "@openk2f/k2f";
 
 await initWasm("/k2f_wasm_bg.wasm");
 const k2f = await createK2f();
-const ed = k2f.Editor.openTemplate("invoice");
+const ed = k2f.Editor.open(packageBytes);
 
 ed.insertNode("root", 0, {
   id: "invoice.title",
@@ -70,7 +70,7 @@ const k2f = await createK2f();
 
 const fromMd = k2f.markdownToK2f("# Hello\n\nBody text.", {
   title: "From Markdown",
-  template: "report",
+  templateBytes: packageBytes,
 });
 const md = k2f.k2fToMarkdown(fromMd);
 

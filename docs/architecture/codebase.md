@@ -43,7 +43,7 @@ engine/
 ├── k2f_paint/         # Open package, rasterize lock, text layer, hit-test
 ├── k2f_package/       # ZIP pack/unpack, schema validation, signatures
 ├── k2f_pdf/           # Draw lock to PDF (not a second layout engine)
-├── k2f_sdk/           # Agent Editor, Markdown, official templates
+├── k2f_sdk/           # Agent Editor, Markdown
 ├── k2f_mcp/           # MCP stdio server (tool contract: mcp_tools.json)
 ├── k2f_py/            # Python bindings (`import k2f`; published on PyPI as `k2f`)
 └── k2f_wasm/          # WASM: compile, viewer, sdk
@@ -61,7 +61,7 @@ tests/runner/          # Golden suite runner
 | `k2f_paint` | Open package, rasterize lock, text layer, hit-test |
 | `k2f_package` | ZIP, schema validation, Ed25519 signatures |
 | `k2f_pdf` | Lock → PDF drawing |
-| `k2f_sdk` | Agent `Editor`, Markdown, official templates |
+| `k2f_sdk` | Agent `Editor`, Markdown |
 | `k2f_mcp` | MCP stdio adapter; same tool names as SDK |
 | `k2f_py` | Python bindings (`import k2f`) |
 | `k2f_wasm` | `compile` / `viewer` / `sdk` WASM bindings |
@@ -175,7 +175,7 @@ Draws the lock into PDF. PDF is not a reversible source (`PDF_IS_NOT_A_SOURCE`).
 
 ### k2f_sdk / k2f_mcp / k2f_py / k2f_wasm — agent surfaces
 
-- **k2f_sdk** — `Editor` (open template / package / dir, edit by node id + relock), Markdown, official templates
+- **k2f_sdk** — `Editor` (open package bytes or author dir, edit by node id + relock), Markdown
 - **k2f_mcp** — stdio MCP server; tool contract at `engine/k2f_mcp/mcp_tools.json`
 - **k2f_py** — PyO3 bindings; published on PyPI as `k2f` (CLI console script + `import k2f`)
 - **k2f_wasm** — three feature groups: `compile`, `viewer`, `sdk`

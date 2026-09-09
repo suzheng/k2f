@@ -26,7 +26,7 @@ npm i @openk2f/k2f
 import json
 import k2f
 
-ed = k2f.Editor.open_template("report")
+ed = k2f.Editor.open_dir("./source")  # from init_package.py or k2f unpack
 ed.insert_node("root", 0, json.dumps({
     "id": "root.title",
     "role": "h1",
@@ -41,14 +41,13 @@ ed.validate_package()
 open("/tmp/hello.K2F", "wb").write(ed.save_bytes())
 ```
 
-Or copy a template and edit author source:
+Or open a packed file:
 
 ```python
 import k2f
 
-k2f.copy_template("report", "/tmp/hello-src")
-ed = k2f.Editor.open_dir("/tmp/hello-src")
-ed.replace_text("root.title", "Hello K2F")  # after adding nodes via insert_node
+ed = k2f.Editor.open_bytes(open("hello.K2F", "rb").read())
+ed.replace_text("root.title", "Hello K2F")
 ```
 
 ### Verify

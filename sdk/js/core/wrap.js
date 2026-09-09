@@ -4,22 +4,10 @@ import { agentError, call } from "./errors.js";
 export function wrapWasm(wasm) {
   return {
     systemPrompt: () => call(() => wasm.system_prompt()),
-    officialTemplates: () => {
-      const raw = call(() => wasm.official_templates());
-      return typeof raw === "string" ? JSON.parse(raw) : raw;
-    },
-    resolveTemplate: (template) => call(() => wasm.resolve_template(template)),
-    copyTemplate: (template, dest) =>
-      call(() => wasm.copy_template(template, dest)),
     Editor: class {
       static open(bytes) {
         const e = Object.create(this.prototype);
         e._ed = call(() => new wasm.K2fEditor(bytes));
-        return e;
-      }
-      static openTemplate(template) {
-        const e = Object.create(this.prototype);
-        e._ed = call(() => wasm.K2fEditor.openTemplate(template));
         return e;
       }
       getNode(id) {
@@ -142,8 +130,15 @@ export function wrapWasm(wasm) {
     sign(bytes, secretHex, signedBy, signedAt) {
       return call(() => wasm.sign_k2f(bytes, secretHex, signedBy, signedAt));
     },
-    markdownToK2f(md, { title = "Document", template = "report" } = {}) {
-      return call(() => wasm.markdown_to_k2f(md, title, template));
+    markdownToK2f(md, { title = "Document", templateBytes } = {}) {
+      if (!templateBytes) {
+        throw agentError(
+          new Error(
+            "markdownToK2f requires templateBytes (a packed .K2F used as the shell)",
+          ),
+        );
+      }
+      return call(() => wasm.markdown_to_k2f(md, title, templateBytes));
     },
     k2fToMarkdown(bytes) {
       return call(() => wasm.k2f_to_markdown(bytes));

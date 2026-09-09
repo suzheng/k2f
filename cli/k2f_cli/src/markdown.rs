@@ -16,7 +16,7 @@ pub fn collect_md(dir: &Path, out: &mut Vec<PathBuf>) -> anyhow::Result<()> {
 pub fn convert_markdown(
     source: &Path,
     dest: &Path,
-    template: &str,
+    template: &Path,
     font_bytes: Option<&[u8]>,
 ) -> anyhow::Result<()> {
     let md = fs::read_to_string(source)?;

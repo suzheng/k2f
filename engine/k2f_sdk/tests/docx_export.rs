@@ -45,7 +45,10 @@ fn editor_export_docx_bytes_after_save() {
 
 #[test]
 fn export_docx_unlocked_template_maps_error_code() {
-    let ed = k2f_sdk::Editor::open_template("invoice").unwrap();
+    let ed = k2f_sdk::Editor::open_dir(
+        &PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../templates/invoice"),
+    )
+    .unwrap();
     let err = ed.export_docx_bytes().unwrap_err();
     assert_eq!(err.code, "UNLOCKED");
 }

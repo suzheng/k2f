@@ -1,6 +1,5 @@
 import { createK2f } from "../../sdk/js/k2f.js";
 import "../../sdk/js/viewer.js";
-import { invoiceDocument } from "./invoice-doc.js";
 
 const k2f = await createK2f();
 const el = document.querySelector("k2f-viewer");
@@ -17,9 +16,8 @@ if (packed.ok) {
   }
 }
 if (!bytes) {
-  const data = await fetch(
-    new URL("../invoice/assets/data/invoice_data.json", import.meta.url),
-  ).then((r) => r.json());
-  bytes = invoiceDocument(k2f, data);
+  throw new Error(
+    "web-embed requires examples/published/invoice.K2F (SDK does not bundle templates)",
+  );
 }
 await el.open(bytes);

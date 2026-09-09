@@ -1,12 +1,16 @@
 use k2f_package::validate_theme_json;
-use k2f_sdk::{resolve, OFFICIAL_IDS};
 use serde_json::{json, Value};
 use std::fs;
+use std::path::PathBuf;
 
 const THEMED_TEMPLATES: &[&str] = &["invoice", "legal", "clinical_summary", "report"];
 
+fn templates_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../templates")
+}
+
 fn load_theme_json(id: &str) -> Value {
-    let dir = resolve(id).unwrap();
+    let dir = templates_root().join(id);
     let raw = fs::read_to_string(dir.join("styles/theme.json")).unwrap();
     serde_json::from_str(&raw).unwrap()
 }
@@ -38,10 +42,12 @@ fn minimal_theme(extra_role_deco: Value, extra_primitives: Value) -> Value {
 }
 
 #[test]
-fn official_template_ids_include_blank_and_four_themes() {
-    assert!(OFFICIAL_IDS.contains(&"blank"));
-    for id in THEMED_TEMPLATES {
-        assert!(OFFICIAL_IDS.contains(id), "missing {id}");
+fn fixture_template_ids_include_blank_and_four_themes() {
+    for id in THEMED_TEMPLATES.iter().chain(["blank"].iter()) {
+        assert!(
+            templates_root().join(id).is_dir(),
+            "missing fixture template {id}"
+        );
     }
 }
 

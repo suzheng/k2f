@@ -34,7 +34,11 @@ struct MdCell {
 }
 
 pub fn markdown_to_k2f(md: &str, opts: MarkdownOptions) -> Result<MarkdownResult, AgentError> {
-    let mut doc = MarkdownBuilder::from_template(&opts.template_dir, &opts.title, opts.page_size)?;
+    let mut doc = if let Some(bytes) = opts.template_bytes.as_ref() {
+        MarkdownBuilder::from_bytes(bytes, &opts.title, opts.page_size)?
+    } else {
+        MarkdownBuilder::from_dir(&opts.template_dir, &opts.title, opts.page_size)?
+    };
     if let Some(bytes) = opts.font_bytes.clone() {
         doc.set_font_bytes(bytes);
     }

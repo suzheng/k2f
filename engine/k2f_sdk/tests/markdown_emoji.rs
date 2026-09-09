@@ -1,6 +1,15 @@
 use k2f_core::{for_each_node, NodeContent, TextGlyphRun};
 use k2f_package::unpack_bytes;
 use k2f_sdk::{markdown_to_k2f, MarkdownOptions};
+use std::path::PathBuf;
+
+fn report_opts() -> MarkdownOptions {
+    MarkdownOptions::new(
+        "Document",
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../templates/report"),
+    )
+    .unwrap()
+}
 
 fn lock_runs(bytes: &[u8]) -> Vec<TextGlyphRun> {
     let pkg = unpack_bytes(bytes).unwrap();
@@ -21,7 +30,7 @@ fn lock_runs(bytes: &[u8]) -> Vec<TextGlyphRun> {
 #[test]
 fn markdown_checkmark_compiles_with_sc_and_emoji_fonts() {
     let result =
-        markdown_to_k2f("done ✅\n", MarkdownOptions::default()).unwrap_or_else(|e| panic!("{e}"));
+        markdown_to_k2f("done ✅\n", report_opts()).unwrap_or_else(|e| panic!("{e}"));
     assert_eq!(result.bytes[0], 0x50);
     assert_eq!(result.bytes[1], 0x4b);
     let pkg = unpack_bytes(&result.bytes).unwrap();
@@ -55,7 +64,11 @@ fn pepkio_supabase_plan_compiles_with_checkmark() {
     let md = std::fs::read_to_string(&path).unwrap();
     let result = markdown_to_k2f(
         &md,
-        MarkdownOptions::new("Supabase plan", "report").unwrap(),
+        MarkdownOptions::new(
+            "Supabase plan",
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../templates/report"),
+        )
+        .unwrap(),
     )
     .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let mut blob = String::new();

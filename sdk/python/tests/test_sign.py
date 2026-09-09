@@ -8,6 +8,10 @@ import k2f
 ROOT = Path(__file__).resolve().parents[3]
 
 
+def _open(name):
+    return k2f.Editor.open_dir(str(ROOT / "templates" / name))
+
+
 def _text_node(node_id, role, text, **extra):
     node = {"id": node_id, "role": role, "content": {"type": "text", "value": text}}
     node.update(extra)
@@ -63,7 +67,7 @@ def test_save_is_unsigned_sign_uses_lock_and_utc():
     headers = [cell["content"]["value"] for cell in data["rows"][0]]
     rows = [[cell["content"]["value"] for cell in row] for row in data["rows"][1:]]
 
-    ed = k2f.Editor.open_template("invoice")
+    ed = _open("invoice")
     ed.set_generated_by("agent.invoice-bot")
     _append_node(ed, "root", _heading_node("invoice.header", 1, "STATEMENT #2025-001"))
     _append_node(ed, "root", _table_node("invoice.table", headers, rows))

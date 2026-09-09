@@ -103,13 +103,13 @@ enum Commands {
         #[arg(short, long)]
         output: PathBuf,
     },
-    /// Compile Markdown to a .K2F package (report template by default).
+    /// Compile Markdown to a .K2F package. `--template` is an author directory.
     Markdown {
         source: PathBuf,
         #[arg(short, long)]
         output: PathBuf,
-        #[arg(long, default_value = "report")]
-        template: String,
+        #[arg(long)]
+        template: PathBuf,
         /// Optional OTF/TTF embedded instead of the template default face.
         #[arg(long)]
         font: Option<PathBuf>,

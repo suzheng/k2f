@@ -18,6 +18,14 @@ if ! grep -q "markdown_to_k2f" "$sdk_js"; then
   echo "SDK wasm glue missing markdown_to_k2f ($sdk_js)" >&2
   exit 1
 fi
+if grep -q "official_templates" "$sdk_js"; then
+  echo "SDK wasm must not export official_templates ($sdk_js)" >&2
+  exit 1
+fi
+if grep -q "openTemplate" "$sdk_js"; then
+  echo "SDK wasm must not export openTemplate ($sdk_js)" >&2
+  exit 1
+fi
 if grep -q "markdown_to_k2f" "$viewer_js"; then
   echo "viewer-only wasm must not export markdown_to_k2f ($viewer_js)" >&2
   exit 1

@@ -9,8 +9,16 @@ fn fixtures_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/markdown")
 }
 
+fn report_opts() -> MarkdownOptions {
+    MarkdownOptions::new(
+        "Document",
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../templates/report"),
+    )
+    .unwrap()
+}
+
 fn import(md: &str) -> k2f_sdk::MarkdownResult {
-    markdown_to_k2f(md, MarkdownOptions::default()).unwrap()
+    markdown_to_k2f(md, report_opts()).unwrap()
 }
 
 fn root_of(bytes: &[u8]) -> SemanticNode {
@@ -105,7 +113,7 @@ fn markdown_roundtrip_fixtures() {
 
 fn assert_roundtrip(md_path: &Path) {
     let md = fs::read_to_string(md_path).unwrap();
-    let opts = MarkdownOptions::default();
+    let opts = report_opts();
     let first = markdown_to_k2f(&md, opts.clone())
         .unwrap_or_else(|e| panic!("{}: import failed: {e}", md_path.display()));
     let out = k2f_to_markdown(&first.bytes)

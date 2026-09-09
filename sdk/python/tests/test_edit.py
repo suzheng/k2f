@@ -6,6 +6,10 @@ import k2f
 ROOT = Path(__file__).resolve().parents[3]
 
 
+def _open(name):
+    return k2f.Editor.open_dir(str(ROOT / "templates" / name))
+
+
 def _text_node(node_id, role, text, **extra):
     node = {"id": node_id, "role": role, "content": {"type": "text", "value": text}}
     node.update(extra)
@@ -61,7 +65,7 @@ def test_editor_relock_invoice_total():
     headers = [cell["content"]["value"] for cell in data["rows"][0]]
     rows = [[cell["content"]["value"] for cell in row] for row in data["rows"][1:]]
 
-    ed = k2f.Editor.open_template("invoice")
+    ed = _open("invoice")
     _append_node(ed, "root", _heading_node("invoice.header", 1, "STATEMENT #2025-001"))
     _append_node(ed, "root", _table_node("invoice.table", headers, rows))
     _append_node(ed, "root", _text_node("invoice.total", "body", "Grand Total: $7,047.00"))
@@ -92,7 +96,7 @@ def test_editor_open_dir_invoice_template():
 
 
 def test_compensation_amount_relock():
-    ed = k2f.Editor.open_template("legal")
+    ed = _open("legal")
     _append_node(ed, "root", _heading_node("contract.title", 1, "Independent Contractor Agreement"))
     _append_node(ed, "root", _text_node("contract.compensation.amount", "body", "USD 100"))
     blob = bytes(ed.save_bytes())

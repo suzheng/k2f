@@ -2,10 +2,11 @@
 //!
 //! # Example
 //!
-//! ```
+//! ```no_run
 //! use k2f_sdk::Editor;
+//! use std::path::Path;
 //!
-//! let mut editor = Editor::open_template("report").unwrap();
+//! let mut editor = Editor::open_dir(Path::new("./source")).unwrap();
 //! editor.insert_node(
 //!     "root",
 //!     0,
@@ -30,7 +31,6 @@ mod pptx;
 mod profile;
 mod raster;
 mod sign;
-mod templates;
 mod units;
 mod vocab;
 
@@ -50,7 +50,6 @@ pub use page::PageSize;
 pub use pdf::{export_pdf, export_pdf_at, parse_pdf_scale};
 pub use pptx::export_pptx;
 pub use sign::{generate_key, sign, GeneratedKey};
-pub use templates::{bundled_root, copy_to, load_package, resolve, OFFICIAL_IDS};
 
 pub const SYSTEM_PROMPT: &str = include_str!("../instructions/agent_v0.md");
 

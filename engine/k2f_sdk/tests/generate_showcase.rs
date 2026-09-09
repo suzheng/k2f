@@ -28,7 +28,7 @@ The body text uses deep slate ink (`#24292f`) rather than faded gray, paired wit
 
 ### 1.1 Inline Formatting & Modifiers
 
-K2F supports rich inline markup seamlessly: **Strong Bold Text**, *Emphasis Italic Text*, inline code `Editor::open_template("report")`, and interactive hyperlinks such as [K2F Repository Link](https://github.com/suzheng/k2f).
+K2F supports rich inline markup seamlessly: **Strong Bold Text**, *Emphasis Italic Text*, inline code `Editor::open_dir("./source")`, and interactive hyperlinks such as [K2F Repository Link](https://github.com/suzheng/k2f).
 
 ## 2. Structured Layout Elements
 
@@ -51,7 +51,7 @@ K2F supports rich inline markup seamlessly: **Strong Bold Text**, *Emphasis Ital
 
 ```rust
 // Initialize document with default Report theme
-let mut ed = Editor::open_template("report")?;
+let mut ed = Editor::open_dir(std::path::Path::new("./source"))?;
 ed.insert_node("root", 0, "{\"id\":\"doc.h1\",\"role\":\"h1\",\"keep_with_next\":true,\"content\":{\"type\":\"text\",\"value\":\"Architecture Overview\"}}")?;
 ed.insert_node("root", 1, "{\"id\":\"doc.p1\",\"role\":\"body\",\"content\":{\"type\":\"text\",\"value\":\"Markdown-scale typography with deterministic layout lock.\"}}")?;
 let package_bytes = ed.save_bytes()?;
@@ -66,7 +66,11 @@ let package_bytes = ed.save_bytes()?;
 
     let res = markdown_to_k2f(sample_md, {
         let mut opts =
-            MarkdownOptions::new("K2F Typography & Visual Style Specification", "report").unwrap();
+            MarkdownOptions::new(
+                "K2F Typography & Visual Style Specification",
+                root.join("templates/report"),
+            )
+            .unwrap();
         opts.page_size = PageSize::A4;
         opts
     })
@@ -93,7 +97,7 @@ let package_bytes = ed.save_bytes()?;
     let contract_md =
         fs::read_to_string(root.join("tests/fixtures/markdown/contract_cn.md")).unwrap();
     let contract_res = markdown_to_k2f(&contract_md, {
-        let mut opts = MarkdownOptions::new("独立顾问协议", "legal").unwrap();
+        let mut opts = MarkdownOptions::new("独立顾问协议", root.join("templates/legal")).unwrap();
         opts.page_size = PageSize::A4;
         opts
     })

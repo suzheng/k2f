@@ -35,8 +35,8 @@ k2f verify ./out/doc/doc.K2F
 | Surface | Call | Report |
 |---------|------|--------|
 | CLI `k2f markdown` | writes package; `--template` = author dir | Discarded |
-| Python | `markdown_to_k2f(md, title=…, template="./out/doc/source")` / `k2f_to_markdown(bytes)` | Discarded (bytes only) |
-| JS | `markdownToK2f(md, { title, template: "./out/doc/source" })` / `k2fToMarkdown(bytes)` after `initWasm` — filesystem surfaces only; otherwise [writing.md](writing.md) | Discarded (bytes only) |
+| Python | `markdown_to_k2f(md, template="./out/doc/source", title=…)` / `k2f_to_markdown(bytes)` | Discarded (bytes only) |
+| JS | `markdownToK2f(md, { title, templateBytes })` / `k2fToMarkdown(bytes)` after `initWasm` — `templateBytes` is a packed `.K2F` shell; otherwise [writing.md](writing.md) | Discarded (bytes only) |
 | Rust | `markdown_to_k2f(md, opts) → MarkdownResult { bytes, report }` | Yes — `report.warnings` |
 
 No CLI command for K2F → MD; use Python/JS/Rust `k2f_to_markdown`.

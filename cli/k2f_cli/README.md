@@ -25,7 +25,7 @@ pip install k2f    # preferred: CLI on PATH + Python SDK
 | `k2f export-pptx <package> -o <out.pptx>` | Draw lock into PowerPoint (not a second layout engine) |
 | `k2f export-docx <package> -o <out.docx>` | Draw lock into Word (not a second layout engine) |
 | `k2f hit-test <package> --page N --x X --y Y` | Hit-test lock geometry (pt, not px) |
-| `k2f markdown <source.md> -o <out.K2F> [--theme report]` | Compile Markdown → `.K2F` |
+| `k2f markdown <source.md> -o <out.K2F> --template <author-dir>` | Compile Markdown → `.K2F` |
 
 Coordinates for `hit-test` are in **points** on the page, matching the lock executor.
 
@@ -37,7 +37,7 @@ k2f verify examples/published/invoice.K2F
 k2f export-pdf examples/published/invoice.K2F -o /tmp/invoice.pdf
 k2f export-pptx examples/published/invoice.K2F -o /tmp/invoice.pptx
 k2f export-docx examples/published/invoice.K2F -o /tmp/invoice.docx
-k2f markdown README.md -o /tmp/readme.K2F --theme report
+k2f markdown README.md -o /tmp/readme.K2F --template ./source
 ```
 
 See the [repository README](https://github.com/suzheng/k2f#readme) and [Getting Started](https://github.com/suzheng/k2f/blob/main/docs/guide/getting-started.md).

@@ -200,7 +200,7 @@ pip install k2f
 import json
 import k2f
 
-ed = k2f.Editor.open_template("invoice")
+ed = k2f.Editor.open_bytes(open("invoice.K2F", "rb").read())
 ed.insert_node("root", 0, json.dumps({
     "id": "invoice.title",
     "role": "h1",
@@ -216,7 +216,7 @@ open("invoice.K2F", "wb").write(ed.save_bytes())
 ```
 
 ```bash
-k2f markdown notes.md -o notes.K2F --theme report
+k2f markdown notes.md -o notes.K2F --template ./source
 ```
 
 ### Embed a viewer

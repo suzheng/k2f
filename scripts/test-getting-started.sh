@@ -67,7 +67,7 @@ def append_node(ed, parent_id, node):
     ed.insert_node(parent_id, child_count(ed, parent_id), json.dumps(node))
 
 
-ed = k2f.Editor.open_template("invoice")
+ed = k2f.Editor.open_dir(str(root / "templates" / "invoice"))
 append_node(ed, "root", heading_node("invoice.title", 1, "STATEMENT"))
 append_node(ed, "root", table_node("invoice.lines", headers, rows))
 append_node(ed, "root", text_node("invoice.total", "body", "Grand Total: $0.00"))

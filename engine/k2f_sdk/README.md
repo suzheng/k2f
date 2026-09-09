@@ -2,10 +2,11 @@
 
 Agent-facing Rust SDK for building and editing `.K2F` documents.
 
-- **`Editor`** — open templates, packages, or author dirs; edit by stable node id; diff/outline; suggestions
-- **Official templates** — `templates/` + `copy_to` / `resolve`
-- **Markdown bridge** — `markdown_to_k2f` / `k2f_to_markdown`
+- **`Editor`** — open packages or author dirs; edit by stable node id; diff/outline; suggestions
+- **Markdown bridge** — `markdown_to_k2f` / `k2f_to_markdown` (shell is an author directory or packed bytes)
 - **Signing** — Ed25519 key generation and `sign`
+
+Published crates do **not** bundle `templates/`. Pass an author directory you already have (`init_package.py`, unpack, or a checkout fixture).
 
 **License:** Apache-2.0
 
@@ -13,8 +14,9 @@ Agent-facing Rust SDK for building and editing `.K2F` documents.
 
 ```rust
 use k2f_sdk::Editor;
+use std::path::Path;
 
-let mut ed = Editor::open_template("report")?;
+let mut ed = Editor::open_dir(Path::new("./source"))?;
 ed.insert_node(
     "root",
     0,

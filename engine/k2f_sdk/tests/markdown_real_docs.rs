@@ -9,9 +9,13 @@ fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
+fn report_opts() -> MarkdownOptions {
+    MarkdownOptions::new("Document", repo_root().join("templates/report")).unwrap()
+}
+
 fn import_file(path: PathBuf) -> k2f_sdk::MarkdownResult {
     let md = fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
-    markdown_to_k2f(&md, MarkdownOptions::default())
+    markdown_to_k2f(&md, report_opts())
         .unwrap_or_else(|e| panic!("{}: import failed: {e}", path.display()))
 }
 
@@ -60,7 +64,7 @@ fn inventory(root: &SemanticNode) -> BTreeMap<String, Vec<String>> {
 fn assert_roundtrip(path: &PathBuf, first: &k2f_sdk::MarkdownResult) {
     let out = k2f_to_markdown(&first.bytes)
         .unwrap_or_else(|e| panic!("{}: export failed: {e}", path.display()));
-    let second = markdown_to_k2f(&out, MarkdownOptions::default())
+    let second = markdown_to_k2f(&out, report_opts())
         .unwrap_or_else(|e| panic!("{}: re-import failed: {e}", path.display()));
     assert_eq!(
         inventory(&root_of(&first.bytes)),
@@ -73,7 +77,7 @@ fn assert_roundtrip(path: &PathBuf, first: &k2f_sdk::MarkdownResult) {
 #[test]
 fn noto_report_covers_ascii_and_sample_cjk() {
     let md = "七「正 * → % ≠ é `$code*`\n";
-    markdown_to_k2f(md, MarkdownOptions::default()).unwrap_or_else(|e| panic!("{e}"));
+    markdown_to_k2f(md, report_opts()).unwrap_or_else(|e| panic!("{e}"));
 }
 
 #[test]
@@ -81,7 +85,7 @@ fn font_bytes_override_embeds_a_face_that_covers_cjk() {
     let md = "合同\n";
     let roboto = fs::read(repo_root().join("assets/fonts/Roboto-Regular.ttf")).unwrap();
     let err = markdown_to_k2f(md, {
-        let mut opts = MarkdownOptions::new("Document", "invoice").unwrap();
+        let mut opts = MarkdownOptions::new("Document", repo_root().join("templates/invoice")).unwrap();
         opts.font_bytes = Some(roboto);
         opts
     })
@@ -93,7 +97,7 @@ fn font_bytes_override_embeds_a_face_that_covers_cjk() {
 
     let noto = fs::read(repo_root().join("assets/fonts/NotoSansSC-Regular.otf")).unwrap();
     let ok = markdown_to_k2f(md, {
-        let mut opts = MarkdownOptions::new("Document", "invoice").unwrap();
+        let mut opts = MarkdownOptions::new("Document", repo_root().join("templates/invoice")).unwrap();
         opts.font_bytes = Some(noto);
         opts
     })

@@ -11,7 +11,7 @@ use k2f_core::{
     validate_semantic_tree_with_theme_vocab, NodeContent, RunningBlockNode, RunningBlockPosition,
     SemanticNode, ThemeVocab,
 };
-use k2f_package::{pack_bytes, Package};
+use k2f_package::{load_dir, pack_bytes, unpack_bytes, Package};
 use std::path::Path;
 
 const ROOT_ID: &str = "root";
@@ -24,12 +24,35 @@ pub(crate) struct MarkdownBuilder {
 }
 
 impl MarkdownBuilder {
-    pub(crate) fn from_template(
-        template: impl AsRef<Path>,
+    pub(crate) fn from_dir(
+        dir: impl AsRef<Path>,
         title: impl Into<String>,
         page_size: PageSize,
     ) -> Result<Self, AgentError> {
-        let mut package = crate::templates::load_package(template)?;
+        Self::from_package(
+            load_dir(dir.as_ref()).map_err(AgentError::from)?,
+            title,
+            page_size,
+        )
+    }
+
+    pub(crate) fn from_bytes(
+        bytes: &[u8],
+        title: impl Into<String>,
+        page_size: PageSize,
+    ) -> Result<Self, AgentError> {
+        Self::from_package(
+            unpack_bytes(bytes).map_err(AgentError::from)?,
+            title,
+            page_size,
+        )
+    }
+
+    fn from_package(
+        mut package: Package,
+        title: impl Into<String>,
+        page_size: PageSize,
+    ) -> Result<Self, AgentError> {
         package.manifest.title = title.into();
         package.manifest.page_config = page_size.page_config();
         package.lock_json = None;

@@ -22,7 +22,10 @@ fn insert_text(ed: &mut Editor, parent_id: &str, id: &str, text: &str) {
 }
 
 pub fn glass_card_bytes() -> Vec<u8> {
-    let mut ed = Editor::open_template("invoice").unwrap();
+    let mut ed = Editor::open_dir(
+        &std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../templates/invoice"),
+    )
+    .unwrap();
     insert_text(&mut ed, "root", "card1", "Glass card body");
     ed.set_role("card1", "card", Some("glass")).unwrap();
     ed.save_bytes().unwrap()

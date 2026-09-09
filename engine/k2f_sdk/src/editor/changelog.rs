@@ -1,6 +1,7 @@
 use super::types::{Change, ChangelogEntry, ChangelogFile};
 use crate::error::{AgentError, INVALID_ARGUMENT};
 use k2f_core::LockFile;
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub fn parse_changelog(json: &str) -> Result<ChangelogFile, AgentError> {

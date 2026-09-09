@@ -25,13 +25,13 @@ Requires Python 3.9+.
 
 ## Create a document
 
-Open an official template, then insert semantic nodes as JSON:
+Open an author directory (from `init_package.py` or `k2f unpack`) or packed bytes, then insert semantic nodes as JSON:
 
 ```python
 import json
 import k2f
 
-ed = k2f.Editor.open_template("invoice")
+ed = k2f.Editor.open_dir("./source")
 ed.insert_node(
     "root",
     0,
@@ -56,15 +56,6 @@ ed.validate_package()
 open("invoice.K2F", "wb").write(ed.save_bytes())
 ```
 
-Or copy a template directory and edit author source:
-
-```python
-k2f.copy_template("invoice", "./my-invoice")
-ed = k2f.Editor.open_dir("./my-invoice")
-ed.replace_text("root.title", "Invoice #1042")
-ed.save_dir("./my-invoice")
-```
-
 ## Edit an existing package
 
 ```python
@@ -81,7 +72,7 @@ open("invoice-edited.K2F", "wb").write(editor.save_bytes())
 ```python
 import k2f
 
-package = k2f.markdown_to_k2f("# Hello\n\nBody.", title="From Markdown", template="report")
+package = k2f.markdown_to_k2f("# Hello\n\nBody.", template="./source", title="From Markdown")
 md = k2f.k2f_to_markdown(package)
 
 secret, public, fingerprint = k2f.generate_signing_key()

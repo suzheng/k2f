@@ -2,7 +2,7 @@ use crate::error::ToolError;
 use crate::publish::publish_bytes;
 use crate::session::{Session, SessionMeta, SessionStore};
 use k2f_paint::OpenedDocument;
-use k2f_sdk::{copy_to, markdown_to_k2f, Editor, MarkdownOptions, PageSize};
+use k2f_sdk::{markdown_to_k2f, Editor, MarkdownOptions, PageSize};
 use serde_json::{json, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -34,7 +34,16 @@ impl K2fState {
                 dest.display()
             )));
         }
-        copy_to(template, &dest).map_err(ToolError::from_agent)?;
+        let src = resolve_path(template)?;
+        if !src.is_dir() {
+            return Err(ToolError::invalid(format!(
+                "template must be an author directory: {}",
+                src.display()
+            )));
+        }
+        copy_dir_all(&src, &dest).map_err(|e| {
+            ToolError::invalid(format!("copy {} → {}: {e}", src.display(), dest.display()))
+        })?;
         patch_manifest(&dest, title, page_size)?;
         let editor = Editor::open_dir(&dest).map_err(ToolError::from_agent)?;
         let outline = parse_outline(&editor)?;
@@ -412,6 +421,21 @@ fn resolve_path(path: &str) -> Result<PathBuf, ToolError> {
             .join(p)
     };
     Ok(resolved)
+}
+
+fn copy_dir_all(src: &Path, dest: &Path) -> std::io::Result<()> {
+    fs::create_dir_all(dest)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let from = entry.path();
+        let to = dest.join(entry.file_name());
+        if entry.file_type()?.is_dir() {
+            copy_dir_all(&from, &to)?;
+        } else {
+            fs::copy(&from, &to)?;
+        }
+    }
+    Ok(())
 }
 
 pub fn default_publish_origin() -> String {
