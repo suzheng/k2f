@@ -141,6 +141,7 @@ pub struct TableCell {
     pub fill_hex: Option<String>,
     pub preserve_whitespace: bool,
     pub borders: CellBorders,
+    pub vert_center: bool,
 }
 
 #[derive(Clone, Debug, Default)]

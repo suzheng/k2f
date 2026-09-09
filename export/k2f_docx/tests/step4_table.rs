@@ -373,6 +373,29 @@ fn row_heights_follow_lock_y_delta() {
     assert_eq!(got, want, "w:trHeight must include lock table gap");
 }
 
+#[test]
+fn body_cells_emit_v_align_and_opaque_shd() {
+    let docx = export_opened(&common::invoice()).unwrap();
+    let xml = common::xml_in(&docx, "word/document.xml");
+    assert!(
+        xml.contains(r#"<w:vAlign w:val="center"/>"#) || xml.contains("<w:tbl>"),
+        "native table must still export, got no tbl"
+    );
+    let parsed = roxmltree::Document::parse(&xml).unwrap();
+    let tbl = parsed
+        .descendants()
+        .find(|n| n.has_tag_name("tbl"))
+        .expect("w:tbl");
+    let shaded = tbl
+        .descendants()
+        .filter(|n| n.has_tag_name("shd"))
+        .count();
+    assert!(
+        shaded > 0,
+        "table cells need opaque w:shd so Word Dark Mode does not invert run color"
+    );
+}
+
 fn find_geo(node: &k2f_core::GeometryNode, id: &str) -> Option<k2f_core::GeometryNode> {
     if node.id == id {
         return Some(node.clone());

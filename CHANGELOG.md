@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- `PAGE_UNDERFILL` compile diagnostic when a page content box is ≥25% empty at the bottom (not the last page of a multi-page flow). Warning only — `pack_verify.py` does not fail. Catalog [`ex_filled_page.json`](skills/k2f/catalog/content/ex_filled_page.json). `--render` also writes `preview-N.png` for extra pages.
+
+### Changed
+
+- `k2f pack`, `k2f compile`, and `Editor.save_bytes` coverage-subset large CJK faces in the package to GB2312 ∪ Big5 level 1 ∪ JIS X 0208 Han, plus all non-Han glyphs. Author directories keep the original face. Faces that would not drop any Han stay byte-identical. Missing Han still fails closed (`FONT_MISSING_GLYPH`).
+- Agent skill: invoice/CV/flyer/poster are composed filled pages (`PAGE_UNDERFILL` = must-fix there). Contract/report/thesis is one flow tree — no `p1`/`p2` page containers; `break_before` on chapter/annex/signature is allowed. `LAYOUT_SLACK` stays warning-only.
+
+### Fixed
+
+- `export-docx` / `export-pptx`: native table cells follow lock vertical alignment (`w:vAlign` / DrawingML `anchor`) when leftover above the first baseline matches leftover below the last line. Unfilled Word cells get an opaque paper/card underlay so Dark Mode does not invert run RGB (same idea as text-box fills). Invoice/text/corpus tests still pass.
+- Four-edge box borders follow `corner_radius` in PNG/viewer (and dashed/dotted PDF), matching fill/shadow. Partial-edge borders stay straight.
+- `export-docx`: LibreOffice Writer paints `pic:pic` above every DrawingML shape, so a full-page gradient/glass raster hid later text. Linear gradients and translucent solids are now native `a:gradFill` / `a:solidFill`+`a:alpha` shapes in paint order. Remaining blur/shadow/math slices (`k2f-raster:`) use `wps:wsp` + `a:blipFill`. Text boxes skip the paper-white Dark Mode underlay when a gradient, glass, or raster already covers the box. Lock `DrawImage` stays `pic:pic`. Invoice/text/corpus tests still pass.
+
 ## [0.2.1] - 2026-09-07
 
 ### Fixed
@@ -20,7 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `k2f export-pptx <package> -o <out.pptx>` — draw the published lock into PowerPoint. Not a second layout engine; slight text reflow is expected. PPTX is not a K2F source (`PPTX_IS_NOT_A_SOURCE`).
 - `k2f export-docx <package> -o <out.docx>` — draw the published lock into Word. Not a second layout engine; slight text reflow is expected. DOCX is not a K2F source (`DOCX_IS_NOT_A_SOURCE`).
 - Desktop reader: HUD format **DOCX** and `k2f-reader --export-docx out.docx file.K2F` (same lock bytes as GUI Export; conflicts with `--export-pdf` / `--export-pptx`).
-- `k2f compile` prints `LAYOUT_SLACK` when a large stretched box is empty at the bottom — usually a `{fr:1}` grower packed with an auto-height stack, not the page shell (warning, exit 0, lock unchanged). Intentional whitespace is allowed; compile/verify/`pack_verify.py` do not fail on this line.
+- `k2f compile` prints `LAYOUT_SLACK` when a large stretched box is empty at the bottom — usually a `{fr:1}` grower packed with an auto-height stack, not the page shell (warning, exit 0, lock unchanged).
 - Grid tracks `{ "auto": true }` — content-sized from measured cells; leftover space goes to `fr`. Table `column_widths` stay `{pt}` / `{fr}` only.
 - Optional grid `rows`: omit → `{auto:true}` tracks `ceil(n_children / n_columns)`. Declared rows do not grow. `fr` rows still need a finite outer height.
 - Catalog [`ex_glass.json`](skills/k2f/catalog/content/ex_glass.json) — `card` variant `glass` via named `box_decoration.blur` and a translucent surface (not a radial gradient).

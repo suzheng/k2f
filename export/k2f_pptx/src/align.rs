@@ -204,6 +204,37 @@ fn infer_from_gaps(left: i128, right: i128) -> TextAlign {
     }
 }
 
+/// Lock leftover above the first baseline vs below the last line box.
+pub(crate) fn vert_center(geo: &GeometryNode, font_size: Pt) -> bool {
+    if geo.height.0 <= font_size.0.saturating_mul(2) {
+        return false;
+    }
+    let lines = source_lines(geo);
+    if lines.is_empty() {
+        return false;
+    }
+    let h = geo.height.0;
+    if h <= 0 {
+        return false;
+    }
+    let first_y = lines[0]
+        .iter()
+        .map(|g| g.y_offset.0)
+        .min()
+        .unwrap_or(0);
+    let last_y = lines[lines.len() - 1]
+        .iter()
+        .map(|g| g.y_offset.0)
+        .min()
+        .unwrap_or(first_y);
+    let fs = font_size.0.max(1);
+    let top = first_y;
+    let bot_after = (h - last_y - fs).max(0);
+    let lo = top.min(bot_after);
+    let hi = top.max(bot_after);
+    lo >= 2_000 && lo.saturating_mul(2) >= hi
+}
+
 fn is_justify(lines: &[Vec<&GlyphPosition>], text: &str, box_w: i128) -> bool {
     let last = lines.last().expect("non-empty");
     let last_spaces = space_advances(last, text);

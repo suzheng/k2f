@@ -1,8 +1,9 @@
+use crate::coord::pt_to_twips;
 use crate::ir::{BorderStroke, CellBorders, TableCell, TextAlign};
-use crate::text::{infer_text_align, runs_from_paint, FontCtx};
+use crate::text::{infer_text_align, line_spacing_twips, runs_from_paint, vert_center, FontCtx};
 use crate::DocxError;
 use k2f_core::{
-    node_text, Border, BorderEdge, BorderStyle, BoxDecoration, Fill, GeometryNode, PaintOp,
+    node_text, Border, BorderEdge, BorderStyle, BoxDecoration, Fill, GeometryNode, PaintOp, Rect,
     RunningBlockNode, SemanticNode, TextGlyphRun,
 };
 use k2f_paint::{parse_hex_rgba, resolve_fill};
@@ -78,6 +79,22 @@ pub(crate) fn build_cell(
     let preserve = node
         .map(|n| n.preserve_whitespace == Some(true) || n.role == "code_block")
         .unwrap_or(false);
+    let font_size = paint
+        .and_then(|p| p.runs.first())
+        .map(|r| r.style.font_size)
+        .or_else(|| geo.text_runs.first().map(|r| r.style.font_size))
+        .unwrap_or(k2f_core::Pt(12_000));
+    let cell_rect = Rect {
+        x: geo.x,
+        y: geo.y,
+        width: geo.width,
+        height: geo.height,
+    };
+    let centered = vert_center(Some(geo), &cell_rect, font_size);
+    let mut line_twips = line_spacing_twips(Some(geo));
+    if line_twips.is_none() && !runs.is_empty() {
+        line_twips = Some(pt_to_twips(font_size).max(20));
+    }
     Ok(TableCell {
         node_id: geo.id.clone(),
         width_twips,
@@ -86,6 +103,8 @@ pub(crate) fn build_cell(
         fill_hex: paint.and_then(|p| p.fill_hex.clone()),
         preserve_whitespace: preserve,
         borders: cell_borders(paint.and_then(|p| p.border.as_ref()))?,
+        vert_center: centered,
+        line_twips,
     })
 }
 

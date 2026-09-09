@@ -69,10 +69,11 @@ fn cell_xml(cell: &TableCell, hyperlink_rids: &BTreeMap<String, String>) -> Stri
         None => String::new(),
     };
     let cell_id = escape_xml(&cell.node_id);
+    let anchor = if cell.vert_center { "ctr" } else { "t" };
     format!(
         r#"            <a:tc>
               <a:txBody>
-                <a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" rtlCol="0" anchor="t"/>
+                <a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" rtlCol="0" anchor="{anchor}"/>
                 <a:lstStyle/>
 {body}              </a:txBody>
               <a:tcPr marL="0" marR="0" marT="0" marB="0">
@@ -122,6 +123,7 @@ mod tests {
             fill_hex: None,
             preserve_whitespace: false,
             borders,
+            vert_center: false,
         }
     }
 
@@ -174,6 +176,17 @@ mod tests {
         assert!(
             xml.contains("<a:lnL><a:noFill/></a:lnL>"),
             "other edges stay empty, got {xml}"
+        );
+    }
+
+    #[test]
+    fn vert_center_emits_anchor_ctr() {
+        let mut cell = dummy_cell(TextAlign::Left, CellBorders::default());
+        cell.vert_center = true;
+        let xml = cell_xml(&cell, &BTreeMap::new());
+        assert!(
+            xml.contains(r#"anchor="ctr""#),
+            "centered lock cell must not hardcode anchor=t, got {xml}"
         );
     }
 }

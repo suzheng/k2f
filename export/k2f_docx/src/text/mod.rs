@@ -14,6 +14,7 @@ use std::collections::BTreeMap;
 pub use align::infer_text_align;
 pub(crate) use fields::has_page_tokens;
 pub(crate) use font::FontCtx;
+pub(crate) use metrics::{line_spacing_twips, vert_center};
 pub(crate) use runs::runs_from_paint;
 
 pub fn textbox_from_draw(
@@ -93,6 +94,7 @@ pub(crate) fn textbox_from_draw_ctx(
             || matches!(node.content, NodeContent::CodeBlock(_)),
         relative_height,
         fill_hex: None,
+        fill_alpha: 255,
         wrap,
         corner_emu: 0,
     })

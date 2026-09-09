@@ -1,4 +1,4 @@
-use super::align::{line_gaps, source_glyphs, source_lines};
+use super::align::{line_gaps, source_lines};
 use crate::coord::{millipt_to_twips, pt_to_emu};
 use crate::ir::TextAlign;
 use k2f_core::{GeometryNode, Pt, Rect};
@@ -98,17 +98,62 @@ pub(crate) fn vert_center(geo: Option<&GeometryNode>, rect: &Rect, font_size: Pt
     if rect.height.0 <= font_size.0.saturating_mul(2) {
         return false;
     }
-    let Some(first) = source_glyphs(geo).into_iter().next() else {
+    let lines = source_lines(geo);
+    if lines.is_empty() {
         return false;
-    };
+    }
     let h = geo.height.0;
     if h <= 0 {
         return false;
     }
-    let y = first.y_offset.0;
-    y * 10 >= h * 4 && y * 10 <= h * 6
+    let first_y = lines[0]
+        .iter()
+        .map(|g| g.y_offset.0)
+        .min()
+        .unwrap_or(0);
+    let last_y = lines[lines.len() - 1]
+        .iter()
+        .map(|g| g.y_offset.0)
+        .min()
+        .unwrap_or(first_y);
+    let fs = font_size.0.max(1);
+    // `y_offset` is baseline. Subtract one face so leftover below matches
+    // leftover above for a block the layout engine centered in the inner box.
+    let top = first_y;
+    let bot_after = (h - last_y - fs).max(0);
+    gaps_look_centered(top, bot_after)
+}
+
+/// Equal leftover above the first baseline and below the last line box.
+/// Catches padded table cells (~30–40% first-baseline) that the old 40–60%
+/// band missed, without treating top-padded stretch as center.
+fn gaps_look_centered(top: i128, bot_after: i128) -> bool {
+    let lo = top.min(bot_after);
+    let hi = top.max(bot_after);
+    lo >= 2_000 && lo.saturating_mul(2) >= hi
 }
 
 fn emu(millipt: i128) -> i64 {
     pt_to_emu(Pt(millipt))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::gaps_look_centered;
+
+    #[test]
+    fn padded_one_line_cell_is_centered() {
+        // Crystal-clear body: 12.3pt baseline in 34pt cell, 8pt face.
+        assert!(gaps_look_centered(12_312, 34_000 - 12_312 - 8_000));
+    }
+
+    #[test]
+    fn two_line_cell_with_equal_padding_is_centered() {
+        assert!(gaps_look_centered(7_000, 34_000 - 17_000 - 8_000));
+    }
+
+    #[test]
+    fn top_padded_stretch_is_not_centered() {
+        assert!(!gaps_look_centered(7_000, 34_000 - 7_000 - 8_000));
+    }
 }

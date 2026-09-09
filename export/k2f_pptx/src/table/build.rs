@@ -1,5 +1,5 @@
 use super::TableIndex;
-use crate::align::infer_text_align;
+use crate::align::{infer_text_align, vert_center};
 use crate::coord::{millipt_to_emu, pt_to_emu};
 use crate::ir::{
     BorderStroke, CellBorders, LineDash, ShapeBox, TableBox, TableCell, TableRow, TextAlign,
@@ -64,6 +64,11 @@ pub(crate) fn table_on_page(
             } else {
                 infer_text_align(g, text)
             };
+            let font_size = paint
+                .and_then(|p| p.runs.first())
+                .map(|r| r.style.font_size)
+                .or_else(|| g.text_runs.first().map(|r| r.style.font_size))
+                .unwrap_or(k2f_core::Pt(12_000));
             cells.push(TableCell {
                 node_id: g.id.clone(),
                 runs,
@@ -71,6 +76,7 @@ pub(crate) fn table_on_page(
                 fill_hex: paint.and_then(|p| p.fill_hex.clone()),
                 preserve_whitespace: preserve,
                 borders: cell_borders(paint.and_then(|p| p.border.as_ref()))?,
+                vert_center: vert_center(g, font_size),
             });
         }
         rows_out.push(TableRow {

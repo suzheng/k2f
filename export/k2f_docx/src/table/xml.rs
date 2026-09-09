@@ -1,7 +1,7 @@
 use super::cell::cell_borders;
 use crate::ir::{BorderStroke, CellBorders, TableBox, TableCell, TextAlign, TextBox};
 use crate::ooxml;
-use crate::xml::escape_xml;
+use crate::xml::{escape_xml, word_hex_color};
 use k2f_core::Border;
 use std::collections::BTreeMap;
 
@@ -14,6 +14,8 @@ pub fn table_cell_wml(align: TextAlign, border: Option<&Border>) -> String {
         fill_hex: None,
         preserve_whitespace: false,
         borders: cell_borders(border).unwrap_or_default(),
+        vert_center: false,
+        line_twips: None,
     };
     format!(
         r#"<root xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -42,6 +44,14 @@ pub(crate) fn table_anchor(
 }
 
 fn table_wsp_xml(tbl: &TableBox, hyperlink_rids: &BTreeMap<String, String>) -> String {
+    let font_hex = tbl
+        .rows
+        .iter()
+        .flat_map(|r| r.cells.iter())
+        .flat_map(|c| c.runs.iter())
+        .next()
+        .map(|r| word_hex_color(&r.color_hex))
+        .unwrap_or_else(|| "000001".into());
     format!(
         r#"                <wps:wsp>
                   <wps:cNvSpPr txBox="1"/>
@@ -58,12 +68,20 @@ fn table_wsp_xml(tbl: &TableBox, hyperlink_rids: &BTreeMap<String, String>) -> S
                       <a:noFill/>
                     </a:ln>
                   </wps:spPr>
+                  <wps:style>
+                    <a:lnRef idx="0"><a:srgbClr val="000001"/></a:lnRef>
+                    <a:fillRef idx="0"><a:srgbClr val="000001"/></a:fillRef>
+                    <a:effectRef idx="0"><a:srgbClr val="000001"/></a:effectRef>
+                    <a:fontRef idx="minor"><a:srgbClr val="{font_hex}"/></a:fontRef>
+                  </wps:style>
                   <wps:txbx>
                     <w:txbxContent>
 {tbl_xml}                      <w:p/>
                     </w:txbxContent>
                   </wps:txbx>
-                  <wps:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t"/>
+                  <wps:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t">
+                    <a:noAutofit/>
+                  </wps:bodyPr>
                 </wps:wsp>
 "#,
         cx = tbl.cx_emu,
@@ -127,9 +145,15 @@ fn tr_xml(
 fn tc_xml(cell: &TableCell, width_twips: i64, hyperlink_rids: &BTreeMap<String, String>) -> String {
     let shd = match &cell.fill_hex {
         Some(hex) => format!(
-            "                              <w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"{hex}\"/>\n"
+            "                              <w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"{}\"/>\n",
+            word_hex_color(hex)
         ),
         None => String::new(),
+    };
+    let valign = if cell.vert_center {
+        "                              <w:vAlign w:val=\"center\"/>\n"
+    } else {
+        ""
     };
     let dummy = TextBox {
         node_id: cell.node_id.clone(),
@@ -146,11 +170,12 @@ fn tc_xml(cell: &TableCell, width_twips: i64, hyperlink_rids: &BTreeMap<String, 
         t_ins_emu: 0,
         r_ins_emu: 0,
         b_ins_emu: 0,
-        line_twips: None,
-        vert_center: false,
+        line_twips: cell.line_twips,
+        vert_center: cell.vert_center,
         preserve_whitespace: cell.preserve_whitespace,
         relative_height: 0,
         fill_hex: None,
+        fill_alpha: 255,
         wrap: true,
         corner_emu: 0,
     };
@@ -158,7 +183,7 @@ fn tc_xml(cell: &TableCell, width_twips: i64, hyperlink_rids: &BTreeMap<String, 
         r#"                          <w:tc>
                             <w:tcPr>
                               <w:tcW w:w="{width_twips}" w:type="dxa"/>
-{borders}{shd}                            </w:tcPr>
+{borders}{shd}{valign}                            </w:tcPr>
 {paras}                          </w:tc>
 "#,
         borders = tc_borders_xml(&cell.borders),
@@ -191,5 +216,37 @@ fn edge_xml(name: &str, stroke: Option<&BorderStroke>) -> String {
             color = escape_xml(&s.color_hex),
         ),
         None => format!(r#"<w:{name} w:val="nil"/>"#),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::TextAlign;
+
+    #[test]
+    fn v_align_center_emits_w_v_align() {
+        let mut cell = TableCell {
+            node_id: "c".into(),
+            width_twips: 1440,
+            runs: Vec::new(),
+            align: TextAlign::Left,
+            fill_hex: None,
+            preserve_whitespace: false,
+            borders: CellBorders::default(),
+            vert_center: true,
+            line_twips: None,
+        };
+        let xml = tc_xml(&cell, 1440, &BTreeMap::new());
+        assert!(
+            xml.contains(r#"<w:vAlign w:val="center"/>"#),
+            "centered lock cell must emit w:vAlign, got {xml}"
+        );
+        cell.vert_center = false;
+        let top = tc_xml(&cell, 1440, &BTreeMap::new());
+        assert!(
+            !top.contains("vAlign"),
+            "top-aligned cell must not emit vAlign, got {top}"
+        );
     }
 }

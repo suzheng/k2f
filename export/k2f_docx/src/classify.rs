@@ -174,6 +174,7 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
             }
         }
         assign_textbox_underlays(&mut elements, &bg_hex);
+        assign_table_cell_underlays(&mut elements, &bg_hex);
         absorb_self_fill_shapes(&mut elements);
         ir_pages.push(PageIR { bg_hex, elements });
     }
@@ -186,6 +187,8 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
         .unwrap_or("FFFFFE");
     assign_textbox_underlays(&mut header, paper);
     assign_textbox_underlays(&mut footer, paper);
+    assign_table_cell_underlays(&mut header, paper);
+    assign_table_cell_underlays(&mut footer, paper);
     absorb_self_fill_shapes(&mut header);
     absorb_self_fill_shapes(&mut footer);
     Ok(DocIR {
@@ -202,20 +205,40 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
 
 /// Word Dark Mode inverts text in `noFill` floating boxes. Paint an opaque
 /// underlay matching the shape behind the box (or the page paper).
+///
+/// Skip the paper fallback when a raster/picture already covers the box — a
+/// white underlay on a gradient or glass slice hides the lock chrome (and
+/// lock-white text on that fill).
 fn assign_textbox_underlays(elements: &mut [PageElement], paper_hex: &str) {
     let shapes: Vec<(u32, i64, i64, i64, i64, String)> = elements
         .iter()
         .filter_map(|el| match el {
-            PageElement::Shape(s) => s.fill_hex.as_ref().map(|h| {
-                (
-                    s.relative_height,
-                    s.x_emu,
-                    s.y_emu,
-                    s.cx_emu,
-                    s.cy_emu,
-                    h.clone(),
-                )
-            }),
+            PageElement::Shape(s)
+                if s.gradient.is_none() && s.fill_alpha >= 255 && s.fill_hex.is_some() =>
+            {
+                s.fill_hex.as_ref().map(|h| {
+                    (
+                        s.relative_height,
+                        s.x_emu,
+                        s.y_emu,
+                        s.cx_emu,
+                        s.cy_emu,
+                        h.clone(),
+                    )
+                })
+            }
+            _ => None,
+        })
+        .collect();
+    let covers: Vec<(u32, i64, i64, i64, i64)> = elements
+        .iter()
+        .filter_map(|el| match el {
+            PageElement::Picture(p) | PageElement::Raster(p) => {
+                Some((p.relative_height, p.x_emu, p.y_emu, p.cx_emu, p.cy_emu))
+            }
+            PageElement::Shape(s) if s.gradient.is_some() || s.fill_alpha < 255 => {
+                Some((s.relative_height, s.x_emu, s.y_emu, s.cx_emu, s.cy_emu))
+            }
             _ => None,
         })
         .collect();
@@ -234,20 +257,82 @@ fn assign_textbox_underlays(elements: &mut [PageElement], paper_hex: &str) {
                 found = Some(hex.clone());
             }
         }
-        let hex = found.unwrap_or_else(|| paper_hex.to_string());
-        tb.fill_hex = Some(pin_underlay_hex(&hex));
+        tb.fill_hex = if let Some(hex) = found {
+            Some(pin_underlay_hex(&hex))
+        } else if covers.iter().any(|(rel, x, y, w, h)| {
+            *rel < tb.relative_height
+                && px >= *x
+                && py >= *y
+                && px < x.saturating_add(*w)
+                && py < y.saturating_add(*h)
+        }) {
+            None
+        } else {
+            Some(pin_underlay_hex(paper_hex))
+        };
+        tb.fill_alpha = 255;
+    }
+}
+
+/// Unfilled native table cells invert in Word Dark Mode the same way `noFill`
+/// text boxes do. Paint an opaque underlay matching the shape behind the table
+/// (or the page paper). Existing lock fills are only pinned off Automatic white.
+fn assign_table_cell_underlays(elements: &mut [PageElement], paper_hex: &str) {
+    let shapes: Vec<(u32, i64, i64, i64, i64, String)> = elements
+        .iter()
+        .filter_map(|el| match el {
+            PageElement::Shape(s) => s.fill_hex.as_ref().map(|h| {
+                (
+                    s.relative_height,
+                    s.x_emu,
+                    s.y_emu,
+                    s.cx_emu,
+                    s.cy_emu,
+                    h.clone(),
+                )
+            }),
+            _ => None,
+        })
+        .collect();
+    for el in elements.iter_mut() {
+        let PageElement::Table(tbl) = el else {
+            continue;
+        };
+        let px = tbl.x_emu.saturating_add(tbl.cx_emu / 2);
+        let py = tbl.y_emu.saturating_add(tbl.cy_emu / 2);
+        let mut found = None;
+        for (rel, x, y, w, h, hex) in &shapes {
+            if *rel >= tbl.relative_height {
+                continue;
+            }
+            if px >= *x && py >= *y && px < x.saturating_add(*w) && py < y.saturating_add(*h) {
+                found = Some(hex.clone());
+            }
+        }
+        let paper = pin_underlay_hex(found.as_deref().unwrap_or(paper_hex));
+        for row in &mut tbl.rows {
+            for cell in &mut row.cells {
+                match &cell.fill_hex {
+                    None => cell.fill_hex = Some(paper.clone()),
+                    Some(hex) => cell.fill_hex = Some(pin_underlay_hex(hex)),
+                }
+            }
+        }
     }
 }
 
 /// A DrawBox + DrawText for the same node (pills, chips) must be one Word
 /// shape. LibreOffice paints the later roundRect on top of the text box and
-/// hides white labels. Fold the corner radius into the text box and drop the
-/// duplicate fill shape.
+/// hides white labels. Fold the corner radius and fill into the text box and
+/// drop the duplicate fill shape.
 fn absorb_self_fill_shapes(elements: &mut Vec<PageElement>) {
-    let corners: BTreeMap<String, i64> = elements
+    let extras: BTreeMap<String, (i64, Option<String>, u8)> = elements
         .iter()
         .filter_map(|el| match el {
-            PageElement::Shape(s) => Some((s.node_id.clone(), s.corner_emu)),
+            PageElement::Shape(s) => Some((
+                s.node_id.clone(),
+                (s.corner_emu, s.fill_hex.clone(), s.fill_alpha),
+            )),
             _ => None,
         })
         .collect();
@@ -256,8 +341,12 @@ fn absorb_self_fill_shapes(elements: &mut Vec<PageElement>) {
         let PageElement::TextBox(tb) = el else {
             continue;
         };
-        if let Some(corner) = corners.get(&tb.node_id) {
+        if let Some((corner, fill, alpha)) = extras.get(&tb.node_id) {
             tb.corner_emu = *corner;
+            if fill.is_some() {
+                tb.fill_hex = fill.clone();
+                tb.fill_alpha = *alpha;
+            }
             absorbed.insert(tb.node_id.clone());
         }
     }

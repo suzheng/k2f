@@ -49,6 +49,8 @@ pub struct TextBox {
     pub relative_height: u32,
     /// Opaque underlay so Word Dark Mode does not invert noFill text.
     pub fill_hex: Option<String>,
+    /// 255 = opaque. Translucent pill fills are copied from the matching DrawBox.
+    pub fill_alpha: u8,
     /// Copied from the matching DrawBox when the node is a decorated chip/pill.
     pub corner_emu: i64,
     /// DrawingML wrap. False for glyph-tight single-line lock boxes.
@@ -118,12 +120,28 @@ pub struct ShapeBox {
     pub cx_emu: i64,
     pub cy_emu: i64,
     pub fill_hex: Option<String>,
+    /// 255 = opaque. Used for glass/translucent surfaces (`#RRGGBBAA`).
+    pub fill_alpha: u8,
+    pub gradient: Option<GradientFill>,
     pub corner_emu: i64,
     pub line_hex: Option<String>,
     pub line_w_emu: i64,
     pub line_dash: LineDash,
     pub behind_doc: bool,
     pub relative_height: u32,
+}
+
+#[derive(Clone, Debug)]
+pub struct GradientFill {
+    pub angle_degrees: i64,
+    pub stops: Vec<GradientStopFill>,
+}
+
+#[derive(Clone, Debug)]
+pub struct GradientStopFill {
+    pub pos: i64,
+    pub hex: String,
+    pub alpha: u8,
 }
 
 #[derive(Clone, Debug)]
@@ -166,6 +184,9 @@ pub struct TableCell {
     pub fill_hex: Option<String>,
     pub preserve_whitespace: bool,
     pub borders: CellBorders,
+    /// Lock glyphs vertically centered in the cell box (`w:vAlign`).
+    pub vert_center: bool,
+    pub line_twips: Option<i64>,
 }
 
 #[derive(Clone, Debug, Default)]
