@@ -55,7 +55,7 @@ jobs:
         run: cargo test -p k2f_mcp
 
       - name: Install Chrome
-        uses: browser-actions/setup-chrome@v1
+        uses: browser-actions/setup-chrome@v2
         id: chrome
 
       - name: JS SDK viewer (wasm paint + exportPdf)
