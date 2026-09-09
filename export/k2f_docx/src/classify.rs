@@ -277,20 +277,28 @@ fn assign_textbox_underlays(elements: &mut [PageElement], paper_hex: &str) {
 /// Unfilled native table cells invert in Word Dark Mode the same way `noFill`
 /// text boxes do. Paint an opaque underlay matching the shape behind the table
 /// (or the page paper). Existing lock fills are only pinned off Automatic white.
+///
+/// The wrapping `wps:wsp` must use the same opaque fill. Word ignores
+/// `a:noFill` on that shape and paints `wps:style` `fillRef` (near-black), so
+/// the whole table reads as a black rectangle even when cells have `w:shd`.
 fn assign_table_cell_underlays(elements: &mut [PageElement], paper_hex: &str) {
     let shapes: Vec<(u32, i64, i64, i64, i64, String)> = elements
         .iter()
         .filter_map(|el| match el {
-            PageElement::Shape(s) => s.fill_hex.as_ref().map(|h| {
-                (
-                    s.relative_height,
-                    s.x_emu,
-                    s.y_emu,
-                    s.cx_emu,
-                    s.cy_emu,
-                    h.clone(),
-                )
-            }),
+            PageElement::Shape(s)
+                if s.gradient.is_none() && s.fill_alpha >= 255 && s.fill_hex.is_some() =>
+            {
+                s.fill_hex.as_ref().map(|h| {
+                    (
+                        s.relative_height,
+                        s.x_emu,
+                        s.y_emu,
+                        s.cx_emu,
+                        s.cy_emu,
+                        h.clone(),
+                    )
+                })
+            }
             _ => None,
         })
         .collect();
@@ -310,6 +318,7 @@ fn assign_table_cell_underlays(elements: &mut [PageElement], paper_hex: &str) {
             }
         }
         let paper = pin_underlay_hex(found.as_deref().unwrap_or(paper_hex));
+        tbl.fill_hex = Some(paper.clone());
         for row in &mut tbl.rows {
             for cell in &mut row.cells {
                 match &cell.fill_hex {

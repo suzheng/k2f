@@ -63,6 +63,7 @@ pub(crate) fn table_on_page(
         col_widths_twips,
         rows: rows_out,
         relative_height,
+        fill_hex: None,
     }))
 }
 

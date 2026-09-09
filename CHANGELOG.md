@@ -8,16 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- `init_package.py` page presets `square` (1:1, 600pt), `portrait-45` (4:5), and `card` (US 3.5×2", 252×144pt), default margin 0. Same paged `ex_poster_shell` as slides; set `layout.height` to the page height. Duplex cards: two shells, back `break_before: page`, `--expect-pages 2`.
 - `PAGE_UNDERFILL` compile diagnostic when a page content box is ≥25% empty at the bottom (not the last page of a multi-page flow). Warning only — `pack_verify.py` does not fail. Catalog [`ex_filled_page.json`](skills/k2f/catalog/content/ex_filled_page.json). `--render` also writes `preview-N.png` for extra pages.
 
 ### Changed
 
 - `k2f pack`, `k2f compile`, and `Editor.save_bytes` coverage-subset large CJK faces in the package to GB2312 ∪ Big5 level 1 ∪ JIS X 0208 Han, plus all non-Han glyphs. Author directories keep the original face. Faces that would not drop any Han stay byte-identical. Missing Han still fails closed (`FONT_MISSING_GLYPH`).
 - Agent skill: invoice/CV/flyer/poster are composed filled pages (`PAGE_UNDERFILL` = must-fix there). Contract/report/thesis is one flow tree — no `p1`/`p2` page containers; `break_before` on chapter/annex/signature is allowed. `LAYOUT_SLACK` stays warning-only.
+- Theme roles other than `default` may omit `font_family` / `font_size` / `line_height_mult` / `color`; compile fills them from `default`. `default` still requires all four. Sheet fill remains the root role `box_decoration.background` (full page, including margins) — not `page_config.background`.
+- `LAYOUT_SLACK` / `PAGE_UNDERFILL` skip miniature pages (content box shorter than 180pt) and unused gaps under 36pt, so card inset is not treated as a hollow grower. A4 / 16:9 growers are unchanged.
+- `FONT_MISSING_GLYPH` names the uncovered code points and tells the author to `--add-font` a covering TTF/OTF (still fail-closed; no OS fallback). Package-embedded faces already fall back to each other.
 
 ### Fixed
 
-- `export-docx` / `export-pptx`: native table cells follow lock vertical alignment (`w:vAlign` / DrawingML `anchor`) when leftover above the first baseline matches leftover below the last line. Unfilled Word cells get an opaque paper/card underlay so Dark Mode does not invert run RGB (same idea as text-box fills). Invoice/text/corpus tests still pass.
+- Grid `{auto:true}` tracks that would overflow the available axis now shrink in proportion instead of overlapping sibling columns/rows. Short auto content still hugs; leftover still goes to `fr`. Same rule on both axes.
+- Root `layout` of `grid` / `overlay` / `columns` is a compile error (was a silent vertical-flow fallback). Nest under a child, e.g. `root.grid`.
+- Linear gradient paint fails closed on unparseable stop colors (no silent one-stop / empty fill). `angle_degrees` is 0=right, 90=down — documented on the primitive schema and in the skill fills note (not CSS).
+- SVG `<text>` `IMAGE_SIZE` message tells agents to drop the tags and use a K2F text node (or `<path>`), matching the skill error table.
+- `export-docx` / `export-pptx`: native table cells follow lock vertical alignment (`w:vAlign` / DrawingML `anchor`) when leftover above the first baseline matches leftover below the last line. Unfilled Word cells get an opaque paper/card underlay so Dark Mode does not invert run RGB (same idea as text-box fills). The Word table wrapper is the same opaque fill (not `a:noFill` + black `fillRef`), and tables pin `TableNormal` so Word does not inject Table Grid. PPTX unfilled cells get the same underlay. Invoice/text/corpus tests still pass.
 - Four-edge box borders follow `corner_radius` in PNG/viewer (and dashed/dotted PDF), matching fill/shadow. Partial-edge borders stay straight.
 - `export-docx`: LibreOffice Writer paints `pic:pic` above every DrawingML shape, so a full-page gradient/glass raster hid later text. Linear gradients and translucent solids are native `a:gradFill` / `a:solidFill`+`a:alpha`. A full-page fill is `behindDoc=1` (and `w:background` uses the first gradient stop) so it is not an in-front empty text frame covering labels. Remaining blur/shadow/math slices (`k2f-raster:`) use `wps:wsp` + `a:blipFill`. Text boxes skip the paper-white Dark Mode underlay when a gradient, glass, or raster already covers the box. Lock `DrawImage` stays `pic:pic`. Invoice/text/corpus tests still pass.
 

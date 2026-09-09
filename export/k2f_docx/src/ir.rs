@@ -167,6 +167,9 @@ pub struct TableBox {
     pub col_widths_twips: Vec<i64>,
     pub rows: Vec<TableRow>,
     pub relative_height: u32,
+    /// Opaque wrapper fill so Word does not paint `wps:style` fillRef black
+    /// through `a:noFill` on the table text box.
+    pub fill_hex: Option<String>,
 }
 
 #[derive(Clone, Debug)]

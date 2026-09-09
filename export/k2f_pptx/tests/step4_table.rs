@@ -286,6 +286,24 @@ fn table_graphic_frame_near_lock_rect() {
 }
 
 #[test]
+fn unfilled_cells_get_opaque_underlay() {
+    let pptx = export_opened(&common::invoice()).unwrap();
+    let xml = common::xml_in(&pptx, "ppt/slides/slide2.xml");
+    let parsed = roxmltree::Document::parse(&xml).unwrap();
+    let tcs: Vec<_> = parsed
+        .descendants()
+        .filter(|n| n.has_tag_name("tc"))
+        .collect();
+    assert!(!tcs.is_empty(), "slide2 must have native table cells");
+    for tc in &tcs {
+        assert!(
+            tc_fill(*tc).is_some(),
+            "every native table cell needs a solid fill so Dark Mode does not invert"
+        );
+    }
+}
+
+#[test]
 fn native_table_cells_do_not_fake_gray_grid() {
     let pptx = export_opened(&common::invoice()).unwrap();
     let xml = all_slide_xml(&pptx);

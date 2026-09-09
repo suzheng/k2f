@@ -162,10 +162,12 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DeckIR, PptxError> {
                 }
             }
         }
+        let bg_hex = page_bg_hex(page, &plan.ops);
+        assign_table_cell_underlays(&mut elements, &bg_hex);
         slides.push(SlideIR {
             width_emu: pt_to_emu(page.width),
             height_emu: pt_to_emu(page.height),
-            bg_hex: page_bg_hex(page, &plan.ops),
+            bg_hex,
             elements,
         });
     }
@@ -206,4 +208,46 @@ fn find_geo<'a>(node: &'a GeometryNode, id: &str) -> Option<&'a GeometryNode> {
         return Some(node);
     }
     node.children.iter().find_map(|c| find_geo(c, id))
+}
+
+/// Unfilled native table cells show the slide through. PowerPoint Dark Mode
+/// remaps that the same way Word remaps `noFill` cells. Paint the paper/card
+/// behind the table (or the slide fill) so lock RGB stays as designed.
+fn assign_table_cell_underlays(elements: &mut [SlideElement], paper_hex: &str) {
+    let shapes: Vec<(usize, i64, i64, i64, i64, String)> = elements
+        .iter()
+        .enumerate()
+        .filter_map(|(i, el)| match el {
+            SlideElement::Shape(s) => s
+                .fill_hex
+                .as_ref()
+                .map(|h| (i, s.x_emu, s.y_emu, s.cx_emu, s.cy_emu, h.clone())),
+            _ => None,
+        })
+        .collect();
+    for (i, el) in elements.iter_mut().enumerate() {
+        let SlideElement::Table(tbl) = el else {
+            continue;
+        };
+        let px = tbl.x_emu.saturating_add(tbl.cx_emu / 2);
+        let py = tbl.y_emu.saturating_add(tbl.cy_emu / 2);
+        let mut found = None;
+        for (si, x, y, w, h, hex) in &shapes {
+            if *si >= i {
+                continue;
+            }
+            if px >= *x && py >= *y && px < x.saturating_add(*w) && py < y.saturating_add(*h) {
+                found = Some(hex.clone());
+            }
+        }
+        let paper = crate::text::pin_office_srgb(found.as_deref().unwrap_or(paper_hex));
+        for row in &mut tbl.rows {
+            for cell in &mut row.cells {
+                match &cell.fill_hex {
+                    None => cell.fill_hex = Some(paper.clone()),
+                    Some(hex) => cell.fill_hex = Some(crate::text::pin_office_srgb(hex)),
+                }
+            }
+        }
+    }
 }

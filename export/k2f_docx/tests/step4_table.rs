@@ -393,6 +393,59 @@ fn body_cells_emit_v_align_and_opaque_shd() {
     );
 }
 
+#[test]
+fn table_wrapper_uses_paper_fill_not_black_fillref() {
+    let docx = export_opened(&common::invoice()).unwrap();
+    let xml = common::xml_in(&docx, "word/document.xml");
+    let styles = common::xml_in(&docx, "word/styles.xml");
+    assert!(
+        styles.contains(r#"w:styleId="TableNormal""#),
+        "styles.xml must define TableNormal so Word does not inject Table Grid, got {styles}"
+    );
+    assert!(
+        xml.contains(r#"<w:tblStyle w:val="TableNormal"/>"#),
+        "native table must pin TableNormal, got no tblStyle"
+    );
+    let parsed = roxmltree::Document::parse(&xml).unwrap();
+    let tbl = parsed
+        .descendants()
+        .find(|n| n.has_tag_name("tbl"))
+        .expect("w:tbl");
+    let wsp = tbl
+        .ancestors()
+        .find(|n| n.has_tag_name("wsp"))
+        .expect("table wps:wsp");
+    let sp_pr = wsp
+        .children()
+        .find(|n| n.has_tag_name("spPr"))
+        .expect("wps:spPr");
+    assert!(
+        sp_pr.descendants().any(|n| n.has_tag_name("solidFill")),
+        "table wrapper must be opaque, not a:noFill, so Word does not paint fillRef black"
+    );
+    assert!(
+        !sp_pr.children().any(|n| n.has_tag_name("noFill")),
+        "table wrapper a:noFill lets Word apply black fillRef"
+    );
+    let fill_ref = wsp.descendants().find(|n| n.has_tag_name("fillRef"));
+    if let Some(fr) = fill_ref {
+        let val = fr
+            .descendants()
+            .find(|n| n.has_tag_name("srgbClr"))
+            .and_then(|c| common::local_attr(&c, "val"));
+        assert_ne!(
+            val.map(str::to_ascii_uppercase).as_deref(),
+            Some("000001"),
+            "table fillRef must not be near-black, got {val:?}"
+        );
+        assert_ne!(
+            val.map(str::to_ascii_uppercase).as_deref(),
+            Some("000000"),
+            "table fillRef must not be black, got {val:?}"
+        );
+    }
+}
+
 fn find_geo(node: &k2f_core::GeometryNode, id: &str) -> Option<k2f_core::GeometryNode> {
     if node.id == id {
         return Some(node.clone());

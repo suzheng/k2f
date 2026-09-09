@@ -600,7 +600,7 @@ fn color_hex(color: &str) -> String {
 
 /// PowerPoint maps RGB `000000` / `FFFFFF` onto theme `tx1`/`bg1`. Dark Mode
 /// remaps those slots even when they are stored as `a:srgbClr`.
-fn pin_office_srgb(hex: &str) -> String {
+pub(crate) fn pin_office_srgb(hex: &str) -> String {
     match hex {
         "000000" => "000001".into(),
         "FFFFFF" => "FFFFFE".into(),

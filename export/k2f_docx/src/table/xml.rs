@@ -52,6 +52,7 @@ fn table_wsp_xml(tbl: &TableBox, hyperlink_rids: &BTreeMap<String, String>) -> S
         .next()
         .map(|r| word_hex_color(&r.color_hex))
         .unwrap_or_else(|| "000001".into());
+    let fill_hex = word_hex_color(tbl.fill_hex.as_deref().unwrap_or("FFFFFE"));
     format!(
         r#"                <wps:wsp>
                   <wps:cNvSpPr txBox="1"/>
@@ -63,14 +64,16 @@ fn table_wsp_xml(tbl: &TableBox, hyperlink_rids: &BTreeMap<String, String>) -> S
                     <a:prstGeom prst="rect">
                       <a:avLst/>
                     </a:prstGeom>
-                    <a:noFill/>
+                    <a:solidFill>
+                      <a:srgbClr val="{fill_hex}"/>
+                    </a:solidFill>
                     <a:ln>
                       <a:noFill/>
                     </a:ln>
                   </wps:spPr>
                   <wps:style>
                     <a:lnRef idx="0"><a:srgbClr val="000001"/></a:lnRef>
-                    <a:fillRef idx="0"><a:srgbClr val="000001"/></a:fillRef>
+                    <a:fillRef idx="0"><a:srgbClr val="{fill_hex}"/></a:fillRef>
                     <a:effectRef idx="0"><a:srgbClr val="000001"/></a:effectRef>
                     <a:fontRef idx="minor"><a:srgbClr val="{font_hex}"/></a:fontRef>
                   </wps:style>
@@ -104,8 +107,10 @@ fn tbl_xml(tbl: &TableBox, hyperlink_rids: &BTreeMap<String, String>) -> String 
     format!(
         r#"                      <w:tbl>
                         <w:tblPr>
+                          <w:tblStyle w:val="TableNormal"/>
                           <w:tblW w:w="{w}" w:type="dxa"/>
                           <w:tblLayout w:type="fixed"/>
+                          <w:tblLook w:val="0000" w:firstRow="0" w:lastRow="0" w:firstColumn="0" w:lastColumn="0" w:noHBand="1" w:noVBand="1"/>
                           <w:tblCellMar>
                             <w:top w:w="0" w:type="dxa"/>
                             <w:left w:w="0" w:type="dxa"/>

@@ -65,8 +65,11 @@ fn cell_xml(cell: &TableCell, hyperlink_rids: &BTreeMap<String, String>) -> Stri
         "                ",
     );
     let fill = match &cell.fill_hex {
-        Some(hex) => format!("<a:solidFill><a:srgbClr val=\"{hex}\"/></a:solidFill>"),
-        None => String::new(),
+        Some(hex) => format!(
+            "<a:solidFill><a:srgbClr val=\"{}\"/></a:solidFill>",
+            escape_xml(hex)
+        ),
+        None => "<a:solidFill><a:srgbClr val=\"FFFFFE\"/></a:solidFill>".into(),
     };
     let cell_id = escape_xml(&cell.node_id);
     let anchor = if cell.vert_center { "ctr" } else { "t" };
