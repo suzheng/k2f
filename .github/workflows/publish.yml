@@ -52,6 +52,8 @@ jobs:
           registry-url: https://registry.npmjs.org
       - uses: dtolnay/rust-toolchain@stable
       - run: rustup target add wasm32-unknown-unknown
+      - name: Install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --version 0.2.106 --locked
       - name: Publish npm package @openk2f/k2f
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
