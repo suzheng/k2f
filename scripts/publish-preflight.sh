@@ -18,6 +18,10 @@ npm pack --dry-run
 cd "$ROOT"
 
 cd sdk/python
+export K2F_ENGINE_COMMIT_SHA="$(git -C "$ROOT" rev-parse HEAD)"
+# Host-only wheel here (macOS on Mac, Linux on Linux). manylinux wheels:
+#   bash scripts/build-linux-wheel.sh
+#   or GHA publish-pypi workflow (maturin-action).
 if [[ -x .venv/bin/maturin ]]; then
   .venv/bin/maturin build --release
   .venv/bin/pip install -q ../../target/wheels/k2f-*.whl
@@ -25,6 +29,8 @@ if [[ -x .venv/bin/maturin ]]; then
 else
   python3 -m pip install -q maturin pytest
   python3 -m maturin build --release
+  pip install -q ../../target/wheels/k2f-*.whl
+  pytest -q
 fi
 cd "$ROOT"
 

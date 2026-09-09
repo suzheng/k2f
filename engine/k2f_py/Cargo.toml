@@ -14,4 +14,4 @@ crate-type = ["cdylib"]
 [dependencies]
 k2f_cli = { package = "k2f", path = "../../cli/k2f_cli", version = "0.2.0" }
 k2f_sdk = { path = "../k2f_sdk", version = "0.2.0" }
-pyo3 = { version = "0.23", features = ["extension-module"] }
+pyo3 = { version = "0.23", features = ["extension-module", "abi3-py39"] }

@@ -28,3 +28,4 @@ k2f = "k2f:_cli_main"
 manifest-path = "../../engine/k2f_py/Cargo.toml"
 module-name = "k2f"
 include = ["k2f.pyi", "py.typed"]
+abi3-py39 = true

@@ -28,6 +28,8 @@ jobs:
         run: bash scripts/check-cargo-package.sh
 
       - name: Python SDK wheel (publish-ready)
+        env:
+          K2F_ENGINE_COMMIT_SHA: ${{ github.sha }}
         run: |
           pip install maturin pytest
           cd sdk/python
