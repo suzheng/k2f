@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.3] - 2026-09-09
+
+### Fixed
+
+- Align published Rust (`k2f`, `k2f_sdk`), Python (`k2f`), and npm (`@openk2f/k2f`) with the template-bundling removal shipped on `main` after 0.2.2 (crates.io and PyPI 0.2.2 still exposed named template APIs).
+
+## [0.2.3] - 2026-09-09
+
+### Fixed
+
+- Align published Rust (`k2f`, `k2f_sdk`), Python (`k2f`), and npm (`@openk2f/k2f`) with the template-bundling removal shipped on `main` after 0.2.2 (crates.io and PyPI 0.2.2 still exposed named template APIs).
+
 ## [0.2.2] - 2026-09-09
 
 ### Added

@@ -38,12 +38,12 @@ default-members = [
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["unbounded_depth"] }
 thiserror = "1.0"
-k2f_core = { path = "engine/k2f_core", version = "0.2.2" }
-k2f_text = { path = "engine/k2f_text", version = "0.2.2" }
-k2f_math = { path = "engine/k2f_math", version = "0.2.2" }
-k2f_layout = { path = "engine/k2f_layout", version = "0.2.2" }
-k2f_package = { path = "engine/k2f_package", version = "0.2.2" }
-k2f_markdown = { path = "engine/k2f_markdown", version = "0.2.2" }
-k2f_paint = { path = "engine/k2f_paint", version = "0.2.2" }
-k2f_pdf = { path = "engine/k2f_pdf", version = "0.2.2" }
-k2f_sdk = { path = "engine/k2f_sdk", version = "0.2.2" }
+k2f_core = { path = "engine/k2f_core", version = "0.2.3" }
+k2f_text = { path = "engine/k2f_text", version = "0.2.3" }
+k2f_math = { path = "engine/k2f_math", version = "0.2.3" }
+k2f_layout = { path = "engine/k2f_layout", version = "0.2.3" }
+k2f_package = { path = "engine/k2f_package", version = "0.2.3" }
+k2f_markdown = { path = "engine/k2f_markdown", version = "0.2.3" }
+k2f_paint = { path = "engine/k2f_paint", version = "0.2.3" }
+k2f_pdf = { path = "engine/k2f_pdf", version = "0.2.3" }
+k2f_sdk = { path = "engine/k2f_sdk", version = "0.2.3" }
