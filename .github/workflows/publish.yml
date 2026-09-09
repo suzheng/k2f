@@ -82,6 +82,7 @@ jobs:
           manylinux: ${{ matrix.manylinux }}
           working-directory: sdk/python
           args: --release --out dist
+          docker-options: -e K2F_ENGINE_COMMIT_SHA=${{ github.sha }}
         env:
           K2F_ENGINE_COMMIT_SHA: ${{ github.sha }}
       - name: Upload wheels artifact
