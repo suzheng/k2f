@@ -7,11 +7,12 @@ use k2f_core::{
 };
 use std::collections::HashMap;
 
-pub(crate) use build::{table_on_page, table_ref_placeholder};
+pub(crate) use build::table_ref_placeholder;
 pub(crate) use xml::table_anchor;
 pub use xml::table_cell_wml;
 
 #[derive(Default)]
+#[allow(dead_code)]
 pub(crate) struct TableIndex {
     tables: HashMap<String, Harvested>,
     owner: HashMap<String, String>,
@@ -39,6 +40,7 @@ fn cells_are_plain_text(rows: &[Vec<SemanticNode>]) -> bool {
         .all(|cell| matches!(cell.content, NodeContent::Text(_)))
 }
 
+#[allow(dead_code)]
 pub(crate) fn index_native_tables(root: &SemanticNode, running: &[RunningBlockNode]) -> TableIndex {
     let mut idx = TableIndex::default();
     collect(root, &mut idx);
@@ -84,6 +86,7 @@ fn collect(node: &SemanticNode, idx: &mut TableIndex) {
 }
 
 impl TableIndex {
+    #[allow(dead_code)]
     pub(crate) fn owner_of(&self, node_id: &str) -> Option<&str> {
         self.owner.get(node_id).map(String::as_str)
     }

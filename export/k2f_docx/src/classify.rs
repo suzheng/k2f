@@ -7,8 +7,9 @@ use crate::geo::{find_geo, page_bg_hex};
 use crate::ir::{DocIR, PageElement, PageIR, PictureBox};
 use crate::picture::picture_from_draw;
 use crate::shape::shapes_from_box;
-use crate::table::{index_native_tables, paint_node_id, table_on_page, table_ref_placeholder};
+use crate::table::{paint_node_id, table_ref_placeholder};
 use crate::text::{font_ctx, textbox_from_draw_ctx};
+use crate::xml::word_hex_color;
 use crate::DocxError;
 use k2f_core::{LockFile, Page, PaintOp};
 use k2f_paint::OpenedDocument;
@@ -28,7 +29,6 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
     let running = doc.running_blocks();
     let skip_running = crate::header::running_field_ids(running);
     let assets = doc.assets();
-    let tables = index_native_tables(root, running);
     let mut media_n = 1u32;
     let mut raster_n = 1u32;
     let mut ir_pages = Vec::with_capacity(pages.len());
@@ -40,9 +40,8 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
             .map(|p| p.ops.as_slice())
             .unwrap_or(&[]);
         let mut elements = Vec::new();
-        let mut emitted_tables = HashSet::new();
         let mut skip_ops = HashSet::new();
-        let bg_hex = page_bg_hex(page, ops);
+        let bg_hex = word_hex_color(&page_bg_hex(page, ops));
         for (i, op) in ops.iter().enumerate() {
             if skip_ops.contains(&i) {
                 continue;
@@ -51,18 +50,6 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
             if let Some(nid) = paint_node_id(op) {
                 if skip_running.contains(nid) {
                     continue;
-                }
-                if let Some(tid) = tables.owner_of(nid) {
-                    if emitted_tables.contains(tid) {
-                        continue;
-                    }
-                    if let Some(tbl) =
-                        table_on_page(&tables, tid, page, ops, root, running, &fonts, rel)?
-                    {
-                        emitted_tables.insert(tid.to_string());
-                        elements.push(PageElement::Table(tbl));
-                        continue;
-                    }
                 }
             }
             match op {
@@ -174,7 +161,6 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
             }
         }
         assign_textbox_underlays(&mut elements, &bg_hex);
-        assign_table_cell_underlays(&mut elements, &bg_hex);
         absorb_self_fill_shapes(&mut elements);
         ir_pages.push(PageIR { bg_hex, elements });
     }
@@ -187,8 +173,6 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
         .unwrap_or("FFFFFE");
     assign_textbox_underlays(&mut header, paper);
     assign_textbox_underlays(&mut footer, paper);
-    assign_table_cell_underlays(&mut header, paper);
-    assign_table_cell_underlays(&mut footer, paper);
     absorb_self_fill_shapes(&mut header);
     absorb_self_fill_shapes(&mut footer);
     Ok(DocIR {
@@ -258,7 +242,7 @@ fn assign_textbox_underlays(elements: &mut [PageElement], paper_hex: &str) {
             }
         }
         tb.fill_hex = if let Some(hex) = found {
-            Some(pin_underlay_hex(&hex))
+            Some(word_hex_color(&hex))
         } else if covers.iter().any(|(rel, x, y, w, h)| {
             *rel < tb.relative_height
                 && px >= *x
@@ -268,65 +252,9 @@ fn assign_textbox_underlays(elements: &mut [PageElement], paper_hex: &str) {
         }) {
             None
         } else {
-            Some(pin_underlay_hex(paper_hex))
+            Some(word_hex_color(paper_hex))
         };
         tb.fill_alpha = 255;
-    }
-}
-
-/// Unfilled native table cells invert in Word Dark Mode the same way `noFill`
-/// text boxes do. Paint an opaque underlay matching the shape behind the table
-/// (or the page paper). Existing lock fills are only pinned off Automatic white.
-///
-/// The wrapping `wps:wsp` must use the same opaque fill. Word ignores
-/// `a:noFill` on that shape and paints `wps:style` `fillRef` (near-black), so
-/// the whole table reads as a black rectangle even when cells have `w:shd`.
-fn assign_table_cell_underlays(elements: &mut [PageElement], paper_hex: &str) {
-    let shapes: Vec<(u32, i64, i64, i64, i64, String)> = elements
-        .iter()
-        .filter_map(|el| match el {
-            PageElement::Shape(s)
-                if s.gradient.is_none() && s.fill_alpha >= 255 && s.fill_hex.is_some() =>
-            {
-                s.fill_hex.as_ref().map(|h| {
-                    (
-                        s.relative_height,
-                        s.x_emu,
-                        s.y_emu,
-                        s.cx_emu,
-                        s.cy_emu,
-                        h.clone(),
-                    )
-                })
-            }
-            _ => None,
-        })
-        .collect();
-    for el in elements.iter_mut() {
-        let PageElement::Table(tbl) = el else {
-            continue;
-        };
-        let px = tbl.x_emu.saturating_add(tbl.cx_emu / 2);
-        let py = tbl.y_emu.saturating_add(tbl.cy_emu / 2);
-        let mut found = None;
-        for (rel, x, y, w, h, hex) in &shapes {
-            if *rel >= tbl.relative_height {
-                continue;
-            }
-            if px >= *x && py >= *y && px < x.saturating_add(*w) && py < y.saturating_add(*h) {
-                found = Some(hex.clone());
-            }
-        }
-        let paper = pin_underlay_hex(found.as_deref().unwrap_or(paper_hex));
-        tbl.fill_hex = Some(paper.clone());
-        for row in &mut tbl.rows {
-            for cell in &mut row.cells {
-                match &cell.fill_hex {
-                    None => cell.fill_hex = Some(paper.clone()),
-                    Some(hex) => cell.fill_hex = Some(pin_underlay_hex(hex)),
-                }
-            }
-        }
     }
 }
 
@@ -366,14 +294,6 @@ fn absorb_self_fill_shapes(elements: &mut Vec<PageElement>) {
         PageElement::Shape(s) => !absorbed.contains(&s.node_id),
         _ => true,
     });
-}
-
-fn pin_underlay_hex(hex: &str) -> String {
-    match hex.to_ascii_uppercase().as_str() {
-        "FFFFFF" => "FFFFFE".into(),
-        "000000" => "000001".into(),
-        other => other.to_string(),
-    }
 }
 
 fn slice(

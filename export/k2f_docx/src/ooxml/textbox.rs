@@ -5,13 +5,8 @@ use std::collections::BTreeMap;
 pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, String>) -> String {
     let body = txbx_content(tb, hyperlink_rids);
     let anchor = if tb.vert_center { "ctr" } else { "t" };
-    let font_hex = tb
-        .runs
-        .first()
-        .map(|r| word_hex_color(&r.color_hex))
-        .unwrap_or_else(|| "000001".into());
     let fill = match &tb.fill_hex {
-        Some(hex) => super::drawing::solid_fill_xml(hex, tb.fill_alpha),
+        Some(hex) => super::drawing::solid_fill_xml(&word_hex_color(hex), tb.fill_alpha),
         None => "                    <a:noFill/>\n".into(),
     };
     let (l, t, r, b) = if tb.numbered || tb.bullet {
@@ -46,12 +41,6 @@ pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, St
                       <a:noFill/>
                     </a:ln>
                   </wps:spPr>
-                  <wps:style>
-                    <a:lnRef idx="0"><a:srgbClr val="000001"/></a:lnRef>
-                    <a:fillRef idx="0"><a:srgbClr val="000001"/></a:fillRef>
-                    <a:effectRef idx="0"><a:srgbClr val="000001"/></a:effectRef>
-                    <a:fontRef idx="minor"><a:srgbClr val="{font_hex}"/></a:fontRef>
-                  </wps:style>
                   <wps:txbx>
                     <w:txbxContent>
 {body}                    </w:txbxContent>

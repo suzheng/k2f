@@ -8,8 +8,8 @@ pub const THEME_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="
 <a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="K2F">
   <a:themeElements>
     <a:clrScheme name="K2F">
-      <a:dk1><a:srgbClr val="000000"/></a:dk1>
-      <a:lt1><a:srgbClr val="FFFFFF"/></a:lt1>
+      <a:dk1><a:srgbClr val="000001"/></a:dk1>
+      <a:lt1><a:srgbClr val="FFFFFE"/></a:lt1>
       <a:dk2><a:srgbClr val="1F497D"/></a:dk2>
       <a:lt2><a:srgbClr val="EEECE1"/></a:lt2>
       <a:accent1><a:srgbClr val="4F81BD"/></a:accent1>

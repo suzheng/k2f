@@ -71,12 +71,12 @@ fn theme_pins_dk1_lt1_to_srgb_not_system_window_colors() {
         "dk1/lt1 must not follow OS dark mode, got {theme}"
     );
     assert!(
-        theme.contains(r#"<a:dk1><a:srgbClr val="000000"/></a:dk1>"#),
-        "dk1 must be pinned srgb black, got {theme}"
+        theme.contains(r#"<a:dk1><a:srgbClr val="000001"/></a:dk1>"#),
+        "dk1 must be pinned srgb, got {theme}"
     );
     assert!(
-        theme.contains(r#"<a:lt1><a:srgbClr val="FFFFFF"/></a:lt1>"#),
-        "lt1 must be pinned srgb white, got {theme}"
+        theme.contains(r#"<a:lt1><a:srgbClr val="FFFFFE"/></a:lt1>"#),
+        "lt1 must be pinned srgb, got {theme}"
     );
 }
 

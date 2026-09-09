@@ -218,7 +218,7 @@ pub(crate) fn color_hex(color: &str) -> String {
         .map(|[r, g, b, _]| format!("{r:02X}{g:02X}{b:02X}"))
         .or_else(|| six_digit_hex(color))
         .unwrap_or_else(|| "000000".into());
-    pin_office_srgb(&hex)
+    crate::xml::word_hex_color(&hex)
 }
 
 /// Word `ST_HexColor` is exactly 6 hex digits (or `auto`). Palette tokens
@@ -229,16 +229,6 @@ pub(crate) fn six_digit_hex(color: &str) -> Option<String> {
         Some(t.to_ascii_uppercase())
     } else {
         None
-    }
-}
-
-/// Word treats RGB `000000` / `FFFFFF` as Automatic (window text / window).
-/// Dark Mode remaps those even when a document theme pins `dk1`/`lt1` to sRGB.
-fn pin_office_srgb(hex: &str) -> String {
-    match hex {
-        "000000" => "000001".into(),
-        "FFFFFF" => "FFFFFE".into(),
-        _ => hex.to_string(),
     }
 }
 

@@ -390,10 +390,6 @@ fn black_text_is_not_word_automatic() {
         "pure black must be stored as RGB fill, not Automatic, got {xml}"
     );
     assert!(
-        xml.contains(r#"<a:fontRef idx="minor"><a:srgbClr val="000001"/>"#),
-        "textbox style must pin fontRef to RGB, not scheme dk1, got {xml}"
-    );
-    assert!(
         !xml.contains(r#"w:val="000000""#),
         "Word treats 000000 as Automatic in Dark Mode, got {xml}"
     );

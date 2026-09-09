@@ -7,6 +7,7 @@ use crate::text::FontCtx;
 use crate::DocxError;
 use k2f_core::{GeometryNode, Page, PaintOp, Rect, RunningBlockNode, SemanticNode};
 
+#[allow(dead_code)]
 pub(crate) fn table_on_page(
     index: &TableIndex,
     table_id: &str,

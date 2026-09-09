@@ -102,6 +102,7 @@ fn shape_fill_xml(shape: &ShapeBox) -> String {
 }
 
 pub(crate) fn solid_fill_xml(hex: &str, alpha: u8) -> String {
+    let hex = crate::xml::word_hex_color(hex);
     if alpha >= 255 {
         format!(
             "                    <a:solidFill>\n                      <a:srgbClr val=\"{hex}\"/>\n                    </a:solidFill>\n"
@@ -132,6 +133,7 @@ fn gradient_fill_xml(g: &crate::ir::GradientFill) -> String {
 }
 
 fn srgb_clr_xml(hex: &str, alpha: u8, indent: &str) -> String {
+    let hex = crate::xml::word_hex_color(hex);
     if alpha >= 255 {
         format!("{indent}<a:srgbClr val=\"{hex}\"/>\n")
     } else {
@@ -150,6 +152,7 @@ fn line_xml(shape: &ShapeBox) -> String {
     let Some(hex) = &shape.line_hex else {
         return "                    <a:ln>\n                      <a:noFill/>\n                    </a:ln>\n".into();
     };
+    let hex = crate::xml::word_hex_color(hex);
     let dash = match shape.line_dash {
         crate::ir::LineDash::Solid => "solid",
         crate::ir::LineDash::Dash => "dash",

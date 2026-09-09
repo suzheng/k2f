@@ -23,6 +23,7 @@ pub enum PageElement {
     TextBox(TextBox),
     Shape(ShapeBox),
     Picture(PictureBox),
+    #[allow(dead_code)]
     Table(TableBox),
     Raster(PictureBox),
 }

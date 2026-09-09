@@ -44,14 +44,6 @@ pub(crate) fn table_anchor(
 }
 
 fn table_wsp_xml(tbl: &TableBox, hyperlink_rids: &BTreeMap<String, String>) -> String {
-    let font_hex = tbl
-        .rows
-        .iter()
-        .flat_map(|r| r.cells.iter())
-        .flat_map(|c| c.runs.iter())
-        .next()
-        .map(|r| word_hex_color(&r.color_hex))
-        .unwrap_or_else(|| "000001".into());
     let fill_hex = word_hex_color(tbl.fill_hex.as_deref().unwrap_or("FFFFFE"));
     format!(
         r#"                <wps:wsp>
@@ -71,12 +63,6 @@ fn table_wsp_xml(tbl: &TableBox, hyperlink_rids: &BTreeMap<String, String>) -> S
                       <a:noFill/>
                     </a:ln>
                   </wps:spPr>
-                  <wps:style>
-                    <a:lnRef idx="0"><a:srgbClr val="000001"/></a:lnRef>
-                    <a:fillRef idx="0"><a:srgbClr val="{fill_hex}"/></a:fillRef>
-                    <a:effectRef idx="0"><a:srgbClr val="000001"/></a:effectRef>
-                    <a:fontRef idx="minor"><a:srgbClr val="{font_hex}"/></a:fontRef>
-                  </wps:style>
                   <wps:txbx>
                     <w:txbxContent>
 {tbl_xml}                      <w:p/>

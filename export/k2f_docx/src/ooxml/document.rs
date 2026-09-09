@@ -1,4 +1,5 @@
 use crate::ir::{DocIR, PageElement, PageIR};
+use crate::xml::word_hex_color;
 use std::collections::BTreeMap;
 
 use super::drawing::{
@@ -75,21 +76,13 @@ pub fn document_xml(
             ""
         },
         h = ir.page_height_twips,
-        bg = paper_hex(
+        bg = word_hex_color(
             ir.pages
                 .first()
                 .map(|p| p.bg_hex.as_str())
                 .unwrap_or("FFFFFF")
         ),
     )
-}
-
-fn paper_hex(hex: &str) -> String {
-    match hex.to_ascii_uppercase().as_str() {
-        "FFFFFF" => "FFFFFE".into(),
-        "000000" => "000001".into(),
-        other => other.to_string(),
-    }
 }
 
 fn page_paragraph(

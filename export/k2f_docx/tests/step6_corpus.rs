@@ -59,8 +59,8 @@ fn invoice_structure() {
     );
     if semantic_has_table(&doc) {
         assert!(
-            xml.contains("<w:tbl>"),
-            "invoice has a plain-text Table; export must emit w:tbl (not a stamp PNG)"
+            !xml.contains("<w:tbl>"),
+            "Word Dark Mode inverts w:tbl shading; invoice tables must be boxes + text"
         );
     }
 }
