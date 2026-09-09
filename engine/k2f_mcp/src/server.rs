@@ -123,7 +123,7 @@ struct ExportPdfArgs {
     #[schemars(description = "Required local path to write the PDF")]
     path: String,
     #[serde(default)]
-    #[schemars(description = "Raster stamp scale for paint ops: 2, 3, or 4 (default 2)")]
+    #[schemars(description = "Raster stamp scale for paint ops: 2, 3, or 4 (default 4)")]
     scale: Option<f32>,
 }
 

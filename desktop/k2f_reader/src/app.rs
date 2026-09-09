@@ -7,7 +7,7 @@ use k2f_paint::{Banner, OpenedDocument, TextSpan, OFFICIAL_PNG_SCALE};
 use k2f_pdf::export_opened;
 use std::path::Path;
 
-const MIN_ZOOM: f32 = 0.5;
+const MIN_ZOOM: f32 = 0.1;
 const MAX_ZOOM: f32 = 3.0;
 
 /// Session over a published lock. Opening never recompiles.
@@ -228,7 +228,11 @@ impl AppState {
     }
 
     pub fn export_pdf_bytes(&self) -> anyhow::Result<Vec<u8>> {
-        Ok(export_opened(&self.doc, k2f_pdf::PdfScale::DEFAULT)?)
+        self.export_pdf_bytes_at(k2f_pdf::PdfScale::DEFAULT)
+    }
+
+    pub fn export_pdf_bytes_at(&self, scale: k2f_pdf::PdfScale) -> anyhow::Result<Vec<u8>> {
+        Ok(export_opened(&self.doc, scale)?)
     }
 
     pub fn doc(&self) -> &OpenedDocument {

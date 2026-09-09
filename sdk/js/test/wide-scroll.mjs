@@ -10,7 +10,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 
 if (snapToStep(0.59) !== 0.5) throw new Error("snapToStep(0.59) should be 0.5");
 if (snapToStep(1.1) !== 1) throw new Error("snapToStep(1.1) should be 1");
-if (snapToStep(0.3) !== 0.5) throw new Error("snapToStep(0.3) should floor to 0.5");
+if (snapToStep(0.3) !== 0.3) throw new Error("snapToStep(0.3) should be 0.3");
+if (snapToStep(0.05) !== 0.1) throw new Error("snapToStep(0.05) should floor to 0.1");
 
 const fakeStage = { clientWidth: 400 };
 if (stageInnerWidth(fakeStage) !== 352) {

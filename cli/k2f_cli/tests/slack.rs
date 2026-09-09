@@ -190,3 +190,40 @@ fn compile_prints_layout_slack_for_hollow_grower() {
     );
     let _ = fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn compile_prints_page_underfill_for_short_one_page_stack() {
+    let dir = std::env::temp_dir().join(format!("k2f-page-underfill-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    let src = dir.join("src");
+    write_starter_package(
+        &src,
+        r#"{
+  "id": "root",
+  "role": "document",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "doc.title",
+          "role": "h1",
+          "content": { "type": "text", "value": "Short invoice title" }
+        }
+      ]
+    }
+  }
+}
+"#,
+    );
+    let err = pack_and_compile(&src, &dir.join("out.K2F"));
+    assert!(
+        err.contains("PAGE_UNDERFILL page=0"),
+        "missing PAGE_UNDERFILL: {err}"
+    );
+    assert!(
+        err.contains("hint=one-page form: copy ex_filled_page.json"),
+        "{err}"
+    );
+    let _ = fs::remove_dir_all(&dir);
+}

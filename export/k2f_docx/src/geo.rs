@@ -1,4 +1,4 @@
-use k2f_core::{BoxDecoration, Fill, GeometryNode, Page, PaintOp, Pt, Rect};
+use k2f_core::{BoxDecoration, Fill, GeometryNode, LinearGradient, Page, PaintOp, Pt, Rect};
 use k2f_paint::{parse_hex_rgba, resolve_fill};
 
 /// Fills thinner than this stay in front of the document. LibreOffice Writer
@@ -21,6 +21,9 @@ pub(crate) fn page_bg_hex(page: &Page, ops: &[PaintOp]) -> String {
         }) if is_full_page_rect(page.width, page.height, rect) => match resolve_fill(decoration) {
             Ok(Some(Fill::Solid { color })) => {
                 opaque_srgb_hex(&color).unwrap_or_else(|| "FFFFFF".into())
+            }
+            Ok(Some(Fill::LinearGradient { value })) => {
+                first_gradient_stop_hex(&value).unwrap_or_else(|| "FFFFFF".into())
             }
             _ => "FFFFFF".into(),
         },
@@ -71,6 +74,13 @@ fn opaque_srgb_hex(color: &str) -> Option<String> {
     if a < 255 {
         return None;
     }
+    Some(format!("{r:02X}{g:02X}{b:02X}"))
+}
+
+fn first_gradient_stop_hex(value: &LinearGradient) -> Option<String> {
+    let LinearGradient::Linear { stops, .. } = value;
+    let stop = stops.first()?;
+    let [r, g, b, _] = parse_hex_rgba(&stop.color)?;
     Some(format!("{r:02X}{g:02X}{b:02X}"))
 }
 

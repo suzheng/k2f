@@ -1,9 +1,9 @@
-use crate::slack::layout_slack_diags;
+use crate::slack::{layout_slack_diags, LayoutDiagKind};
 use crate::Theme;
 use crate::{LayoutContext, LayoutEngine};
 use k2f_core::{
-    CanvasMode, FixedSizeHint, GridTrack, LayoutHint, Manifest, NodeContent, PageConfig, Pt,
-    SemanticNode, StackDirection,
+    BreakBefore, CanvasMode, FixedSizeHint, GridTrack, LayoutHint, Manifest, NodeContent,
+    PageConfig, Pt, SemanticNode, StackDirection,
 };
 
 fn fonts_ctx() -> (k2f_text::FontLibrary, Theme) {
@@ -31,7 +31,7 @@ fn image(id: &str, h: i128) -> SemanticNode {
     }
 }
 
-fn wrap_root(child: SemanticNode) -> Manifest {
+fn wrap_children(children: Vec<SemanticNode>) -> Manifest {
     Manifest {
         title: "slack".to_string(),
         canvas_mode: CanvasMode::Paged,
@@ -39,13 +39,15 @@ fn wrap_root(child: SemanticNode) -> Manifest {
         root: SemanticNode {
             id: "root".to_string(),
             role: "document".to_string(),
-            content: NodeContent::Container {
-                children: vec![child],
-            },
+            content: NodeContent::Container { children },
             ..Default::default()
         },
         running_blocks: vec![],
     }
+}
+
+fn wrap_root(child: SemanticNode) -> Manifest {
+    wrap_children(vec![child])
 }
 
 fn page_shell(body: SemanticNode) -> SemanticNode {
@@ -179,5 +181,70 @@ fn short_grid_demo_is_below_height_threshold() {
     let manifest = wrap_root(grid);
     let layout = LayoutEngine::layout(&manifest, &ctx).unwrap();
     let diags = layout_slack_diags(&manifest, &layout, &theme);
-    assert!(diags.is_empty(), "small grids must not warn: {diags:?}");
+    assert!(
+        diags.iter().all(|d| d.kind == LayoutDiagKind::PageUnderfill),
+        "small grids must not warn LAYOUT_SLACK: {diags:?}"
+    );
+}
+
+#[test]
+fn one_page_short_stack_reports_page_underfill() {
+    let (fonts, theme) = fonts_ctx();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let manifest = wrap_root(image("hero", 50_000));
+    let layout = LayoutEngine::layout(&manifest, &ctx).unwrap();
+    assert_eq!(layout.pages.len(), 1);
+    let diags = layout_slack_diags(&manifest, &layout, &theme);
+    let page = diags
+        .iter()
+        .find(|d| d.kind == LayoutDiagKind::PageUnderfill)
+        .expect("{diags:?}");
+    assert_eq!(page.page, Some(0));
+    assert!(page.unused_below.0 > 700_000, "{}", page);
+    let line = page.to_string();
+    assert!(line.starts_with("PAGE_UNDERFILL page=0"), "{line}");
+    assert!(
+        line.contains("hint=one-page form: copy ex_filled_page.json"),
+        "{line}"
+    );
+}
+
+#[test]
+fn flow_last_page_short_does_not_report_page_underfill() {
+    let (fonts, theme) = fonts_ctx();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let manifest = wrap_children(vec![
+        image("a", 400_000),
+        image("b", 400_000),
+        image("c", 50_000),
+    ]);
+    let layout = LayoutEngine::layout(&manifest, &ctx).unwrap();
+    assert_eq!(layout.pages.len(), 2, "pages={}", layout.pages.len());
+    let diags = layout_slack_diags(&manifest, &layout, &theme);
+    assert!(
+        diags
+            .iter()
+            .all(|d| d.kind != LayoutDiagKind::PageUnderfill),
+        "full first page + short last page must be silent: {diags:?}"
+    );
+}
+
+#[test]
+fn break_before_underfilled_page_reports_page_underfill() {
+    let (fonts, theme) = fonts_ctx();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let mut page_two = image("p2", 200_000);
+    page_two.break_before = BreakBefore::Page;
+    let manifest = wrap_children(vec![image("p1", 200_000), page_two]);
+    let layout = LayoutEngine::layout(&manifest, &ctx).unwrap();
+    assert_eq!(layout.pages.len(), 2);
+    let diags = layout_slack_diags(&manifest, &layout, &theme);
+    let pages: Vec<_> = diags
+        .iter()
+        .filter(|d| d.kind == LayoutDiagKind::PageUnderfill)
+        .collect();
+    assert_eq!(pages.len(), 1, "{diags:?}");
+    assert_eq!(pages[0].page, Some(0));
+    let line = pages[0].to_string();
+    assert!(line.contains("hint=do not pre-paginate with break_before"), "{line}");
 }

@@ -99,7 +99,7 @@ fn pager_and_zoom_clamp() {
     assert_eq!(app.page(), 0);
 
     app.set_zoom(0.1);
-    assert_eq!(app.zoom(), 0.5);
+    assert_eq!(app.zoom(), 0.1);
     app.set_zoom(9.0);
     assert_eq!(app.zoom(), 3.0);
     app.set_zoom(1.5);
@@ -114,7 +114,7 @@ fn pager_and_zoom_clamp() {
     app.set_zoom(f32::INFINITY);
     assert_eq!(app.zoom(), 3.0);
     app.set_zoom(f32::NEG_INFINITY);
-    assert_eq!(app.zoom(), 0.5);
+    assert_eq!(app.zoom(), 0.1);
 }
 
 #[test]

@@ -55,7 +55,7 @@ fn stroke_border(
     page.content.set_line_width(width);
     apply_dash(&mut page.content, border.style);
 
-    if border.is_full_rect_stroke() {
+    if border.draws_all_four_edges() {
         rounded_rect(&mut page.content, page.page_h, rect, radius);
         page.content.stroke();
         return Ok(());
@@ -69,7 +69,7 @@ fn stroke_border(
     for edge in &border.edges {
         match edge {
             BorderEdge::Top => {
-                // PDF y grows up; "top" of the box is higher on the page = y_top in PDF space? 
+                // PDF y grows up; "top" of the box is higher on the page = y_top in PDF space?
                 // pdf_y converts top-left document coords: document y=0 is top of page.
                 // rect.y is top of box; bottom of box is rect.y + height.
                 // pdf_y(page_h, doc_y) = page_h - doc_y

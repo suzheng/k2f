@@ -1,4 +1,5 @@
 import { exportFilename, exportMime } from "./filenames.js";
+import { DEFAULT_PDF_EXPORT_SCALE } from "./pdf-export-scale.js";
 
 function officialScale(viewer) {
   if (typeof viewer.official_scale === "function") {
@@ -34,6 +35,7 @@ function withViewer(Viewer, bytes, fn) {
  * @param {string} opts.format
  * @param {typeof import("../types.d.ts").Viewer} opts.Viewer
  * @param {(bytes: Uint8Array) => string} [opts.k2fToMarkdown]
+ * @param {number} [opts.pdfScale]
  */
 export function exportDocument({
   viewer,
@@ -43,12 +45,13 @@ export function exportDocument({
   format,
   Viewer,
   k2fToMarkdown,
+  pdfScale = DEFAULT_PDF_EXPORT_SCALE,
 }) {
   const bytes = resolvePackageBytes({ editor, packageBytes });
   const pageCount = withViewer(Viewer, bytes, (v) => v.page_count());
   const filename = exportFilename(title, format, pageCount);
   const mime = exportMime(format, pageCount);
-  const scale = officialScale(viewer);
+  const rasterScale = officialScale(viewer);
 
   let out;
   switch (format) {
@@ -58,7 +61,7 @@ export function exportDocument({
     case "pdf":
       out = withViewer(Viewer, bytes, (v) => {
         if (typeof v.export_pdf_at === "function") {
-          return v.export_pdf_at(scale);
+          return v.export_pdf_at(pdfScale);
         }
         return v.export_pdf();
       });
@@ -85,7 +88,7 @@ export function exportDocument({
         if (typeof v.export_pages_png_zip !== "function") {
           throw new Error("export_pages_png_zip unavailable");
         }
-        return v.export_pages_png_zip(scale);
+        return v.export_pages_png_zip(rasterScale);
       });
       break;
     case "jpg":
@@ -93,7 +96,7 @@ export function exportDocument({
         if (typeof v.export_pages_jpeg_zip !== "function") {
           throw new Error("export_pages_jpeg_zip unavailable");
         }
-        return v.export_pages_jpeg_zip(scale);
+        return v.export_pages_jpeg_zip(rasterScale);
       });
       break;
     default:

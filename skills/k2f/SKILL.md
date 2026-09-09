@@ -49,7 +49,7 @@ The engine — not the agent — turns A into C by running `pack` / `compile`. O
 3. **PDF, PPTX, and DOCX are one-way drawings of the lock, not a second source.** (`PDF_IS_NOT_A_SOURCE`, `PPTX_IS_NOT_A_SOURCE`, `DOCX_IS_NOT_A_SOURCE`)
 4. **Signing is a separate human/org step.** Agent output is `UNSIGNED` by design.
 5. **Validate after every edit.** Fix from error codes in [writing/errors.md](references/writing/errors.md); do not patch the lock.
-6. **Look at the pixels.** After pack, render a PNG and open it — including **inside** painted cards, not only whether chrome hits the footer. Composed page: leftover `{fr:1}` goes to a **figure** or several **dense** siblings ([`ex_poster_growers.json`](catalog/content/ex_poster_growers.json)). `{fr:1}` stretches the **box**, not type; never the only leftover on a short quote/card. No `LAYOUT_SLACK` ≠ filled. Flow: no `break_before: page` on a figure unless it must start a page; padded section does not split. Type size: theme roles. Commands: [writing.md](references/writing.md#visual-check).
+6. **Look at the pixels.** After pack, open every rendered page (`--render` writes `preview-1.png` …). Invoice/CV/flyer/poster/slide → filled page ([`ex_filled_page.json`](catalog/content/ex_filled_page.json)); treat `PAGE_UNDERFILL` as must-fix. Short letter may stay top-packed. Contract/report/thesis → one flow tree; do not invent `p1`/`p2` page containers. `break_before: page` is fine on a chapter, annex, or signature page. Details: [writing.md](references/writing.md#visual-check).
 
 ## Design first
 

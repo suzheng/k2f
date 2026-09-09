@@ -386,10 +386,7 @@ fn body_cells_emit_v_align_and_opaque_shd() {
         .descendants()
         .find(|n| n.has_tag_name("tbl"))
         .expect("w:tbl");
-    let shaded = tbl
-        .descendants()
-        .filter(|n| n.has_tag_name("shd"))
-        .count();
+    let shaded = tbl.descendants().filter(|n| n.has_tag_name("shd")).count();
     assert!(
         shaded > 0,
         "table cells need opaque w:shd so Word Dark Mode does not invert run color"

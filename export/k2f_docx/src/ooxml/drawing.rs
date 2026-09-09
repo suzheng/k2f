@@ -1,5 +1,5 @@
 use crate::ir::{PageElement, PictureBox, ShapeBox, TextBox};
-use crate::picture::{pic_xml, raster_pic_xml};
+use crate::picture::{pic_xml, raster_wsp_xml};
 use crate::xml::escape_xml;
 use std::collections::BTreeMap;
 
@@ -54,13 +54,14 @@ pub(crate) fn shape_wsp_xml(shape: &ShapeBox) -> String {
             "                    <a:prstGeom prst=\"roundRect\">\n                      <a:avLst>\n                        <a:gd name=\"adj\" fmla=\"val {adj}\"/>\n                      </a:avLst>\n                    </a:prstGeom>\n"
         )
     };
-    let fill = match &shape.fill_hex {
-        Some(hex) => format!(
-            "                    <a:solidFill>\n                      <a:srgbClr val=\"{hex}\"/>\n                    </a:solidFill>\n"
-        ),
-        None => "                    <a:noFill/>\n".into(),
-    };
-    let as_tx = !shape.behind_doc && shape.fill_hex.is_some();
+    let fill = shape_fill_xml(shape);
+    // Empty in-front *opaque* shells need a pinned txBox so Word does not
+    // size-to-fit. Full-page gradients and glass (alpha) must not be txBoxes:
+    // LibreOffice Writer paints a page-sized empty text frame over later labels.
+    let as_tx = !shape.behind_doc
+        && shape.fill_hex.is_some()
+        && shape.gradient.is_none()
+        && shape.fill_alpha >= 255;
     let cnv = if as_tx {
         "                  <wps:cNvSpPr txBox=\"1\"/>\n"
     } else {
@@ -88,6 +89,61 @@ pub(crate) fn shape_wsp_xml(shape: &ShapeBox) -> String {
         cy = shape.cy_emu,
         ln = line_xml(shape),
     )
+}
+
+fn shape_fill_xml(shape: &ShapeBox) -> String {
+    if let Some(g) = &shape.gradient {
+        return gradient_fill_xml(g);
+    }
+    match &shape.fill_hex {
+        Some(hex) => solid_fill_xml(hex, shape.fill_alpha),
+        None => "                    <a:noFill/>\n".into(),
+    }
+}
+
+pub(crate) fn solid_fill_xml(hex: &str, alpha: u8) -> String {
+    if alpha >= 255 {
+        format!(
+            "                    <a:solidFill>\n                      <a:srgbClr val=\"{hex}\"/>\n                    </a:solidFill>\n"
+        )
+    } else {
+        format!(
+            "                    <a:solidFill>\n                      <a:srgbClr val=\"{hex}\">\n                        <a:alpha val=\"{a}\"/>\n                      </a:srgbClr>\n                    </a:solidFill>\n",
+            a = alpha_permille(alpha),
+        )
+    }
+}
+
+fn gradient_fill_xml(g: &crate::ir::GradientFill) -> String {
+    let mut gs = String::new();
+    for stop in &g.stops {
+        let pos = (stop.pos.saturating_mul(100)).clamp(0, 100_000);
+        gs.push_str(&format!(
+            "                      <a:gs pos=\"{pos}\">\n{clr}                      </a:gs>\n",
+            clr = srgb_clr_xml(&stop.hex, stop.alpha, "                        "),
+        ));
+    }
+    // K2F 0° is +x (right), 90° is +y (down). OOXML `a:lin ang` is 1/60000 deg
+    // with 0 = left-to-right, increasing clockwise — same as screen-y-down.
+    let ang = g.angle_degrees.saturating_mul(60_000);
+    format!(
+        "                    <a:gradFill>\n                      <a:gsLst>\n{gs}                      </a:gsLst>\n                      <a:lin ang=\"{ang}\" scaled=\"0\"/>\n                    </a:gradFill>\n"
+    )
+}
+
+fn srgb_clr_xml(hex: &str, alpha: u8, indent: &str) -> String {
+    if alpha >= 255 {
+        format!("{indent}<a:srgbClr val=\"{hex}\"/>\n")
+    } else {
+        format!(
+            "{indent}<a:srgbClr val=\"{hex}\">\n{indent}  <a:alpha val=\"{a}\"/>\n{indent}</a:srgbClr>\n",
+            a = alpha_permille(alpha),
+        )
+    }
+}
+
+fn alpha_permille(alpha: u8) -> i64 {
+    (i64::from(alpha) * 100_000 / 255).clamp(0, 100_000)
 }
 
 fn line_xml(shape: &ShapeBox) -> String {
@@ -156,6 +212,9 @@ pub(crate) fn picture_anchor(pic: &PictureBox, doc_pr_id: u32, embed_rid: &str) 
 
 pub(crate) fn raster_anchor(pic: &PictureBox, doc_pr_id: u32, embed_rid: &str) -> String {
     let name = format!("k2f-raster:{}", pic.node_id);
+    // Keep behindDoc=0. Writer paints behindDoc under white `w:background`, so a
+    // gradient/glass slice would vanish. Shape z-order (document order +
+    // relativeHeight) keeps later text boxes in front.
     wp_anchor(
         pic.x_emu,
         pic.y_emu,
@@ -165,8 +224,8 @@ pub(crate) fn raster_anchor(pic: &PictureBox, doc_pr_id: u32, embed_rid: &str) -
         false,
         doc_pr_id,
         &name,
-        PIC_URI,
-        &raster_pic_xml(pic, embed_rid, doc_pr_id),
+        SHAPE_URI,
+        &raster_wsp_xml(pic, embed_rid),
     )
 }
 
@@ -226,7 +285,7 @@ pub(crate) fn wp_anchor(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ir::{LineDash, ShapeBox};
+    use crate::ir::{LineDash, PictureBox, ShapeBox};
 
     fn box_at(corner_emu: i64) -> ShapeBox {
         ShapeBox {
@@ -236,6 +295,8 @@ mod tests {
             cx_emu: 100_000,
             cy_emu: 50_000,
             fill_hex: Some("1A73E8".into()),
+            fill_alpha: 255,
+            gradient: None,
             corner_emu,
             line_hex: None,
             line_w_emu: 0,
@@ -272,5 +333,61 @@ mod tests {
         assert!(!xml.contains("txBox="), "{xml}");
         assert!(!xml.contains("txbxContent"), "{xml}");
         assert!(!xml.contains("<a:noAutofit/>"), "{xml}");
+    }
+
+    #[test]
+    fn raster_anchor_is_shape_with_blip_fill() {
+        let pic = PictureBox {
+            node_id: "snap.shell".into(),
+            x_emu: 0,
+            y_emu: 0,
+            cx_emu: 100_000,
+            cy_emu: 100_000,
+            media_name: "raster1.png".into(),
+            bytes: vec![],
+            relative_height: 0,
+        };
+        let xml = raster_anchor(&pic, 2, "rId5");
+        assert!(xml.contains("name=\"k2f-raster:snap.shell\""), "{xml}");
+        assert!(xml.contains("<wps:wsp>"), "{xml}");
+        assert!(xml.contains("<a:blipFill>"), "{xml}");
+        assert!(xml.contains(r#"r:embed="rId5""#), "{xml}");
+        assert!(!xml.contains("<pic:pic>"), "{xml}");
+        assert!(xml.contains(r#"behindDoc="0""#), "{xml}");
+        assert!(xml.contains("<a:noAutofit/>"), "{xml}");
+        assert!(
+            xml.contains("wordprocessingShape"),
+            "raster must use the shape graphicData uri, got {xml}"
+        );
+    }
+
+    #[test]
+    fn gradient_shape_emits_grad_fill() {
+        let mut s = box_at(0);
+        s.fill_hex = None;
+        s.gradient = Some(crate::ir::GradientFill {
+            angle_degrees: 135,
+            stops: vec![
+                crate::ir::GradientStopFill {
+                    pos: 0,
+                    hex: "4338CA".into(),
+                    alpha: 255,
+                },
+                crate::ir::GradientStopFill {
+                    pos: 1000,
+                    hex: "F59E0B".into(),
+                    alpha: 255,
+                },
+            ],
+        });
+        let xml = shape_wsp_xml(&s);
+        assert!(xml.contains("<a:gradFill>"), "{xml}");
+        assert!(xml.contains(r#"ang="8100000""#), "{xml}");
+        assert!(xml.contains("4338CA"), "{xml}");
+        assert!(!xml.contains("<a:solidFill>"), "{xml}");
+        assert!(
+            !xml.contains("txBox="),
+            "gradient must not be an empty txBox, got {xml}"
+        );
     }
 }

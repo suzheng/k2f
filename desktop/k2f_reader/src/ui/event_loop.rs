@@ -4,6 +4,7 @@ use super::scroll::{line_delta_px, wheel_y_to_scroll};
 use super::session::{PointerCursor, Session};
 use crate::export::{ensure_extension, pick_save_path, ExportFormat};
 use crate::AppState;
+use super::pdf_dialog::PdfDialogHit;
 use softbuffer::{Context, Surface};
 use std::num::NonZeroU32;
 use std::path::PathBuf;
@@ -83,7 +84,16 @@ impl Gui {
         }
     }
 
-    fn save_export(&self) {
+    fn begin_export(&mut self) {
+        if self.session.app().export_format() == ExportFormat::Pdf {
+            self.session.open_pdf_dialog();
+            self.redraw();
+            return;
+        }
+        self.finish_export(None);
+    }
+
+    fn finish_export(&self, pdf_scale: Option<k2f_pdf::PdfScale>) {
         let app = self.session.app();
         let format = app.export_format();
         let Some(path) = pick_save_path(
@@ -95,7 +105,14 @@ impl Gui {
             return;
         };
         let path = ensure_extension(path, format);
-        match app.export_to(format, &path) {
+        let result = if format == ExportFormat::Pdf {
+            let scale = pdf_scale.unwrap_or(k2f_pdf::PdfScale::DEFAULT);
+            app.export_pdf_bytes_at(scale)
+                .and_then(|bytes| std::fs::write(&path, bytes).map_err(anyhow::Error::from))
+        } else {
+            app.export_to(format, &path)
+        };
+        match result {
             Ok(()) => eprintln!("wrote {}", path.display()),
             Err(e) => eprintln!("export {:?}: {e:#}", format),
         }
@@ -160,19 +177,36 @@ impl ApplicationHandler for Gui {
                     self.redraw();
                 }
                 ElementState::Released => {
+                    if let Some(hit) =
+                        self.session.take_pdf_dialog_click(self.cursor.0, self.cursor.1)
+                    {
+                        match hit {
+                            PdfDialogHit::Cancel => {
+                                self.session.close_pdf_dialog();
+                            }
+                            PdfDialogHit::Confirm => {
+                                let scale = self.session.selected_pdf_scale();
+                                self.session.close_pdf_dialog();
+                                self.finish_export(Some(scale));
+                            }
+                            PdfDialogHit::Scale2 | PdfDialogHit::Scale3 | PdfDialogHit::Scale4 => {}
+                        }
+                        self.redraw();
+                        return;
+                    }
                     if let Some(hit) = self.session.take_chrome_click(self.cursor.0, self.cursor.1)
                     {
                         match hit {
                             ChromeHit::Export => {
                                 self.session.close_export_menu();
-                                self.save_export();
+                                self.begin_export();
                             }
                             ChromeHit::ExportMenu => self.session.toggle_export_menu(),
                             ChromeHit::ExportItem(i) => {
                                 if let Some(format) = ExportFormat::ALL.get(i).copied() {
                                     self.session.close_export_menu();
                                     self.session.app_mut().set_export_format(format);
-                                    self.save_export();
+                                    self.begin_export();
                                 }
                             }
                             ChromeHit::Copy => {
@@ -202,7 +236,7 @@ impl ApplicationHandler for Gui {
                     return;
                 }
                 if matches!(event.logical_key, Key::Named(NamedKey::Escape)) {
-                    if self.session.close_export_menu() {
+                    if self.session.close_pdf_dialog() || self.session.close_export_menu() {
                         self.redraw();
                     }
                     return;
@@ -223,7 +257,7 @@ impl ApplicationHandler for Gui {
                 }
                 if action == Action::Export {
                     self.session.close_export_menu();
-                    self.save_export();
+                    self.begin_export();
                     return;
                 }
                 let copied = self.session.apply(action);

@@ -10,7 +10,7 @@ use k2f_package::{
     sign_package, unpack_bytes, utc_unix_seconds, write_dir, SecretKey, WriteDirOpts,
 };
 use k2f_paint::{OpenedDocument, OFFICIAL_PNG_SCALE};
-use k2f_pdf::{export_opened, PdfExportOptions, PdfScale};
+use k2f_pdf::{export_opened, DEFAULT_EXPORT_SCALE, PdfExportOptions, PdfScale};
 
 use markdown::{collect_md, convert_markdown};
 
@@ -85,7 +85,7 @@ enum Commands {
         package: PathBuf,
         #[arg(short, long)]
         output: PathBuf,
-        #[arg(long, default_value_t = OFFICIAL_PNG_SCALE)]
+        #[arg(long, default_value_t = DEFAULT_EXPORT_SCALE)]
         scale: f32,
         /// Append per-page source captions and a final integrity verification page.
         #[arg(long)]
@@ -167,6 +167,7 @@ fn dispatch(command: Commands) -> anyhow::Result<()> {
         }
         Commands::Compile { package } => {
             let mut pkg = unpack_bytes(&fs::read(&package)?)?;
+            k2f_package::apply_coverage_subset(&mut pkg.fonts)?;
             let assets: std::collections::HashMap<String, Vec<u8>> =
                 pkg.assets.clone().into_iter().collect();
             let outcome = compile_outcome(

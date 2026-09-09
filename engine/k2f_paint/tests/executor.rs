@@ -1,8 +1,8 @@
 mod common;
 
 use k2f_core::{
-    BoxDecoration, FillRef, GeometryNode, LayoutResult, LockFile, Page, PageRenderPlan, PaintOp,
-    Pt, Rect, RenderPlan,
+    Border, BorderEdge, BorderStyle, BoxDecoration, Fill, FillRef, GeometryNode, LayoutResult,
+    LockFile, Page, PageRenderPlan, PaintOp, Pt, Rect, RenderPlan,
 };
 use k2f_paint::{render_lockfile_page_to_png, single_font_map, PaintError, OFFICIAL_PNG_SCALE};
 
@@ -133,4 +133,67 @@ fn starter_with_license_txt_renders() {
     )
     .unwrap();
     assert!(png.starts_with(b"\x89PNG"));
+}
+
+#[test]
+fn four_edge_border_follows_corner_radius() {
+    // Inset box so the stroke is not clipped at the pixmap edge.
+    let mut lock = box_lock(BoxDecoration {
+        background: Some(FillRef::Inline(Fill::Solid {
+            color: "#00FF00".into(),
+        })),
+        border: Some(Border {
+            width_pt: 4000,
+            color: "#FF0000".into(),
+            edges: vec![
+                BorderEdge::Top,
+                BorderEdge::Right,
+                BorderEdge::Bottom,
+                BorderEdge::Left,
+            ],
+            style: BorderStyle::Solid,
+        }),
+        corner_radius_pt: Some(20_000),
+        ..Default::default()
+    });
+    lock.geometry.pages[0].root.width = Pt(100_000);
+    lock.geometry.pages[0].root.height = Pt(100_000);
+    match &mut lock.render_plan.pages[0].ops[0] {
+        PaintOp::DrawBox { rect, .. } => {
+            *rect = Rect {
+                x: Pt(10_000),
+                y: Pt(10_000),
+                width: Pt(50_000),
+                height: Pt(50_000),
+            };
+        }
+        _ => panic!("expected DrawBox"),
+    }
+
+    let png = render_lockfile_page_to_png(
+        &lock,
+        0,
+        OFFICIAL_PNG_SCALE,
+        &single_font_map(&common::font_bytes()),
+        &Default::default(),
+    )
+    .unwrap();
+    let decoded = image::load_from_memory(&png).unwrap().to_rgba8();
+    // scale 2: box [20,20]–[120,120], radius 40px. Ear (22,22) is inside the
+    // axis-aligned rect but outside the rounded fill/stroke.
+    let ear = decoded.get_pixel(22, 22);
+    assert!(
+        ear[0] > 200 && ear[1] > 200 && ear[2] > 200,
+        "square-corner ear must not be the red border, got {ear:?}"
+    );
+    let mid_top = decoded.get_pixel(70, 20);
+    assert!(
+        mid_top[0] > 150 && mid_top[1] < 80,
+        "mid-edge stroke should stay red, got {mid_top:?}"
+    );
+    let interior = decoded.get_pixel(70, 70);
+    assert!(
+        interior[1] > 150 && interior[0] < 80,
+        "interior should stay green fill, got {interior:?}"
+    );
 }

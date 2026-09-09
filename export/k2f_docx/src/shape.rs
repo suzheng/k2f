@@ -1,8 +1,8 @@
 use crate::coord::{millipt_to_emu, pt_to_emu};
 use crate::geo::is_full_page_rect;
-use crate::ir::{LineDash, ShapeBox};
+use crate::ir::{GradientFill, GradientStopFill, LineDash, ShapeBox};
 use crate::DocxError;
-use k2f_core::{Border, BorderEdge, BorderStyle, BoxDecoration, Fill, Pt, Rect};
+use k2f_core::{Border, BorderEdge, BorderStyle, BoxDecoration, Fill, LinearGradient, Pt, Rect};
 use k2f_paint::{parse_hex_rgba, resolve_fill};
 
 pub(crate) fn shapes_from_box(
@@ -20,22 +20,20 @@ pub(crate) fn shapes_from_box(
     if decoration.shadow.is_some() || decoration.blur.is_some() {
         return Ok(Vec::new());
     }
-    let fill_hex = match resolve_fill(decoration) {
-        Ok(Some(Fill::LinearGradient { .. })) => return Ok(Vec::new()),
-        Ok(Some(Fill::Solid { color })) => Some(opaque_srgb_hex(&color)?),
-        Ok(None) => None,
+    let (fill_hex, fill_alpha, gradient) = match resolve_fill(decoration) {
+        Ok(Some(Fill::LinearGradient { value })) => (None, 255, Some(gradient_from_lock(&value)?)),
+        Ok(Some(Fill::Solid { color })) => match rgba_hex_alpha(&color)? {
+            None => (None, 255, None),
+            Some((hex, alpha)) => (Some(hex), alpha, None),
+        },
+        Ok(None) => (None, 255, None),
         Err(k2f_paint::PaintError::UnresolvedRef(name)) => {
             return Err(DocxError::Write(format!("unresolved fill ref '{name}'")));
         }
         Err(e) => return Err(e.into()),
     };
-    let fill_hex = match fill_hex {
-        Some(None) => return Ok(Vec::new()),
-        Some(Some(hex)) => Some(hex),
-        None => None,
-    };
     let line = line_from(decoration)?;
-    if fill_hex.is_none() && line.is_none() {
+    if fill_hex.is_none() && gradient.is_none() && line.is_none() {
         return Ok(Vec::new());
     }
     // Paper-colored large fills sit behind text/pictures so later white
@@ -44,10 +42,14 @@ pub(crate) fn shapes_from_box(
     // contrasting fill (cover body, yellow band) would vanish — those stay in
     // front as empty text boxes (in-front shapes cover later labels). Thin
     // fills (1 pt rules, few-pt accent bars) always stay in front.
+    // Gradients and translucent fills stay in front: behindDoc would hide them
+    // under white `w:background`, and they are not paper-colored cards.
     let behind_doc = behind_doc_for_fill(
         node_id,
         rect,
         fill_hex.as_deref(),
+        fill_alpha,
+        gradient.is_some(),
         page_w,
         page_h,
         paper_hex,
@@ -59,6 +61,8 @@ pub(crate) fn shapes_from_box(
         cx_emu: pt_to_emu(rect.width),
         cy_emu: pt_to_emu(rect.height),
         fill_hex,
+        fill_alpha,
+        gradient,
         corner_emu: millipt_to_emu(decoration.corner_radius_pt.unwrap_or(0).max(0)),
         line_hex: None,
         line_w_emu: 0,
@@ -69,13 +73,15 @@ pub(crate) fn shapes_from_box(
     match line {
         None => Ok(vec![base]),
         Some(ln) if ln.all_four => {
-            if behind_doc && base.fill_hex.is_some() {
+            if behind_doc && (base.fill_hex.is_some() || base.gradient.is_some()) {
                 // Fill stays behind text/pictures. The outline must not: LibreOffice
                 // Writer paints behindDoc shapes under `w:background`, so a merged
                 // fill+stroke frame (drawing title blocks, card shells) disappears.
                 let fill = base.clone();
                 let mut stroke = base;
                 stroke.fill_hex = None;
+                stroke.fill_alpha = 255;
+                stroke.gradient = None;
                 stroke.behind_doc = false;
                 stroke.line_hex = Some(ln.hex);
                 stroke.line_w_emu = ln.w_emu;
@@ -92,7 +98,7 @@ pub(crate) fn shapes_from_box(
         }
         Some(ln) => {
             let mut out = Vec::new();
-            if base.fill_hex.is_some() {
+            if base.fill_hex.is_some() || base.gradient.is_some() {
                 out.push(base.clone());
             }
             out.extend(edge_bars(&base, decoration.border.as_ref().unwrap(), &ln));
@@ -101,16 +107,49 @@ pub(crate) fn shapes_from_box(
     }
 }
 
+fn gradient_from_lock(value: &LinearGradient) -> Result<GradientFill, DocxError> {
+    let LinearGradient::Linear {
+        angle_degrees,
+        stops,
+    } = value;
+    let mut out = Vec::with_capacity(stops.len());
+    for stop in stops {
+        let Some((hex, alpha)) = rgba_hex_alpha(&stop.color)? else {
+            continue;
+        };
+        out.push(GradientStopFill {
+            pos: stop.pos.clamp(0, 1000),
+            hex,
+            alpha,
+        });
+    }
+    if out.is_empty() {
+        return Err(DocxError::Write("linear gradient has no stops".into()));
+    }
+    Ok(GradientFill {
+        angle_degrees: *angle_degrees,
+        stops: out,
+    })
+}
+
 fn behind_doc_for_fill(
-    node_id: &str,
+    _node_id: &str,
     rect: &Rect,
     fill_hex: Option<&str>,
+    fill_alpha: u8,
+    is_gradient: bool,
     page_w: Pt,
     page_h: Pt,
     paper_hex: &str,
 ) -> bool {
-    if node_id.contains("::background") && is_full_page_rect(page_w, page_h, rect) {
+    // Full-page fills (gradient shells, named ::background) sit behind text.
+    // A page-sized in-front shape covers later labels in LibreOffice Writer.
+    // Non-page glass/translucent fills stay in front (above the page fill).
+    if is_full_page_rect(page_w, page_h, rect) {
         return true;
+    }
+    if is_gradient || fill_alpha < 255 {
+        return false;
     }
     let Some(hex) = fill_hex else {
         return false;
@@ -222,6 +261,8 @@ fn edge_bars(base: &ShapeBox, border: &Border, ln: &LineSpec) -> Vec<ShapeBox> {
             cx_emu: cx,
             cy_emu: cy,
             fill_hex: Some(ln.hex.clone()),
+            fill_alpha: 255,
+            gradient: None,
             corner_emu: 0,
             line_hex: None,
             line_w_emu: 0,
@@ -241,13 +282,13 @@ pub(crate) fn round_rect_adj(corner_emu: i64, cx: i64, cy: i64) -> i64 {
     (corner_emu.saturating_mul(100_000) / min).clamp(0, 50_000)
 }
 
-fn opaque_srgb_hex(color: &str) -> Result<Option<String>, DocxError> {
+fn rgba_hex_alpha(color: &str) -> Result<Option<(String, u8)>, DocxError> {
     let [r, g, b, a] = parse_hex_rgba(color)
         .ok_or_else(|| DocxError::Write(format!("unparseable fill color '{color}'")))?;
-    if a < 255 {
+    if a == 0 {
         return Ok(None);
     }
-    Ok(Some(format!("{r:02X}{g:02X}{b:02X}")))
+    Ok(Some((format!("{r:02X}{g:02X}{b:02X}"), a)))
 }
 
 fn srgb_hex(color: &str) -> Result<String, DocxError> {

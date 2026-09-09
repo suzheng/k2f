@@ -1,6 +1,5 @@
 use crate::DocxError;
-use k2f_core::{BoxDecoration, Fill, NodeContent, SemanticNode, ROLE_MATH};
-use k2f_paint::{parse_hex_rgba, resolve_fill};
+use k2f_core::{BoxDecoration, NodeContent, SemanticNode, ROLE_MATH};
 use std::collections::HashSet;
 
 pub fn is_rule_id(node_id: &str) -> bool {
@@ -26,20 +25,8 @@ pub fn box_is_effect(node_id: &str, decoration: &BoxDecoration) -> Result<bool, 
     if is_rule_id(node_id) {
         return Ok(false);
     }
-    if decoration.shadow.is_some() || decoration.blur.is_some() {
-        return Ok(true);
-    }
-    match resolve_fill(decoration) {
-        Ok(Some(Fill::LinearGradient { .. })) => Ok(true),
-        Ok(Some(Fill::Solid { color })) => {
-            let [_, _, _, a] = parse_hex_rgba(&color)
-                .ok_or_else(|| DocxError::Write(format!("unparseable fill color '{color}'")))?;
-            Ok(a < 255)
-        }
-        Ok(None) => Ok(false),
-        Err(k2f_paint::PaintError::UnresolvedRef(name)) => {
-            Err(DocxError::Write(format!("unresolved fill ref '{name}'")))
-        }
-        Err(e) => Err(e.into()),
-    }
+    // Gradients and translucent solids are native DrawingML fills. Rasterizing
+    // them as pictures makes LibreOffice Writer paint the slice above later
+    // text. Keep rasters for blur/shadow (no native equivalent).
+    Ok(decoration.shadow.is_some() || decoration.blur.is_some())
 }

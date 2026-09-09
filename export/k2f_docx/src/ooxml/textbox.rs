@@ -11,10 +11,7 @@ pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, St
         .map(|r| word_hex_color(&r.color_hex))
         .unwrap_or_else(|| "000001".into());
     let fill = match &tb.fill_hex {
-        Some(hex) => format!(
-            "                    <a:solidFill>\n                      <a:srgbClr val=\"{}\"/>\n                    </a:solidFill>\n",
-            word_hex_color(hex)
-        ),
+        Some(hex) => super::drawing::solid_fill_xml(hex, tb.fill_alpha),
         None => "                    <a:noFill/>\n".into(),
     };
     let (l, t, r, b) = if tb.numbered || tb.bullet {
@@ -331,6 +328,7 @@ mod tests {
             preserve_whitespace: false,
             relative_height: 1,
             fill_hex: None,
+            fill_alpha: 255,
             wrap: true,
             corner_emu: 0,
         }

@@ -20,6 +20,8 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 boon = "0.6"
 ed25519-dalek = { version = "2", default-features = false, features = ["std", "alloc", "zeroize"] }
 getrandom = "0.3"
+ttf-parser = { version = "0.25.1", default-features = false, features = ["std"] }
+allsorts = { version = "0.17", default-features = false, features = ["flate2_rust"] }
 
 [dev-dependencies]
 k2f_layout = { path = "../k2f_layout", version = "0.2.0" }

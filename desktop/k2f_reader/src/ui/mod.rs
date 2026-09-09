@@ -10,6 +10,7 @@ mod event_loop;
 mod font;
 mod hud;
 mod input;
+mod pdf_dialog;
 mod raster;
 mod scroll;
 mod session;

@@ -100,8 +100,12 @@ impl Border {
         self.edges.contains(&edge)
     }
 
+    pub fn draws_all_four_edges(&self) -> bool {
+        is_all_border_edges(&self.edges)
+    }
+
     pub fn is_full_rect_stroke(&self) -> bool {
-        is_all_border_edges(&self.edges) && matches!(self.style, BorderStyle::Solid)
+        self.draws_all_four_edges() && matches!(self.style, BorderStyle::Solid)
     }
 }
 

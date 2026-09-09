@@ -119,6 +119,51 @@ def test_pack_verify_catalog_without_k2f_cli_env() -> None:
         assert "UNSIGNED" in proc.stdout or "UNSIGNED" in proc.stderr
 
 
+def test_pack_verify_one_page_underfill_is_warning() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        doc = tmp_path / "doc"
+        out = tmp_path / "doc.K2F"
+        init_proc = _run_init(doc)
+        assert init_proc.returncode == 0, init_proc.stderr
+        (doc / "content" / "root.json").write_text(
+            """{
+  "id": "root",
+  "role": "document",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "root.title",
+          "role": "h1",
+          "content": { "type": "text", "value": "Short invoice title" }
+        }
+      ]
+    }
+  }
+}
+""",
+            encoding="utf-8",
+        )
+        pack_proc = subprocess.run(
+            [
+                sys.executable,
+                str(PACK_VERIFY),
+                str(doc),
+                "-o",
+                str(out),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert pack_proc.returncode == 0, pack_proc.stdout + pack_proc.stderr
+        combined = pack_proc.stdout + pack_proc.stderr
+        assert "PAGE_UNDERFILL" in combined
+        assert out.is_file()
+
+
 def test_init_package_pack_verify() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
@@ -233,6 +278,9 @@ def test_pack_verify_bare_render_writes_to_workspace_tmp() -> None:
     ).resolve()
     nested = mod.resolve_render_path(Path("out/preview.png"), output)
     assert nested != (output.parent / "tmp" / "preview.png").resolve()
+    assert mod.extra_render_path(Path("/tmp/elsewhere/tmp/preview.png"), 1) == Path(
+        "/tmp/elsewhere/tmp/preview-1.png"
+    )
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)

@@ -1,7 +1,7 @@
 use crate::AppState;
 
 /// Same steps as `sdk/js/viewer/mount.js`, plus 2.5 / 3.0 to match `AppState` clamp.
-const ZOOM_STEPS: [f32; 8] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0];
+const ZOOM_STEPS: [f32; 12] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {

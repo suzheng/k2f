@@ -25,6 +25,7 @@ import {
   writeStoredExportFormat,
 } from "./export-format.js";
 import { exportDocument } from "./export-actions.js";
+import { bindPdfQualityDialog } from "./pdf-quality-dialog.js";
 import { bindFullscreen } from "./fullscreen.js";
 import { bindEditMode } from "./edit-mode.js";
 import { ZOOM_STEPS, fitZoom, stageInnerWidth } from "./zoom-fit.js";
@@ -61,6 +62,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
   let zoom = 1;
 
   const menus = createMenuController({ root: els.root, signal });
+  const pdfQuality = bindPdfQualityDialog(els.root, signal);
   const chromeScroll = bindChromeScroll({
     root: els.root,
     chrome: els.chrome,
@@ -250,12 +252,20 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     if (!item) return;
     menus.closeAll();
     setExportFormat(item.dataset.value);
-    downloadExport(item.dataset.value);
+    beginExport(item.dataset.value);
   }
 
-  function downloadExport(format = exportFormat) {
+  function beginExport(format = exportFormat) {
+    if (normalizeExportFormat(format) === "pdf") {
+      pdfQuality.open((scale) => downloadExport("pdf", scale));
+      return;
+    }
+    downloadExport(format);
+  }
+
+  function downloadExport(format = exportFormat, pdfScale) {
     try {
-      const { bytes: out, filename, mime } = runExport(format);
+      const { bytes: out, filename, mime } = runExport(format, pdfScale);
       downloadBytes(out, filename, mime);
     } catch (err) {
       if (bannerMode !== "off") {
@@ -371,7 +381,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     });
   }
 
-  function runExport(format = exportFormat) {
+  function runExport(format = exportFormat, pdfScale) {
     if (!viewer) throw new Error("UNLOCKED: no viewer");
     const title = viewer.title?.() ?? options.title ?? "document";
     if (editor) {
@@ -385,6 +395,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
       format: normalizeExportFormat(format),
       Viewer: k2f.Viewer,
       k2fToMarkdown: k2f.k2fToMarkdown?.bind(k2f),
+      pdfScale,
     });
   }
 
@@ -436,7 +447,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
   els.exportBtn.addEventListener(
     "click",
     () => {
-      downloadExport();
+      beginExport();
     },
     { signal },
   );

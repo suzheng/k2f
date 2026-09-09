@@ -7,8 +7,11 @@ pub enum PdfScale {
     X4,
 }
 
+/// Default raster stamp scale for PDF export (`--scale` / GUI).
+pub const DEFAULT_EXPORT_SCALE: f32 = 4.0;
+
 impl PdfScale {
-    pub const DEFAULT: Self = Self::X2;
+    pub const DEFAULT: Self = Self::X4;
 
     pub fn as_f32(self) -> f32 {
         match self {

@@ -1,6 +1,6 @@
 /** UI zoom steps and fit-to-width on open. */
 
-export const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+export const ZOOM_STEPS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1, 1.25, 1.5, 2];
 
 const STAGE_PAD = 48;
 

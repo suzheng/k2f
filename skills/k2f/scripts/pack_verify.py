@@ -64,6 +64,10 @@ def parse_pages(stderr: str) -> int | None:
     return int(matches[-1])
 
 
+def extra_render_path(primary: Path, page: int) -> Path:
+    return primary.with_name(f"{primary.stem}-{page}{primary.suffix}")
+
+
 def resolve_render_path(render: Path, output: Path) -> Path:
     """Bare filename (preview.png) → {output.parent}/tmp/. Otherwise CWD-relative."""
     path = render.expanduser()
@@ -102,10 +106,10 @@ def main() -> int:
         "--render",
         type=Path,
         metavar="PNG",
-        help="Optional: render one page to this PNG after verify. "
-        "A bare filename is written under tmp/ next to the output .K2F "
-        "(e.g. --render preview.png → <out-dir>/tmp/preview.png). "
-        "Paths with a directory are still relative to the shell CWD.",
+        help="Optional: render after verify. A bare filename is written under "
+        "tmp/ next to the output .K2F (e.g. --render preview.png → "
+        "<out-dir>/tmp/preview.png). Paths with a directory stay CWD-relative. "
+        "The --page index is the primary file; extra pages write preview-1.png …",
     )
     parser.add_argument(
         "--page",
@@ -155,7 +159,7 @@ def main() -> int:
         if pages != args.expect_pages:
             print(
                 f"error: expected {args.expect_pages} page(s), got {pages} "
-                f"(preview.png is only page 0 — shrink layout or raise --expect-pages)",
+                f"(shrink layout or raise --expect-pages)",
                 file=sys.stderr,
             )
             return 1
@@ -176,6 +180,23 @@ def main() -> int:
             ]
         )
         print(f"ok: rendered {render_out}", flush=True)
+        if pages is not None and pages > 1:
+            for i in range(pages):
+                if i == args.page:
+                    continue
+                extra = extra_render_path(render_out, i)
+                run(
+                    [
+                        *prefix,
+                        "render",
+                        str(output),
+                        "--page",
+                        str(i),
+                        "-o",
+                        str(extra),
+                    ]
+                )
+                print(f"ok: rendered {extra}", flush=True)
 
     if pages is not None:
         print(f"ok: {output} pages={pages}")

@@ -432,6 +432,77 @@ export const VIEWER_CSS = `
 }
 .k2f-menu-export { display: none; }
 .k2f-export-text { display: none; }
+.k2f-dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.35);
+}
+.k2f-dialog-backdrop[hidden] { display: none; }
+.k2f-dialog {
+  width: min(100%, 360px);
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--k2f-surface);
+  color: var(--k2f-text);
+  border: 1px solid var(--k2f-divider);
+  box-shadow: var(--k2f-menu-shadow);
+}
+.k2f-dialog-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+}
+.k2f-dialog-hint {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--k2f-text-secondary);
+}
+.k2f-dialog-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.k2f-dialog-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--k2f-divider);
+  cursor: pointer;
+  font-size: 14px;
+}
+.k2f-dialog-option:hover { background: var(--k2f-hover); }
+.k2f-dialog-option input { accent-color: var(--k2f-primary); }
+.k2f-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.k2f-dialog-actions button {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.k2f-dialog-actions button[data-act="cancel"] {
+  background: var(--k2f-hover);
+  color: var(--k2f-text);
+}
+.k2f-dialog-actions button[data-act="confirm"] {
+  background: var(--k2f-primary);
+  color: #fff;
+}
 
 @container k2f (min-width: 1200px) {
   .k2f-export-text { display: inline; }
@@ -444,6 +515,10 @@ export const VIEWER_CSS = `
   .k2f-toolbar button {
     width: 28px;
     height: 28px;
+  }
+  .k2f-page-nav button[data-act="prev"],
+  .k2f-page-nav button[data-act="next"] {
+    display: none;
   }
   .k2f-export { display: none; }
   .k2f-menu-export { display: flex; flex-direction: column; gap: 2px; }

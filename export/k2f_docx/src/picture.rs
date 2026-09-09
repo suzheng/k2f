@@ -89,12 +89,45 @@ pub(crate) fn pic_xml(pic: &PictureBox, embed_rid: &str, cnv_id: u32) -> String 
     pic_xml_named(pic, embed_rid, &pic.node_id, cnv_id)
 }
 
-pub(crate) fn raster_pic_xml(pic: &PictureBox, embed_rid: &str, cnv_id: u32) -> String {
-    pic_xml_named(
-        pic,
-        embed_rid,
-        &format!("k2f-raster:{}", pic.node_id),
-        cnv_id,
+/// Effect slices (gradient / glass / shadow) as a DrawingML shape with a blip
+/// fill. LibreOffice Writer paints `pic:pic` above every `wps:wsp` regardless of
+/// `behindDoc` / `relativeHeight`, so a full-page gradient raster would cover
+/// later text. A `wps:wsp` joins the shape z-order stack.
+pub(crate) fn raster_wsp_xml(pic: &PictureBox, embed_rid: &str) -> String {
+    format!(
+        r#"                <wps:wsp>
+                  <wps:cNvSpPr txBox="1"/>
+                  <wps:spPr>
+                    <a:xfrm>
+                      <a:off x="0" y="0"/>
+                      <a:ext cx="{cx}" cy="{cy}"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="rect">
+                      <a:avLst/>
+                    </a:prstGeom>
+                    <a:blipFill>
+                      <a:blip r:embed="{rid}"/>
+                      <a:stretch>
+                        <a:fillRect/>
+                      </a:stretch>
+                    </a:blipFill>
+                    <a:ln>
+                      <a:noFill/>
+                    </a:ln>
+                  </wps:spPr>
+                  <wps:txbx>
+                    <w:txbxContent>
+                      <w:p/>
+                    </w:txbxContent>
+                  </wps:txbx>
+                  <wps:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t">
+                    <a:noAutofit/>
+                  </wps:bodyPr>
+                </wps:wsp>
+"#,
+        cx = pic.cx_emu,
+        cy = pic.cy_emu,
+        rid = embed_rid,
     )
 }
 

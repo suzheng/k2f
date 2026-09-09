@@ -35,7 +35,7 @@ pub(crate) fn draw_box(
     }
 
     if let Some(border) = &decoration.border {
-        stroke_border(pixmap, x, y, w, h, border, scale)?;
+        stroke_border(pixmap, x, y, w, h, radius_px, border, scale)?;
     }
 
     Ok(())
@@ -47,6 +47,7 @@ fn stroke_border(
     y: f32,
     w: f32,
     h: f32,
+    radius_px: f32,
     border: &Border,
     scale: f32,
 ) -> Result<(), PaintError> {
@@ -60,8 +61,8 @@ fn stroke_border(
     paint.set_color(color);
     let stroke = make_stroke(width_px, border.style, scale);
 
-    if border.is_full_rect_stroke() {
-        if let Some(path) = rounded_rect_path(x, y, w, h, 0.0) {
+    if border.draws_all_four_edges() {
+        if let Some(path) = rounded_rect_path(x, y, w, h, radius_px) {
             pixmap
                 .as_mut()
                 .stroke_path(&path, &paint, &stroke, Transform::identity(), None);
@@ -69,7 +70,7 @@ fn stroke_border(
         return Ok(());
     }
 
-    // Partial edges / dashed: draw per-edge straight segments (corner radius ignored).
+    // Partial edges: straight segments (corner radius ignored).
     for edge in &border.edges {
         let mut pb = PathBuilder::new();
         match edge {

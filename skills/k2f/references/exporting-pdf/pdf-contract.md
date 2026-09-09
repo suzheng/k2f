@@ -32,7 +32,7 @@ Per-page detection. If the render plan includes any of:
 - `DrawBox` with `shadow`
 - `DrawBox` with `linear_gradient` fill
 
-…the exporter runs `k2f_paint` at scale **2** (default), **3**, or **4** (`--scale` / `export_pdf_at`), embeds the page as one RGB image, and keeps invisible selectable text. This is **not** a second layout pass — geometry stays in the lock.
+…the exporter runs `k2f_paint` at scale **2**, **3**, or **4** (default **4**; `--scale` / `export_pdf_at`), embeds the page as one RGB image, and keeps invisible selectable text. This is **not** a second layout pass — geometry stays in the lock.
 
 Pages without those ops stay on the vector path (visible outlines + invisible layer).
 

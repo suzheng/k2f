@@ -18,7 +18,7 @@ Canonical paths (see [k2f-v0.1.md](../spec/k2f-v0.1.md)):
 | `changelog.json` | yes | Edit history |
 | `document.K2F.lock` | after compile | State C geometry + render plan |
 | `schema/*.json` | yes | Five format schemas only |
-| `assets/fonts/*` | yes | Embedded fonts |
+| `assets/fonts/*` | yes | Embedded fonts (pack coverage-subsets large CJK faces to GB2312 ∪ Big5 level 1 ∪ JIS X 0208 Han + all non-Han glyphs) |
 | `assets/images/*` / `assets/data/*` | no | Images / table data |
 
 **CLI workflow:**

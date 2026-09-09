@@ -15,7 +15,8 @@ If Word’s “Show editing marks” is on, the file looks like many floating te
 | Plain-text table | `w:tbl` inside a positioned text box | yes |
 | Bitmap / SVG illustration | `pic:pic` | replaceable |
 | Opaque solid box | `wps:wsp` | fill can be changed |
-| blur / glass / shadow / gradient / translucency / math | `k2f-raster:` picture | no |
+| Linear gradient / translucent solid | `wps:wsp` `a:gradFill` / `a:alpha` | fill can be changed |
+| blur / shadow / math | `k2f-raster:` `wps:wsp` + `a:blipFill` | no |
 
 Do **not** stamp a full-page PNG and overlay invisible text. That is the PDF-bridge stamp path and would destroy native text, tables, and pictures.
 

@@ -41,9 +41,11 @@ fn skips_shadow_rule_alpha_empty() {
     dec.background = Some(FillRef::Inline(Fill::Solid {
         color: "#FFFFFF80".into(),
     }));
-    assert!(shapes_from_box("glass", &rect(), &dec, w, h, 0, "FFFFFF")
-        .unwrap()
-        .is_empty());
+    let glass = shapes_from_box("glass", &rect(), &dec, w, h, 0, "FFFFFF").unwrap();
+    assert_eq!(glass.len(), 1);
+    assert_eq!(glass[0].fill_hex.as_deref(), Some("FFFFFF"));
+    assert_eq!(glass[0].fill_alpha, 0x80);
+    assert!(!glass[0].behind_doc);
     assert!(shapes_from_box(
         "empty",
         &rect(),
@@ -132,9 +134,28 @@ fn skips_gradient_and_blur() {
         })),
         ..Default::default()
     };
-    assert!(shapes_from_box("card", &rect(), &grad, w, h, 0, "FFFFFF")
-        .unwrap()
-        .is_empty());
+    let boxes = shapes_from_box("card", &rect(), &grad, w, h, 0, "FFFFFF").unwrap();
+    assert_eq!(boxes.len(), 1);
+    assert!(
+        boxes[0].gradient.is_some(),
+        "linear gradient is a native fill"
+    );
+    assert!(
+        !boxes[0].behind_doc,
+        "non-page gradient stays in front of the page fill"
+    );
+    let full = Rect {
+        x: Pt(0),
+        y: Pt(0),
+        width: w,
+        height: h,
+    };
+    let page_grad = shapes_from_box("snap.shell", &full, &grad, w, h, 0, "FFFFFF").unwrap();
+    assert_eq!(page_grad.len(), 1);
+    assert!(
+        page_grad[0].behind_doc,
+        "full-page gradient must sit behind later text"
+    );
     let blur = BoxDecoration {
         background: Some(FillRef::Inline(Fill::Solid {
             color: "#FFFFFF".into(),

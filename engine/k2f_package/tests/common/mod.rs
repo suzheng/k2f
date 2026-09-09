@@ -25,6 +25,7 @@ pub fn load_contract_engine() -> (Manifest, String) {
 }
 
 pub fn compile_pkg(pkg: &mut Package) {
+    k2f_package::apply_coverage_subset(&mut pkg.fonts).unwrap();
     let assets: std::collections::HashMap<String, Vec<u8>> =
         pkg.assets.clone().into_iter().collect();
     let lock = compile_manifest(

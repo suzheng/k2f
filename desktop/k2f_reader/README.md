@@ -46,7 +46,7 @@ Title: document title for `UNSIGNED`; `K2F Reader — Signed — {title}` or `K2
 | --- | --- |
 | Wheel / trackpad | Scroll the stacked pages |
 | Left / Right | Previous / next page |
-| `+` / `-` | Zoom (0.5–3.0) |
+| `+` / `-` | Zoom (0.1–3.0) |
 | Drag on lock text | Select characters (I-beam cursor, blue highlight like the web viewer) |
 | Ctrl/Cmd+C | Copy the selection (`text/plain`) |
 | Ctrl/Cmd+Shift+S | Export in the selected format (native Save) |

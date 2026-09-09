@@ -19,3 +19,11 @@ pub fn pick_save_path(
     }
     dlg.save_file().map(|p| ensure_extension(p, format))
 }
+
+/// Native Open dialog. `.K2F` and `.k2f` are the same format.
+pub fn pick_open_path() -> Option<PathBuf> {
+    rfd::FileDialog::new()
+        .add_filter("K2F document", &["K2F", "k2f"])
+        .add_filter("All files", &["*"])
+        .pick_file()
+}

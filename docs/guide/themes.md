@@ -38,6 +38,8 @@ List templates with `official_templates()` (Python) or `officialTemplates()` (JS
 
 Fonts are embedded in every template. The committed Noto Sans SC file is a **demo subset** (Basic Latin plus the CJK/punctuation needed by in-repo fixtures). K2F never uses system fonts: missing glyphs fail closed (`FONT_MISSING_GLYPH`). When the primary face lacks a glyph, the layout engine tries other embedded package fonts before failing.
 
+`k2f pack`, `Editor.save_bytes`, and `k2f compile` coverage-subset large CJK faces in the **package** (not the author directory): CJK ideographs shrink to GB2312 ∪ Big5 level 1 ∪ JIS X 0208, and every non-Han glyph (Latin, kana, hangul, punctuation) is kept. Faces that would not drop any Han stay byte-identical. A Han outside that union still fails closed. Author dirs may keep a full face for rare-character work; the `.K2F` ZIP does not.
+
 To convert Markdown that needs other scripts:
 
 1. `python3 scripts/md-glyph-report.py path/to/docs` — list missing `U+XXXX` vs SC ∪ emoji.

@@ -10,6 +10,19 @@ Thank you for contributing. This project values deterministic layout, honest int
 
 See [COMPATIBILITY.md](COMPATIBILITY.md) for engine version matching and release expectations.
 
+## Releasing
+
+**Do not** run `scripts/archive/local-publish/` from your machine. That folder holds retired laptop publish scripts (including the old `publish-all.sh` flow).
+
+**Do** publish via GitHub Actions ([`.github/workflows/publish.yml`](.github/workflows/publish.yml)):
+
+1. `bash scripts/publish-preflight.sh`
+2. `bash scripts/trigger-publish-dry-run.sh` (wheels only, no registry upload)
+3. `git tag vX.Y.Z && git push origin vX.Y.Z` — publishes crates.io, npm, and PyPI
+4. Optionally `gh release create vX.Y.Z` for release notes on GitHub
+
+Details: [scripts/archive/local-publish/README.md](scripts/archive/local-publish/README.md)
+
 ## Reporting issues
 
 Use the GitHub issue templates (`.github/ISSUE_TEMPLATE/`):

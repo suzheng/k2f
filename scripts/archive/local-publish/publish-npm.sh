@@ -1,22 +1,11 @@
 #!/usr/bin/env bash
+# CI-only (publish.yml). Do not run from a laptop — see README.md in this directory.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ENV_FILE="$ROOT/../k2f-private/.env"
-
-if [[ -z "${NPM_TOKEN:-}" && -z "${NODE_AUTH_TOKEN:-}" ]]; then
-  if [[ ! -f "$ENV_FILE" ]]; then
-    echo "missing NPM_TOKEN/NODE_AUTH_TOKEN or $ENV_FILE" >&2
-    exit 1
-  fi
-  set -a
-  # shellcheck disable=SC1090
-  source "$ENV_FILE"
-  set +a
-fi
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 
 : "${NPM_TOKEN:=${NODE_AUTH_TOKEN:-}}"
-: "${NPM_TOKEN:?NPM_TOKEN or NODE_AUTH_TOKEN required}"
+: "${NPM_TOKEN:?NPM_TOKEN or NODE_AUTH_TOKEN required (source .env first)}"
 
 # Scoped packages require the npm org @openk2f (https://www.npmjs.com/org/openk2f).
 

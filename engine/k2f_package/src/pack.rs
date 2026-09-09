@@ -7,6 +7,7 @@ use serde_json::Value;
 
 pub fn pack_bytes(package: &Package) -> Result<Vec<u8>, PackageError> {
     let mut package = package.clone();
+    crate::apply_coverage_subset(&mut package.fonts)?;
     package.finalize()?;
     validate_package_schema(&package)?;
     write_zip(&package.to_file_map()?)

@@ -25,7 +25,12 @@ Fix the **semantic tree** or **theme**. Shapes: [`catalog/content/ex_*.json`](..
 
 ## Compile stderr (not AgentError)
 
-`k2f compile` may print `LAYOUT_SLACK id=… unused_below=… (%) … after=…`. Warning only (exit 0). A large stretched box is empty at the bottom — usually a grower, not the shell. `{fr:1}` grows the **box**; text stays top-packed. Put leftover on a figure or dense siblings ([`ex_poster_growers.json`](../../catalog/content/ex_poster_growers.json)), not a 2-line card. Silence does not mean interiors are filled — open the PNG. Not stored in the lock.
+`k2f compile` may print `LAYOUT_SLACK` (hollow `{fr:1}` grower) or `PAGE_UNDERFILL page=… unused_below=… (%)`. Not stored in the lock; compile and `pack_verify.py` exit 0.
+
+- **Invoice/CV/flyer/poster:** treat `PAGE_UNDERFILL` as must-fix — copy [`ex_filled_page.json`](../../catalog/content/ex_filled_page.json); leftover on table/notes `{fr:1}`.
+- **Short letter / last page of a flow:** empty bottom is allowed. `PAGE_UNDERFILL` is not emitted on the last page of a multi-page document.
+- **Non-last `PAGE_UNDERFILL`:** often a `p1`/`p2` page container. Merge into one tree. `break_before: page` on a chapter, annex, or signature node is correct (catalog demos can also trip this).
+- **`LAYOUT_SLACK`:** `{fr:1}` grew the **box**; text stayed top-packed. Leftover → figure or dense siblings ([`ex_poster_growers.json`](../../catalog/content/ex_poster_growers.json)). Auto-height stacks do not emit `LAYOUT_SLACK`.
 
 ## Math messages (not separate codes)
 
@@ -54,4 +59,4 @@ Grid `fr` rows in unbounded height fail with `Cannot resolve fr tracks with infi
 
 ## Integrity after pack
 
-`k2f compile` / `verify` stderr include `pages=N` (multi-page is legal). For single-page posters use `pack_verify.py --expect-pages 1`. `k2f verify` may report `UNSIGNED` (normal for agent output), `VALID`, or broken-hash banners. Relock with `save` / `compile` after content or theme changes.
+`k2f compile` / `verify` stderr include `pages=N` (multi-page is legal). Invoice/CV/poster: `pack_verify.py --expect-pages 1`. `k2f verify` may report `UNSIGNED` (normal for agent output), `VALID`, or broken-hash banners. Relock with `save` / `compile` after content or theme changes.

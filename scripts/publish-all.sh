@@ -1,23 +1,21 @@
 #!/usr/bin/env bash
-# Publish all registry targets. Requires k2f-private/.env with tokens.
-# Known blockers (2026-08-28):
-#   - crates.io: account must have verified email (https://crates.io/settings/profile)
-#   - npm: published as @openk2f/k2f (unscoped "k2f" blocked by npm typosquat policy)
+# Release cheat sheet — does not upload anything. Prints the supported publish flow.
+#
+# Full docs: scripts/archive/local-publish/README.md
+# Workflow:  .github/workflows/publish.yml
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$ROOT"
+cat <<'EOF'
+K2F release (GitHub Actions — do not publish from a laptop)
 
-echo "=== Preflight ==="
-bash scripts/publish-preflight.sh || true
+  1. Bump versions + CHANGELOG.md
+  2. bash scripts/publish-preflight.sh
+  3. bash scripts/trigger-publish-dry-run.sh          # optional: build wheels only
+  4. git tag vX.Y.Z && git push origin vX.Y.Z       # publishes crates.io, npm, PyPI
 
-echo "=== crates.io ==="
-bash scripts/publish-crates.sh || echo "crates.io publish failed (see log)"
+  Optional: gh release create vX.Y.Z --notes-file ...
 
-echo "=== npm ==="
-bash scripts/publish-npm.sh || echo "npm publish failed (see log)"
+  Linux wheel smoke (Modal): k2f-private/scripts/pypi-linux-smoke.sh
 
-echo "=== PyPI ==="
-bash scripts/publish-pypi-local.sh || echo "PyPI publish failed (see log)"
-
-echo "=== Done ==="
+Legacy local upload scripts: scripts/archive/local-publish/ (retired)
+EOF

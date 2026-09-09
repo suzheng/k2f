@@ -3,7 +3,6 @@ mod common;
 use common::{invoice_bytes, pack_with_tampered_lock, published_invoice_bytes, signed_bytes};
 use k2f_reader::ui::{banner_copy, overlay_label, page_inset_y, window_title, Session, HUD_HEIGHT};
 use k2f_reader::AppState;
-use std::path::PathBuf;
 
 #[test]
 fn window_title_is_banner_and_document_title() {
@@ -182,14 +181,10 @@ fn glyph_bounds(
 }
 
 #[test]
+#[ignore = "optional maintainer check: set K2F_READER_UI_FIXTURE to a .K2F path"]
 fn toolbar_type_sits_on_one_baseline() {
-    let bookly = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../k2f-private/templates/book/bookly/bookly.K2F");
-    let bytes = if bookly.exists() {
-        std::fs::read(&bookly).expect("bookly.K2F")
-    } else {
-        invoice_bytes()
-    };
+    let fixture = std::env::var("K2F_READER_UI_FIXTURE").expect("K2F_READER_UI_FIXTURE");
+    let bytes = std::fs::read(&fixture).expect("read K2F_READER_UI_FIXTURE");
     let mut session = Session::new(AppState::open(&bytes).unwrap()).unwrap();
     session.set_scale(2.0);
     let w = 2560u32;

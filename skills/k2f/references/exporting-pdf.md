@@ -22,7 +22,7 @@ k2f export-pdf ./out/doc/doc.K2F -o ./out/doc/doc.pdf   # workspace: deliverable
 k2f export-pdf file.K2F -o out.pdf --scale 4   # higher-res stamp pages only
 ```
 
-`--scale` is `2` (default), `3`, or `4` — stamp pages only. Default export has the **same page count as the lock** (no integrity page, no source caption). `--trust-pack` adds those; then run `python3 scripts/check-pdf.py out.pdf` (script lives under this skill’s `scripts/`).
+`--scale` is `2`, `3`, or `4` (default **4**) — stamp pages only. Default export has the **same page count as the lock** (no integrity page, no source caption). `--trust-pack` adds those; then run `python3 scripts/check-pdf.py out.pdf` (script lives under this skill’s `scripts/`).
 
 **Never** fall back to html2pdf, jsPDF, browser print, or React-PDF.
 

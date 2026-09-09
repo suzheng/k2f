@@ -1,4 +1,5 @@
 mod error;
+mod fonts;
 mod includes;
 mod integrity;
 mod load_dir;
@@ -24,6 +25,7 @@ pub use error::{
 pub use integrity::{inspect_package, IntegrityReport, IntegrityStatus};
 pub use load_dir::{load_dir, load_from_file_map};
 pub use manifest::PackageManifest;
+pub use fonts::apply_coverage_subset;
 pub use pack::{pack_bytes, validate_package_schema};
 pub use package::Package;
 pub use schema::{bundled_schema_files, validate_theme_json};

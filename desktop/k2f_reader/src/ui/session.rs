@@ -6,6 +6,7 @@ use super::hud::{
     chrome_hit_at, dip, draw_hud, draw_scrollbar, in_chrome, ChromeHit, ChromePaint,
     SCROLLBAR_WIDTH, STATUS_HEIGHT,
 };
+use super::pdf_dialog::{draw as draw_pdf_dialog, hit_at as pdf_dialog_hit_at, PdfDialogHit, PdfDialogState};
 use super::input::{step_zoom, Action};
 use super::raster::{decode_png, Raster};
 use super::scroll::clamp_scroll;
@@ -38,6 +39,7 @@ pub struct Session {
     pressed: Option<ChromeHit>,
     scale: f32,
     export_menu_open: bool,
+    pdf_dialog: PdfDialogState,
 }
 
 impl Session {
@@ -58,6 +60,7 @@ impl Session {
             pressed: None,
             scale: 1.0,
             export_menu_open: false,
+            pdf_dialog: PdfDialogState::new(),
         };
         s.reload_pages()?;
         let (w, h) = s.scaled_size();
@@ -111,7 +114,7 @@ impl Session {
     }
 
     pub fn set_scale(&mut self, scale: f32) {
-        self.scale = scale.max(0.5);
+        self.scale = scale.max(0.1);
         self.clamp_scroll();
         self.sync_page();
     }
@@ -181,6 +184,11 @@ impl Session {
     }
 
     pub fn pointer_down(&mut self, x: f64, y: f64) {
+        if self.pdf_dialog.open {
+            self.pdf_dialog.pressed =
+                pdf_dialog_hit_at(&self.pdf_dialog, self.win_w, self.win_h, x, y, self.scale);
+            return;
+        }
         if in_chrome(
             &self.app,
             self.win_w,
@@ -217,6 +225,15 @@ impl Session {
     }
 
     pub fn pointer_move(&mut self, x: f64, y: f64) -> bool {
+        if self.pdf_dialog.open {
+            let next =
+                pdf_dialog_hit_at(&self.pdf_dialog, self.win_w, self.win_h, x, y, self.scale);
+            if next != self.pdf_dialog.hover {
+                self.pdf_dialog.hover = next;
+                return true;
+            }
+            return false;
+        }
         if self.drag_from.is_some() {
             self.drag_to = Some((x, y));
             return true;
@@ -239,6 +256,9 @@ impl Session {
     }
 
     pub fn pointer_up(&mut self, x: f64, y: f64) -> Option<CopyPayload> {
+        if self.pdf_dialog.open {
+            return None;
+        }
         if self.pressed.is_some() {
             return None;
         }
@@ -301,6 +321,41 @@ impl Session {
         was
     }
 
+    pub fn pdf_dialog_open(&self) -> bool {
+        self.pdf_dialog.open
+    }
+
+    pub fn open_pdf_dialog(&mut self) {
+        self.close_export_menu();
+        self.pdf_dialog.open_dialog();
+    }
+
+    pub fn close_pdf_dialog(&mut self) -> bool {
+        self.pdf_dialog.close_dialog()
+    }
+
+    pub fn selected_pdf_scale(&self) -> k2f_pdf::PdfScale {
+        self.pdf_dialog.selected_pdf_scale()
+    }
+
+    pub fn take_pdf_dialog_click(&mut self, x: f64, y: f64) -> Option<PdfDialogHit> {
+        if !self.pdf_dialog.open {
+            return None;
+        }
+        let pressed = self.pdf_dialog.pressed.take()?;
+        let now = pdf_dialog_hit_at(&self.pdf_dialog, self.win_w, self.win_h, x, y, self.scale);
+        if now != Some(pressed) {
+            return None;
+        }
+        match pressed {
+            PdfDialogHit::Scale2 => self.pdf_dialog.selected_scale = 2.0,
+            PdfDialogHit::Scale3 => self.pdf_dialog.selected_scale = 3.0,
+            PdfDialogHit::Scale4 => self.pdf_dialog.selected_scale = 4.0,
+            PdfDialogHit::Cancel | PdfDialogHit::Confirm => {}
+        }
+        Some(pressed)
+    }
+
     pub fn pointer_over_text(&self, x: f64, y: f64) -> bool {
         let views = self.all_views(self.win_w, self.win_h);
         let Some(page) = hit_index(x, y, &views) else {
@@ -314,6 +369,9 @@ impl Session {
     }
 
     pub fn pointer_cursor(&self, x: f64, y: f64) -> PointerCursor {
+        if self.pdf_dialog.open {
+            return PointerCursor::Pointer;
+        }
         if self.chrome_hot() && !self.is_dragging() {
             PointerCursor::Pointer
         } else if self.is_dragging() || self.pointer_over_text(x, y) {
@@ -399,6 +457,7 @@ impl Session {
             },
             self.scale,
         );
+        draw_pdf_dialog(&mut buf, win_w, win_h, &self.pdf_dialog, self.scale);
         buf
     }
 

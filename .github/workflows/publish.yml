@@ -1,3 +1,8 @@
+# Canonical release pipeline — do not publish from a laptop.
+# See scripts/archive/local-publish/README.md (local publish-all / publish-pypi-local are archived).
+#
+# Release: git tag v* && git push origin v*  (or workflow_dispatch with upload flags)
+# Dry run: bash scripts/trigger-publish-dry-run.sh
 name: Publish k2f
 
 on:
@@ -31,7 +36,7 @@ jobs:
       - name: Publish Rust crates (topology order)
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: bash scripts/publish-crates.sh
+        run: bash scripts/archive/local-publish/publish-crates.sh
 
   publish-npm:
     if: >-
@@ -50,7 +55,7 @@ jobs:
       - name: Publish npm package @openk2f/k2f
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: bash scripts/publish-npm.sh
+        run: bash scripts/archive/local-publish/publish-npm.sh
 
   publish-pypi:
     runs-on: ${{ matrix.runner }}

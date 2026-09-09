@@ -225,6 +225,26 @@ fn glass_fixture_raster_plus_editable_title() {
     let png = common::bytes_in(&docx, "word/media/raster1.png");
     assert_eq!(&png[..8], b"\x89PNG\r\n\x1a\n");
     assert!(png.len() > 64);
+    let glass = parsed
+        .descendants()
+        .find(|n| {
+            n.has_tag_name("docPr")
+                && common::local_attr(n, "name") == Some("k2f-raster:card.glass")
+        })
+        .and_then(|pr| pr.ancestors().find(|n| n.has_tag_name("anchor")))
+        .expect("glass raster anchor");
+    assert!(
+        glass.descendants().any(|n| n.has_tag_name("blipFill")),
+        "glass chrome must be a shape blipFill so Writer z-orders it with text"
+    );
+    assert!(
+        glass.descendants().any(|n| n.has_tag_name("wsp")),
+        "glass chrome must be wps:wsp, not pic:pic"
+    );
+    assert!(
+        !glass.descendants().any(|n| n.has_tag_name("pic")),
+        "pic:pic would paint above later text boxes in LibreOffice Writer"
+    );
 }
 
 #[test]

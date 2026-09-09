@@ -74,6 +74,8 @@ pub(crate) fn table_ref_placeholder(node_id: &str, rect: &Rect, relative_height:
         cx_emu: pt_to_emu(rect.width),
         cy_emu: pt_to_emu(rect.height),
         fill_hex: None,
+        fill_alpha: 255,
+        gradient: None,
         corner_emu: 0,
         line_hex: Some("808080".into()),
         line_w_emu: millipt_to_emu(1_000),
