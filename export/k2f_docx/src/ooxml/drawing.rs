@@ -349,6 +349,7 @@ mod tests {
             media_name: "raster1.png".into(),
             bytes: vec![],
             relative_height: 0,
+            pin_empty_txbox: true,
         };
         let xml = raster_anchor(&pic, 2, "rId5");
         assert!(xml.contains("name=\"k2f-raster:snap.shell\""), "{xml}");
@@ -362,6 +363,12 @@ mod tests {
             xml.contains("wordprocessingShape"),
             "raster must use the shape graphicData uri, got {xml}"
         );
+        let mut image = pic.clone();
+        image.pin_empty_txbox = false;
+        let xml = raster_anchor(&image, 2, "rId5");
+        assert!(!xml.contains("txBox="), "{xml}");
+        assert!(!xml.contains("txbxContent"), "{xml}");
+        assert!(xml.contains("<a:blipFill>"), "{xml}");
     }
 
     #[test]

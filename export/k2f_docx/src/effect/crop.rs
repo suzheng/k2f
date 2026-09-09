@@ -135,6 +135,7 @@ pub fn picture_from_crop(
         media_name: format!("raster{raster_index}.png"),
         bytes: png,
         relative_height,
+        pin_empty_txbox: true,
     }
 }
 

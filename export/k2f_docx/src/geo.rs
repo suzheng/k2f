@@ -69,6 +69,34 @@ pub(crate) fn image_occluded_by_later_opaque_box(rect: &Rect, later: &[PaintOp])
     })
 }
 
+fn rects_intersect(a: &Rect, b: &Rect) -> bool {
+    a.x.0 < b.x.0.saturating_add(b.width.0)
+        && b.x.0 < a.x.0.saturating_add(a.width.0)
+        && a.y.0 < b.y.0.saturating_add(b.height.0)
+        && b.y.0 < a.y.0.saturating_add(a.height.0)
+}
+
+fn op_rect(op: &PaintOp) -> Option<&Rect> {
+    match op {
+        PaintOp::DrawText { rect, .. }
+        | PaintOp::DrawBox { rect, .. }
+        | PaintOp::DrawImage { rect, .. }
+        | PaintOp::DrawTableReference { rect, .. }
+        | PaintOp::BackdropBlur { rect, .. } => Some(rect),
+        PaintOp::Unknown => None,
+    }
+}
+
+/// Writer paints `pic:pic` above every `wps:wsp`, so a decorative image that
+/// later text/shapes sit on must join the shape z-order stack (`wps:wsp` +
+/// `a:blipFill`) instead of staying a picture. Logos that do not intersect
+/// later paint stay `pic:pic` (replaceable).
+pub(crate) fn image_overlapped_by_later_content(rect: &Rect, later: &[PaintOp]) -> bool {
+    later
+        .iter()
+        .any(|op| op_rect(op).is_some_and(|other| rects_intersect(rect, other)))
+}
+
 fn opaque_srgb_hex(color: &str) -> Option<String> {
     let [r, g, b, a] = parse_hex_rgba(color)?;
     if a < 255 {
@@ -134,6 +162,24 @@ mod tests {
         };
         assert!(!image_occluded_by_later_opaque_box(&img, &[partial]));
         assert!(!image_occluded_by_later_opaque_box(&img, &[]));
+    }
+
+    #[test]
+    fn overlapped_when_later_text_intersects() {
+        let img = r(0, 0, 400, 300);
+        let title = PaintOp::DrawText {
+            node_id: "title".into(),
+            rect: r(50, 80, 200, 40),
+            runs: vec![],
+        };
+        assert!(image_overlapped_by_later_content(&img, &[title]));
+        let aside = PaintOp::DrawText {
+            node_id: "aside".into(),
+            rect: r(500, 0, 80, 20),
+            runs: vec![],
+        };
+        assert!(!image_overlapped_by_later_content(&img, &[aside]));
+        assert!(!image_overlapped_by_later_content(&img, &[]));
     }
 
     #[test]

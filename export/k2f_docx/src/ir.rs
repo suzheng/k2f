@@ -155,6 +155,9 @@ pub struct PictureBox {
     pub media_name: String,
     pub bytes: Vec<u8>,
     pub relative_height: u32,
+    /// Effect slices pin extent with an empty txBox. Lock images under later
+    /// text must not: Writer paints a large empty txBox over later labels.
+    pub pin_empty_txbox: bool,
 }
 
 #[derive(Clone, Debug)]

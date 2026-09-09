@@ -13,7 +13,7 @@ If Word’s “Show editing marks” is on, the file looks like many floating te
 | Ordinary text | `wps:txbx` text box | yes; slight reflow is allowed |
 | Running header/footer | header/footer part + `PAGE` / `NUMPAGES` fields | yes (edit the part, every page changes) |
 | Plain-text table | `w:tbl` inside a positioned text box | yes |
-| Bitmap / SVG illustration | `pic:pic` | replaceable |
+| Bitmap / SVG illustration | `pic:pic`, or `wps:wsp`+`a:blipFill` when later lock paint overlaps | replaceable if `pic:pic` |
 | Opaque solid box | `wps:wsp` | fill can be changed |
 | Linear gradient / translucent solid | `wps:wsp` `a:gradFill` / `a:alpha` | fill can be changed |
 | blur / shadow / math | `k2f-raster:` `wps:wsp` + `a:blipFill` | no |

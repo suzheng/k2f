@@ -151,7 +151,13 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
                     }
                     let pic = picture_from_draw(node_id, rect, src, assets, media_n, rel)?;
                     media_n = media_n.saturating_add(1);
-                    elements.push(PageElement::Picture(pic));
+                    // Writer paints pic:pic above every wps:wsp. Images that
+                    // later lock paint sits on must use the raster shape path.
+                    if crate::geo::image_overlapped_by_later_content(rect, &ops[i + 1..]) {
+                        elements.push(PageElement::Raster(pic));
+                    } else {
+                        elements.push(PageElement::Picture(pic));
+                    }
                 }
                 PaintOp::DrawTableReference { node_id, rect, .. } => {
                     elements.push(PageElement::Shape(table_ref_placeholder(
@@ -188,41 +194,55 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
 }
 
 /// Word Dark Mode inverts text in `noFill` floating boxes. Paint an opaque
-/// underlay matching the shape behind the box (or the page paper).
+/// underlay matching the shape immediately behind the box (or the page paper).
 ///
-/// Skip the paper fallback when a raster/picture already covers the box — a
-/// white underlay on a gradient or glass slice hides the lock chrome (and
-/// lock-white text on that fill).
+/// Skip the paper fallback when the topmost covering layer is chrome
+/// (picture, raster, gradient, glass). A full-page paper shape behind a
+/// decorative SVG must not win — that white underlay hides the lock art.
 fn assign_textbox_underlays(elements: &mut [PageElement], paper_hex: &str) {
-    let shapes: Vec<(u32, i64, i64, i64, i64, String)> = elements
+    enum Behind {
+        Solid(String),
+        Chrome,
+    }
+    struct Layer {
+        rel: u32,
+        x: i64,
+        y: i64,
+        w: i64,
+        h: i64,
+        kind: Behind,
+    }
+    let layers: Vec<Layer> = elements
         .iter()
         .filter_map(|el| match el {
             PageElement::Shape(s)
                 if s.gradient.is_none() && s.fill_alpha >= 255 && s.fill_hex.is_some() =>
             {
-                s.fill_hex.as_ref().map(|h| {
-                    (
-                        s.relative_height,
-                        s.x_emu,
-                        s.y_emu,
-                        s.cx_emu,
-                        s.cy_emu,
-                        h.clone(),
-                    )
+                s.fill_hex.as_ref().map(|h| Layer {
+                    rel: s.relative_height,
+                    x: s.x_emu,
+                    y: s.y_emu,
+                    w: s.cx_emu,
+                    h: s.cy_emu,
+                    kind: Behind::Solid(h.clone()),
                 })
             }
-            _ => None,
-        })
-        .collect();
-    let covers: Vec<(u32, i64, i64, i64, i64)> = elements
-        .iter()
-        .filter_map(|el| match el {
-            PageElement::Picture(p) | PageElement::Raster(p) => {
-                Some((p.relative_height, p.x_emu, p.y_emu, p.cx_emu, p.cy_emu))
-            }
-            PageElement::Shape(s) if s.gradient.is_some() || s.fill_alpha < 255 => {
-                Some((s.relative_height, s.x_emu, s.y_emu, s.cx_emu, s.cy_emu))
-            }
+            PageElement::Picture(p) | PageElement::Raster(p) => Some(Layer {
+                rel: p.relative_height,
+                x: p.x_emu,
+                y: p.y_emu,
+                w: p.cx_emu,
+                h: p.cy_emu,
+                kind: Behind::Chrome,
+            }),
+            PageElement::Shape(s) if s.gradient.is_some() || s.fill_alpha < 255 => Some(Layer {
+                rel: s.relative_height,
+                x: s.x_emu,
+                y: s.y_emu,
+                w: s.cx_emu,
+                h: s.cy_emu,
+                kind: Behind::Chrome,
+            }),
             _ => None,
         })
         .collect();
@@ -232,27 +252,25 @@ fn assign_textbox_underlays(elements: &mut [PageElement], paper_hex: &str) {
         };
         let px = tb.x_emu.saturating_add(tb.cx_emu / 2);
         let py = tb.y_emu.saturating_add(tb.cy_emu / 2);
-        let mut found = None;
-        for (rel, x, y, w, h, hex) in &shapes {
-            if *rel >= tb.relative_height {
+        let mut best: Option<(u32, &Behind)> = None;
+        for layer in &layers {
+            if layer.rel >= tb.relative_height {
                 continue;
             }
-            if px >= *x && py >= *y && px < x.saturating_add(*w) && py < y.saturating_add(*h) {
-                found = Some(hex.clone());
+            if px >= layer.x
+                && py >= layer.y
+                && px < layer.x.saturating_add(layer.w)
+                && py < layer.y.saturating_add(layer.h)
+            {
+                if best.map(|(rel, _)| layer.rel >= rel).unwrap_or(true) {
+                    best = Some((layer.rel, &layer.kind));
+                }
             }
         }
-        tb.fill_hex = if let Some(hex) = found {
-            Some(word_hex_color(&hex))
-        } else if covers.iter().any(|(rel, x, y, w, h)| {
-            *rel < tb.relative_height
-                && px >= *x
-                && py >= *y
-                && px < x.saturating_add(*w)
-                && py < y.saturating_add(*h)
-        }) {
-            None
-        } else {
-            Some(word_hex_color(paper_hex))
+        tb.fill_hex = match best {
+            Some((_, Behind::Solid(hex))) => Some(word_hex_color(hex)),
+            Some((_, Behind::Chrome)) => None,
+            None => Some(word_hex_color(paper_hex)),
         };
         tb.fill_alpha = 255;
     }
@@ -317,4 +335,106 @@ fn slice(
 
 fn rel_height(op_index: usize) -> u32 {
     u32::try_from(op_index.saturating_mul(10)).unwrap_or(u32::MAX)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::{LineDash, PictureBox, ShapeBox, TextAlign, TextBox};
+
+    fn paper_shape(rel: u32) -> ShapeBox {
+        ShapeBox {
+            node_id: "page".into(),
+            x_emu: 0,
+            y_emu: 0,
+            cx_emu: 12_000_000,
+            cy_emu: 7_000_000,
+            fill_hex: Some("F8FAFC".into()),
+            fill_alpha: 255,
+            gradient: None,
+            corner_emu: 0,
+            line_hex: None,
+            line_w_emu: 0,
+            line_dash: LineDash::Solid,
+            behind_doc: true,
+            relative_height: rel,
+        }
+    }
+
+    fn glow(rel: u32) -> PictureBox {
+        PictureBox {
+            node_id: "glow".into(),
+            x_emu: 2_000_000,
+            y_emu: 500_000,
+            cx_emu: 8_000_000,
+            cy_emu: 6_000_000,
+            media_name: "image1.svg".into(),
+            bytes: vec![],
+            relative_height: rel,
+            pin_empty_txbox: false,
+        }
+    }
+
+    fn title_box(rel: u32) -> TextBox {
+        TextBox {
+            node_id: "title".into(),
+            x_emu: 3_500_000,
+            y_emu: 2_800_000,
+            cx_emu: 5_000_000,
+            cy_emu: 700_000,
+            runs: vec![],
+            align: TextAlign::Left,
+            bullet: false,
+            numbered: false,
+            ilvl: 0,
+            l_ins_emu: 0,
+            t_ins_emu: 0,
+            r_ins_emu: 0,
+            b_ins_emu: 0,
+            line_twips: None,
+            vert_center: false,
+            preserve_whitespace: false,
+            relative_height: rel,
+            fill_hex: None,
+            fill_alpha: 255,
+            wrap: false,
+            corner_emu: 0,
+        }
+    }
+
+    #[test]
+    fn underlay_skips_paper_when_picture_is_topmost_behind_text() {
+        let mut elements = vec![
+            PageElement::Shape(paper_shape(0)),
+            PageElement::Picture(glow(20)),
+            PageElement::TextBox(title_box(40)),
+        ];
+        assign_textbox_underlays(&mut elements, "F8FAFC");
+        let tb = elements[2].textbox().expect("title");
+        assert!(
+            tb.fill_hex.is_none(),
+            "glow must beat page paper, got {:?}",
+            tb.fill_hex
+        );
+    }
+
+    #[test]
+    fn underlay_keeps_paper_when_no_chrome_covers_text() {
+        let mut tb = title_box(40);
+        tb.x_emu = 0;
+        tb.y_emu = 0;
+        tb.cx_emu = 100_000;
+        tb.cy_emu = 50_000;
+        let mut glow = glow(20);
+        glow.x_emu = 5_000_000;
+        glow.y_emu = 5_000_000;
+        let mut elements = vec![
+            PageElement::Shape(paper_shape(0)),
+            PageElement::Picture(glow),
+            PageElement::TextBox(tb),
+        ];
+        assign_textbox_underlays(&mut elements, "F8FAFC");
+        let got = elements[2].textbox().expect("title").fill_hex.as_deref();
+        assert_eq!(got, Some("F8FAFC"));
+    }
 }

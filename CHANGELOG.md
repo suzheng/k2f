@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Fixed
 
 - Align published Rust (`k2f`, `k2f_sdk`), Python (`k2f`), and npm (`@openk2f/k2f`) with the template-bundling removal shipped on `main` after 0.2.2 (crates.io and PyPI 0.2.2 still exposed named template APIs).
+- `export-docx`: LibreOffice Writer paints `pic:pic` above every DrawingML shape, so a decorative lock image under later labels hid the title. Images that later paint overlaps become `wps:wsp`+`a:blipFill` without an empty txBox (Writer paints a large empty text frame over later labels); logos that do not overlap stay `pic:pic`. Text-box Dark Mode underlay uses the topmost covering layer, so a full-page paper fill behind an SVG does not paint a white rectangle over the art. Invoice/text/corpus tests still pass.
 
 ## [0.2.3] - 2026-09-09
 
@@ -39,7 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - SVG `<text>` `IMAGE_SIZE` message tells agents to drop the tags and use a K2F text node (or `<path>`), matching the skill error table.
 - `export-docx` / `export-pptx`: one color path — lock sRGB only (`000000`/`FFFFFF` stored as `000001`/`FFFFFE` so Office does not snap them to the OS theme). Theme `dk1`/`lt1` are those same RGBs, not `sysClr`. Word `wps:style` fillRef is omitted. Word does not emit `w:tbl` (Dark Mode inverts `w:shd`); table cells are the same boxes + text as the rest of the page. PPTX keeps DrawingML tables; shape fills, strokes, slide backgrounds, and table cell/border RGB use the same pin. Invoice/text/corpus tests still pass.
 - Four-edge box borders follow `corner_radius` in PNG/viewer (and dashed/dotted PDF), matching fill/shadow. Partial-edge borders stay straight.
-- `export-docx`: LibreOffice Writer paints `pic:pic` above every DrawingML shape, so a full-page gradient/glass raster hid later text. Linear gradients and translucent solids are native `a:gradFill` / `a:solidFill`+`a:alpha`. A full-page fill is `behindDoc=1` (and `w:background` uses the first gradient stop) so it is not an in-front empty text frame covering labels. Remaining blur/shadow/math slices (`k2f-raster:`) use `wps:wsp` + `a:blipFill`. Text boxes skip the paper-white Dark Mode underlay when a gradient, glass, or raster already covers the box. Lock `DrawImage` stays `pic:pic`. Invoice/text/corpus tests still pass.
+- `export-docx`: LibreOffice Writer paints `pic:pic` above every DrawingML shape, so a full-page gradient/glass raster hid later text. Linear gradients and translucent solids are native `a:gradFill` / `a:solidFill`+`a:alpha`. A full-page fill is `behindDoc=1` (and `w:background` uses the first gradient stop) so it is not an in-front empty text frame covering labels. Remaining blur/shadow/math slices (`k2f-raster:`) use `wps:wsp` + `a:blipFill`. Text boxes skip the paper-white Dark Mode underlay when a gradient, glass, or raster already covers the box. Lock `DrawImage` that later paint overlaps also uses that `wps:wsp` path; non-overlapping logos stay `pic:pic`. Invoice/text/corpus tests still pass.
 
 ### Removed
 

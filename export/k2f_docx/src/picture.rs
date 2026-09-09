@@ -28,6 +28,7 @@ pub(crate) fn picture_from_draw(
         media_name: format!("image{media_index}.{ext}"),
         bytes: payload,
         relative_height,
+        pin_empty_txbox: false,
     })
 }
 
@@ -93,11 +94,25 @@ pub(crate) fn pic_xml(pic: &PictureBox, embed_rid: &str, cnv_id: u32) -> String 
 /// fill. LibreOffice Writer paints `pic:pic` above every `wps:wsp` regardless of
 /// `behindDoc` / `relativeHeight`, so a full-page gradient raster would cover
 /// later text. A `wps:wsp` joins the shape z-order stack.
+///
+/// Large lock images under later text omit the empty txBox: Writer paints a
+/// page-sized empty text frame over later labels (same as a full-page
+/// gradient). Effect slices keep the empty txBox so Word does not size-to-fit.
 pub(crate) fn raster_wsp_xml(pic: &PictureBox, embed_rid: &str) -> String {
+    let (cnv, tail) = if pic.pin_empty_txbox {
+        (
+            "                  <wps:cNvSpPr txBox=\"1\"/>\n",
+            "                  <wps:txbx>\n                    <w:txbxContent>\n                      <w:p/>\n                    </w:txbxContent>\n                  </wps:txbx>\n                  <wps:bodyPr wrap=\"square\" lIns=\"0\" tIns=\"0\" rIns=\"0\" bIns=\"0\" anchor=\"t\">\n                    <a:noAutofit/>\n                  </wps:bodyPr>\n",
+        )
+    } else {
+        (
+            "                  <wps:cNvSpPr/>\n",
+            "                  <wps:bodyPr/>\n",
+        )
+    };
     format!(
         r#"                <wps:wsp>
-                  <wps:cNvSpPr txBox="1"/>
-                  <wps:spPr>
+{cnv}                  <wps:spPr>
                     <a:xfrm>
                       <a:off x="0" y="0"/>
                       <a:ext cx="{cx}" cy="{cy}"/>
@@ -115,15 +130,7 @@ pub(crate) fn raster_wsp_xml(pic: &PictureBox, embed_rid: &str) -> String {
                       <a:noFill/>
                     </a:ln>
                   </wps:spPr>
-                  <wps:txbx>
-                    <w:txbxContent>
-                      <w:p/>
-                    </w:txbxContent>
-                  </wps:txbx>
-                  <wps:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t">
-                    <a:noAutofit/>
-                  </wps:bodyPr>
-                </wps:wsp>
+{tail}                </wps:wsp>
 "#,
         cx = pic.cx_emu,
         cy = pic.cy_emu,
