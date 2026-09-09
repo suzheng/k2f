@@ -1,8 +1,6 @@
 # ==========================================
 # Rust & Build Artifacts
 # ==========================================
-# Local template dirs (commercial templates live in k2f-private).
-templates/**
 downloads
 /target
 target/
