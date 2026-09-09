@@ -16,6 +16,7 @@ golden.json
 # Binaries, Libraries & Compiled Outputs
 # ==========================================
 *.bin
+!engine/k2f_package/src/fonts/*.bin
 *.exe
 *.dll
 *.so
