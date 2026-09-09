@@ -69,7 +69,7 @@ fn ci_does_not_open_gui_or_verify_published_invoice() {
     let yaml = workflow();
     assert!(
         !yaml.contains("--verify examples/published"),
-        "do not --verify a committed lock that may already be ENGINE_MISMATCH"
+        "do not add a one-off published --verify step; cargo test covers integrity"
     );
     assert!(
         !yaml.contains("pick_save_path"),

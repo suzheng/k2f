@@ -1,4 +1,4 @@
-use crate::error::{PackageError, VerifyStatus};
+use crate::error::PackageError;
 use crate::package::Package;
 use crate::schema::validate_signatures_json;
 use crate::sign::hex;
@@ -20,7 +20,7 @@ pub fn sign_package(
         ));
     }
     let hash = verify_package(package)?;
-    if hash != VerifyStatus::Valid {
+    if !hash.is_self_consistent() {
         return Err(PackageError::Other(format!(
             "refuse to sign: {} (lock must match content and appearance)",
             hash.code()

@@ -29,7 +29,11 @@ fn sign_with_fixed_time(pkg: &mut k2f_package::Package, key: &SecretKey) {
 #[test]
 fn committed_contract_is_unsigned_not_signed() {
     let pkg = compiled_contract();
-    assert_eq!(verify_package(&pkg).unwrap(), VerifyStatus::Valid);
+    let hash = verify_package(&pkg).unwrap();
+    assert!(
+        matches!(hash, VerifyStatus::Valid | VerifyStatus::EngineMismatch),
+        "committed contract must be self-consistent, got {hash:?}"
+    );
     let report = inspect_package(&pkg).unwrap();
     assert_eq!(report.status, IntegrityStatus::Unsigned);
     assert_eq!(report.status.code(), CODE_UNSIGNED);
@@ -188,7 +192,8 @@ fn flipped_signature_byte_is_signed_but_broken_while_hashes_still_match() {
     let mut pkg = compiled_contract();
     let key = generate_secret_key().unwrap();
     sign_with_fixed_time(&mut pkg, &key);
-    assert_eq!(verify_package(&pkg).unwrap(), VerifyStatus::Valid);
+    let hash = verify_package(&pkg).unwrap();
+    assert!(hash.is_self_consistent(), "got {hash:?}");
     rewrite_signatures(&mut pkg, |v| {
         let sig = v["signatures"][0]["signature"]
             .as_str()
@@ -200,7 +205,7 @@ fn flipped_signature_byte_is_signed_but_broken_while_hashes_still_match() {
     });
     let report = inspect_package(&pkg).unwrap();
     assert_eq!(report.status, IntegrityStatus::SignedButBroken);
-    assert_eq!(report.hash, VerifyStatus::Valid);
+    assert_eq!(report.hash, hash);
 }
 
 #[test]
@@ -232,7 +237,7 @@ fn extra_field_on_signature_cannot_green_check() {
 }
 
 #[test]
-fn signed_file_with_engine_mismatch_is_signed_but_broken() {
+fn signed_file_with_unbound_engine_field_is_signed_but_broken() {
     let mut pkg = compiled_contract();
     let key = generate_secret_key().unwrap();
     sign_with_fixed_time(&mut pkg, &key);
@@ -242,7 +247,7 @@ fn signed_file_with_engine_mismatch_is_signed_but_broken() {
     pkg.set_lock(&lock).unwrap();
     let report = inspect_package(&pkg).unwrap();
     assert_eq!(report.status, IntegrityStatus::SignedButBroken);
-    assert_eq!(report.hash, VerifyStatus::EngineMismatch);
+    assert_eq!(report.hash, VerifyStatus::AppearanceChanged);
 }
 
 #[test]

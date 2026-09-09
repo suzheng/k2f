@@ -54,14 +54,18 @@ fn documents_linux_window_packages() {
 }
 
 #[test]
-fn does_not_tell_ci_to_verify_published_invoice() {
+fn documents_engine_mismatch_is_provenance() {
     let text = readme();
     assert!(
         text.contains("ENGINE_MISMATCH"),
-        "README must warn that a committed published lock can already be ENGINE_MISMATCH"
+        "README must name hash_code ENGINE_MISMATCH"
+    );
+    assert!(
+        text.contains("self-consistent"),
+        "README must say a foreign engine lock can stay UNSIGNED/SIGNED"
     );
     assert!(
         !text.contains("--verify examples/published/invoice.K2F"),
-        "gating CI on --verify of the committed invoice fails after an engine bump"
+        "CI still runs cargo test -p k2f_reader, not a one-off published --verify"
     );
 }

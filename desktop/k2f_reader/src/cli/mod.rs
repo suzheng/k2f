@@ -2,6 +2,7 @@
 
 mod headless;
 
+use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
 use anyhow::Context;
@@ -69,7 +70,7 @@ fn windows_double_clicked() -> bool {
     n == 1
 }
 
-fn should_prompt_open() -> bool {
+fn should_open_window() -> bool {
     if in_cargo_or_ci() {
         return false;
     }
@@ -91,20 +92,26 @@ fn should_prompt_open() -> bool {
     false
 }
 
+fn cli_args() -> Vec<OsString> {
+    std::env::args_os()
+        .filter(|a| {
+            a.to_str()
+                .map(|s| !s.starts_with("-psn_"))
+                .unwrap_or(true)
+        })
+        .collect()
+}
+
 pub fn run() -> anyhow::Result<()> {
-    let cli = Cli::parse();
+    let cli = Cli::parse_from(cli_args());
     if cli.file.is_none()
         && cli.export_pdf.is_none()
         && cli.export_pptx.is_none()
         && cli.export_docx.is_none()
         && !cli.verify
     {
-        if should_prompt_open() {
-            let Some(path) = crate::export::pick_open_path() else {
-                return Ok(());
-            };
-            let app = open(&path)?;
-            return ui::run(app, Some(path));
+        if should_open_window() {
+            return ui::run(None, None);
         }
         eprintln!(
             "usage: k2f-reader <file.K2F> | --verify <file.K2F> | --export-pdf out.pdf <file.K2F> | --export-pptx out.pptx <file.K2F> | --export-docx out.docx <file.K2F>"
@@ -128,7 +135,7 @@ pub fn run() -> anyhow::Result<()> {
     if cli.export_pdf.is_some() || cli.export_pptx.is_some() || cli.export_docx.is_some() {
         return Ok(());
     }
-    ui::run(app, Some(path.to_path_buf()))
+    ui::run(Some(app), Some(path.to_path_buf()))
 }
 
 fn open(path: &Path) -> anyhow::Result<AppState> {

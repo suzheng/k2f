@@ -61,4 +61,9 @@ impl VerifyStatus {
             Self::FontMissing => CODE_FONT_MISSING,
         }
     }
+
+    /// Hashes match the lock's recorded engine identity. Reader SHA may still differ.
+    pub fn is_self_consistent(self) -> bool {
+        matches!(self, Self::Valid | Self::EngineMismatch)
+    }
 }

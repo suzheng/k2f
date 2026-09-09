@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -17,11 +18,43 @@ PACK_VERIFY = ROOT / "skills/k2f/scripts/pack_verify.py"
 INIT_PACKAGE = ROOT / "skills/k2f/scripts/init_package.py"
 
 
+def resolve_k2f() -> str:
+    """Prefer a checkout-built CLI over a stale global `~/.cargo/bin/k2f`.
+
+    Workspace `target/` is checked before the pytest venv: an old
+    `maturin develop` wrapper can be as stale as a cargo-installed binary.
+    """
+    env_cli = os.environ.get("K2F_CLI")
+    if env_cli:
+        path = Path(env_cli).expanduser().resolve()
+        if path.is_file():
+            return str(path)
+    for rel in ("target/debug/k2f", "target/release/k2f"):
+        path = ROOT / rel
+        if path.is_file():
+            return str(path)
+    venv_cli = Path(sys.executable).parent / "k2f"
+    if venv_cli.is_file():
+        return str(venv_cli)
+    which = shutil.which("k2f")
+    assert which, "k2f not found — pip install / maturin develop, or cargo build -p k2f"
+    return which
+
+
+def pack_verify_env(*, with_k2f_cli: bool = True) -> dict[str, str]:
+    exe = resolve_k2f()
+    env = dict(os.environ)
+    env["PATH"] = str(Path(exe).parent) + os.pathsep + env.get("PATH", "")
+    if with_k2f_cli:
+        env["K2F_CLI"] = exe
+    else:
+        env.pop("K2F_CLI", None)
+    return env
+
+
 def k2f_cmd(*args: str) -> subprocess.CompletedProcess[str]:
-    exe = shutil.which("k2f")
-    assert exe, "k2f not on PATH — pip install / maturin develop required"
     return subprocess.run(
-        [exe, *args],
+        [resolve_k2f(), *args],
         capture_output=True,
         text=True,
         check=False,
@@ -29,7 +62,7 @@ def k2f_cmd(*args: str) -> subprocess.CompletedProcess[str]:
 
 
 def test_k2f_on_path_and_help_lists_core_commands() -> None:
-    assert shutil.which("k2f"), "k2f console script missing from PATH"
+    resolve_k2f()
     proc = k2f_cmd("--help")
     assert proc.returncode == 0, proc.stderr
     help_text = proc.stdout.lower()
@@ -50,27 +83,25 @@ def test_k2f_on_path_and_help_lists_core_commands() -> None:
 def test_verify_render_export_pdf_on_invoice() -> None:
     verify = k2f_cmd("verify", str(INVOICE))
     banner = verify.stdout.strip()
-    assert banner in ("UNSIGNED", "VALID", "ENGINE_MISMATCH"), verify.stdout
-    if banner != "ENGINE_MISMATCH":
-        assert verify.returncode == 0, verify.stderr
+    assert banner == "UNSIGNED", verify.stdout
+    assert verify.returncode == 0, verify.stderr
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
         png = tmp_path / "page0.png"
         pdf = tmp_path / "out.pdf"
 
-        if banner != "ENGINE_MISMATCH":
-            render = k2f_cmd(
-                "render",
-                str(INVOICE),
-                "--page",
-                "0",
-                "-o",
-                str(png),
-            )
-            assert render.returncode == 0, render.stderr
-            png_bytes = png.read_bytes()
-            assert png_bytes[:8] == b"\x89PNG\r\n\x1a\n", "render did not write PNG"
+        render = k2f_cmd(
+            "render",
+            str(INVOICE),
+            "--page",
+            "0",
+            "-o",
+            str(png),
+        )
+        assert render.returncode == 0, render.stderr
+        png_bytes = png.read_bytes()
+        assert png_bytes[:8] == b"\x89PNG\r\n\x1a\n", "render did not write PNG"
 
         export = k2f_cmd(
             "export-pdf",
@@ -98,7 +129,6 @@ def test_export_docx_on_invoice() -> None:
 
 @pytest.mark.skipif(not CATALOG.is_dir(), reason="skill catalog missing")
 def test_pack_verify_catalog_without_k2f_cli_env() -> None:
-    env = {k: v for k, v in __import__("os").environ.items() if k != "K2F_CLI"}
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp) / "catalog.K2F"
         proc = subprocess.run(
@@ -112,7 +142,7 @@ def test_pack_verify_catalog_without_k2f_cli_env() -> None:
             capture_output=True,
             text=True,
             check=False,
-            env=env,
+            env=pack_verify_env(with_k2f_cli=False),
         )
         assert proc.returncode == 0, proc.stdout + proc.stderr
         assert out.is_file() and out.stat().st_size > 0
@@ -157,6 +187,7 @@ def test_pack_verify_one_page_underfill_is_warning() -> None:
             capture_output=True,
             text=True,
             check=False,
+            env=pack_verify_env(),
         )
         assert pack_proc.returncode == 0, pack_proc.stdout + pack_proc.stderr
         combined = pack_proc.stdout + pack_proc.stderr
@@ -198,6 +229,7 @@ def test_init_package_pack_verify() -> None:
             capture_output=True,
             text=True,
             check=False,
+            env=pack_verify_env(),
         )
         assert pack_proc.returncode == 0, pack_proc.stdout + pack_proc.stderr
         assert out.is_file() and out.stat().st_size > 0
@@ -306,6 +338,7 @@ def test_pack_verify_bare_render_writes_to_workspace_tmp() -> None:
             text=True,
             check=False,
             cwd=tmp_path,
+            env=pack_verify_env(),
         )
         assert pack_proc.returncode == 0, pack_proc.stdout + pack_proc.stderr
         preview = out.parent / "tmp" / "preview.png"
@@ -404,6 +437,7 @@ def test_workspace_pack_export_layout() -> None:
             capture_output=True,
             text=True,
             check=False,
+            env=pack_verify_env(),
         )
         assert pack_proc.returncode == 0, pack_proc.stdout + pack_proc.stderr
         assert packed.is_file()

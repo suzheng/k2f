@@ -46,12 +46,12 @@ fn status_does_not_claim_a_shipped_desktop_binary() {
         .expect("status.md must keep a Roadmap (not shipped) section");
     assert!(
         !roadmap.contains("k2f_reader") && !roadmap.contains("k2f-reader"),
-        "the source crate is In development; Roadmap keeps file association / installers"
+        "the source crate is In development; Roadmap keeps signing / notarization"
     );
     assert!(
-        roadmap.to_ascii_lowercase().contains("file association")
-            || roadmap.to_ascii_lowercase().contains("installer"),
-        "packaged binaries / file association stay not shipped"
+        roadmap.to_ascii_lowercase().contains("notarization")
+            || roadmap.to_ascii_lowercase().contains("signing"),
+        "desktop signing / notarization stay not shipped"
     );
 }
 

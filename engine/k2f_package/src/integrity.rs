@@ -15,7 +15,6 @@ pub enum IntegrityStatus {
     SignedButBroken,
     ContentChanged,
     AppearanceChanged,
-    EngineMismatch,
     FontMissing,
     UnknownPaintOp,
 }
@@ -29,7 +28,6 @@ impl IntegrityStatus {
             Self::SignedButBroken => CODE_SIGNED_BUT_BROKEN,
             Self::ContentChanged => crate::error::CODE_CONTENT_CHANGED,
             Self::AppearanceChanged => crate::error::CODE_APPEARANCE_CHANGED,
-            Self::EngineMismatch => crate::error::CODE_ENGINE_MISMATCH,
             Self::FontMissing => crate::error::CODE_FONT_MISSING,
             Self::UnknownPaintOp => CODE_UNKNOWN_PAINT_OP,
         }
@@ -84,20 +82,19 @@ pub fn inspect_package(package: &Package) -> Result<IntegrityReport, PackageErro
 
     let has_sig = file.is_some();
     let status = if has_sig {
-        if hash == VerifyStatus::Valid && crypto_ok && !unknown_ops {
+        if hash.is_self_consistent() && crypto_ok && !unknown_ops {
             IntegrityStatus::Signed
         } else {
             IntegrityStatus::SignedButBroken
         }
-    } else if unknown_ops && hash == VerifyStatus::Valid {
+    } else if unknown_ops && hash.is_self_consistent() {
         IntegrityStatus::UnknownPaintOp
     } else {
         match hash {
-            VerifyStatus::Valid => IntegrityStatus::Unsigned,
+            VerifyStatus::Valid | VerifyStatus::EngineMismatch => IntegrityStatus::Unsigned,
             VerifyStatus::Unlocked => IntegrityStatus::Unlocked,
             VerifyStatus::ContentChanged => IntegrityStatus::ContentChanged,
             VerifyStatus::AppearanceChanged => IntegrityStatus::AppearanceChanged,
-            VerifyStatus::EngineMismatch => IntegrityStatus::EngineMismatch,
             VerifyStatus::FontMissing => IntegrityStatus::FontMissing,
         }
     };

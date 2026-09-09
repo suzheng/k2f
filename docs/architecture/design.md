@@ -215,7 +215,7 @@ For documents that require integrity guarantees:
 3. Bind `appearance_hash` (semantic + theme + fonts + page config + engine identity).
 4. Optionally sign via `signatures/v1.json` (Ed25519).
 
-Viewers report `BROKEN_INTEGRITY` on any mismatch.
+Viewers report `BROKEN_INTEGRITY` on content, appearance, or font failure. A reader whose engine identity differs from the lock reports `hash_code` `ENGINE_MISMATCH` and stays `UNSIGNED` or `SIGNED`.
 
 ## Operational constraints
 

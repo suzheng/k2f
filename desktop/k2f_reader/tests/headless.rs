@@ -3,8 +3,8 @@
 mod common;
 
 use common::{
-    assert_ok, invoice_bytes, pack_with_tampered_lock, published_invoice_bytes, run_reader,
-    scratch, write_k2f,
+    assert_ok, invoice_bytes, pack_with_rebound_engine, pack_with_tampered_lock,
+    published_invoice_bytes, run_reader, scratch, write_k2f,
 };
 use k2f_paint::Banner;
 use k2f_reader::AppState;
@@ -251,9 +251,22 @@ fn headless_verify_exits_1_on_broken() {
     assert_eq!(stdout.trim(), "BROKEN_INTEGRITY", "{stdout:?}");
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert!(
-        stderr.contains("ENGINE_MISMATCH"),
+        stderr.contains("APPEARANCE_CHANGED"),
         "status_code on stderr under BROKEN_INTEGRITY, got {stderr:?}"
     );
+}
+
+#[test]
+fn headless_verify_foreign_engine_is_unsigned() {
+    let dir = scratch("verify-foreign-engine");
+    let rebound = pack_with_rebound_engine(&invoice_bytes(), |lock| {
+        lock.engine_commit_sha = "deadbeef".into();
+    });
+    let k2f = write_k2f(&dir, &rebound);
+    let out = run(&["--verify", k2f.to_str().unwrap()]);
+    assert_ok(&out);
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert_eq!(stdout.trim(), "UNSIGNED", "{stdout:?}");
 }
 
 #[test]
@@ -282,7 +295,7 @@ fn headless_verify_and_export_together_still_fails_ci() {
         "BROKEN_INTEGRITY"
     );
     let stderr = String::from_utf8_lossy(&out.stderr);
-    assert!(stderr.contains("ENGINE_MISMATCH"), "{stderr}");
+    assert!(stderr.contains("APPEARANCE_CHANGED"), "{stderr}");
     assert!(
         std::fs::read(&pdf).unwrap().starts_with(b"%PDF-"),
         "broken lock must still export for forensics"

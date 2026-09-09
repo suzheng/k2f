@@ -72,7 +72,7 @@ python3 scripts/edit_and_verify.py \
 
 Run from this skill directory. Roles come from **that package's theme** — legal/contract packs often use `critical_warning`, not the SDK catalog name `warning`.
 
-The CLI's `engine_commit_sha` should match the Editor that saved. Mismatch prints `ENGINE_MISMATCH`; the script still confirms the node via reopen.
+The CLI's `engine_commit_sha` may differ from the Editor that saved. `k2f verify` still prints `UNSIGNED` when the package is self-consistent (`hash_code` may be `ENGINE_MISMATCH`). The script confirms the node via reopen.
 
 ## `replace_text`
 

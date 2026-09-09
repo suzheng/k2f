@@ -15,7 +15,11 @@ fn committed_contract_k2f_verifies_valid() {
     assert!(pkg.assets.contains_key("assets/images/logo.png"));
     assert!(pkg.lock_json.is_some());
     assert_format_schemas_only(&pkg);
-    assert_eq!(verify_package(&pkg).unwrap(), VerifyStatus::Valid);
+    let hash = verify_package(&pkg).unwrap();
+    assert!(
+        matches!(hash, VerifyStatus::Valid | VerifyStatus::EngineMismatch),
+        "committed contract must be self-consistent, got {hash:?}"
+    );
     let lock: k2f_core::LockFile = serde_json::from_str(pkg.lock_json.as_ref().unwrap()).unwrap();
     assert!(
         lock.geometry.pages.len() >= 2,
@@ -39,7 +43,11 @@ fn committed_invoice_k2f_verifies_valid() {
     assert!(pkg.assets.contains_key("assets/images/logo.png"));
     assert!(pkg.lock_json.is_some());
     assert_format_schemas_only(&pkg);
-    assert_eq!(verify_package(&pkg).unwrap(), VerifyStatus::Valid);
+    let hash = verify_package(&pkg).unwrap();
+    assert!(
+        matches!(hash, VerifyStatus::Valid | VerifyStatus::EngineMismatch),
+        "committed invoice must be self-consistent, got {hash:?}"
+    );
     let lock: k2f_core::LockFile = serde_json::from_str(pkg.lock_json.as_ref().unwrap()).unwrap();
     assert!(
         lock.geometry.pages.len() >= 2,
@@ -102,11 +110,24 @@ fn assert_format_schemas_only(pkg: &Package) {
 }
 
 #[test]
-fn compile_twice_on_committed_contract_keeps_lock() {
+fn compile_on_committed_contract_is_valid_for_this_engine() {
     let bytes = fs::read(repo_root().join("examples/published/contract.K2F")).unwrap();
     let mut pkg = unpack_bytes(&bytes).unwrap();
+    let before = verify_package(&pkg).unwrap();
+    assert!(
+        before.is_self_consistent(),
+        "published contract must be self-consistent, got {before:?}"
+    );
     let lock_before = pkg.lock_json.clone().unwrap();
     compile_pkg(&mut pkg);
-    assert_eq!(pkg.lock_json.as_ref().unwrap(), &lock_before);
+    if before == VerifyStatus::Valid {
+        assert_eq!(
+            pkg.lock_json.as_ref().unwrap(),
+            &lock_before,
+            "same-engine compile must not change a valid lock"
+        );
+    }
+    assert_eq!(verify_package(&pkg).unwrap(), VerifyStatus::Valid);
+    compile_pkg(&mut pkg);
     assert_eq!(verify_package(&pkg).unwrap(), VerifyStatus::Valid);
 }

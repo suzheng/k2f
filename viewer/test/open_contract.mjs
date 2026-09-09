@@ -9,8 +9,8 @@ const bytes = invoicePackage(k2f);
 const viewer = new k2f.Viewer(bytes);
 const banner = viewer.banner();
 const code = viewer.status_code();
-if (banner !== "UNSIGNED" && !(banner === "BROKEN_INTEGRITY" && code === "ENGINE_MISMATCH")) {
-  throw new Error(`expected UNSIGNED (or ENGINE_MISMATCH in release wasm), got ${banner} ${code}`);
+if (banner !== "UNSIGNED") {
+  throw new Error(`expected UNSIGNED, got ${banner} ${code}`);
 }
 if (viewer.page_count() < 1) {
   throw new Error("expected at least one lock page");

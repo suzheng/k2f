@@ -165,7 +165,7 @@ compile_chunk_with_assets(...) -> lock_json
 
 Python uses `k2f_py` (`import k2f`), not WASM.
 
-The lock embeds `engine_version` and `engine_commit_sha`. Viewers execute the lock they were given.
+The lock embeds `engine_version` and `engine_commit_sha`. Viewers execute the lock they were given. A reader whose build identity differs reports `hash_code` `ENGINE_MISMATCH` and still paints that lock (`UNSIGNED` / `SIGNED`).
 
 ## Execution flow (compile process)
 

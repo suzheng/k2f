@@ -53,26 +53,26 @@ fn arrows_and_zoom_keys_map_to_actions() {
 #[test]
 fn arrow_keys_page_the_published_invoice() {
     let mut session = Session::new(AppState::open(&published_invoice_bytes()).unwrap()).unwrap();
-    assert!(session.app().page_count() >= 2);
-    assert_eq!(session.app().page(), 0);
-    let page0 = session.app().render_current_png().unwrap();
+    assert!(session.app().unwrap().page_count() >= 2);
+    assert_eq!(session.app().unwrap().page(), 0);
+    let page0 = session.app().unwrap().render_current_png().unwrap();
 
     session.apply(Action::NextPage);
-    assert_eq!(session.app().page(), 1);
-    let page1 = session.app().render_current_png().unwrap();
+    assert_eq!(session.app().unwrap().page(), 1);
+    let page1 = session.app().unwrap().render_current_png().unwrap();
     assert_ne!(page0, page1);
 
     session.apply(Action::PrevPage);
-    assert_eq!(session.app().page(), 0);
-    assert_eq!(session.app().render_current_png().unwrap(), page0);
+    assert_eq!(session.app().unwrap().page(), 0);
+    assert_eq!(session.app().unwrap().render_current_png().unwrap(), page0);
 }
 
 #[test]
 fn drag_on_page_1_copies_that_page_lock_text() {
     let mut session = Session::new(AppState::open(&published_invoice_bytes()).unwrap()).unwrap();
     session.apply(Action::NextPage);
-    assert_eq!(session.app().page(), 1);
-    let spans = session.app().text_layer();
+    assert_eq!(session.app().unwrap().page(), 1);
+    let spans = session.app().unwrap().text_layer();
     let span = spans
         .iter()
         .find(|s| !s.text.is_empty())
@@ -97,7 +97,7 @@ fn drag_on_page_1_copies_that_page_lock_text() {
 #[test]
 fn drag_in_window_pixels_copies_lock_text() {
     let mut session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
-    let title = title_span(&session.app().text_layer()).clone();
+    let title = title_span(&session.app().unwrap().text_layer()).clone();
     let (w, h) = session.scaled_size();
     let view = session.page_view(w, h);
     let (x0, y0) = view.pt_to_window(title.x_pt, title.y_pt + title.height_pt * 0.5);
@@ -121,7 +121,7 @@ fn drag_in_window_pixels_copies_lock_text() {
 #[test]
 fn collapsed_click_does_not_copy() {
     let mut session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
-    let title = title_span(&session.app().text_layer()).clone();
+    let title = title_span(&session.app().unwrap().text_layer()).clone();
     let (w, h) = session.scaled_size();
     let (x, y) = session.page_view(w, h).pt_to_window(
         title.x_pt + title.width_pt * 0.5,
@@ -137,7 +137,7 @@ fn collapsed_click_does_not_copy() {
 #[test]
 fn ctrl_c_copies_active_selection() {
     let mut session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
-    let spans = session.app().text_layer();
+    let spans = session.app().unwrap().text_layer();
     let title = title_span(&spans);
     let sel = RectPt::from_drag(
         title.x_pt,
@@ -155,7 +155,7 @@ fn hud_is_excluded_from_page_coordinates() {
     let session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
     let (w, h) = session.scaled_size();
     let view = session.page_view(w, h);
-    let (x, y) = view.window_to_pt(0.0, page_inset_y(session.app()) as f64);
+    let (x, y) = view.window_to_pt(0.0, page_inset_y(session.app().unwrap()) as f64);
     assert!(x.abs() < 1e-9, "{x}");
     assert!(
         y.abs() < 1e-9,
@@ -166,7 +166,7 @@ fn hud_is_excluded_from_page_coordinates() {
 #[test]
 fn drag_starting_on_hud_does_not_copy() {
     let mut session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
-    let title = title_span(&session.app().text_layer()).clone();
+    let title = title_span(&session.app().unwrap().text_layer()).clone();
     let (w, h) = session.scaled_size();
     let (x1, y1) = session.page_view(w, h).pt_to_window(
         title.x_pt + title.width_pt * 0.5,
@@ -182,7 +182,7 @@ fn drag_starting_on_hud_does_not_copy() {
 #[test]
 fn horizontal_drag_selects_title_like_the_web_viewer() {
     let mut session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
-    let title = title_span(&session.app().text_layer()).clone();
+    let title = title_span(&session.app().unwrap().text_layer()).clone();
     let (w, h) = session.scaled_size();
     let view = session.page_view(w, h);
     let mid_y = title.y_pt + title.height_pt * 0.5;
@@ -206,7 +206,7 @@ fn horizontal_drag_selects_title_like_the_web_viewer() {
 #[test]
 fn ibeam_over_lock_text() {
     let mut session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
-    let title = title_span(&session.app().text_layer()).clone();
+    let title = title_span(&session.app().unwrap().text_layer()).clone();
     let (w, h) = session.scaled_size();
     session.set_window_size(w, h);
     let (x, y) = session.page_view(w, h).pt_to_window(
@@ -226,7 +226,7 @@ fn ibeam_over_lock_text() {
 #[test]
 fn selection_paints_glyph_run_not_a_marquee() {
     let mut session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
-    let title = title_span(&session.app().text_layer()).clone();
+    let title = title_span(&session.app().unwrap().text_layer()).clone();
     let (w, h) = session.scaled_size();
     session.set_window_size(w, h);
     let view = session.page_view(w, h);

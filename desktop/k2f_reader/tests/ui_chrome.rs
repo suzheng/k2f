@@ -42,12 +42,12 @@ fn broken_integrity_chrome_shows_status_code() {
     }))
     .unwrap();
     assert_eq!(app.banner_str(), "BROKEN_INTEGRITY");
-    assert_eq!(app.status_code(), "ENGINE_MISMATCH");
+    assert_eq!(app.status_code(), "APPEARANCE_CHANGED");
 
     let title = window_title(&app);
     assert!(title.contains("BROKEN_INTEGRITY"), "{title}");
     assert!(
-        title.contains("ENGINE_MISMATCH"),
+        title.contains("APPEARANCE_CHANGED"),
         "window title still carries status_code, got {title}"
     );
 
@@ -57,7 +57,7 @@ fn broken_integrity_chrome_shows_status_code() {
         "on-screen chrome uses web auto copy, not the banner enum, got {label}"
     );
     assert!(label.contains("Integrity warning"), "{label}");
-    assert!(label.contains("ENGINE_MISMATCH"), "{label}");
+    assert!(label.contains("APPEARANCE_CHANGED"), "{label}");
 
     let copy = banner_copy(&app).expect("broken integrity shows a banner");
     assert!(
@@ -68,7 +68,7 @@ fn broken_integrity_chrome_shows_status_code() {
         !copy.contains("BROKEN_INTEGRITY"),
         "painted banner must not lead with the enum name, got {copy}"
     );
-    assert!(copy.contains("ENGINE_MISMATCH"), "{copy}");
+    assert!(copy.contains("APPEARANCE_CHANGED"), "{copy}");
 }
 
 #[test]
@@ -96,7 +96,7 @@ fn signed_uses_compact_web_copy() {
 #[test]
 fn published_invoice_title_renders_cjk() {
     let session = Session::new(AppState::open(&published_invoice_bytes()).unwrap()).unwrap();
-    let title = session.app().title();
+    let title = session.app().unwrap().title();
     assert!(
         title
             .chars()

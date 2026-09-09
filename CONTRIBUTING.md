@@ -80,6 +80,11 @@ cargo run -p k2f-test-runner -- run --check-png --dataset-runs 1
 Cases without committed `page_*.png` skip the pixel check. To refresh gate PNGs:
 `--update --check-png`.
 
+Default `cargo test -p k2f_paint` still renders those scenes and checks PNG magic
+bytes, but does not byte-compare goldens (macOS vs Linux raster bytes can
+differ). Linux CI compares via `CHECK_PAINT_GOLDENS=1` and the `--check-png`
+job. Refresh paint-crate goldens with `UPDATE_PAINT_GOLDENS=1`.
+
 **Nightly:** same determinism + PNG gate; see `.github/workflows/golden-nightly.yml`.
 
 JS / WASM (when changing the viewer):

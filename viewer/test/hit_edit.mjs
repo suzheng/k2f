@@ -30,7 +30,7 @@ const out = editor.save();
 const again = new k2f.Viewer(out);
 const sel2 = JSON.parse(again.selection("invoice.total"));
 if (sel2.text !== "Grand Total: $110.00") throw new Error(sel2.text);
-if (again.banner() !== "UNSIGNED" && again.status_code() !== "ENGINE_MISMATCH") {
+if (again.banner() !== "UNSIGNED") {
   throw new Error(`expected UNSIGNED after relock, got ${again.banner()} ${again.status_code()}`);
 }
 

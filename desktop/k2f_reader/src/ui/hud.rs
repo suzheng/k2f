@@ -52,6 +52,7 @@ const MENU_SHADOW: u32 = 0xD8D8DC;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChromeHit {
+    Open,
     ZoomOut,
     ZoomIn,
     Copy,
@@ -68,6 +69,7 @@ pub struct ChromePaint {
 }
 
 pub struct ToolbarLayout {
+    pub open: Rect,
     pub zoom_out: Rect,
     pub zoom_label: Rect,
     pub zoom_in: Rect,
@@ -112,6 +114,10 @@ pub fn toolbar_layout_at(
         .saturating_add(dip(10, scale))
         .saturating_add(text_width_px(copy_short(copy_label), body));
     let zoom_w = text_width_px(zoom, body).max(dip(44, scale));
+    let open_w = text_width_px("Open", body)
+        .saturating_add(dip(24, scale))
+        .max(dip(60, scale));
+    let open = Rect::new(pad, btn_y, open_w, btn_h);
 
     let mut x = win_w as i32 - pad;
     x -= caret_w as i32;
@@ -128,6 +134,7 @@ pub fn toolbar_layout_at(
     let zoom_out = Rect::new(x, btn_y, icon, icon);
 
     ToolbarLayout {
+        open,
         zoom_out,
         zoom_label,
         zoom_in,
@@ -206,6 +213,9 @@ pub fn chrome_hit_at(
 ) -> Option<ChromeHit> {
     let layout = layout_for(app, win_w, scale);
     if toolbar_hit_y(win_h, y, scale) {
+        if layout.open.contains(x, y) {
+            return Some(ChromeHit::Open);
+        }
         if layout.export.contains(x, y) {
             return Some(ChromeHit::Export);
         }
@@ -235,6 +245,15 @@ pub fn chrome_hit_at(
         }
     }
     None
+}
+
+pub fn open_hit(win_w: u32, win_h: u32, x: f64, y: f64) -> bool {
+    if !toolbar_hit_y(win_h, y, 1.0) {
+        return false;
+    }
+    toolbar_layout(win_w, "Copy MD", EXPORT_ACTION_LABEL, "100%")
+        .open
+        .contains(x, y)
 }
 
 pub fn export_hit(win_w: u32, win_h: u32, x: f64, y: f64) -> bool {
@@ -515,17 +534,37 @@ pub fn draw_hud(
 
     fill_rect(buf, width, height, Rect::new(0, 0, width, tb), TOOLBAR_BG);
 
+    let (open_h, open_p) = is_hit(hover, pressed, ChromeHit::Open);
+    let open_bg = if open_p {
+        0x0066D6
+    } else if open_h {
+        0x1A86FF
+    } else {
+        PRIMARY
+    };
+    fill_round_rect(buf, width, height, layout.open, radius, open_bg);
+    draw_text_centered(
+        buf,
+        width,
+        height,
+        layout.open,
+        "Open",
+        PRIMARY_FG,
+        body,
+    );
+
     let title_h = em_height(title_px);
     let sub_h = em_height(cap);
     let stack_gap = dip(5, scale);
     let block_h = title_h + stack_gap + sub_h;
     let title_y = ((tb.saturating_sub(block_h)) / 2) as i32;
     let sub_y = title_y + title_h as i32 + stack_gap as i32;
-    let title_max = (layout.zoom_out.x - pad - dip(12, scale) as i32).max(48) as u32;
+    let title_x = layout.open.x + layout.open.w as i32 + dip(12, scale) as i32;
+    let title_max = (layout.zoom_out.x - title_x - dip(12, scale) as i32).max(48) as u32;
     let title = ellipsize_to_width(app.title(), title_max, title_px);
-    draw_text_px(buf, width, height, pad, title_y, &title, TITLE, title_px);
+    draw_text_px(buf, width, height, title_x, title_y, &title, TITLE, title_px);
     let sub = page_status_label(app);
-    draw_text_px(buf, width, height, pad, sub_y, &sub, SUBTITLE, cap);
+    draw_text_px(buf, width, height, title_x, sub_y, &sub, SUBTITLE, cap);
 
     let (h, p) = is_hit(hover, pressed, ChromeHit::ZoomOut);
     paint_icon_btn(buf, width, height, layout.zoom_out, h, p, radius);

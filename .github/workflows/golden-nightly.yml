@@ -19,6 +19,8 @@ jobs:
         run: cargo run -p k2f-test-runner -- run --dataset-runs 5
 
       - name: Paint crate tests
+        env:
+          CHECK_PAINT_GOLDENS: "1"
         run: cargo test -p k2f_paint
 
       - name: PNG appearance gate

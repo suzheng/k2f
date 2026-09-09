@@ -3,7 +3,7 @@
 pub mod docs;
 
 use k2f_core::{GridTrack, NodeContent, SemanticNode, TableDataSource, TableSpec};
-use k2f_package::{pack_bytes, unpack_bytes};
+use k2f_package::{appearance_hash_for_lock, pack_bytes, unpack_bytes};
 use k2f_sdk::Editor;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -174,6 +174,17 @@ pub fn pack_with_tampered_lock(bytes: &[u8], f: impl FnOnce(&mut k2f_core::LockF
     let mut lock: k2f_core::LockFile =
         serde_json::from_str(pkg.lock_json.as_ref().expect("lock")).expect("lock json");
     f(&mut lock);
+    pkg.set_lock(&lock).expect("set_lock");
+    pack_bytes(&pkg).expect("pack")
+}
+
+/// Change lock engine identity and refresh `appearance_hash` so hashes still match.
+pub fn pack_with_rebound_engine(bytes: &[u8], f: impl FnOnce(&mut k2f_core::LockFile)) -> Vec<u8> {
+    let mut pkg = unpack_bytes(bytes).expect("unpack");
+    let mut lock: k2f_core::LockFile =
+        serde_json::from_str(pkg.lock_json.as_ref().expect("lock")).expect("lock json");
+    f(&mut lock);
+    lock.appearance_hash = appearance_hash_for_lock(&pkg, &lock).expect("appearance hash");
     pkg.set_lock(&lock).expect("set_lock");
     pack_bytes(&pkg).expect("pack")
 }

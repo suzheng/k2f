@@ -120,15 +120,6 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"verify ({used}): {banner}")
     if banner != "UNSIGNED":
-        if banner == "ENGINE_MISMATCH":
-            print(
-                "CLI engine_commit_sha differs from the Editor that saved; "
-                "use a matching `k2f` on PATH or set K2F_CLI. "
-                "Semantic reopen check passed.",
-                file=sys.stderr,
-            )
-            print(f"wrote {args.out}")
-            return 0
         if stderr:
             print(stderr, file=sys.stderr)
         print(f"expected UNSIGNED, got {banner!r}", file=sys.stderr)

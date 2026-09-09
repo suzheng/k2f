@@ -22,7 +22,7 @@
 |------|-------|
 | Remote HTTP MCP | OAuth, multi-tenant; stdio is shipped |
 | Slide / infinite canvas | Product surface TBD |
-| Desktop file association / installers | OS registration and packaged installers |
+| Desktop code signing / notarization | Packaged installers exist; OS signing is still roadmap |
 
 Internal implementation tracks live outside this public repository. They are not part of the public contract.
 

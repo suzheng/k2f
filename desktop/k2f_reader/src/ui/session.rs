@@ -2,17 +2,22 @@ use super::blit::{blend_rect, blit_raster, page_in_window, LETTERBOX};
 use super::chrome::{page_inset_y_at, window_chrome_h_at, window_title};
 use super::coords::PageView;
 use super::draw::{fill_rect, Rect};
+use super::empty;
 use super::hud::{
     chrome_hit_at, dip, draw_hud, draw_scrollbar, in_chrome, ChromeHit, ChromePaint,
     SCROLLBAR_WIDTH, STATUS_HEIGHT,
 };
-use super::pdf_dialog::{draw as draw_pdf_dialog, hit_at as pdf_dialog_hit_at, PdfDialogHit, PdfDialogState};
 use super::input::{step_zoom, Action};
+use super::pdf_dialog::{
+    draw as draw_pdf_dialog, hit_at as pdf_dialog_hit_at, PdfDialogHit, PdfDialogState,
+};
 use super::raster::{decode_png, Raster};
 use super::scroll::clamp_scroll;
 use super::stack::{content_height, hit_index, origin_y, page_at_scroll, page_tops, page_view};
 use crate::copy::{slices_at, span_contains, CopyPayload, RectPt};
 use crate::AppState;
+use anyhow::Context;
+use std::path::Path;
 
 /// I-beam over lock text, pointer on chrome — same cues as the web viewer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,7 +29,8 @@ pub enum PointerCursor {
 
 /// Window-independent viewer: stacked pages, zoom, drag-select, PNG blit.
 pub struct Session {
-    app: AppState,
+    app: Option<AppState>,
+    open_error: Option<String>,
     pages: Vec<Raster>,
     scroll_y: f64,
     win_w: u32,
@@ -43,13 +49,14 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(app: AppState) -> anyhow::Result<Self> {
-        let mut s = Self {
-            app,
+    pub fn empty() -> Self {
+        Self {
+            app: None,
+            open_error: None,
             pages: Vec::new(),
             scroll_y: 0.0,
-            win_w: 1,
-            win_h: 1,
+            win_w: super::hud::DEFAULT_INNER_W,
+            win_h: super::hud::DEFAULT_INNER_H,
             drag_from: None,
             drag_to: None,
             drag_page: None,
@@ -61,33 +68,74 @@ impl Session {
             scale: 1.0,
             export_menu_open: false,
             pdf_dialog: PdfDialogState::new(),
-        };
-        s.reload_pages()?;
-        let (w, h) = s.scaled_size();
-        s.win_w = w;
-        s.win_h = h;
+        }
+    }
+
+    pub fn new(app: AppState) -> anyhow::Result<Self> {
+        let mut s = Self::empty();
+        s.replace_doc(app)?;
         Ok(s)
     }
 
-    pub fn app(&self) -> &AppState {
-        &self.app
+    pub fn load(&mut self, bytes: &[u8]) -> anyhow::Result<()> {
+        self.replace_doc(AppState::open(bytes)?)
     }
 
-    pub fn app_mut(&mut self) -> &mut AppState {
-        &mut self.app
+    pub fn load_path(&mut self, path: &Path) -> anyhow::Result<()> {
+        let bytes =
+            std::fs::read(path).with_context(|| format!("read {}", path.display()))?;
+        self.load(&bytes)
+    }
+
+    pub fn set_open_error(&mut self, msg: String) {
+        self.open_error = Some(msg);
+    }
+
+    pub fn open_error(&self) -> Option<&str> {
+        self.open_error.as_deref()
+    }
+
+    fn replace_doc(&mut self, app: AppState) -> anyhow::Result<()> {
+        self.app = Some(app);
+        self.open_error = None;
+        self.clear_drag();
+        self.scroll_y = 0.0;
+        self.hover = None;
+        self.pressed = None;
+        self.export_menu_open = false;
+        self.pdf_dialog = PdfDialogState::new();
+        self.reload_pages()?;
+        let (w, h) = self.scaled_size();
+        self.win_w = w;
+        self.win_h = h;
+        Ok(())
+    }
+
+    pub fn app(&self) -> Option<&AppState> {
+        self.app.as_ref()
+    }
+
+    pub fn app_mut(&mut self) -> Option<&mut AppState> {
+        self.app.as_mut()
     }
 
     pub fn window_title(&self) -> String {
-        window_title(&self.app)
+        self.app
+            .as_ref()
+            .map(window_title)
+            .unwrap_or_else(|| "K2F Reader".into())
     }
 
     pub fn scaled_size(&self) -> (u32, u32) {
+        let Some(app) = self.app.as_ref() else {
+            return (super::hud::DEFAULT_INNER_W, super::hud::DEFAULT_INNER_H);
+        };
         match self.pages.first() {
             Some(p) => {
-                let (w, h) = super::coords::scaled_png_size(p.width, p.height, self.app.zoom());
+                let (w, h) = super::coords::scaled_png_size(p.width, p.height, app.zoom());
                 (
                     w.saturating_add(SCROLLBAR_WIDTH),
-                    h.saturating_add(window_chrome_h_at(&self.app, self.scale)),
+                    h.saturating_add(window_chrome_h_at(app, self.scale)),
                 )
             }
             None => (super::hud::DEFAULT_INNER_W, super::hud::DEFAULT_INNER_H),
@@ -103,7 +151,7 @@ impl Session {
     }
 
     pub fn page_view(&self, win_w: u32, win_h: u32) -> PageView {
-        self.view_at(self.app.page(), win_w, win_h)
+        self.view_at(self.app.as_ref().map(|a| a.page()).unwrap_or(0), win_w, win_h)
     }
 
     pub fn set_window_size(&mut self, w: u32, h: u32) {
@@ -124,7 +172,7 @@ impl Session {
     }
 
     pub fn official_pixel(&self, x: u32, y: u32) -> Option<u32> {
-        self.official_pixel_at(self.app.page(), x, y)
+        self.official_pixel_at(self.app.as_ref()?.page(), x, y)
     }
 
     pub fn official_pixel_at(&self, page: usize, x: u32, y: u32) -> Option<u32> {
@@ -132,6 +180,9 @@ impl Session {
     }
 
     pub fn scroll_by(&mut self, dy: f64) {
+        if self.app.is_none() {
+            return;
+        }
         self.close_export_menu();
         self.scroll_y += dy;
         self.clamp_scroll();
@@ -139,6 +190,9 @@ impl Session {
     }
 
     pub fn jump_to_page(&mut self, page: usize) {
+        if self.app.is_none() {
+            return;
+        }
         self.close_export_menu();
         let tops = self.tops();
         if page >= tops.len() {
@@ -147,50 +201,62 @@ impl Session {
         let view_h = self.viewport_h();
         self.scroll_y = clamp_scroll(tops[page], self.content_height(), view_h);
         self.clear_drag();
-        self.app.set_page(page);
+        if let Some(app) = self.app.as_mut() {
+            app.set_page(page);
+        }
     }
 
     pub fn apply(&mut self, action: Action) -> Option<CopyPayload> {
         match action {
             Action::PrevPage => {
-                if self.app.page() > 0 {
-                    self.jump_to_page(self.app.page() - 1);
+                let page = self.app.as_ref()?.page();
+                if page > 0 {
+                    self.jump_to_page(page - 1);
                 }
                 None
             }
             Action::NextPage => {
-                if self.app.page() + 1 < self.app.page_count() {
-                    self.jump_to_page(self.app.page() + 1);
+                let (page, count) = {
+                    let app = self.app.as_ref()?;
+                    (app.page(), app.page_count())
+                };
+                if page + 1 < count {
+                    self.jump_to_page(page + 1);
                 }
                 None
             }
             Action::ZoomIn => {
                 self.close_export_menu();
-                step_zoom(&mut self.app, true);
+                step_zoom(self.app.as_mut()?, true);
                 self.clamp_scroll();
                 self.sync_page();
                 None
             }
             Action::ZoomOut => {
                 self.close_export_menu();
-                step_zoom(&mut self.app, false);
+                step_zoom(self.app.as_mut()?, false);
                 self.clamp_scroll();
                 self.sync_page();
                 None
             }
             Action::Copy => self.active_copy(),
-            Action::Export => None,
+            Action::Export | Action::Open => None,
         }
     }
 
     pub fn pointer_down(&mut self, x: f64, y: f64) {
+        if self.app.is_none() {
+            self.pressed = empty::hit(self.win_w, self.win_h, x, y, self.scale);
+            return;
+        }
         if self.pdf_dialog.open {
             self.pdf_dialog.pressed =
                 pdf_dialog_hit_at(&self.pdf_dialog, self.win_w, self.win_h, x, y, self.scale);
             return;
         }
+        let app = self.app.as_ref().expect("document");
         if in_chrome(
-            &self.app,
+            app,
             self.win_w,
             self.win_h,
             x,
@@ -199,7 +265,7 @@ impl Session {
             self.export_menu_open,
         ) {
             self.pressed = chrome_hit_at(
-                &self.app,
+                app,
                 self.win_w,
                 self.win_h,
                 x,
@@ -225,6 +291,14 @@ impl Session {
     }
 
     pub fn pointer_move(&mut self, x: f64, y: f64) -> bool {
+        if self.app.is_none() {
+            let next = empty::hit(self.win_w, self.win_h, x, y, self.scale);
+            if next != self.hover {
+                self.hover = next;
+                return true;
+            }
+            return false;
+        }
         if self.pdf_dialog.open {
             let next =
                 pdf_dialog_hit_at(&self.pdf_dialog, self.win_w, self.win_h, x, y, self.scale);
@@ -238,8 +312,9 @@ impl Session {
             self.drag_to = Some((x, y));
             return true;
         }
+        let app = self.app.as_ref().expect("document");
         let next = chrome_hit_at(
-            &self.app,
+            app,
             self.win_w,
             self.win_h,
             x,
@@ -256,10 +331,7 @@ impl Session {
     }
 
     pub fn pointer_up(&mut self, x: f64, y: f64) -> Option<CopyPayload> {
-        if self.pdf_dialog.open {
-            return None;
-        }
-        if self.pressed.is_some() {
+        if self.app.is_none() || self.pdf_dialog.open || self.pressed.is_some() {
             return None;
         }
         let from = self.drag_from.take()?;
@@ -268,7 +340,7 @@ impl Session {
         let view = self.view_at(page, self.win_w, self.win_h);
         let (ax, ay) = view.window_to_pt(from.0, from.1);
         let (bx, by) = view.window_to_pt(x, y);
-        let payload = self.app.copy_points_at(page, ax, ay, bx, by);
+        let payload = self.app.as_ref()?.copy_points_at(page, ax, ay, bx, by);
         if payload.is_some() {
             self.sel_from = Some((ax, ay));
             self.sel_to = Some((bx, by));
@@ -283,15 +355,19 @@ impl Session {
 
     pub fn take_chrome_click(&mut self, x: f64, y: f64) -> Option<ChromeHit> {
         let pressed = self.pressed.take()?;
-        let now = chrome_hit_at(
-            &self.app,
-            self.win_w,
-            self.win_h,
-            x,
-            y,
-            self.scale,
-            self.export_menu_open,
-        );
+        let now = if self.app.is_none() {
+            empty::hit(self.win_w, self.win_h, x, y, self.scale)
+        } else {
+            chrome_hit_at(
+                self.app.as_ref()?,
+                self.win_w,
+                self.win_h,
+                x,
+                y,
+                self.scale,
+                self.export_menu_open,
+            )
+        };
         (now == Some(pressed)).then_some(pressed)
     }
 
@@ -357,18 +433,27 @@ impl Session {
     }
 
     pub fn pointer_over_text(&self, x: f64, y: f64) -> bool {
+        let Some(app) = self.app.as_ref() else {
+            return false;
+        };
         let views = self.all_views(self.win_w, self.win_h);
         let Some(page) = hit_index(x, y, &views) else {
             return false;
         };
         let (px, py) = views[page].window_to_pt(x, y);
-        self.app
-            .text_layer_at(page)
+        app.text_layer_at(page)
             .iter()
             .any(|s| span_contains(s, px, py))
     }
 
     pub fn pointer_cursor(&self, x: f64, y: f64) -> PointerCursor {
+        if self.app.is_none() {
+            return if self.chrome_hot() {
+                PointerCursor::Pointer
+            } else {
+                PointerCursor::Default
+            };
+        }
         if self.pdf_dialog.open {
             return PointerCursor::Pointer;
         }
@@ -382,6 +467,9 @@ impl Session {
     }
 
     pub fn set_selection(&mut self, sel: RectPt) {
+        let Some(app) = self.app.as_ref() else {
+            return;
+        };
         if sel.is_empty() {
             self.sel_from = None;
             self.sel_to = None;
@@ -389,7 +477,7 @@ impl Session {
         } else {
             self.sel_from = Some((sel.x0, sel.y0));
             self.sel_to = Some((sel.x1, sel.y1));
-            self.selection_page = Some(self.app.page());
+            self.selection_page = Some(app.page());
         }
     }
 
@@ -397,7 +485,7 @@ impl Session {
         let page = self.selection_page?;
         let (ax, ay) = self.sel_from?;
         let (bx, by) = self.sel_to?;
-        self.app.copy_points_at(page, ax, ay, bx, by)
+        self.app.as_ref()?.copy_points_at(page, ax, ay, bx, by)
     }
 
     pub fn is_dragging(&self) -> bool {
@@ -405,6 +493,16 @@ impl Session {
     }
 
     pub fn compose_frame(&self, win_w: u32, win_h: u32) -> Vec<u32> {
+        let Some(app) = self.app.as_ref() else {
+            return empty::compose_frame(
+                win_w,
+                win_h,
+                self.open_error.as_deref(),
+                self.hover,
+                self.pressed,
+                self.scale,
+            );
+        };
         let n = win_w as usize * win_h as usize;
         let mut buf = vec![LETTERBOX; n];
         let views = self.all_views(win_w, win_h);
@@ -439,7 +537,7 @@ impl Session {
             &mut buf,
             win_w,
             win_h,
-            &self.app,
+            app,
             self.scroll_y,
             self.content_height(),
             self.viewport_h(),
@@ -449,7 +547,7 @@ impl Session {
             &mut buf,
             win_w,
             win_h,
-            &self.app,
+            app,
             ChromePaint {
                 hover: self.hover,
                 pressed: self.pressed,
@@ -462,7 +560,10 @@ impl Session {
     }
 
     fn live_slices(&self, page: usize, view: &PageView) -> Vec<k2f_paint::TextSpan> {
-        let spans = self.app.text_layer_at(page);
+        let Some(app) = self.app.as_ref() else {
+            return Vec::new();
+        };
+        let spans = app.text_layer_at(page);
         if self.drag_page == Some(page) {
             if let (Some(a), Some(b)) = (self.drag_from, self.drag_to) {
                 let (ax, ay) = view.window_to_pt(a.0, a.1);
@@ -480,8 +581,11 @@ impl Session {
 
     fn reload_pages(&mut self) -> anyhow::Result<()> {
         self.pages.clear();
-        for i in 0..self.app.page_count() {
-            match self.app.render_page_png(i) {
+        let Some(app) = self.app.as_ref() else {
+            return Ok(());
+        };
+        for i in 0..app.page_count() {
+            match app.render_page_png(i) {
                 Ok(png) => self.pages.push(Raster::from_rgba(&decode_png(&png)?)),
                 Err(_) => break,
             }
@@ -490,7 +594,7 @@ impl Session {
     }
 
     fn scaled_heights(&self) -> Vec<u32> {
-        let z = self.app.zoom();
+        let z = self.app.as_ref().map(|a| a.zoom()).unwrap_or(1.0);
         self.pages
             .iter()
             .map(|p| super::coords::scaled_png_size(p.width, p.height, z).1)
@@ -502,12 +606,11 @@ impl Session {
     }
 
     fn viewport_h(&self) -> f64 {
-        f64::from(
-            self.win_h.saturating_sub(
-                super::chrome::chrome_top_at(&self.app, self.scale)
-                    .saturating_add(dip(STATUS_HEIGHT, self.scale)),
-            ),
-        )
+        let top = match self.app.as_ref() {
+            Some(app) => super::chrome::chrome_top_at(app, self.scale),
+            None => dip(super::hud::TOOLBAR_HEIGHT, self.scale),
+        };
+        f64::from(self.win_h.saturating_sub(top.saturating_add(dip(STATUS_HEIGHT, self.scale))))
     }
 
     fn clamp_scroll(&mut self) {
@@ -515,23 +618,34 @@ impl Session {
     }
 
     fn sync_page(&mut self) {
+        if self.app.is_none() {
+            return;
+        }
         let n = page_at_scroll(self.scroll_y, self.viewport_h(), &self.tops());
-        self.app.set_page(n);
+        if let Some(app) = self.app.as_mut() {
+            app.set_page(n);
+        }
     }
 
     fn view_at(&self, page: usize, win_w: u32, _win_h: u32) -> PageView {
         let png = self.pages.get(page);
         let (pw, ph) = png.map(|p| (p.width, p.height)).unwrap_or((1, 1));
+        let zoom = self.app.as_ref().map(|a| a.zoom()).unwrap_or(1.0);
+        let inset = self
+            .app
+            .as_ref()
+            .map(|a| page_inset_y_at(a, self.scale))
+            .unwrap_or(super::hud::HUD_HEIGHT);
         page_view(
             win_w,
             pw,
             ph,
-            self.app.zoom(),
+            zoom,
             origin_y(
                 page,
                 &self.tops(),
                 self.scroll_y,
-                f64::from(page_inset_y_at(&self.app, self.scale)),
+                f64::from(inset),
             ),
         )
     }

@@ -202,7 +202,7 @@ fn hud_export_does_not_overlap_banner_on_narrow_window() {
         lock.engine_version = "9.9.9".into();
     });
     let session = Session::new(AppState::open(&bytes).unwrap()).unwrap();
-    let overlay = overlay_label(session.app());
+    let overlay = overlay_label(session.app().unwrap());
     assert!(
         overlay.len() * 8 + 16 > 320,
         "fixture must be long enough to collide without clipping, got {overlay:?}"

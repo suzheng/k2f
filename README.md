@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>The PDF format for the AI agent era.</strong>
+  <strong>K2F is an open document file format — like PDF or DOCX — that AI can edit, and always looks exactly the same wherever you open it.</strong>
   <br />
   Consistent like PDF. Editable like code.
 </p>
@@ -25,100 +25,112 @@
   <a href="docs/spec/k2f-v0.1.md">Spec</a>
 </p>
 
----
-
-K2F is a packaged document format (`.K2F`) built for AI agents and deterministic readers. Agents edit a **semantic tree**; the reference engine compiles a **render lock** that paints identically on every official reader.
-
-## The problem
-
-PDF is a black box for AI — hard to read, impossible to edit. HTML is a sandcastle for AI — every render differs, styles drift. AI needs a format that is natively editable and renders with absolute certainty.
-
-| Format | Reality |
-|--------|---------|
-| **PDF** | Unreadable · Uneditable |
-| **HTML** | Render drift · Style chaos |
-| **K2F** | Editable semantics · Locked rendering |
-
-## Get started
-
-### A. Agent Skill
-
-Install the skill into Cursor, Claude Code, Codex, or any agent that supports `npx skills`:
-
 ```bash
 npx skills add suzheng/k2f --skill k2f
 ```
 
-**Manual fallback:** copy [`skills/k2f/`](skills/k2f/) into your agent's skills directory (e.g. `~/.cursor/skills/k2f/`), or browse [skills/k2f on GitHub](https://github.com/suzheng/k2f/tree/main/skills/k2f).
+Works in Cursor, Claude Code, Codex, and other agents that support `npx skills`. Then say *Generate an invoice* or *Write a monthly report.*
 
-Then say: *"Generate an invoice"* or *"Write a monthly report."*
+## Contents
 
-### B. SDK / CLI — for developers
+- [What is K2F](#what-is-k2f)
+- [Why it exists](#why-it-exists)
+- [How a file is put together](#how-a-file-is-put-together)
+- [Use it with an agent](#use-it-with-an-agent)
+- [Build with it](#build-with-it)
+- [Ecosystem](#ecosystem)
+- [What's in v0.1](#whats-in-v01)
+- [Docs](#docs)
 
-```bash
-pip install k2f              # CLI on PATH + Python SDK
-npm i @openk2f/k2f           # JS / WASM SDK + <k2f-viewer>
-# cargo install k2f          # optional: CLI without Python
-```
+## What is K2F
 
-```python
-import json
-import k2f
+A `.K2F` file is a document you send the way you send a PDF or a Word file. PDF looks the same on every computer because it is a drawing: put this glyph here, draw that line there. An agent cannot safely change "clause 4" or "the invoice total." Word and Markdown are easy to rewrite. The page is not locked. The same file can look different in Word and Google Docs, or on GitHub and as an exported PDF.
 
-ed = k2f.Editor.open_template("invoice")
-ed.insert_node("root", 0, json.dumps({
-    "id": "invoice.title",
-    "role": "h1",
-    "content": {"type": "text", "value": "Invoice #1042"},
-}))
-ed.insert_node("root", 1, json.dumps({
-    "id": "invoice.body",
-    "role": "body",
-    "content": {"type": "text", "value": "Payment due in 30 days."},
-}))
-ed.validate_package()
-bytes(ed.save_bytes())
-```
+K2F puts the editable JSON and the compiled page in one ZIP. The words and structure live as JSON, so you or an agent can change a heading or a table cell by name. The finished page is compiled once into the same file. Fonts and images travel with it. Official readers paint that compiled page. They do not reflow the body text.
 
-JavaScript / WASM: see [`sdk/js/README.md`](sdk/js/README.md) (`initWasm` required).
+<p align="center">
+  <a href="https://k2f.dev/gallery/aurora-data">
+    <img src=".github/assets/hero-preview.png" alt="Aurora Data cover page rendered by the K2F engine" width="800" />
+  </a>
+  <br />
+  <em>Engine output for the Aurora Data gallery template. More samples in the <a href="https://k2f.dev/gallery">Gallery</a>. Try a file in the <a href="https://k2f.dev/playground">Playground</a>.</em>
+</p>
 
-```bash
-k2f markdown notes.md -o notes.K2F --theme report
-```
+## Why it exists
 
-Build from source, smoke tests, and troubleshooting: [Getting Started](docs/guide/getting-started.md) · [Contributing](CONTRIBUTING.md).
+For a contract or an invoice, an agent has to change named pieces (a clause, a total), and the page has to stay put when someone else opens the file. PDF locks the page. HTML and Markdown are easy to rewrite, and then the layout moves.
 
-### C. Browser — no install
+| PDF | HTML | K2F |
+|-----|------|-----|
+| Same page. Not editable as source. | Editable. Layout moves. | Edit the meaning. Ship a locked page. |
 
-Try documents in the [Playground](https://k2f.dev/playground) or browse official samples in the [Gallery](https://k2f.dev/gallery).
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>PDF</strong></p>
+      <img src=".github/assets/compare-traditional-pdf.png" alt="Traditional PDF: document content trapped as a drawing inside a closed box" width="560" />
+      <p>PDF stores paint instructions. OCR can recover text. That is still not a source an agent can rewrite safely.</p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>K2F</strong></p>
+      <img src=".github/assets/compare-k2f.png" alt="K2F: a JSON content tree below a deterministically rendered page" width="560" />
+      <p>A JSON tree you patch by id, plus a theme. A pinned engine compiles both. Official readers paint that compiled page.</p>
+    </td>
+  </tr>
+</table>
 
-## Why K2F is different
+Longer comparison, including Markdown and Office: [Why K2F](https://k2f.dev/why).
 
-| Capability | Detail |
-|------------|--------|
-| **AI-native read & write** | JSON semantic tree with stable dotted node ids — agents patch by id, not by coordinate |
-| **Deterministic rendering** | Same package + pinned engine version → pixel-identical output (embedded fonts only; no system fonts) |
-| **Semantically editable** | Edit meaning and roles, not x/y and colors — all appearance lives in the theme |
-| **Precise rollback** | Content is a tree with `changelog.json` — revert any node without touching the rest |
-| **Self-contained file** | Fonts, images, and data packaged into one `.K2F` ZIP — send it and it's complete |
-| **Open and it's done** | Viewers execute `document.K2F.lock` only — no re-layout, no drift |
+## How a file is put together
+
+The package holds editable JSON and a compiled page. You edit the JSON. The engine lays it out once and writes a **render lock** (`document.K2F.lock`). Official viewers paint that lock. They do not lay out the body again.
+
+Agents edit meaning; the engine decides placement.
 
 ```mermaid
 flowchart LR
-  A["Semantic tree\ncontent/root.json"]
-  E["Engine: compile"]
+  A["Content tree\ncontent/root.json"]
+  E["Engine compiles"]
   C["Render lock\ndocument.K2F.lock"]
-  V["Viewer: paint lock"]
+  V["Viewer paints the lock"]
   A --> E --> C --> V
 ```
 
-The **semantic tree** is what agents read and write. The **render lock** is compiled geometry and paint ops — immutable until content or theme changes. Official viewers paint the lock; they do not re-layout body text.
+```
+document.k2f
+├── manifest.json       # metadata
+├── content/root.json   # what the document says
+├── styles/theme.json   # how roles look
+└── document.K2F.lock   # compiled page (written at compile)
+```
 
-## How a file is structured
+The **content tree** (`content/root.json`) holds headings, tables, warnings, and body text. Every node has a stable dotted `id` such as `invoice.total`. Agents patch those ids. Coordinates stay out of this file.
 
-At its core, two parts: **content** and **theme**. The engine handles layout automatically.
+The **theme** (`styles/theme.json`) holds appearance. A node says `role: "warning"`. Font size and color belong in the theme.
 
-**Content** (`content/root.json`) — excerpt:
+```json
+{
+  "id": "invoice.header",
+  "role": "h1",
+  "content": { "type": "text", "value": "STATEMENT #2025-001" }
+}
+```
+
+```json
+{
+  "roles": {
+    "h1": { "font_size": 24000, "bold": true, "color": "google_blue_600" }
+  },
+  "palette": { "google_blue_600": "#1A73E8" }
+}
+```
+
+The full package also embeds fonts, schemas, and `changelog.json`. See the [format spec](docs/spec/k2f-v0.1.md) and [design goals](docs/architecture/design.md).
+
+<details>
+<summary>Longer content and theme excerpts</summary>
+
+**Content** (`content/root.json`):
 
 ```json
 {
@@ -137,7 +149,7 @@ At its core, two parts: **content** and **theme**. The engine handles layout aut
 }
 ```
 
-**Theme** (`styles/theme.json`) — excerpt:
+**Theme** (`styles/theme.json`):
 
 ```json
 {
@@ -152,46 +164,120 @@ At its core, two parts: **content** and **theme**. The engine handles layout aut
 }
 ```
 
-**Package layout:**
+</details>
 
-```
-document.k2f
-├── manifest.json       # metadata
-├── content/root.json   # semantic content tree
-├── styles/theme.json   # theme styles
-└── document.K2F.lock   # render lock (generated after compile)
+## Use it with an agent
+
+```bash
+npx skills add suzheng/k2f --skill k2f
 ```
 
-Full container also includes embedded fonts, embedded schemas, and `changelog.json`. See [Format spec v0.1](docs/spec/k2f-v0.1.md).
+If `npx skills` is not available, copy [`skills/k2f/`](skills/k2f/) into your agent's skills directory (for example `~/.cursor/skills/k2f/`), or browse [skills/k2f on GitHub](https://github.com/suzheng/k2f/tree/main/skills/k2f).
 
-## What's shipped (v0.1)
+Before the agent writes a file, install the published CLI:
+
+```bash
+pip install k2f              # CLI on PATH + Python SDK
+# npm i @openk2f/k2f         # only when embedding <k2f-viewer>
+# cargo install k2f          # optional: CLI without Python
+```
+
+Then say *Generate an invoice* or *Write a monthly report.* MCP is optional; writing does not require it.
+
+Workflows, catalog, and scripts: [skills/README.md](skills/README.md) · [skills/k2f/SKILL.md](skills/k2f/SKILL.md).
+
+## Build with it
+
+Most people should use the skill above. Use these when you are wiring K2F into your own code.
+
+### Python and CLI
+
+```bash
+pip install k2f
+```
+
+```python
+import json
+import k2f
+
+ed = k2f.Editor.open_template("invoice")
+ed.insert_node("root", 0, json.dumps({
+    "id": "invoice.title",
+    "role": "h1",
+    "content": {"type": "text", "value": "Invoice #1042"},
+}))
+ed.insert_node("root", 1, json.dumps({
+    "id": "invoice.body",
+    "role": "body",
+    "content": {"type": "text", "value": "Payment due in 30 days."},
+}))
+ed.validate_package()
+open("invoice.K2F", "wb").write(ed.save_bytes())
+```
+
+```bash
+k2f markdown notes.md -o notes.K2F --theme report
+```
+
+### Embed a viewer
+
+```bash
+npm i @openk2f/k2f
+```
+
+JavaScript / WASM needs `initWasm`. See [`sdk/js/README.md`](sdk/js/README.md).
+
+### MCP
+
+A local stdio server is shipped ([`engine/k2f_mcp`](engine/k2f_mcp/README.md)). Remote HTTP MCP is not shipped.
+
+Build from source, smoke tests, and troubleshooting: [Getting Started](docs/guide/getting-started.md) · [Contributing](CONTRIBUTING.md). Python SDK: [`sdk/python/README.md`](sdk/python/README.md). CLI: [`cli/k2f_cli/README.md`](cli/k2f_cli/README.md).
+
+## Ecosystem
+
+- [Playground](https://k2f.dev/playground): open and preview `.K2F` in the browser.
+- [Gallery](https://k2f.dev/gallery): official sample documents.
+- [Desktop reader](https://k2f.dev/download): open and verify files offline. Packaged builds are on the site; the source crate is still in development ([`desktop/k2f_reader` (in development)](desktop/k2f_reader/README.md)).
+- [Docs](https://k2f.dev/docs): spec, guides, and architecture ([`docs/`](docs/README.md)).
+
+From a published lock you can export PDF, PowerPoint, Word, Markdown, or images. Those exports are drawings of the lock. The source stays K2F (`PDF_IS_NOT_A_SOURCE`).
+
+## What's in v0.1
+
+Shipped: `.K2F` package format, web viewer (`<k2f-viewer>`), Python SDK, JS / WASM SDK, CLI, one agent skill, MCP stdio, Markdown ↔ K2F, native math (TeX subset), verify / integrity banners / Ed25519 sign.
+
+Not shipped: remote HTTP MCP, slide and infinite canvas modes, PDF import.
+
+<details>
+<summary>Full shipped / not-shipped table</summary>
 
 | Shipped | Not shipped |
 |---------|-------------|
-| `.K2F` package format (ZIP + semantic tree + theme + lock) | Desktop installer (source crate only — [desktop reader (in development)](desktop/k2f_reader/README.md)) |
+| `.K2F` package format (ZIP + content tree + theme + lock) | Slide / infinite canvas modes |
 | Web viewer (`<k2f-viewer>`) | Remote HTTP MCP (stdio MCP is shipped) |
-| Python SDK (`pip install k2f`) | Slide / infinite canvas modes |
-| JS / WASM SDK (`npm i @openk2f/k2f`) | PDF import (`PDF_IS_NOT_A_SOURCE`) |
-| CLI (`cargo install k2f`) | |
+| Python SDK (`pip install k2f`) | PDF import (`PDF_IS_NOT_A_SOURCE`) |
+| JS / WASM SDK (`npm i @openk2f/k2f`) | |
+| CLI (`pip install k2f` or `cargo install k2f`) | |
 | One agent skill (`skills/k2f/`) | |
 | MCP stdio server | |
 | Markdown ↔ K2F bridge | |
 | Native math (TeX subset) | |
 | Verify, integrity banners, Ed25519 sign | |
 
-Full status and roadmap: [docs/guide/status.md](docs/guide/status.md).
+Desktop packaged builds: [k2f.dev/download](https://k2f.dev/download). OS code signing is still roadmap. Source crate: [desktop reader (in development)](desktop/k2f_reader/README.md).
 
-## Documentation & tooling
+</details>
+
+Full status: [docs/guide/status.md](docs/guide/status.md).
+
+## Docs
 
 | Resource | Link |
 |----------|------|
-| Live Playground | [k2f.dev/playground](https://k2f.dev/playground) |
-| Gallery | [k2f.dev/gallery](https://k2f.dev/gallery) |
-| Documentation | [k2f.dev/docs](https://k2f.dev/docs) · [docs/](docs/README.md) |
 | Format spec | [docs/spec/k2f-v0.1.md](docs/spec/k2f-v0.1.md) |
 | Design goals | [docs/architecture/design.md](docs/architecture/design.md) |
 | Codebase map | [docs/architecture/codebase.md](docs/architecture/codebase.md) |
-| Agent skills | [skills/k2f/](skills/k2f/SKILL.md) |
+| Agent skill | [skills/k2f/](skills/k2f/SKILL.md) |
 | MCP stdio server | [engine/k2f_mcp/README.md](engine/k2f_mcp/README.md) |
 | Python SDK | [sdk/python/README.md](sdk/python/README.md) |
 | JavaScript SDK | [sdk/js/README.md](sdk/js/README.md) |

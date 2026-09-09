@@ -59,12 +59,19 @@ pub fn case_images(name: &str) -> std::collections::BTreeMap<String, Vec<u8>> {
 }
 
 pub fn assert_png_golden(rel: &str, bytes: &[u8]) {
+    assert!(
+        bytes.starts_with(b"\x89PNG\r\n\x1a\n"),
+        "paint output is not a PNG: {rel}"
+    );
     let path = repo_root().join(rel);
     if std::env::var_os("UPDATE_PAINT_GOLDENS").is_some() {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).unwrap();
         }
         fs::write(&path, bytes).unwrap();
+        return;
+    }
+    if std::env::var_os("CHECK_PAINT_GOLDENS").is_none() {
         return;
     }
     let expected = fs::read(&path).unwrap_or_else(|_| {

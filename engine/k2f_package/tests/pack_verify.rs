@@ -1,7 +1,7 @@
 mod common;
 
 use common::{compile_pkg, load_contract_engine, load_font, packed_contract, repo_root};
-use k2f_core::{engine_version, CanvasMode, Pt};
+use k2f_core::{CanvasMode, Pt};
 use k2f_package::{
     pack_bytes, package_from_engine, unpack_bytes, verify_package, VerifyStatus, CODE_NODE_ID,
     CODE_SCHEMA_INVALID,
@@ -26,7 +26,10 @@ fn unpack_roundtrip_preserves_title() {
     let pkg = unpack_bytes(&packed_contract()).unwrap();
     assert_eq!(pkg.manifest.title, "独立顾问协议");
     assert_eq!(pkg.manifest.canvas_mode, CanvasMode::Paged);
-    assert_eq!(pkg.manifest.engine_version, engine_version());
+    let lock: k2f_core::LockFile =
+        serde_json::from_str(pkg.lock_json.as_ref().unwrap()).unwrap();
+    assert_eq!(pkg.manifest.engine_version, lock.engine_version);
+    assert!(!lock.engine_version.is_empty());
     assert!(pkg
         .fonts
         .contains_key("assets/fonts/NotoSansSC-Regular.otf"));
@@ -134,14 +137,17 @@ fn pack_rejects_duplicate_ids_after_mutation() {
 }
 
 #[test]
-fn engine_version_mismatch() {
+fn engine_version_tamper_without_rebind_is_appearance_changed() {
     let mut pkg = unpack_bytes(&packed_contract()).unwrap();
     compile_pkg(&mut pkg);
     let mut lock: k2f_core::LockFile =
         serde_json::from_str(pkg.lock_json.as_ref().unwrap()).unwrap();
     lock.engine_version = "9.9.9".to_string();
     pkg.set_lock(&lock).unwrap();
-    assert_eq!(verify_package(&pkg).unwrap(), VerifyStatus::EngineMismatch);
+    assert_eq!(
+        verify_package(&pkg).unwrap(),
+        VerifyStatus::AppearanceChanged
+    );
 }
 
 #[test]

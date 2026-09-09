@@ -58,12 +58,12 @@ impl AppState {
         self.banner().as_str()
     }
 
-    /// Hash-chain result. Finer than `banner()` (`ENGINE_MISMATCH` vs `BROKEN_INTEGRITY`).
+    /// Hash-chain result. Finer than `banner()` (`ENGINE_MISMATCH` vs `UNSIGNED`).
     pub fn status(&self) -> VerifyStatus {
         self.doc.status()
     }
 
-    /// Integrity code shown beside the web banner (`ENGINE_MISMATCH` under `BROKEN_INTEGRITY`).
+    /// Integrity banner code (`UNSIGNED` / `SIGNED` / `BROKEN_INTEGRITY` / …).
     pub fn status_code(&self) -> &'static str {
         self.doc.status_code()
     }

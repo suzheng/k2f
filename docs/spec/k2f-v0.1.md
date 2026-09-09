@@ -97,14 +97,14 @@ Opening a `.K2F` file is **not** compiling. Viewers paint the lock only.
 
 | Code | Meaning |
 |------|---------|
-| `VALID` | Lock matches semantic content, theme, fonts, and engine |
-| `UNSIGNED` | Valid hash chain, no signature file |
-| `SIGNED` | Valid hash chain and valid Ed25519 signature |
+| `VALID` | Lock matches semantic content, theme, fonts, and the **reader's** engine identity |
+| `UNSIGNED` | Self-consistent unsigned package (hash `VALID` or `ENGINE_MISMATCH`) |
+| `SIGNED` | Self-consistent package and valid Ed25519 signature |
 | `SIGNED_BUT_BROKEN` | Signature present but hash or crypto check failed |
 | `UNLOCKED` | No `document.K2F.lock` |
 | `CONTENT_CHANGED` | Semantic tree changed since lock |
-| `APPEARANCE_CHANGED` | Theme, fonts, or page config changed since lock |
-| `ENGINE_MISMATCH` | `engine_version` or `engine_commit_sha` differs from reader |
+| `APPEARANCE_CHANGED` | Theme, fonts, page config, or unbound engine identity changed since lock |
+| `ENGINE_MISMATCH` | Hash chain matches the lock's recorded engine; reader's `engine_version` / `engine_commit_sha` differs |
 | `FONT_MISSING` | Required embedded fonts absent |
 
 Additional package errors: `SCHEMA_INVALID`, `NODE_ID`, `UNEXPECTED_PATH`, `UNKNOWN_PAINT_OP`, `PDF_IS_NOT_A_SOURCE`.
@@ -116,9 +116,9 @@ Viewers must surface integrity status derived from `IntegrityStatus`. The banner
 | Banner | When | Default UI |
 |--------|------|------------|
 | `SIGNED` | Valid signature and hash chain | Compact positive strip |
-| `UNSIGNED` | Valid, unsigned | Hidden (quiet read) |
+| `UNSIGNED` | Self-consistent, unsigned | Hidden (quiet read) |
 | `SIGNED_BUT_BROKEN` | Signature file invalid or tampered | Prominent warning |
-| `BROKEN_INTEGRITY` | Content, appearance, engine, or font failure | Prominent warning |
+| `BROKEN_INTEGRITY` | Content, appearance, or font failure | Prominent warning |
 | `UNLOCKED` | Package not compiled | Compact draft strip |
 
 Embedders may pass `banner: "full"` for the legacy verbose strip on every state, or `banner: "off"` / `no-banner` to hide chrome entirely. Broken states must never be silently treated as signed.

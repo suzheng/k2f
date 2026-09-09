@@ -11,7 +11,7 @@ fn zoom_one_blits_official_png_pixels_below_hud() {
     let session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
     let (w, h) = session.scaled_size();
     let view = session.page_view(w, h);
-    let inset = f64::from(page_inset_y(session.app()));
+    let inset = f64::from(page_inset_y(session.app().unwrap()));
     assert!(
         (view.origin_y - inset).abs() < 1e-9,
         "page origin must sit below the reserved banner, got {}",
@@ -39,7 +39,7 @@ fn hud_is_a_reserved_strip_not_an_overlay() {
     let (w, h) = session.scaled_size();
     let view = session.page_view(w, h);
     assert_eq!(view.origin_x, 0.0);
-    let inset = f64::from(page_inset_y(session.app()));
+    let inset = f64::from(page_inset_y(session.app().unwrap()));
     assert!(
         (view.origin_y - inset).abs() < 1e-9,
         "web banner is above the page, got origin_y={}",
@@ -62,14 +62,14 @@ fn hud_is_a_reserved_strip_not_an_overlay() {
     );
     assert!(session.official_pixel(w / 2, h.saturating_sub(1)).is_none());
     assert!(session.official_pixel(0, 0).is_some());
-    assert!(overlay_label(session.app()).contains("1 /"));
+    assert!(overlay_label(session.app().unwrap()).contains("1 /"));
     assert!(h > HUD_HEIGHT);
 }
 
 #[test]
 fn unsigned_hud_matches_neutral_toolbar_color() {
     let session = Session::new(AppState::open(&invoice_bytes()).unwrap()).unwrap();
-    assert_eq!(session.app().banner_str(), "UNSIGNED");
+    assert_eq!(session.app().unwrap().banner_str(), "UNSIGNED");
     let (w, h) = session.scaled_size();
     let frame = session.compose_frame(w, h);
     assert_eq!(
@@ -82,17 +82,17 @@ fn unsigned_hud_matches_neutral_toolbar_color() {
 #[test]
 fn zoom_scales_the_bitmap_not_lock_bytes() {
     let mut session = Session::new(AppState::open(&published_invoice_bytes()).unwrap()).unwrap();
-    let png0 = session.app().render_current_png().unwrap();
+    let png0 = session.app().unwrap().render_current_png().unwrap();
     let (w0, h0) = session.scaled_size();
     session.apply(Action::ZoomIn);
-    let png1 = session.app().render_current_png().unwrap();
+    let png1 = session.app().unwrap().render_current_png().unwrap();
     let (w1, h1) = session.scaled_size();
     assert_eq!(png0, png1, "zoom is UI scale of the official bitmap");
     assert!(
         w1 > w0 && h1 > h0,
         "intrinsic page size grows with zoom, {w0}x{h0} -> {w1}x{h1}"
     );
-    assert!((session.app().zoom() - 1.25).abs() < 1e-6);
+    assert!((session.app().unwrap().zoom() - 1.25).abs() < 1e-6);
     assert_page_interior_is_not_chrome(&session);
 }
 
@@ -101,7 +101,7 @@ fn zoom_out_samples_the_official_bitmap() {
     let mut session = Session::new(AppState::open(&published_invoice_bytes()).unwrap()).unwrap();
     let before = session.official_pixel(16, 16);
     session.apply(Action::ZoomOut);
-    assert!((session.app().zoom() - 0.75).abs() < 1e-6);
+    assert!((session.app().unwrap().zoom() - 0.75).abs() < 1e-6);
     assert_eq!(
         session.official_pixel(16, 16),
         before,
@@ -109,7 +109,7 @@ fn zoom_out_samples_the_official_bitmap() {
     );
     assert_page_interior_is_not_chrome(&session);
     session.apply(Action::ZoomIn);
-    assert!((session.app().zoom() - 1.0).abs() < 1e-6);
+    assert!((session.app().unwrap().zoom() - 1.0).abs() < 1e-6);
     let (w, h) = session.scaled_size();
     let view = session.page_view(w, h);
     let frame = session.compose_frame(w, h);

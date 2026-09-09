@@ -1,10 +1,10 @@
 use super::hud::{ChromeHit, DEFAULT_INNER_H, DEFAULT_INNER_W, MIN_INNER_H, MIN_INNER_W};
 use super::input::{accept_key, key_action, Action, KeyBind};
+use super::pdf_dialog::PdfDialogHit;
 use super::scroll::{line_delta_px, wheel_y_to_scroll};
 use super::session::{PointerCursor, Session};
-use crate::export::{ensure_extension, pick_save_path, ExportFormat};
+use crate::export::{ensure_extension, pick_open_path, pick_save_path, ExportFormat};
 use crate::AppState;
-use super::pdf_dialog::PdfDialogHit;
 use softbuffer::{Context, Surface};
 use std::num::NonZeroU32;
 use std::path::PathBuf;
@@ -16,11 +16,24 @@ use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::keyboard::{Key, NamedKey};
 use winit::window::{CursorIcon, Window, WindowId};
 
-pub fn run(app: AppState, source: Option<PathBuf>) -> anyhow::Result<()> {
-    let event_loop = EventLoop::new()?;
+#[cfg(target_os = "macos")]
+use super::macos::Wake;
+
+#[cfg(not(target_os = "macos"))]
+#[derive(Clone, Copy, Debug)]
+struct Wake;
+
+pub fn run(app: Option<AppState>, source: Option<PathBuf>) -> anyhow::Result<()> {
+    let event_loop = EventLoop::<Wake>::with_user_event().build()?;
     event_loop.set_control_flow(ControlFlow::Wait);
+    #[cfg(target_os = "macos")]
+    super::macos::install(event_loop.create_proxy());
+    let session = match app {
+        Some(app) => Session::new(app)?,
+        None => Session::empty(),
+    };
     let mut gui = Gui {
-        session: Session::new(app)?,
+        session,
         source,
         window: None,
         context: None,
@@ -84,8 +97,34 @@ impl Gui {
         }
     }
 
+    fn begin_open(&mut self) {
+        let Some(path) = pick_open_path() else {
+            return;
+        };
+        self.load_document(path);
+    }
+
+    fn load_document(&mut self, path: PathBuf) {
+        match self.session.load_path(&path) {
+            Ok(()) => {
+                self.source = Some(path);
+                if let Some(window) = &self.window {
+                    window.set_title(&self.session.window_title());
+                }
+            }
+            Err(e) => {
+                eprintln!("open {}: {e:#}", path.display());
+                self.session.set_open_error(format!("{e:#}"));
+            }
+        }
+        self.redraw();
+    }
+
     fn begin_export(&mut self) {
-        if self.session.app().export_format() == ExportFormat::Pdf {
+        let Some(app) = self.session.app() else {
+            return;
+        };
+        if app.export_format() == ExportFormat::Pdf {
             self.session.open_pdf_dialog();
             self.redraw();
             return;
@@ -94,7 +133,9 @@ impl Gui {
     }
 
     fn finish_export(&self, pdf_scale: Option<k2f_pdf::PdfScale>) {
-        let app = self.session.app();
+        let Some(app) = self.session.app() else {
+            return;
+        };
         let format = app.export_format();
         let Some(path) = pick_save_path(
             format,
@@ -117,9 +158,21 @@ impl Gui {
             Err(e) => eprintln!("export {:?}: {e:#}", format),
         }
     }
+
+    fn drain_os_open(&mut self) {
+        #[cfg(target_os = "macos")]
+        {
+            if super::macos::take_menu_open() {
+                self.begin_open();
+            }
+            for path in super::macos::take_open_paths() {
+                self.load_document(path);
+            }
+        }
+    }
 }
 
-impl ApplicationHandler for Gui {
+impl ApplicationHandler<Wake> for Gui {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.window.is_some() {
             return;
@@ -137,7 +190,18 @@ impl ApplicationHandler for Gui {
         self.context = Some(context);
         self.surface = Some(surface);
         self.window = Some(window);
+        #[cfg(target_os = "macos")]
+        super::macos::install_file_menu();
+        self.drain_os_open();
         self.redraw();
+    }
+
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, _event: Wake) {
+        self.drain_os_open();
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        self.drain_os_open();
     }
 
     fn window_event(
@@ -197,6 +261,10 @@ impl ApplicationHandler for Gui {
                     if let Some(hit) = self.session.take_chrome_click(self.cursor.0, self.cursor.1)
                     {
                         match hit {
+                            ChromeHit::Open => {
+                                self.session.close_export_menu();
+                                self.begin_open();
+                            }
                             ChromeHit::Export => {
                                 self.session.close_export_menu();
                                 self.begin_export();
@@ -205,13 +273,17 @@ impl ApplicationHandler for Gui {
                             ChromeHit::ExportItem(i) => {
                                 if let Some(format) = ExportFormat::ALL.get(i).copied() {
                                     self.session.close_export_menu();
-                                    self.session.app_mut().set_export_format(format);
+                                    if let Some(app) = self.session.app_mut() {
+                                        app.set_export_format(format);
+                                    }
                                     self.begin_export();
                                 }
                             }
                             ChromeHit::Copy => {
                                 self.session.close_export_menu();
-                                self.session.app_mut().toggle_copy_format();
+                                if let Some(app) = self.session.app_mut() {
+                                    app.toggle_copy_format();
+                                }
                             }
                             ChromeHit::ZoomIn => {
                                 self.session.close_export_menu();
@@ -254,6 +326,18 @@ impl ApplicationHandler for Gui {
                 };
                 if !accept_key(event.repeat, action) {
                     return;
+                }
+                if action == Action::Open {
+                    #[cfg(target_os = "macos")]
+                    {
+                        return;
+                    }
+                    #[cfg(not(target_os = "macos"))]
+                    {
+                        self.session.close_export_menu();
+                        self.begin_open();
+                        return;
+                    }
                 }
                 if action == Action::Export {
                     self.session.close_export_menu();

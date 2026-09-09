@@ -40,7 +40,7 @@ cargo run -p k2f_reader --release -- examples/published/invoice.K2F
 
 Debug `cargo run -p k2f_reader --` also works; `--release` is snappier for first paint. Zoom samples the official bitmap at blit time.
 
-Title: document title for `UNSIGNED`; `K2F Reader — Signed — {title}` or `K2F Reader — Draft — {title}` when applicable; `BROKEN_INTEGRITY` / `SIGNED_BUT_BROKEN` keep the raw codes (with `status_code` under broken). Toolbar: title, zoom `−` / `%` / `+`, copy format, **Export as** split button (last format) plus a caret menu of **Export as K2F** / **PDF** / PowerPoint / Word (**DOCX**) / Markdown / PNG / JPG — choosing a row exports immediately (same as the web viewer). Integrity chrome matches web `banner: "auto"`: quiet for `UNSIGNED`; compact Signed / Draft strips; plain-language warning for broken locks (not a full-width `BROKEN_INTEGRITY` ticker). Status bar: page, zoom, format. Pages stack vertically; the wheel scrolls them. Left/Right jump so the next sheet sits under the toolbar. Zoom scales the lock bitmap inside a stable window (default 1280×820, min 960×640).
+Title: document title for `UNSIGNED`; `K2F Reader — Signed — {title}` or `K2F Reader — Draft — {title}` when applicable; `BROKEN_INTEGRITY` / `SIGNED_BUT_BROKEN` keep the raw codes (with `status_code` under broken). Packaged app: clicking the icon opens an empty window (no Open dialog). **Open** on the toolbar, **File → Open** on macOS, or Ctrl/Cmd+O picks a `.K2F`. Double-clicking a `.K2F` (or passing it on the command line) loads that lock in the window. Toolbar with a document: Open, title, zoom `−` / `%` / `+`, copy format, **Export as** split button (last format) plus a caret menu of **Export as K2F** / **PDF** / PowerPoint / Word (**DOCX**) / Markdown / PNG / JPG — choosing a row exports immediately (same as the web viewer). Integrity chrome matches web `banner: "auto"`: quiet for `UNSIGNED`; compact Signed / Draft strips; plain-language warning for broken locks (not a full-width `BROKEN_INTEGRITY` ticker). Status bar: page, zoom, format. Pages stack vertically; the wheel scrolls them. Left/Right jump so the next sheet sits under the toolbar. Zoom scales the lock bitmap inside a stable window (default 1280×820, min 960×640).
 
 | Key | Action |
 | --- | --- |
@@ -48,6 +48,7 @@ Title: document title for `UNSIGNED`; `K2F Reader — Signed — {title}` or `K2
 | Left / Right | Previous / next page |
 | `+` / `-` | Zoom (0.1–3.0) |
 | Drag on lock text | Select characters (I-beam cursor, blue highlight like the web viewer) |
+| Ctrl/Cmd+O | Open a `.K2F` (native Open dialog) |
 | Ctrl/Cmd+C | Copy the selection (`text/plain`) |
 | Ctrl/Cmd+Shift+S | Export in the selected format (native Save) |
 
@@ -66,8 +67,8 @@ cargo run -p k2f_reader -- --export-docx out.docx examples/published/invoice.K2F
 
 `--verify` prints the banner on stdout. Exit `0` if `UNSIGNED` or `SIGNED`; exit `1` if broken / unlocked (`status_code` on stderr); exit `2` on usage (no FILE). Unlocked files have no lock, so export fails. `--export-pdf` / `--export-pptx` / `--export-docx` still write the published lock when the banner is broken. Export flags conflict with each other. `--verify` together with one export writes then verifies.
 
-Do not gate CI on `--verify` of `examples/published/*.K2F`. A committed lock can already be `ENGINE_MISMATCH` after an engine bump. Use `cargo test -p k2f_reader` (SDK fixtures). Tests never open a window or a Save dialog.
+A self-consistent lock compiled by another engine stays `UNSIGNED` or `SIGNED`. `hash_code` may be `ENGINE_MISMATCH` (reader provenance, not a broken banner). Rewriting lock engine fields without updating `appearance_hash` is `APPEARANCE_CHANGED`. Do not treat `ENGINE_MISMATCH` as `BROKEN_INTEGRITY`. Use `cargo test -p k2f_reader` in CI. Tests never open a window or a Save dialog.
 
 ## Not in v0
 
-File association, code signing / notarization, Tauri / Electron / wgpu.
+Code signing / notarization, Tauri / Electron / wgpu.

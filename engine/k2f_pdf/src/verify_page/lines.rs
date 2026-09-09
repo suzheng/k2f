@@ -9,6 +9,9 @@ pub fn verification_lines(doc: &OpenedDocument) -> Vec<String> {
         format!("status: {}", doc.banner().as_str()),
         format!("status_code: {}", doc.status_code()),
     ];
+    if doc.hash_code() != doc.status_code() {
+        lines.push(format!("hash_code: {}", doc.hash_code()));
+    }
     if let Some(h) = doc.content_hash() {
         lines.push(format!("content_hash: {h}"));
     }

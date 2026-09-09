@@ -1,14 +1,21 @@
 mod common;
 
 use common::contract_k2f_bytes;
-use k2f_package::{unpack_bytes, VerifyStatus};
+use k2f_package::{appearance_hash_for_lock, unpack_bytes, VerifyStatus};
 use k2f_paint::{Banner, OpenedDocument, PaintError, OFFICIAL_PNG_SCALE};
 
 #[test]
 fn committed_contract_opens_valid_and_paints() {
     let doc = OpenedDocument::open(&contract_k2f_bytes()).unwrap();
     assert_eq!(doc.banner(), Banner::Unsigned);
-    assert_eq!(doc.status(), VerifyStatus::Valid);
+    assert!(
+        matches!(
+            doc.status(),
+            VerifyStatus::Valid | VerifyStatus::EngineMismatch
+        ),
+        "published contract must be self-consistent, got {:?}",
+        doc.status()
+    );
     assert_eq!(doc.status_code(), "UNSIGNED");
     assert!(doc.page_count() >= 1);
     let png = doc.render_page(0, OFFICIAL_PNG_SCALE).unwrap();
@@ -67,7 +74,28 @@ fn content_change_without_recompile_is_broken_but_paints_old_lock() {
 }
 
 #[test]
-fn engine_mismatch_is_broken_but_paints_old_lock() {
+fn engine_mismatch_is_quiet_and_paints_old_lock() {
+    let bytes = contract_k2f_bytes();
+    let valid = OpenedDocument::open(&bytes).unwrap();
+    let old_png = valid.render_page(0, OFFICIAL_PNG_SCALE).unwrap();
+
+    let mut pkg = unpack_bytes(&bytes).unwrap();
+    let mut lock: k2f_core::LockFile =
+        serde_json::from_str(pkg.lock_json.as_ref().unwrap()).unwrap();
+    lock.engine_version = "9.9.9".to_string();
+    lock.appearance_hash = appearance_hash_for_lock(&pkg, &lock).unwrap();
+    pkg.set_lock(&lock).unwrap();
+
+    let opened = OpenedDocument::from_package(pkg).unwrap();
+    assert_eq!(opened.banner(), Banner::Unsigned);
+    assert_eq!(opened.status(), VerifyStatus::EngineMismatch);
+    assert_eq!(opened.status_code(), "UNSIGNED");
+    assert_eq!(opened.hash_code(), "ENGINE_MISMATCH");
+    assert_eq!(opened.render_page(0, OFFICIAL_PNG_SCALE).unwrap(), old_png);
+}
+
+#[test]
+fn engine_field_tamper_without_rebind_is_broken_but_paints_old_lock() {
     let bytes = contract_k2f_bytes();
     let valid = OpenedDocument::open(&bytes).unwrap();
     let old_png = valid.render_page(0, OFFICIAL_PNG_SCALE).unwrap();
@@ -80,7 +108,8 @@ fn engine_mismatch_is_broken_but_paints_old_lock() {
 
     let broken = OpenedDocument::from_package(pkg).unwrap();
     assert_eq!(broken.banner(), Banner::BrokenIntegrity);
-    assert_eq!(broken.status(), VerifyStatus::EngineMismatch);
+    assert_eq!(broken.status(), VerifyStatus::AppearanceChanged);
+    assert_eq!(broken.status_code(), "APPEARANCE_CHANGED");
     assert_eq!(broken.render_page(0, OFFICIAL_PNG_SCALE).unwrap(), old_png);
 }
 

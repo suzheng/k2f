@@ -30,6 +30,22 @@ rfd = "0.15"
 fontdue = "0.9"
 ttf-parser = { version = "0.25.1", default-features = false, features = ["std"] }
 
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.5.2"
+objc2-app-kit = { version = "0.2.2", features = [
+    "NSApplication",
+    "NSEvent",
+    "NSMenu",
+    "NSMenuItem",
+] }
+objc2-foundation = { version = "0.2.2", features = [
+    "NSArray",
+    "NSObject",
+    "NSString",
+    "NSThread",
+    "NSURL",
+] }
+
 [dev-dependencies]
 k2f_sdk = { path = "../../engine/k2f_sdk" }
 k2f_core = { path = "../../engine/k2f_core" }

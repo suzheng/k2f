@@ -31,7 +31,7 @@ pub use package::Package;
 pub use schema::{bundled_schema_files, validate_theme_json};
 pub use sign::{generate_secret_key, sign_package, utc_unix_seconds, SecretKey};
 pub use unpack::unpack_bytes;
-pub use verify::verify_package;
+pub use verify::{appearance_hash_for_lock, verify_package};
 pub use write_dir::{write_dir, WriteDirOpts};
 pub use zip_store::write_zip;
 

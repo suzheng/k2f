@@ -57,7 +57,7 @@ Derived from package integrity. Default `banner: "auto"` uses tiered visibility:
 | `SIGNED` | Valid hash chain + valid signature | Compact green strip |
 | `UNSIGNED` | Valid hashes, no signature | Hidden (quiet read) |
 | `SIGNED_BUT_BROKEN` | Signature present but hash/crypto failed — **not** signed | Prominent warning |
-| `BROKEN_INTEGRITY` | Content / appearance / engine / font mismatch — paints **old** lock | Prominent warning |
+| `BROKEN_INTEGRITY` | Content / appearance / font mismatch — paints **old** lock | Prominent warning |
 | `UNLOCKED` | No `document.K2F.lock` | Compact draft strip |
 
 Use `banner: "full"` for legacy verbose strips on every state. Use `no-banner` / `banner: "off"` to hide chrome entirely (still read `detail.banner` from `k2f-open`).

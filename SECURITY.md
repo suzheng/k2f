@@ -16,7 +16,7 @@ We aim to acknowledge reports within five business days.
 
 Viewers must display an integrity banner on every open. Status codes `BROKEN_INTEGRITY` and `SIGNED_BUT_BROKEN` must **not** be presented to users as signed or trusted documents.
 
-Hash verification covers semantic content (`content_hash`), appearance binding (`appearance_hash`), and engine identity (`engine_version`, `engine_commit_sha`).
+Hash verification covers semantic content (`content_hash`) and appearance binding (`appearance_hash`, including the lock's recorded `engine_version` and `engine_commit_sha`). A reader built from a different commit reports `hash_code` `ENGINE_MISMATCH` but must not present a self-consistent package as `BROKEN_INTEGRITY` or `SIGNED_BUT_BROKEN`.
 
 ### Signing
 

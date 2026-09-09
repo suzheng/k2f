@@ -47,9 +47,9 @@ fn wheel_y_matches_system_content_direction() {
 #[test]
 fn published_invoice_stack_is_taller_than_one_page() {
     let session = Session::new(AppState::open(&published_invoice_bytes()).unwrap()).unwrap();
-    assert!(session.app().page_count() >= 3);
+    assert!(session.app().unwrap().page_count() >= 3);
     let (_w, h) = session.scaled_size();
-    let view_h = f64::from(h.saturating_sub(window_chrome_h(session.app())));
+    let view_h = f64::from(h.saturating_sub(window_chrome_h(session.app().unwrap())));
     assert!(
         session.content_height() > view_h + PAGE_GAP,
         "stack {} view {}",
@@ -57,7 +57,7 @@ fn published_invoice_stack_is_taller_than_one_page() {
         view_h
     );
     let expected = content_height(
-        &(0..session.app().page_count())
+        &(0..session.app().unwrap().page_count())
             .map(|_| view_h.round() as u32)
             .collect::<Vec<_>>(),
     );
@@ -70,14 +70,14 @@ fn published_invoice_stack_is_taller_than_one_page() {
 #[test]
 fn scroll_changes_current_page_on_published_invoice() {
     let mut session = Session::new(AppState::open(&published_invoice_bytes()).unwrap()).unwrap();
-    assert_eq!(session.app().page(), 0);
+    assert_eq!(session.app().unwrap().page(), 0);
     session.scroll_by(session.content_height());
     assert!(
-        session.app().page() >= 1,
+        session.app().unwrap().page() >= 1,
         "scrolling to the end must leave page 0, got {}",
-        session.app().page()
+        session.app().unwrap().page()
     );
-    assert_eq!(session.app().page(), session.app().page_count() - 1);
+    assert_eq!(session.app().unwrap().page(), session.app().unwrap().page_count() - 1);
 }
 
 #[test]
@@ -86,7 +86,7 @@ fn compose_at_scroll_zero_matches_page0_png() {
     let (w, h) = session.scaled_size();
     let view = session.page_view(w, h);
     assert!(
-        (view.origin_y - f64::from(page_inset_y(session.app()))).abs() < 1e-9,
+        (view.origin_y - f64::from(page_inset_y(session.app().unwrap()))).abs() < 1e-9,
         "page 0 sits under the HUD at scroll 0, got {}",
         view.origin_y
     );
@@ -103,12 +103,12 @@ fn jump_to_page_1_blits_page1_not_page0() {
     let mut session = Session::new(AppState::open(&published_invoice_bytes()).unwrap()).unwrap();
     let (w, h) = session.scaled_size();
     session.apply(Action::NextPage);
-    assert_eq!(session.app().page(), 1);
+    assert_eq!(session.app().unwrap().page(), 1);
     assert_eq!(session.scroll_y(), page_tops_for(&session)[1]);
 
     let view = session.page_view(w, h);
     assert!(
-        (view.origin_y - f64::from(page_inset_y(session.app()))).abs() < 1e-9,
+        (view.origin_y - f64::from(page_inset_y(session.app().unwrap()))).abs() < 1e-9,
         "jumped page sits under the HUD, got {}",
         view.origin_y
     );
@@ -142,6 +142,6 @@ fn differing_pixel(session: &Session, max_x: u32) -> Option<(u32, u32)> {
 
 fn page_tops_for(session: &Session) -> Vec<f64> {
     let (_w, h) = session.scaled_size();
-    let page_h = h.saturating_sub(window_chrome_h(session.app()));
-    page_tops(&vec![page_h; session.app().page_count()])
+    let page_h = h.saturating_sub(window_chrome_h(session.app().unwrap()));
+    page_tops(&vec![page_h; session.app().unwrap().page_count()])
 }
