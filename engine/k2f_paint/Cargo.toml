@@ -1,6 +1,6 @@
 [package]
 name = "k2f_paint"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 description = "K2F lock paint / raster executor"
 license = "Apache-2.0"
@@ -12,9 +12,9 @@ keywords = ["k2f", "paint", "raster", "viewer"]
 categories = ["rendering::engine"]
 
 [dependencies]
-k2f_core = { path = "../k2f_core", version = "0.2.3" }
-k2f_markdown = { path = "../k2f_markdown", version = "0.2.3" }
-k2f_package = { path = "../k2f_package", version = "0.2.3" }
+k2f_core = { path = "../k2f_core", version = "0.2.4" }
+k2f_markdown = { path = "../k2f_markdown", version = "0.2.4" }
+k2f_package = { path = "../k2f_package", version = "0.2.4" }
 thiserror = { workspace = true }
 tiny-skia = "0.11.0"
 ttf-parser = "0.21.1"
@@ -24,5 +24,5 @@ image = { version = "=0.25.6", default-features = false, features = ["png", "web
 resvg = { version = "0.43.0", default-features = false }
 
 [dev-dependencies]
-k2f_layout = { path = "../k2f_layout", version = "0.2.3" }
+k2f_layout = { path = "../k2f_layout", version = "0.2.4" }
 zip = { version = "2", default-features = false, features = ["deflate"] }

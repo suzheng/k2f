@@ -1,6 +1,6 @@
 [package]
 name = "k2f_reader"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 description = "Native K2F desktop reader (source crate)"
 license = "Apache-2.0"

@@ -1,6 +1,6 @@
 [package]
 name = "k2f_text"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 description = "K2F text shaping, bidi, and font fallback"
 license = "Apache-2.0"
@@ -15,4 +15,4 @@ categories = ["text-processing"]
 rustybuzz = "0.10.0"
 ttf-parser = { version = "0.25.1", default-features = false, features = ["std"] }
 unicode-bidi = "0.3.15"
-k2f_core = { path = "../k2f_core", version = "0.2.3" }
+k2f_core = { path = "../k2f_core", version = "0.2.4" }

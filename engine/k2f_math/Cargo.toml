@@ -1,6 +1,6 @@
 [package]
 name = "k2f_math"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 description = "K2F native math layout"
 license = "Apache-2.0"
@@ -12,5 +12,5 @@ keywords = ["k2f", "math", "layout"]
 categories = ["text-processing"]
 
 [dependencies]
-k2f_core = { path = "../k2f_core", version = "0.2.3" }
-k2f_text = { path = "../k2f_text", version = "0.2.3" }
+k2f_core = { path = "../k2f_core", version = "0.2.4" }
+k2f_text = { path = "../k2f_text", version = "0.2.4" }

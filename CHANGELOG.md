@@ -4,7 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [0.2.3] - 2026-09-09
+## [0.2.4] - 2026-09-11
+
+### Added
+
+- Desktop reader: continuous pinch / Ctrl+wheel zoom with display LOD, copy-all-as-text, and macOS menu checkmarks.
+- Web viewer: display-scale LOD helpers aligned with the desktop reader.
 
 ### Fixed
 
@@ -33,7 +38,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `export-docx` / `export-pptx`: theme `dk1`/`lt1` stay `srgbClr` (never `sysClr`) but use sentinels `000002`/`FFFFFD`, not the content pin `000001`/`FFFFFE`. Word was snapping lock black/white onto those slots and remapping them in Dark Mode. Chrome-backed Word text boxes emit a fully-transparent `a:solidFill` instead of `a:noFill`. Invoice/text/corpus tests still pass.
 - `export-docx`: skip the full-page solid as a DrawingML shape (hosts stack that behindDoc drawing on top of every other behindDoc fill). Nested labels fold into their parent shell as one `wrap=square` text box so title banners, table-header cells, and cards keep fill without covering glyphs. Same-node pills already folded; `wrap=none` was still shrinking those frames to the text. Later pages whose paper differs from page 0 emit a behindDoc `page_paper` drawing after that fold. Invoice/text/corpus tests still pass.
 - `export-docx`: overlapped nearly-opaque `#RRGGBBAA` card shells (`fill_alpha >= 128`) go `behindDoc` like opaque plaques. Writer was compositing those fills over later labels, so dark social cards veiled every nested title, SVG, and CTA. Light frost (`alpha < 128`) and gradients stay in front. Outline split is unchanged. Invoice/text/corpus tests still pass.
-- Align published Rust (`k2f`, `k2f_sdk`), Python (`k2f`), and npm (`@openk2f/k2f`) with the template-bundling removal shipped on `main` after 0.2.2 (crates.io and PyPI 0.2.2 still exposed named template APIs).
 - `export-docx` / `export-pptx`: running header/footer runs keep lock glyph tracking (`w:spacing` / `a:rPr spc`). The `{{page_*}}` path used to pass empty glyphs / `spc=0`, so tracked folios (contract headers, invoice labels) lost letter-spacing. Glyph *ranges* still cannot map the expanded string. Invoice/text/corpus tests still pass.
 - `export-docx`: `{{page_current}}` / `{{page_total}}` running labels paint in the body with lock-resolved numbers (same as PPTX). PAGE/NUMPAGES in `footer1.xml` were invisible in LibreOffice Writer whenever `pgMar` is 0. Invoice/text/corpus tests still pass.
 - `export-docx`: overlapped opaque card shells (abstract/quote/figure plaques) go `behindDoc` so Writer cannot paint the fill above later labels. Dropping the empty `txBox` was not enough; thin rules, gradients, and glass stay in front. Invoice/text/corpus tests still pass.
@@ -48,7 +52,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `export-docx` / `export-pptx`: lock-wrapped text whose last line overflows the geometry box (box sized for N−1 lines) expands the Office frame to that ink and pins the last paragraph to face-size line spacing. Inter-line leading as trailing space on the last para was painting over the next node in PowerPoint and clipping the last line in Writer. Invoice/text/corpus tests still pass.
 - `export-docx` / `export-pptx`: pinning lock wrap breaks no longer inserts a blank Office paragraph when the next lock line already follows an explicit `\n` (hero titles that hard-break, then wrap). Wrap-only paragraphs still get a single hard break. Invoice/text/corpus tests still pass.
 - `export-docx` / `export-pptx`: explicit `\n` two-line labels in a padded cell (invoice line-items) stay `wrap=none`. A frame that still fits N+1 lines used to host-wrap the long second paragraph onto a third row over the next cell. Intra-paragraph lock wrap is unchanged. Invoice/text/corpus tests still pass.
-
 ## [0.2.3] - 2026-09-09
 
 ### Fixed

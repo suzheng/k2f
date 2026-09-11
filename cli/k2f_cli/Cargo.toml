@@ -1,6 +1,6 @@
 [package]
 name = "k2f"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 description = "K2F command-line tool"
 license = "Apache-2.0"
@@ -17,13 +17,13 @@ name = "k2f_cli"
 path = "src/lib.rs"
 
 [dependencies]
-k2f_layout = { path = "../../engine/k2f_layout", version = "0.2.3" }
-k2f_package = { path = "../../engine/k2f_package", version = "0.2.3" }
-k2f_paint = { path = "../../engine/k2f_paint", version = "0.2.3" }
-k2f_pdf = { path = "../../engine/k2f_pdf", version = "0.2.3" }
-k2f_pptx = { path = "../../export/k2f_pptx", version = "0.2.3" }
-k2f_docx = { path = "../../export/k2f_docx", version = "0.2.3" }
-k2f_sdk = { path = "../../engine/k2f_sdk", version = "0.2.3" }
+k2f_layout = { path = "../../engine/k2f_layout", version = "0.2.4" }
+k2f_package = { path = "../../engine/k2f_package", version = "0.2.4" }
+k2f_paint = { path = "../../engine/k2f_paint", version = "0.2.4" }
+k2f_pdf = { path = "../../engine/k2f_pdf", version = "0.2.4" }
+k2f_pptx = { path = "../../export/k2f_pptx", version = "0.2.4" }
+k2f_docx = { path = "../../export/k2f_docx", version = "0.2.4" }
+k2f_sdk = { path = "../../engine/k2f_sdk", version = "0.2.4" }
 clap = { version = "4.4", features = ["derive"] }
 anyhow = "1.0"
 
