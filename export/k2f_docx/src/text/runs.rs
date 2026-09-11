@@ -83,6 +83,24 @@ pub(crate) fn runs_from_paint(
     expand_fields(out)
 }
 
+/// Running-header/footer text after `{{page_*}}` substitution. Ignore lock
+/// glyph *ranges* (they still map the token source string). Extra-advance on
+/// those glyphs is still tracking — same as body runs.
+pub(crate) fn runs_from_plain(
+    text: &str,
+    paint_runs: &[TextGlyphRun],
+    modifiers: &[Modifier],
+    fonts: &FontCtx,
+    geo: Option<&GeometryNode>,
+) -> Vec<TextRun> {
+    let style = paint_runs
+        .first()
+        .map(|r| r.style.clone())
+        .unwrap_or_else(fallback_style);
+    let glyphs: Vec<&GlyphPosition> = geo.map(|g| g.glyphs.iter().collect()).unwrap_or_default();
+    split_piece(text, 0, text.len(), &style, modifiers, fonts, &glyphs)
+}
+
 fn push_span<'a>(
     spans: &mut Vec<(usize, usize, &'a TextPaintStyle, Vec<&'a GlyphPosition>)>,
     bs: usize,

@@ -3,7 +3,9 @@ use std::collections::BTreeMap;
 #[derive(Clone, Debug)]
 pub struct DocIR {
     pub title: String,
+    #[allow(dead_code)]
     pub page_width_emu: i64,
+    #[allow(dead_code)]
     pub page_height_emu: i64,
     pub page_width_twips: i64,
     pub page_height_twips: i64,
@@ -39,12 +41,26 @@ pub struct TextBox {
     pub align: TextAlign,
     pub bullet: bool,
     pub numbered: bool,
+    /// Legacy Word `w:numId`. Current export keeps this at 0 and paints
+    /// list markers as literal runs (host auto-numbering is unreliable in
+    /// floating text boxes).
+    pub num_id: u32,
     pub ilvl: u32,
     pub l_ins_emu: i64,
+    /// Word `w:ind` hanging for literal list markers. 0 = no hanging.
+    /// Separate from [`l_ins_emu`] (bodyPr left pad / outer marker pad).
+    pub hang_emu: i64,
     pub t_ins_emu: i64,
     pub r_ins_emu: i64,
     pub b_ins_emu: i64,
     pub line_twips: Option<i64>,
+    /// Last pinned paragraph: face size, not inter-line delta (no trailing leading).
+    pub last_line_twips: Option<i64>,
+    /// When non-empty, exact line pitch (twips) per paragraph — used when folding
+    /// stacked labels with different face sizes into one shell text box.
+    pub para_line_twips: Vec<Option<i64>>,
+    /// Extra space after each paragraph (twips); length may be shorter than paras.
+    pub para_after_twips: Vec<i64>,
     pub vert_center: bool,
     pub preserve_whitespace: bool,
     pub relative_height: u32,
@@ -54,6 +70,12 @@ pub struct TextBox {
     pub fill_alpha: u8,
     /// Copied from the matching DrawBox when the node is a decorated chip/pill.
     pub corner_emu: i64,
+    /// Outline copied from the matching DrawBox (outlined badges). `None` = noFill.
+    pub line_hex: Option<String>,
+    /// 255 = opaque. Folded from the matching DrawBox stroke.
+    pub line_alpha: u8,
+    pub line_w_emu: i64,
+    pub line_dash: LineDash,
     /// DrawingML wrap. False for glyph-tight single-line lock boxes.
     pub wrap: bool,
 }
@@ -126,10 +148,15 @@ pub struct ShapeBox {
     pub gradient: Option<GradientFill>,
     pub corner_emu: i64,
     pub line_hex: Option<String>,
+    /// 255 = opaque. `#RRGGBBAA` borders keep lock alpha on DrawingML `a:ln`.
+    pub line_alpha: u8,
     pub line_w_emu: i64,
     pub line_dash: LineDash,
     pub behind_doc: bool,
     pub relative_height: u32,
+    /// In-front opaque fills pin extent with an empty txBox. Shapes that later
+    /// paint sits on must not: Writer paints that empty frame over later labels.
+    pub pin_empty_txbox: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -155,8 +182,9 @@ pub struct PictureBox {
     pub media_name: String,
     pub bytes: Vec<u8>,
     pub relative_height: u32,
-    /// Effect slices pin extent with an empty txBox. Lock images under later
-    /// text must not: Writer paints a large empty txBox over later labels.
+    /// Effect slices pin extent with an empty txBox when nothing later overlaps.
+    /// Slices (and lock images) under later paint must not: Writer paints that
+    /// empty frame over later labels.
     pub pin_empty_txbox: bool,
 }
 
@@ -225,6 +253,15 @@ impl PageElement {
             _ => None,
         }
     }
+
+    pub fn relative_height(&self) -> u32 {
+        match self {
+            Self::TextBox(tb) => tb.relative_height,
+            Self::Shape(s) => s.relative_height,
+            Self::Picture(p) | Self::Raster(p) => p.relative_height,
+            Self::Table(t) => t.relative_height,
+        }
+    }
 }
 
 pub fn collect_pictures(elements: &[PageElement]) -> Vec<&PictureBox> {
@@ -232,9 +269,11 @@ pub fn collect_pictures(elements: &[PageElement]) -> Vec<&PictureBox> {
 }
 
 pub fn has_lists(elements: &[PageElement]) -> bool {
+    // Only legacy packages that still set num_id need numbering.xml.
+    // Current export paints list markers as literal runs.
     elements
         .iter()
-        .any(|e| e.textbox().is_some_and(|t| t.bullet || t.numbered))
+        .any(|e| e.textbox().is_some_and(|t| t.num_id > 0))
 }
 
 pub fn collect_hyperlink_urls(elements: &[PageElement]) -> Vec<String> {

@@ -46,7 +46,7 @@ pub(crate) fn tracking_twips(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use k2f_core::Pt;
+    use k2f_core::{GeometryNode, Pt};
     use std::collections::BTreeMap;
     use std::path::PathBuf;
 
@@ -92,5 +92,67 @@ mod tests {
             underline: false,
         };
         assert_eq!(tracking_twips(&refs, &style, &ctx), 70);
+    }
+
+    #[test]
+    fn running_header_plain_runs_keep_lock_tracking() {
+        let path =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts/Roboto-Regular.ttf");
+        let bytes = std::fs::read(path).unwrap();
+        let mut fonts = BTreeMap::new();
+        fonts.insert("assets/fonts/Roboto-Regular.ttf".into(), bytes.clone());
+        let ctx = FontCtx::new(&fonts);
+        let face = ttf_parser::Face::parse(&bytes, 0).unwrap();
+        let gid = face.glyph_index('A').unwrap();
+        let native = i128::from(face.glyph_hor_advance(gid).unwrap()) * 6_800
+            / i128::from(face.units_per_em());
+        let extra = 600i128;
+        let glyphs = vec![
+            GlyphPosition {
+                glyph_id: u32::from(gid.0),
+                cluster: 0,
+                x_offset: Pt(0),
+                y_offset: Pt(0),
+                x_advance: Pt(native + extra),
+                y_advance: Pt(0),
+            },
+            GlyphPosition {
+                glyph_id: u32::from(gid.0),
+                cluster: 1,
+                x_offset: Pt(native + extra),
+                y_offset: Pt(0),
+                x_advance: Pt(native),
+                y_advance: Pt(0),
+            },
+        ];
+        let geo = GeometryNode {
+            id: "running.header.left".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(200_000),
+            height: Pt(8_000),
+            glyphs,
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        };
+        let style = TextPaintStyle {
+            font_family: "Roboto-Regular".into(),
+            font_size: Pt(6_800),
+            color: "#718096".into(),
+            bold: false,
+            italic: false,
+            strikethrough: false,
+            underline: false,
+        };
+        let paint = [k2f_core::TextGlyphRun {
+            glyph_range: [0, 2],
+            style,
+        }];
+        let runs = crate::text::runs::runs_from_plain("AA", &paint, &[], &ctx, Some(&geo));
+        assert_eq!(
+            runs[0].tracking_twips, 12,
+            "running labels must keep lock tracking; 0.6pt extra-advance is 12 twips"
+        );
     }
 }

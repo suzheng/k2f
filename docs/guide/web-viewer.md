@@ -2,7 +2,7 @@
 
 Embed a `.K2F` document in a website the same way you would embed a PDF viewer: unpack, verify, paint the published lock. The browser is **not** the layout engine. Opening a locked file paints `document.K2F.lock` only — it does not recompile.
 
-Official scale for raster pages is **2×** (`Viewer.official_scale()` → `2`).
+Official scale for raster pages is **2×** (`Viewer.official_scale()` → `2`) — baseline / export / golden. UI zoom is continuous CSS sizing; the viewer may re-paint at a quantized display scale for sharpness (LOD).
 
 ## Install / build
 
@@ -104,7 +104,7 @@ node skills/k2f/scripts/copy-wasm.mjs --dest ./public
 2. Call `await initWasm("/k2f_wasm_bg.wasm")` before mount (or `initViewerWasm("/k2f_viewer_bg.wasm")` for preview-only in this repo).
 3. Mount only on the client — do not SSR the canvas; do not pass `Uint8Array` as an RSC prop.
 4. Page width comes from `page_config`, not the viewport. On open, the viewer **fit-to-width** when the widest page is wider than the scroll stage (snapped to toolbar zoom steps, capped at 100%). Use **+ / −** (or the zoom menu on the percentage) to zoom after open.
-5. **More → Fullscreen** toggles the `<k2f-viewer>` host into browser fullscreen (hidden when the Fullscreen API is unavailable). Export is a single **Export as …** split button (current format on click; caret picks K2F / PDF / PowerPoint / Word / Markdown / PNG / JPG). Copy Markdown vs Plain lives under **More** (`localStorage.k2f.copyFormat`).
+5. **Copy all as Markdown** (toolbar copy icon) puts `document_markdown()` on the clipboard. **More → Fullscreen** toggles the `<k2f-viewer>` host into browser fullscreen (hidden when the Fullscreen API is unavailable). Export is a single **Export as …** split button (current format on click; caret picks K2F / PDF / PowerPoint / Word / Markdown / PNG / JPG). Selection copy Markdown vs Plain lives under **More** (`localStorage.k2f.copyFormat`).
 6. Import from `@openk2f/k2f/viewer` only (avoids duplicating `initWasm` via bare `@openk2f/k2f`).
 
 The adoption portal for maintainers lives in the sibling [`k2f-site`](https://github.com/suzheng/k2f-site) checkout and consumes this package via `file:../k2f/sdk/js`. npm consumers do not need that repo.

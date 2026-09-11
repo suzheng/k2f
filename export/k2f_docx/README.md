@@ -11,12 +11,13 @@ If Word’s “Show editing marks” is on, the file looks like many floating te
 | Input | Word object | Editable |
 |---|---|---|
 | Ordinary text | `wps:txbx` text box | yes; slight reflow is allowed |
-| Running header/footer | header/footer part + `PAGE` / `NUMPAGES` fields | yes (edit the part, every page changes) |
+| Running header/footer | body text boxes at lock coordinates (`{{page_*}}` expanded per page) | yes; numbers are a lock snapshot, not live Word fields |
 | Plain-text table | `w:tbl` inside a positioned text box | yes |
 | Bitmap / SVG illustration | `pic:pic`, or `wps:wsp`+`a:blipFill` when later lock paint overlaps | replaceable if `pic:pic` |
-| Opaque solid box | `wps:wsp` | fill can be changed |
-| Linear gradient / translucent solid | `wps:wsp` `a:gradFill` / `a:alpha` | fill can be changed |
-| blur / shadow / math | `k2f-raster:` `wps:wsp` + `a:blipFill` | no |
+| Opaque solid box | `wps:wsp` (`behindDoc` only for the lock's full-page paper; nested labels fold into the shell as one `wrap=square` text box, absorbing any `{id}::stroke` companion; axis-aligned solid rims use thin `::edge_*` bars; rounded solid rims keep `a:ln` on the fill; `w:background` is the page-0 Office slot — Word Dark Mode may hide it) | fill can be changed |
+| Linear gradient / translucent solid | `wps:wsp` `a:gradFill` / `a:alpha` (high-alpha overlapped cards follow the opaque `behindDoc` path) | fill can be changed |
+| blur / math | `k2f-raster:` `wps:wsp` + `a:blipFill` (no empty txBox when later paint overlaps) | no |
+| shadow-only box | native fill + stroke (glow dropped in v1) | fill can be changed |
 
 Do **not** stamp a full-page PNG and overlay invisible text. That is the PDF-bridge stamp path and would destroy native text, tables, and pictures.
 
@@ -26,7 +27,7 @@ Do **not** stamp a full-page PNG and overlay invisible text. That is the PDF-bri
 - Glass / blur slices sample only the chrome lock (page background plus the effect ops). They do **not** blur native card shapes sitting behind the glass.
 - Nested / image / still-Asset table cells are not native `w:tbl` (they stay box+text+pic).
 - Do not restyle with Word’s Heading 1 style gallery: that would reflow the absolutely positioned contract.
-- SVG embeds as `image/svg+xml`. Word’s SVG support is weaker than PowerPoint; CI only asserts media + `a:blip`.
+- SVG assets are rasterized to PNG at export (same `decode_raster` / resvg path as paint). Raw `image/svg+xml` is unreliable in LibreOffice Writer and uneven in Word.
 - No DOCX → K2F import. No OMML.
 
 ## Official CLI

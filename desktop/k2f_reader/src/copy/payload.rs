@@ -21,6 +21,13 @@ impl CopyFormat {
         }
     }
 
+    pub fn menu_label(self) -> &'static str {
+        match self {
+            Self::Markdown => "Copy as Markdown",
+            Self::Plain => "Copy as Text",
+        }
+    }
+
     pub fn hud_label(self) -> &'static str {
         match self {
             Self::Markdown => "Copy MD",

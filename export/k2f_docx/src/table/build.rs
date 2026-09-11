@@ -80,10 +80,12 @@ pub(crate) fn table_ref_placeholder(node_id: &str, rect: &Rect, relative_height:
         gradient: None,
         corner_emu: 0,
         line_hex: Some("808080".into()),
+        line_alpha: 255,
         line_w_emu: millipt_to_emu(1_000),
         line_dash: LineDash::Solid,
         behind_doc: false,
         relative_height,
+        pin_empty_txbox: true,
     }
 }
 

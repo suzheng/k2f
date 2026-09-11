@@ -55,6 +55,21 @@ fn copy_from_live_invoice_title() {
 }
 
 #[test]
+fn copy_all_markdown_matches_export_markdown() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let md = app.export_markdown().expect("document markdown");
+    assert!(md.contains('#'), "copy-all uses full-document markdown");
+    assert!(!md.contains("<!--"), "clipboard markdown omits k2f hints");
+}
+
+#[test]
+fn copy_format_menu_labels() {
+    use k2f_reader::copy::CopyFormat;
+    assert_eq!(CopyFormat::Markdown.menu_label(), "Copy as Markdown");
+    assert_eq!(CopyFormat::Plain.menu_label(), "Copy as Text");
+}
+
+#[test]
 fn copy_format_plain_keeps_span_text() {
     let mut app = AppState::open(&invoice_bytes()).unwrap();
     app.set_copy_format(k2f_reader::copy::CopyFormat::Plain);

@@ -30,7 +30,7 @@ Fix the **semantic tree** or **theme**. Shapes: [`catalog/content/ex_*.json`](..
 - **Invoice/CV/flyer/poster:** treat `PAGE_UNDERFILL` as must-fix — copy [`ex_filled_page.json`](../../catalog/content/ex_filled_page.json); leftover on table/notes `{fr:1}`.
 - **Short letter / last page of a flow:** empty bottom is allowed. `PAGE_UNDERFILL` is not emitted on the last page of a multi-page document.
 - **Non-last `PAGE_UNDERFILL`:** often a `p1`/`p2` page container. Merge into one tree. `break_before: page` on a chapter, annex, signature, slide 2+, or card back is correct (catalog demos can also trip this).
-- **`LAYOUT_SLACK`:** `{fr:1}` grew the **box**; text stayed top-packed. Leftover → figure or dense siblings ([`ex_poster_growers.json`](../../catalog/content/ex_poster_growers.json)). Auto-height stacks do not emit `LAYOUT_SLACK`.
+- **`LAYOUT_SLACK`:** `{fr:1}` grew the **box**; text stayed top-packed. Leftover → figure or dense siblings ([`ex_poster_growers.json`](../../catalog/content/ex_poster_growers.json)). Equal-height **card** interiors → [`ex_card_bands.json`](../../catalog/content/ex_card_bands.json) (inner `{auto,fr,auto}`) or stack `justify_content: center` for sparse KPI — not dummy bullets. Auto-height stacks do not emit `LAYOUT_SLACK`.
 - **Mini canvas:** both warnings are omitted when the page content box is shorter than 180pt. Do not pad a business card with dummy copy to silence them.
 
 ## Math messages (not separate codes)

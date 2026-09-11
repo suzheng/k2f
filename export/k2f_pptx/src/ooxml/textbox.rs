@@ -15,21 +15,16 @@ pub(crate) fn textbox_sp_xml(
         tb.numbered,
         tb.preserve_whitespace,
         tb.line_spc_pts,
+        tb.last_line_spc_pts,
         tb.mar_l_emu,
         tb.list_start,
         hyperlink_rids,
         "      ",
     );
-    let (lins, rins) = if tb.numbered || tb.bullet {
-        (0, tb.r_ins_emu)
-    } else {
-        (tb.l_ins_emu, tb.r_ins_emu)
-    };
-    let overflow = if tb.wrap {
-        ""
-    } else {
-        r#" vertOverflow="overflow" horzOverflow="overflow""#
-    };
+    let (lins, rins) = (tb.l_ins_emu, tb.r_ins_emu);
+    // Host metrics that are wider than rustybuzz wrap an extra line in a
+    // lock-tight frame. Clip is the DrawingML default in some hosts.
+    let overflow = r#" vertOverflow="overflow" horzOverflow="overflow""#;
     format!(
         r#"    <p:sp>
       <p:nvSpPr>
@@ -71,6 +66,7 @@ pub(crate) fn txbody_inner(
     numbered: bool,
     preserve: bool,
     line_spc_pts: Option<i32>,
+    last_line_spc_pts: Option<i32>,
     mar_l_emu: i64,
     list_start: u32,
     hyperlink_rids: &BTreeMap<String, String>,
@@ -78,15 +74,21 @@ pub(crate) fn txbody_inner(
 ) -> String {
     let paras = paragraph_runs(runs);
     let mut body = String::new();
+    let n = paras.len();
     for (i, para) in paras.iter().enumerate() {
         let list_on = i == 0;
+        let spc = if i + 1 == n && n > 1 {
+            last_line_spc_pts.or(line_spc_pts)
+        } else {
+            line_spc_pts
+        };
         body.push_str(&paragraph_xml(
             para,
             align,
             list_on && bullet,
             list_on && numbered,
             preserve,
-            line_spc_pts,
+            spc,
             if list_on { mar_l_emu } else { 0 },
             if list_on { list_start } else { 1 },
             hyperlink_rids,
@@ -129,12 +131,12 @@ fn paragraph_runs(runs: &[TextRun]) -> Vec<Vec<TextRun>> {
 fn paragraph_xml(
     runs: &[TextRun],
     align: crate::ir::TextAlign,
-    bullet: bool,
-    numbered: bool,
+    _bullet: bool,
+    _numbered: bool,
     preserve: bool,
     line_spc_pts: Option<i32>,
     mar_l_emu: i64,
-    list_start: u32,
+    _list_start: u32,
     hyperlink_rids: &BTreeMap<String, String>,
     indent: &str,
 ) -> String {
@@ -152,23 +154,10 @@ fn paragraph_xml(
     if let Some(pts) = line_spc_pts {
         p.push_str(&format!(r#"<a:lnSpc><a:spcPts val="{pts}"/></a:lnSpc>"#));
     }
-    if numbered || bullet {
-        let clr = runs
-            .first()
-            .map(|r| r.color_hex.as_str())
-            .unwrap_or("000001");
-        p.push_str(&format!(r#"<a:buClr><a:srgbClr val="{clr}"/></a:buClr>"#));
-    }
-    if numbered {
-        p.push_str(&format!(
-            r#"<a:buFont typeface="Arial"/><a:buAutoNum type="arabicPeriod" startAt="{start}"/>"#,
-            start = list_start.max(1),
-        ));
-    } else if bullet {
-        p.push_str(r#"<a:buFont typeface="Arial"/><a:buChar char="•"/>"#);
-    } else {
-        p.push_str("<a:buNone/>");
-    }
+    // Markers are literal text runs (see prepend_literal_*). Native
+    // a:buChar / a:buAutoNum in floating frames often collapse or renumber
+    // by host document order.
+    p.push_str("<a:buNone/>");
     p.push_str("</a:pPr>\n");
     for run in runs {
         p.push_str(indent);
@@ -293,9 +282,9 @@ mod tests {
     }
 
     #[test]
-    fn numbered_paragraph_pins_bullet_color() {
+    fn numbered_paragraph_uses_literal_marker_not_autonum() {
         let xml = paragraph_xml(
-            &[run("Dong")],
+            &[run("3.\u{00A0}Dong")],
             TextAlign::Left,
             false,
             true,
@@ -306,13 +295,11 @@ mod tests {
             &BTreeMap::new(),
             "",
         );
-        assert!(
-            xml.contains(r#"<a:buClr><a:srgbClr val="000001"/></a:buClr>"#),
-            "list numbers must not use theme Automatic, got {xml}"
-        );
+        assert!(xml.contains("<a:buNone/>"), "{xml}");
+        assert!(!xml.contains("buAutoNum"), "{xml}");
         assert!(xml.contains(r#"marL="200000""#), "{xml}");
         assert!(xml.contains(r#"indent="-200000""#), "{xml}");
-        assert!(xml.contains(r#"startAt="3""#), "{xml}");
+        assert!(xml.contains(">3."), "{xml}");
     }
 
     #[test]
@@ -330,6 +317,7 @@ mod tests {
             preserve_whitespace: false,
             wrap: true,
             line_spc_pts: None,
+            last_line_spc_pts: None,
             t_ins_emu: 0,
             l_ins_emu: 0,
             r_ins_emu: 0,
@@ -340,5 +328,39 @@ mod tests {
         assert!(xml.contains("<a:noAutofit/>"), "{xml}");
         assert!(xml.contains(r#"wrap="square""#), "{xml}");
         assert!(xml.contains(r#"algn="ctr""#), "{xml}");
+        assert!(xml.contains(r#"vertOverflow="overflow""#), "{xml}");
+        assert!(xml.contains(r#"horzOverflow="overflow""#), "{xml}");
+    }
+
+    #[test]
+    fn last_pinned_paragraph_uses_face_spacing() {
+        let mut r1 = run("line one");
+        r1.text = "line one\nline two".into();
+        let tb = crate::ir::TextBox {
+            node_id: "quote".into(),
+            x_emu: 0,
+            y_emu: 0,
+            cx_emu: 1_000_000,
+            cy_emu: 200_000,
+            runs: vec![r1],
+            align: TextAlign::Left,
+            bullet: false,
+            numbered: false,
+            preserve_whitespace: false,
+            wrap: false,
+            line_spc_pts: Some(1820),
+            last_line_spc_pts: Some(1300),
+            t_ins_emu: 0,
+            l_ins_emu: 0,
+            r_ins_emu: 0,
+            mar_l_emu: 0,
+            list_start: 1,
+        };
+        let xml = textbox_sp_xml(&tb, 2, &BTreeMap::new());
+        assert!(xml.contains(r#"<a:spcPts val="1820"/>"#), "{xml}");
+        assert!(xml.contains(r#"<a:spcPts val="1300"/>"#), "{xml}");
+        let first = xml.find(r#"<a:spcPts val="1820"/>"#).unwrap();
+        let last = xml.find(r#"<a:spcPts val="1300"/>"#).unwrap();
+        assert!(first < last, "last para must use face spacing, got {xml}");
     }
 }

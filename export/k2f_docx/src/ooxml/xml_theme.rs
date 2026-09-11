@@ -3,13 +3,14 @@
 /// Word documents without a theme inherit Office's default scheme, whose `dk1`/`lt1`
 /// are `sysClr windowText`/`window`. Dark Mode remaps those, and RGB `#000000` /
 /// `#FFFFFF` snap to the slots — black title text goes faint on a white page.
-/// Pin both slots to `srgbClr` so lock colors stay as designed.
+/// Pin both slots to `srgbClr`, but **not** to the content pin (`000001` / `FFFFFE`):
+/// Word snaps RGB that equals `dk1`/`lt1` onto those slots and then remaps them.
 pub const THEME_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="K2F">
   <a:themeElements>
     <a:clrScheme name="K2F">
-      <a:dk1><a:srgbClr val="000001"/></a:dk1>
-      <a:lt1><a:srgbClr val="FFFFFE"/></a:lt1>
+      <a:dk1><a:srgbClr val="000002"/></a:dk1>
+      <a:lt1><a:srgbClr val="FFFFFD"/></a:lt1>
       <a:dk2><a:srgbClr val="1F497D"/></a:dk2>
       <a:lt2><a:srgbClr val="EEECE1"/></a:lt2>
       <a:accent1><a:srgbClr val="4F81BD"/></a:accent1>

@@ -128,6 +128,57 @@ fn published_invoice_title_renders_cjk() {
     );
 }
 
+#[test]
+fn deep_ocean_toolbar_title_has_no_tofu() {
+    let bytes = deep_ocean_title_bytes();
+    let session = Session::new(AppState::open(&bytes).unwrap()).unwrap();
+    assert_eq!(session.app().unwrap().title(), "深海静谧");
+    let (w, h) = session.scaled_size();
+    let frame = session.compose_frame(w, h);
+    // Title sits right of the Open button; four Han glyphs need several ink columns.
+    let mut ink_cols = 0u32;
+    for x in 70..220.min(w) {
+        let mut col_ink = false;
+        for y in 6..40.min(h) {
+            let p = frame[(y * w + x) as usize];
+            let r = (p >> 16) & 0xff;
+            let g = (p >> 8) & 0xff;
+            let b = p & 0xff;
+            if r > 200 && g > 200 && b > 200 {
+                col_ink = true;
+                break;
+            }
+        }
+        if col_ink {
+            ink_cols += 1;
+        }
+    }
+    assert!(
+        ink_cols >= 16,
+        "深海静 must paint in the toolbar, got {ink_cols} ink columns"
+    );
+    if ink_cols < 24 {
+        if !cfg!(any(target_os = "macos", target_os = "windows")) {
+            eprintln!(
+                "skip full 谧 coverage on this host ({ink_cols} cols; need OS CJK face)"
+            );
+            return;
+        }
+        panic!("深海静谧 must paint all four glyphs (no tofu), got {ink_cols} ink columns");
+    }
+}
+
+/// Prefer the gallery fixture; otherwise stamp the real title onto a tiny package.
+fn deep_ocean_title_bytes() -> Vec<u8> {
+    const GALLERY: &str = "/Users/suzheng/noBackupData/apps/others/gallary/poster/deep-ocean-calm-gradient/deep-ocean-calm-gradient.K2F";
+    if let Ok(bytes) = std::fs::read(GALLERY) {
+        return bytes;
+    }
+    let mut pkg = k2f_package::unpack_bytes(&invoice_bytes()).unwrap();
+    pkg.manifest.title = "深海静谧".into();
+    k2f_package::pack_bytes(&pkg).unwrap()
+}
+
 fn light(p: u32) -> bool {
     let r = (p >> 16) & 0xff;
     let g = (p >> 8) & 0xff;

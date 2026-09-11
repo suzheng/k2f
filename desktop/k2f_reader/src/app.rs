@@ -192,8 +192,14 @@ impl AppState {
         self.render_page_png(self.page)
     }
 
+    /// Official 2× raster (baseline / export / golden).
     pub fn render_page_png(&self, page: usize) -> anyhow::Result<Vec<u8>> {
-        Ok(self.doc.render_page(page, OFFICIAL_PNG_SCALE)?)
+        self.render_page_png_at(page, OFFICIAL_PNG_SCALE)
+    }
+
+    /// Paint the lock at an arbitrary scale (display LOD buckets).
+    pub fn render_page_png_at(&self, page: usize, scale: f32) -> anyhow::Result<Vec<u8>> {
+        Ok(self.doc.render_page(page, scale)?)
     }
 
     pub fn text_layer(&self) -> Vec<TextSpan> {

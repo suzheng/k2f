@@ -17,8 +17,10 @@ pub fn escape_xml(s: &str) -> String {
 ///
 /// Never write theme/`sysClr`/`auto` for content. Word and PowerPoint Dark Mode
 /// remap those to the OS theme. Exact `#000000` / `#FFFFFF` snap to the same
-/// slots, so they are stored as `000001` / `FFFFFE`. Every other lock RGB is
-/// written as-is. Surfaces are DrawingML `a:solidFill`, not Word `w:shd`.
+/// slots, so they are stored as `000001` / `FFFFFE`. Theme `dk1`/`lt1` must use
+/// different sentinels so those pins do not snap back onto the slots. Every
+/// other lock RGB is written as-is. Surfaces are DrawingML `a:solidFill`, not
+/// Word `w:shd`.
 pub fn word_hex_color(color: &str) -> String {
     let t = color.trim().trim_start_matches('#');
     if t.len() == 6 && t.bytes().all(|b| b.is_ascii_hexdigit()) {

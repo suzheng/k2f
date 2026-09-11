@@ -3,8 +3,7 @@ use crate::xml::word_hex_color;
 use std::collections::BTreeMap;
 
 use super::drawing::{
-    drawing_run, element_has_bg_shape, page_bg_anchor, picture_anchor, raster_anchor, shape_anchor,
-    textbox_anchor,
+    drawing_run, picture_anchor, raster_anchor, shape_anchor, textbox_anchor,
 };
 
 const NS: &str = r#"xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -30,8 +29,6 @@ pub fn document_xml(
     for (i, page) in ir.pages.iter().enumerate() {
         body.push_str(&page_paragraph(
             page,
-            ir.page_width_emu,
-            ir.page_height_emu,
             &mut doc_pr_id,
             hyperlink_rids,
             picture_rids,
@@ -56,6 +53,8 @@ pub fn document_xml(
         sect.push_str(r#"      <w:footerReference w:type="default" r:id="rIdF1"/>"#);
         sect.push('\n');
     }
+    // w:background is the page-0 Office slot (Dark Mode may hide it). Each
+    // page also paints the lock's full-page solid as the only behindDoc fill.
     format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document {NS}>
@@ -87,23 +86,19 @@ pub fn document_xml(
 
 fn page_paragraph(
     page: &PageIR,
-    cx: i64,
-    cy: i64,
     doc_pr_id: &mut u32,
     hyperlink_rids: &BTreeMap<String, String>,
     picture_rids: &BTreeMap<String, String>,
 ) -> String {
     let mut runs = String::new();
-    if !page.elements.iter().any(element_has_bg_shape) {
-        runs.push_str(&drawing_run(&page_bg_anchor(
-            &page.bg_hex,
-            cx,
-            cy,
-            *doc_pr_id,
-        )));
-        *doc_pr_id += 1;
-    }
-    for el in &page.elements {
+    // Page-0 w:background is a hint. The lock's per-page full-page solid is
+    // already in `page.elements` as the behindDoc wash.
+    //
+    // LibreOffice Writer stacks floating anchors by document order (earlier =
+    // on top) and largely ignores relativeHeight among wps shapes. Emit
+    // highest relativeHeight first so LO matches Word's relativeHeight stack
+    // (card fills under images, captions, strokes).
+    for el in z_order_for_writer(&page.elements) {
         runs.push_str(&drawing_run(&element_anchor(
             el,
             *doc_pr_id,
@@ -119,6 +114,18 @@ fn page_paragraph(
     )
 }
 
+/// Stable high→low relativeHeight order for floating anchors.
+fn z_order_for_writer(elements: &[PageElement]) -> Vec<&PageElement> {
+    let mut idxs: Vec<usize> = (0..elements.len()).collect();
+    idxs.sort_by(|&a, &b| {
+        elements[b]
+            .relative_height()
+            .cmp(&elements[a].relative_height())
+            .then(a.cmp(&b))
+    });
+    idxs.into_iter().map(|i| &elements[i]).collect()
+}
+
 pub fn hdrftr_xml(
     tag: &str,
     elements: &[PageElement],
@@ -127,7 +134,7 @@ pub fn hdrftr_xml(
 ) -> String {
     let mut runs = String::new();
     let mut doc_pr_id = 1u32;
-    for el in elements {
+    for el in z_order_for_writer(elements) {
         runs.push_str(&drawing_run(&element_anchor(
             el,
             doc_pr_id,
@@ -170,5 +177,45 @@ fn element_anchor(
             raster_anchor(p, doc_pr_id, rid)
         }
         PageElement::Table(t) => crate::table::table_anchor(t, doc_pr_id, hyperlink_rids),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::{LineDash, ShapeBox};
+
+    fn shape(id: &str, rel: u32) -> PageElement {
+        PageElement::Shape(ShapeBox {
+            node_id: id.into(),
+            x_emu: 0,
+            y_emu: 0,
+            cx_emu: 1000,
+            cy_emu: 100,
+            fill_hex: Some("111111".into()),
+            fill_alpha: 255,
+            gradient: None,
+            corner_emu: 0,
+            line_hex: None,
+            line_alpha: 255,
+            line_w_emu: 0,
+            line_dash: LineDash::Solid,
+            behind_doc: false,
+            relative_height: rel,
+            pin_empty_txbox: true,
+        })
+    }
+
+    #[test]
+    fn writer_emit_order_is_high_relative_height_first() {
+        let elements = vec![shape("fill", 10), shape("edge", 41), shape("mid", 20)];
+        let ordered: Vec<&str> = z_order_for_writer(&elements)
+            .into_iter()
+            .map(|el| match el {
+                PageElement::Shape(s) => s.node_id.as_str(),
+                _ => "",
+            })
+            .collect();
+        assert_eq!(ordered, vec!["edge", "mid", "fill"]);
     }
 }

@@ -29,6 +29,7 @@ import { bindPdfQualityDialog } from "./pdf-quality-dialog.js";
 import { bindFullscreen } from "./fullscreen.js";
 import { bindEditMode } from "./edit-mode.js";
 import { ZOOM_STEPS, fitZoom, stageInnerWidth } from "./zoom-fit.js";
+import { DISPLAY_PAINT_DEBOUNCE_MS } from "./display-scale.js";
 import { bindTheme } from "./theme.js";
 import { iconMoon, iconSun } from "./icons.js";
 import { createMenuController, menuItem, menuSep } from "./menus.js";
@@ -60,6 +61,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
   let editor = null;
   let packageBytes = bytes;
   let zoom = 1;
+  let displayPaintTimer = null;
 
   const menus = createMenuController({ root: els.root, signal });
   const pdfQuality = bindPdfQualityDialog(els.root, signal);
@@ -287,12 +289,29 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     els.status.textContent = `${page} · ${z} · ${formatBytes(packageBytes?.byteLength ?? 0)}`;
   }
 
+  function devicePixelRatioOf() {
+    return typeof window !== "undefined" && window.devicePixelRatio
+      ? window.devicePixelRatio
+      : 1;
+  }
+
+  function scheduleDisplayPaint() {
+    if (displayPaintTimer != null) clearTimeout(displayPaintTimer);
+    displayPaintTimer = setTimeout(() => {
+      displayPaintTimer = null;
+      if (!viewer) return;
+      stack.ensureDisplay(viewer, zoom, devicePixelRatioOf());
+    }, DISPLAY_PAINT_DEBOUNCE_MS);
+  }
+
   function setZoom(next) {
-    zoom = next;
+    const z = Number(next);
+    zoom = Number.isFinite(z) ? Math.min(ZOOM_STEPS[ZOOM_STEPS.length - 1], Math.max(ZOOM_STEPS[0], z)) : zoom;
     els.zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
-    els.zoomOut.disabled = !viewer || zoom === ZOOM_STEPS[0];
-    els.zoomIn.disabled = !viewer || zoom === ZOOM_STEPS[ZOOM_STEPS.length - 1];
+    els.zoomOut.disabled = !viewer || zoom <= ZOOM_STEPS[0];
+    els.zoomIn.disabled = !viewer || zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1];
     const noDoc = !viewer || viewer.page_count() === 0;
+    els.copyAllBtn.disabled = noDoc;
     els.exportBtn.disabled = noDoc;
     els.exportCaret.disabled = noDoc;
     for (const item of els.root.querySelectorAll(".k2f-menu-item[data-kind=export]")) {
@@ -303,6 +322,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
         item.dataset.value !== "fit" && Number(item.dataset.value) === zoom ? "true" : "false";
     }
     stack.layout(viewer, zoom);
+    scheduleDisplayPaint();
     updateStatus();
     const id = edit.id();
     if (id) selectId(id);
@@ -399,6 +419,16 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     });
   }
 
+  async function copyAllAsMarkdown() {
+    if (!viewer) return;
+    const { bytes: out } = runExport("markdown");
+    const md = new TextDecoder().decode(out);
+    if (!navigator.clipboard?.writeText) {
+      throw new Error("Clipboard unavailable");
+    }
+    await navigator.clipboard.writeText(md);
+  }
+
   const handle = {
     get viewer() {
       return viewer;
@@ -411,6 +441,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     },
     destroy() {
       abort.abort();
+      if (displayPaintTimer != null) clearTimeout(displayPaintTimer);
       stack.dispose();
       if (viewer) viewer.free();
       if (editor) editor.free();
@@ -418,6 +449,8 @@ export async function mountK2fViewer(host, bytes, options = {}) {
       editor = null;
       els.root.remove();
     },
+    /** Continuous UI zoom (pinch-ready). Display paint is debounced. */
+    setZoom,
     goPage(page) {
       nav.go(page);
     },
@@ -431,16 +464,27 @@ export async function mountK2fViewer(host, bytes, options = {}) {
   els.zoomIn.addEventListener(
     "click",
     () => {
-      const i = ZOOM_STEPS.indexOf(zoom);
-      if (i < ZOOM_STEPS.length - 1) setZoom(ZOOM_STEPS[i + 1]);
+      const next = ZOOM_STEPS.find((s) => s > zoom + 1e-6);
+      if (next != null) setZoom(next);
     },
     { signal },
   );
   els.zoomOut.addEventListener(
     "click",
     () => {
-      const i = ZOOM_STEPS.indexOf(zoom);
-      if (i > 0) setZoom(ZOOM_STEPS[i - 1]);
+      let prev;
+      for (const s of ZOOM_STEPS) {
+        if (s < zoom - 1e-6) prev = s;
+        else break;
+      }
+      if (prev != null) setZoom(prev);
+    },
+    { signal },
+  );
+  window.addEventListener(
+    "resize",
+    () => {
+      scheduleDisplayPaint();
     },
     { signal },
   );
@@ -448,6 +492,19 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     "click",
     () => {
       beginExport();
+    },
+    { signal },
+  );
+  els.copyAllBtn.addEventListener(
+    "click",
+    () => {
+      menus.closeAll();
+      copyAllAsMarkdown().catch((err) => {
+        if (bannerMode !== "off") {
+          paintOpenError(els.banner, errorMessage(err), bannerMode);
+        }
+        chromeScroll.syncPin();
+      });
     },
     { signal },
   );

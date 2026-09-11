@@ -9,6 +9,16 @@ pub(crate) fn has_page_tokens(text: &str) -> bool {
     TOKENS.iter().any(|(tok, _)| text.contains(tok))
 }
 
+/// Substitute lock page numbers. Running chrome is drawn in the body (Writer
+/// skips `footer1.xml` when `pgMar` is 0); PPTX already expands the same way.
+pub(crate) fn expand_page_vars(text: &str, page_idx: usize, total_pages: usize) -> String {
+    if !text.contains("{{") {
+        return text.to_string();
+    }
+    text.replace("{{page_current}}", &(page_idx + 1).to_string())
+        .replace("{{page_total}}", &total_pages.to_string())
+}
+
 /// Rewrite `{{page_current}}` / `{{page_total}}` into Word fields.
 /// Tokens may be split across adjacent paint runs; search the concatenated text.
 pub(crate) fn expand_fields(runs: Vec<TextRun>) -> Vec<TextRun> {

@@ -21,7 +21,7 @@ const RADIUS: u32 = 8;
 const OPEN_LABEL: &str = "Open";
 
 fn layout(win_w: u32, scale: f32) -> super::hud::ToolbarLayout {
-    toolbar_layout_at(win_w, "Copy MD", EXPORT_ACTION_LABEL, "100%", scale)
+    toolbar_layout_at(win_w, EXPORT_ACTION_LABEL, "100%", scale)
 }
 
 pub fn cta_rect(win_w: u32, win_h: u32, scale: f32) -> Rect {

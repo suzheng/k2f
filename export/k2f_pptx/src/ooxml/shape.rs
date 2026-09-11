@@ -6,7 +6,7 @@ pub(crate) fn shape_sp_xml(shape: &ShapeBox, cnv_id: u32) -> String {
     let name = escape_xml(&shape.node_id);
     let geom = geom_xml(shape);
     let fill = match &shape.fill_hex {
-        Some(hex) => format!("        <a:solidFill><a:srgbClr val=\"{hex}\"/></a:solidFill>\n"),
+        Some(hex) => solid_fill_xml(hex, shape.fill_alpha),
         None => "        <a:noFill/>\n".into(),
     };
     let ln = line_xml(shape);
@@ -50,6 +50,24 @@ fn geom_xml(shape: &ShapeBox) -> String {
     )
 }
 
+fn solid_fill_xml(hex: &str, alpha: u8) -> String {
+    format!(
+        "        <a:solidFill>{}</a:solidFill>\n",
+        srgb_clr_xml(hex, alpha)
+    )
+}
+
+fn srgb_clr_xml(hex: &str, alpha: u8) -> String {
+    if alpha >= 255 {
+        format!("<a:srgbClr val=\"{hex}\"/>")
+    } else {
+        format!(
+            "<a:srgbClr val=\"{hex}\"><a:alpha val=\"{a}\"/></a:srgbClr>",
+            a = (i64::from(alpha) * 100_000 / 255).clamp(0, 100_000)
+        )
+    }
+}
+
 fn line_xml(shape: &ShapeBox) -> String {
     let Some(hex) = &shape.line_hex else {
         return "        <a:ln><a:noFill/></a:ln>\n".into();
@@ -60,7 +78,58 @@ fn line_xml(shape: &ShapeBox) -> String {
         LineDash::Dot => "sysDot",
     };
     format!(
-        "        <a:ln w=\"{w}\"><a:solidFill><a:srgbClr val=\"{hex}\"/></a:solidFill><a:prstDash val=\"{dash}\"/></a:ln>\n",
+        "        <a:ln w=\"{w}\"><a:solidFill>{}</a:solidFill><a:prstDash val=\"{dash}\"/></a:ln>\n",
+        srgb_clr_xml(hex, shape.line_alpha),
         w = shape.line_w_emu
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::LineDash;
+
+    fn stroke(alpha: u8) -> ShapeBox {
+        ShapeBox {
+            node_id: "card".into(),
+            x_emu: 0,
+            y_emu: 0,
+            cx_emu: 100_000,
+            cy_emu: 50_000,
+            fill_hex: None,
+            fill_alpha: 255,
+            corner_emu: 0,
+            line_hex: Some("1E3A8A".into()),
+            line_alpha: alpha,
+            line_w_emu: 6_350,
+            line_dash: LineDash::Solid,
+        }
+    }
+
+    #[test]
+    fn opaque_stroke_omits_alpha() {
+        let xml = line_xml(&stroke(255));
+        assert!(xml.contains(r#"<a:srgbClr val="1E3A8A"/>"#), "{xml}");
+        assert!(!xml.contains("<a:alpha"), "{xml}");
+    }
+
+    #[test]
+    fn translucent_stroke_emits_alpha() {
+        let xml = line_xml(&stroke(0x66));
+        assert!(xml.contains(r#"<a:srgbClr val="1E3A8A"><a:alpha val="40000"/>"#), "{xml}");
+    }
+
+    #[test]
+    fn translucent_fill_emits_alpha() {
+        let mut shape = stroke(255);
+        shape.fill_hex = Some("FFFFFF".into());
+        shape.fill_alpha = 0xE6;
+        shape.line_hex = None;
+        let xml = shape_sp_xml(&shape, 2);
+        assert!(
+            xml.contains(r#"<a:srgbClr val="FFFFFF"><a:alpha val="90196"/>"#),
+            "{xml}"
+        );
+        assert!(!xml.contains("k2f-raster:"), "{xml}");
+    }
 }

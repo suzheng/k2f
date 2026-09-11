@@ -46,10 +46,10 @@ pub(crate) fn encode_media(bytes: &[u8]) -> Result<(&'static str, Vec<u8>), Docx
     if is_jpeg(bytes) {
         return Ok(("jpg", bytes.to_vec()));
     }
-    if looks_like_svg(bytes) {
-        return Ok(("svg", bytes.to_vec()));
-    }
-    if is_webp(bytes) {
+    // SVG (and WebP / other decode_raster formats) → PNG. Office hosts often
+    // leave raw `image/svg+xml` blank (LibreOffice Writer; uneven Word support),
+    // while paint/PDF already rasterize via resvg. Same path for both exporters.
+    if looks_like_svg(bytes) || is_webp(bytes) {
         return raster_to_png(bytes);
     }
     match raster_to_png(bytes) {
@@ -97,7 +97,8 @@ pub(crate) fn pic_xml(pic: &PictureBox, embed_rid: &str, cnv_id: u32) -> String 
 ///
 /// Large lock images under later text omit the empty txBox: Writer paints a
 /// page-sized empty text frame over later labels (same as a full-page
-/// gradient). Effect slices keep the empty txBox so Word does not size-to-fit.
+/// gradient). Effect slices keep the empty txBox only when later paint does
+/// not overlap — a shadowed card shell would otherwise hide every label.
 pub(crate) fn raster_wsp_xml(pic: &PictureBox, embed_rid: &str) -> String {
     let (cnv, tail) = if pic.pin_empty_txbox {
         (
@@ -192,11 +193,11 @@ mod tests {
     }
 
     #[test]
-    fn svg_stays_svg() {
-        let svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" height=\"1\"></svg>";
-        let (ext, payload) = encode_media(svg).unwrap();
-        assert_eq!(ext, "svg");
-        assert_eq!(payload, svg);
+    fn svg_encodes_as_png() {
+        let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="#00f"/></svg>"##;
+        let (ext, payload) = encode_media(svg).expect("svg must rasterize");
+        assert_eq!(ext, "png");
+        assert!(is_png(&payload), "svg must become PNG bytes");
     }
 
     #[test]

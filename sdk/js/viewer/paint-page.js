@@ -13,15 +13,24 @@ export function layoutSheet(wrap, img, viewer, page, zoom) {
   buildTextLayer(wrap, viewer, page, zoom);
 }
 
-export function paintSheet({ wrap, img, viewer, page, zoom, cache, Viewer }) {
-  const scale = Viewer.official_scale();
-  const key = `${page}:${scale}`;
+export function cacheKey(page, scale) {
+  return `${page}:${scale}`;
+}
+
+export function paintSheet({ wrap, img, viewer, page, zoom, scale, cache, Viewer }) {
+  const paintScale =
+    scale ??
+    (typeof Viewer.official_scale === "function" ? Viewer.official_scale() : 2);
+  const key = cacheKey(page, paintScale);
   let bytes = cache.get(key);
   if (!bytes) {
-    bytes = viewer.render_page(page, scale);
+    bytes = viewer.render_page(page, paintScale);
     cache.set(key, bytes);
   }
+  if (img._k2fUrl) URL.revokeObjectURL(img._k2fUrl);
   const url = URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
+  img._k2fUrl = url;
+  img.dataset.paintScale = String(paintScale);
   img.src = url;
   layoutSheet(wrap, img, viewer, page, zoom);
   return url;

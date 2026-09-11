@@ -3,6 +3,7 @@ use super::input::{accept_key, key_action, Action, KeyBind};
 use super::pdf_dialog::PdfDialogHit;
 use super::scroll::{line_delta_px, wheel_y_to_scroll};
 use super::session::{PointerCursor, Session};
+use super::zoom::{zoom_after_ctrl_wheel, zoom_after_pinch};
 use crate::export::{ensure_extension, pick_open_path, pick_save_path, ExportFormat};
 use crate::AppState;
 use softbuffer::{Context, Surface};
@@ -78,6 +79,9 @@ impl Gui {
         }
         self.session.set_scale(window.scale_factor() as f32);
         self.session.set_window_size(size.width, size.height);
+        if self.session.tick_display_lod() {
+            window.request_redraw();
+        }
         let frame = self.session.compose_frame(size.width, size.height);
         window.pre_present_notify();
         let Ok(mut buf) = surface.buffer_mut() else {
@@ -165,6 +169,13 @@ impl Gui {
             if super::macos::take_menu_open() {
                 self.begin_open();
             }
+            if let Some(format) = super::macos::take_copy_format() {
+                if let Some(app) = self.session.app_mut() {
+                    app.set_copy_format(format);
+                }
+                super::macos::sync_copy_format_menu(format);
+                self.redraw();
+            }
             for path in super::macos::take_open_paths() {
                 self.load_document(path);
             }
@@ -191,7 +202,12 @@ impl ApplicationHandler<Wake> for Gui {
         self.surface = Some(surface);
         self.window = Some(window);
         #[cfg(target_os = "macos")]
-        super::macos::install_file_menu();
+        {
+            super::macos::install_menus();
+            if let Some(app) = self.session.app() {
+                super::macos::sync_copy_format_menu(app.copy_format());
+            }
+        }
         self.drain_os_open();
         self.redraw();
     }
@@ -200,8 +216,16 @@ impl ApplicationHandler<Wake> for Gui {
         self.drain_os_open();
     }
 
-    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         self.drain_os_open();
+        if self.session.tick_display_lod() {
+            self.redraw();
+        }
+        if let Some(wake) = self.session.display_wake_at() {
+            event_loop.set_control_flow(ControlFlow::WaitUntil(wake));
+        } else {
+            event_loop.set_control_flow(ControlFlow::Wait);
+        }
     }
 
     fn window_event(
@@ -282,8 +306,10 @@ impl ApplicationHandler<Wake> for Gui {
                             }
                             ChromeHit::Copy => {
                                 self.session.close_export_menu();
-                                if let Some(app) = self.session.app_mut() {
-                                    app.toggle_copy_format();
+                                if let Some(app) = self.session.app() {
+                                    if let Ok(md) = app.export_markdown() {
+                                        self.copy_to_clipboard(md);
+                                    }
                                 }
                             }
                             ChromeHit::ZoomIn => {
@@ -356,7 +382,19 @@ impl ApplicationHandler<Wake> for Gui {
                     MouseScrollDelta::LineDelta(_, y) => line_delta_px(y),
                     MouseScrollDelta::PixelDelta(p) => p.y,
                 };
-                self.session.scroll_by(wheel_y_to_scroll(wheel_y));
+                if self.modifiers.control_key() {
+                    let z = self.session.app().map(|a| a.zoom()).unwrap_or(1.0);
+                    let next = zoom_after_ctrl_wheel(z, wheel_y);
+                    self.session.set_zoom_about(next, Some(self.cursor.1));
+                } else {
+                    self.session.scroll_by(wheel_y_to_scroll(wheel_y));
+                }
+                self.redraw();
+            }
+            WindowEvent::PinchGesture { delta, .. } => {
+                let z = self.session.app().map(|a| a.zoom()).unwrap_or(1.0);
+                let next = zoom_after_pinch(z, delta);
+                self.session.set_zoom_about(next, Some(self.cursor.1));
                 self.redraw();
             }
             _ => {}

@@ -4,13 +4,9 @@ use k2f_core::PaintOp;
 use k2f_docx::{export_opened, pt_to_emu};
 use k2f_paint::{decode_raster, letterbox_rect, lookup_image};
 
-fn is_textbox_wsp(wsp: roxmltree::Node<'_, '_>) -> bool {
-    wsp.descendants()
-        .any(|n| n.has_tag_name("cNvSpPr") && common::local_attr(&n, "txBox") == Some("1"))
-}
-
 fn simple_drawbox(doc: &k2f_paint::OpenedDocument) -> (String, k2f_core::Rect) {
     let lock = doc.lock().expect("locked");
+    let page0 = &lock.geometry.pages[0];
     lock.render_plan
         .pages
         .iter()
@@ -22,7 +18,12 @@ fn simple_drawbox(doc: &k2f_paint::OpenedDocument) -> (String, k2f_core::Rect) {
                 decoration,
             } if decoration.shadow.is_none()
                 && decoration.blur.is_none()
-                && !node_id.contains("::rule_") =>
+                && !node_id.contains("::rule_")
+                && !node_id.ends_with("::background")
+                && !(rect.x.0 == 0
+                    && rect.y.0 == 0
+                    && rect.width == page0.width
+                    && rect.height == page0.height) =>
             {
                 Some((node_id.clone(), rect.clone()))
             }
@@ -33,32 +34,19 @@ fn simple_drawbox(doc: &k2f_paint::OpenedDocument) -> (String, k2f_core::Rect) {
 
 #[test]
 fn invoice_has_solid_wsp() {
-    let doc = common::invoice();
-    let (node_id, _) = simple_drawbox(&doc);
-    let docx = export_opened(&doc).unwrap();
+    let docx = export_opened(&common::invoice()).unwrap();
     let xml = common::xml_in(&docx, "word/document.xml");
     let parsed = roxmltree::Document::parse(&xml).unwrap();
     let mut found = false;
     for wsp in parsed.descendants().filter(|n| n.has_tag_name("wsp")) {
-        if is_textbox_wsp(wsp) {
-            continue;
-        }
-        let Some(anchor) = wsp.ancestors().find(|n| n.has_tag_name("anchor")) else {
-            continue;
-        };
-        let name = anchor
-            .descendants()
-            .find(|n| n.has_tag_name("docPr"))
-            .and_then(|n| common::local_attr(&n, "name"));
-        let has_fill = wsp.descendants().any(|n| n.has_tag_name("solidFill"));
-        if has_fill && name == Some(node_id.as_str()) {
+        if wsp.descendants().any(|n| n.has_tag_name("solidFill")) {
             found = true;
             break;
         }
     }
     assert!(
         found,
-        "expected non-textbox wps:wsp with a:solidFill named {node_id}"
+        "expected a wps:wsp with a:solidFill (page paper is behindDoc; cells fold into txBoxes)"
     );
 }
 

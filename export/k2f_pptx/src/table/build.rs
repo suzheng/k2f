@@ -1,10 +1,10 @@
 use super::TableIndex;
-use crate::align::{infer_text_align, vert_center};
+use crate::align::{infer_text_align, line_spacing_spc_pts, vert_center};
 use crate::coord::{millipt_to_emu, pt_to_emu};
 use crate::ir::{
     BorderStroke, CellBorders, LineDash, ShapeBox, TableBox, TableCell, TableRow, TextAlign,
 };
-use crate::text::{cell_runs, FontCtx};
+use crate::text::{cell_runs, top_inset_emu, FontCtx};
 use crate::PptxError;
 use k2f_core::{
     find_in_trees, node_text, Border, BorderEdge, BorderStyle, GeometryNode, Page, PaintOp, Rect,
@@ -55,6 +55,7 @@ pub(crate) fn table_on_page(
             let (runs, preserve) = cell_runs(
                 node,
                 paint.map(|p| p.runs.as_slice()).unwrap_or(&[]),
+                Some(g),
                 fonts,
                 header && no_text,
             );
@@ -65,10 +66,24 @@ pub(crate) fn table_on_page(
                 infer_text_align(g, text)
             };
             let font_size = paint
-                .and_then(|p| p.runs.first())
-                .map(|r| r.style.font_size)
-                .or_else(|| g.text_runs.first().map(|r| r.style.font_size))
+                .and_then(|p| {
+                    p.runs
+                        .iter()
+                        .map(|r| r.style.font_size)
+                        .max_by_key(|pt| pt.0.abs())
+                })
+                .or_else(|| {
+                    g.text_runs
+                        .iter()
+                        .map(|r| r.style.font_size)
+                        .max_by_key(|pt| pt.0.abs())
+                })
                 .unwrap_or(k2f_core::Pt(12_000));
+            let centered = vert_center(g, font_size);
+            let mut line_spc_pts = line_spacing_spc_pts(Some(g));
+            if line_spc_pts.is_none() && !runs.is_empty() {
+                line_spc_pts = i32::try_from(font_size.0 / 10).ok().map(|v| v.max(100));
+            }
             cells.push(TableCell {
                 node_id: g.id.clone(),
                 runs,
@@ -76,7 +91,9 @@ pub(crate) fn table_on_page(
                 fill_hex: paint.and_then(|p| p.fill_hex.clone()),
                 preserve_whitespace: preserve,
                 borders: cell_borders(paint.and_then(|p| p.border.as_ref()))?,
-                vert_center: vert_center(g, font_size),
+                vert_center: centered,
+                t_ins_emu: if centered { 0 } else { top_inset_emu(Some(g)) },
+                line_spc_pts,
             });
         }
         rows_out.push(TableRow {
@@ -103,9 +120,10 @@ pub(crate) fn table_ref_placeholder(node_id: &str, rect: &Rect) -> ShapeBox {
         cx_emu: pt_to_emu(rect.width),
         cy_emu: pt_to_emu(rect.height),
         fill_hex: None,
-        fill_alpha_ppt: None,
+        fill_alpha: 255,
         corner_emu: 0,
         line_hex: Some("D0D0D0".into()),
+        line_alpha: 255,
         line_w_emu: millipt_to_emu(1_000),
         line_dash: LineDash::Solid,
     }

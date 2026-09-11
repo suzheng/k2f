@@ -1,10 +1,10 @@
 use k2f_core::{BoxDecoration, Fill, GeometryNode, LinearGradient, Page, PaintOp, Pt, Rect};
 use k2f_paint::{parse_hex_rgba, resolve_fill};
 
-/// Fills thinner than this stay in front of the document. LibreOffice Writer
-/// paints `behindDoc` shapes under `w:background`, so 1 pt rules and a few-pt
-/// accent bars would vanish if they sat behind. Paper-colored card/cell fills
-/// stay behind; contrasting large fills also stay in front.
+/// Fills thinner than this stay in front of the document. Page paper is the
+/// only behindDoc fill (hosts z-order that stack by size). Paper-colored
+/// body fills also sit behind so they cannot cover stamps. Contrasting
+/// cards stay in front; classify folds nested labels into the shell.
 const THIN_FILL_PT: i128 = 8_000;
 
 pub(crate) fn find_geo<'a>(node: &'a GeometryNode, id: &str) -> Option<&'a GeometryNode> {
@@ -37,6 +37,11 @@ pub(crate) fn is_full_page_rect(page_w: Pt, page_h: Pt, rect: &Rect) -> bool {
 
 pub(crate) fn is_thin_fill_rect(rect: &Rect) -> bool {
     rect.width.0.min(rect.height.0) <= THIN_FILL_PT
+}
+
+pub(crate) fn is_thin_fill_emu(cx_emu: i64, cy_emu: i64) -> bool {
+    let cap = crate::coord::millipt_to_emu(i64::try_from(THIN_FILL_PT).unwrap_or(i64::MAX));
+    cx_emu.min(cy_emu) <= cap
 }
 
 fn rect_contains(outer: &Rect, inner: &Rect) -> bool {

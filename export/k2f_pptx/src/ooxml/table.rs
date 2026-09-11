@@ -58,6 +58,7 @@ fn cell_xml(cell: &TableCell, hyperlink_rids: &BTreeMap<String, String>) -> Stri
         false,
         false,
         cell.preserve_whitespace,
+        cell.line_spc_pts,
         None,
         0,
         1,
@@ -76,10 +77,10 @@ fn cell_xml(cell: &TableCell, hyperlink_rids: &BTreeMap<String, String>) -> Stri
     format!(
         r#"            <a:tc>
               <a:txBody>
-                <a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" rtlCol="0" anchor="{anchor}"/>
+                <a:bodyPr wrap="square" lIns="0" tIns="{tins}" rIns="0" bIns="0" rtlCol="0" anchor="{anchor}"/>
                 <a:lstStyle/>
 {body}              </a:txBody>
-              <a:tcPr marL="0" marR="0" marT="0" marB="0">
+              <a:tcPr marL="0" marR="0" marT="0" marB="0" anchor="{anchor}">
                 {ln_l}
                 {ln_r}
                 {ln_t}
@@ -88,6 +89,7 @@ fn cell_xml(cell: &TableCell, hyperlink_rids: &BTreeMap<String, String>) -> Stri
               </a:tcPr>
             </a:tc><!--{cell_id}-->
 "#,
+        tins = cell.t_ins_emu,
         ln_l = ln_xml("lnL", cell.borders.left.as_ref()),
         ln_r = ln_xml("lnR", cell.borders.right.as_ref()),
         ln_t = ln_xml("lnT", cell.borders.top.as_ref()),
@@ -127,6 +129,8 @@ mod tests {
             preserve_whitespace: false,
             borders,
             vert_center: false,
+            t_ins_emu: 0,
+            line_spc_pts: None,
         }
     }
 
@@ -188,8 +192,31 @@ mod tests {
         cell.vert_center = true;
         let xml = cell_xml(&cell, &BTreeMap::new());
         assert!(
-            xml.contains(r#"anchor="ctr""#),
-            "centered lock cell must not hardcode anchor=t, got {xml}"
+            xml.contains(r#"<a:tcPr marL="0" marR="0" marT="0" marB="0" anchor="ctr">"#),
+            "PowerPoint reads a:tcPr/@anchor, not only bodyPr, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"tIns="0""#) && xml.contains(r#"anchor="ctr""#),
+            "centered cell keeps bodyPr anchor=ctr and zero tIns, got {xml}"
+        );
+    }
+
+    #[test]
+    fn top_aligned_cell_emits_tins_not_tcpr_center() {
+        let mut cell = dummy_cell(TextAlign::Left, CellBorders::default());
+        cell.t_ins_emu = 88_900;
+        let xml = cell_xml(&cell, &BTreeMap::new());
+        assert!(
+            xml.contains(r#"<a:tcPr marL="0" marR="0" marT="0" marB="0" anchor="t">"#),
+            "top-aligned lock cell must not set tcPr anchor=ctr, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"tIns="88900""#),
+            "lock first-line y_offset must become bodyPr tIns, got {xml}"
+        );
+        assert!(
+            !xml.contains(r#"marT="88900""#),
+            "must not double the inset on tcPr marT, got {xml}"
         );
     }
 }

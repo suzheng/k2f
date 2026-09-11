@@ -1,7 +1,48 @@
-use super::align::{line_gaps, source_lines};
+use super::align::{line_gaps, source_glyphs, source_lines};
 use crate::coord::{millipt_to_twips, pt_to_emu};
 use crate::ir::TextAlign;
 use k2f_core::{GeometryNode, Pt, Rect};
+
+/// Left pad before the decorative marker (lock ink min x). Applied as bodyPr
+/// `lIns` so the literal marker sits where the lock painted it.
+pub(crate) fn list_outer_pad_emu(geo: Option<&GeometryNode>) -> i64 {
+    let Some(geo) = geo else {
+        return 0;
+    };
+    let ink_left = geo
+        .glyphs
+        .iter()
+        .map(|g| g.x_offset.0)
+        .min()
+        .unwrap_or(0)
+        .max(0);
+    emu(ink_left)
+}
+
+/// Lock marker-column width for hanging indent when the marker is a literal
+/// run inside the paragraph. Decorative marker glyphs use `CLUSTER_NOT_SOURCE`;
+/// body source glyphs start after that column. Using body-left alone would
+/// hang wrap lines by (pad + marker), while the literal `{n}.` / `•` already
+/// occupies the marker slot on line one — wrap then sits too far right.
+pub(crate) fn list_hanging_lock_emu(geo: Option<&GeometryNode>) -> i64 {
+    let Some(geo) = geo else {
+        return 0;
+    };
+    let ink_left = geo
+        .glyphs
+        .iter()
+        .map(|g| g.x_offset.0)
+        .min()
+        .unwrap_or(0)
+        .max(0);
+    let body_left = source_glyphs(geo)
+        .iter()
+        .map(|g| g.x_offset.0)
+        .min()
+        .unwrap_or(ink_left)
+        .max(0);
+    emu((body_left - ink_left).max(0))
+}
 
 pub(crate) fn insets(geo: Option<&GeometryNode>, align: TextAlign) -> (i64, i64, i64, i64) {
     let Some(geo) = geo else {
@@ -82,13 +123,25 @@ pub(crate) fn line_spacing_twips(geo: Option<&GeometryNode>) -> Option<i64> {
         ys.sort_unstable();
         ys[ys.len() / 2]
     };
-    let y0 = baseline(&lines[0]);
-    let y1 = baseline(&lines[1]);
-    let delta = (y1 - y0).abs();
-    if delta < 2_000 {
-        return None;
+    // Ignore super/sub → body gaps (often ~0.4–0.5× face). Real leading is
+    // at least ~0.8× the body face; otherwise Word `exact` crushes lines.
+    let min_delta = super::align::body_font_size(geo)
+        .saturating_mul(4)
+        .saturating_div(5)
+        .max(2_000);
+    for i in 0..lines.len() - 1 {
+        let delta = (baseline(&lines[i + 1]) - baseline(&lines[i])).abs();
+        if delta >= min_delta {
+            return Some(millipt_to_twips(i64::try_from(delta).unwrap_or(0)));
+        }
     }
-    Some(millipt_to_twips(i64::try_from(delta).unwrap_or(0)))
+    None
+}
+
+/// Last pinned paragraph uses face size, not inter-line delta. See
+/// `lock_ink_height` — trailing Office leading would cover the next node.
+pub(crate) fn last_line_twips(font_size: Pt) -> i64 {
+    crate::coord::pt_to_twips(font_size).max(20)
 }
 
 pub(crate) fn vert_center(geo: Option<&GeometryNode>, rect: &Rect, font_size: Pt) -> bool {
@@ -136,6 +189,9 @@ fn emu(millipt: i128) -> i64 {
 #[cfg(test)]
 mod tests {
     use super::gaps_look_centered;
+    use super::list_hanging_lock_emu;
+    use crate::coord::emu_to_twips;
+    use k2f_core::{GeometryNode, GlyphPosition, Pt};
 
     #[test]
     fn padded_one_line_cell_is_centered() {
@@ -151,5 +207,61 @@ mod tests {
     #[test]
     fn top_padded_stretch_is_not_centered() {
         assert!(!gaps_look_centered(7_000, 34_000 - 7_000 - 8_000));
+    }
+
+    #[test]
+    fn list_hanging_lock_without_geo_is_zero() {
+        assert_eq!(list_hanging_lock_emu(None), 0);
+    }
+
+    #[test]
+    fn list_hanging_is_marker_column_not_body_left() {
+        // Decorative "1." at 15pt, body at 30pt — hang must be 15pt, not 30pt.
+        let geo = GeometryNode {
+            id: "li".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(470_000),
+            height: Pt(48_000),
+            glyphs: vec![
+                GlyphPosition {
+                    glyph_id: 1,
+                    cluster: GlyphPosition::CLUSTER_NOT_SOURCE,
+                    x_offset: Pt(15_000),
+                    y_offset: Pt(0),
+                    x_advance: Pt(6_000),
+                    y_advance: Pt(0),
+                },
+                GlyphPosition {
+                    glyph_id: 2,
+                    cluster: GlyphPosition::CLUSTER_NOT_SOURCE,
+                    x_offset: Pt(21_000),
+                    y_offset: Pt(0),
+                    x_advance: Pt(3_000),
+                    y_advance: Pt(0),
+                },
+                GlyphPosition {
+                    glyph_id: 3,
+                    cluster: 0,
+                    x_offset: Pt(30_000),
+                    y_offset: Pt(0),
+                    x_advance: Pt(8_000),
+                    y_advance: Pt(0),
+                },
+                GlyphPosition {
+                    glyph_id: 3,
+                    cluster: 1,
+                    x_offset: Pt(30_000),
+                    y_offset: Pt(24_000),
+                    x_advance: Pt(8_000),
+                    y_advance: Pt(0),
+                },
+            ],
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        };
+        let hang = list_hanging_lock_emu(Some(&geo));
+        assert_eq!(emu_to_twips(hang), 300, "15pt marker column, got {hang} emu");
     }
 }

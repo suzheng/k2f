@@ -12,7 +12,9 @@ PPTX is a one-way dump of an already-locked package. It is not a K2F source (`PP
 | Plain-text table | `a:tbl` | yes |
 | Bitmap / SVG illustration | pic | replaceable |
 | Opaque solid box | shape | fill can be changed |
-| blur / glass / shadow / gradient / translucency / math | `k2f-raster` pic | no |
+| Translucent solid (`#RRGGBBAA`) | shape `a:solidFill` + `a:alpha` | fill can be changed |
+| Shadowed opaque box | shape (fill + stroke; glow is a v1 gap) | fill can be changed |
+| blur / glass / gradient / math | `k2f-raster` pic | no |
 
 Do **not** stamp a full-slide PNG and overlay invisible text. That is the PDF-bridge stamp path and would destroy native text, tables, and pictures.
 
@@ -21,7 +23,7 @@ Do **not** stamp a full-slide PNG and overlay invisible text. That is the PDF-br
 - Slight text reflow vs K2F is expected. Glyphs are not absolutely positioned.
 - Glass / blur slices sample only the chrome lock (page background plus the effect ops). They do **not** blur native card shapes sitting behind the glass.
 - Nested / image / still-Asset table cells are not native `a:tbl` (they stay box+text+pic).
-- Partial borders are drawn on all four sides. SVG embeds as `image/svg+xml`.
+- Partial borders are drawn on all four sides. SVG assets are rasterized to PNG at export (same `decode_raster` / resvg path as paint).
 - No PPT master, animation, OMML, or pptx → K2F import.
 
 ## Official CLI

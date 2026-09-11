@@ -39,6 +39,8 @@ pub struct TextBox {
     pub wrap: bool,
     /// DrawingML `a:spcPts` (hundredths of a point), from lock line-to-line delta.
     pub line_spc_pts: Option<i32>,
+    /// Last pinned paragraph: face size, not inter-line delta (no trailing leading).
+    pub last_line_spc_pts: Option<i32>,
     /// Role `padding_pt.top` baked into first-line glyph `y_offset`.
     pub t_ins_emu: i64,
     /// Lock glyph left gap (role padding) as DrawingML `lIns`.
@@ -47,7 +49,7 @@ pub struct TextBox {
     pub r_ins_emu: i64,
     /// Hanging indent for list markers (DrawingML `marL` / negative `indent`).
     pub mar_l_emu: i64,
-    /// 1-based `a:buAutoNum startAt`. Each list item is its own text box.
+    /// Kept for callers; markers are literal runs, not `a:buAutoNum`.
     pub list_start: u32,
 }
 
@@ -97,10 +99,12 @@ pub struct ShapeBox {
     pub cx_emu: i64,
     pub cy_emu: i64,
     pub fill_hex: Option<String>,
-    #[allow(dead_code)]
-    pub fill_alpha_ppt: Option<u16>,
+    /// 255 = opaque. Partial-edge bars (quote rules) copy lock stroke alpha here.
+    pub fill_alpha: u8,
     pub corner_emu: i64,
     pub line_hex: Option<String>,
+    /// 255 = opaque. `#RRGGBBAA` borders keep lock alpha on DrawingML `a:ln`.
+    pub line_alpha: u8,
     pub line_w_emu: i64,
     pub line_dash: LineDash,
 }
@@ -142,6 +146,12 @@ pub struct TableCell {
     pub preserve_whitespace: bool,
     pub borders: CellBorders,
     pub vert_center: bool,
+    /// Role padding baked into first-line glyph `y_offset` (`a:bodyPr tIns`).
+    /// Zero when `vert_center` so host center is not shifted down.
+    pub t_ins_emu: i64,
+    /// DrawingML `a:spcPts` (hundredths of a point). One-line cells pin the
+    /// face size; wrapped cells use lock line-to-line delta.
+    pub line_spc_pts: Option<i32>,
 }
 
 #[derive(Clone, Debug, Default)]

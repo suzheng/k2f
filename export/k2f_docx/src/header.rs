@@ -8,13 +8,11 @@ use k2f_core::{for_each_node, LockFile, PaintOp, RunningBlockNode, RunningBlockP
 use k2f_paint::OpenedDocument;
 use std::collections::{BTreeMap, HashSet};
 
-/// Node ids whose running-header/footer text becomes Word PAGE/NUMPAGES
-/// fields. Those stay in header1.xml / footer1.xml and are skipped in the
-/// body so they are not duplicated as "Page 1 of 3".
+/// Node ids whose running text contains `{{page_*}}`.
 ///
-/// Other running paint (logos, static labels) is drawn in the body at lock
-/// coordinates. LibreOffice Writer does not paint header/footer parts when
-/// `pgMar` header/footer is 0 (required so lock geometry maps onto the page).
+/// v1 paints those labels in the body with lock-resolved numbers (Writer does
+/// not paint `footer1.xml` when `pgMar` is 0). Kept for a future header-part path.
+#[allow(dead_code)]
 pub(crate) fn running_field_ids(running: &[RunningBlockNode]) -> HashSet<String> {
     let mut ids = HashSet::new();
     for rb in running {
@@ -29,6 +27,7 @@ pub(crate) fn running_field_ids(running: &[RunningBlockNode]) -> HashSet<String>
     ids
 }
 
+#[allow(dead_code)]
 pub(crate) fn collect_running(
     doc: &OpenedDocument,
     lock: &LockFile,
@@ -76,7 +75,9 @@ pub(crate) fn collect_running(
                     continue;
                 };
                 let geo = find_geo(&page.root, node_id);
-                if let Some(tb) = textbox_from_draw_ctx(node, rect, runs, geo, fonts, rel) {
+                if let Some(tb) =
+                    textbox_from_draw_ctx(node, rect, runs, geo, fonts, rel, 0, 1, 1)
+                {
                     els.push(PageElement::TextBox(tb));
                 }
             }

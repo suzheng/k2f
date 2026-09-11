@@ -5,7 +5,7 @@ use crate::effect::{
 };
 use crate::ir::{DeckIR, SlideElement, SlideIR};
 use crate::picture::picture_from_draw;
-use crate::shape::shape_from_box;
+use crate::shape::shapes_from_box;
 use crate::table::{index_native_tables, paint_node_id, table_on_page, table_ref_placeholder};
 use crate::text::{list_start_at, textbox_from_draw, FontCtx};
 use crate::PptxError;
@@ -148,8 +148,10 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DeckIR, PptxError> {
                         )?;
                         raster_n = raster_n.saturating_add(1);
                         elements.push(SlideElement::Raster(pic));
-                    } else if let Some(shape) = shape_from_box(node_id, rect, decoration)? {
-                        elements.push(SlideElement::Shape(shape));
+                    } else {
+                        for shape in shapes_from_box(node_id, rect, decoration)? {
+                            elements.push(SlideElement::Shape(shape));
+                        }
                     }
                 }
                 PaintOp::DrawImage { node_id, rect, src } => {

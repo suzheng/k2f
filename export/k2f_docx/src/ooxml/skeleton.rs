@@ -269,6 +269,8 @@ fn styles_xml(hlink_hex: Option<&str>) -> String {
     )
 }
 
+// w:background + displayBackgroundShape is the Office page-color slot.
+// Word Dark Mode may hide it; the lock's full-page solid is the wash.
 const SETTINGS: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:displayBackgroundShape/>

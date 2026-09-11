@@ -80,9 +80,18 @@ pub(crate) fn build_cell(
         .map(|n| n.preserve_whitespace == Some(true) || n.role == "code_block")
         .unwrap_or(false);
     let font_size = paint
-        .and_then(|p| p.runs.first())
-        .map(|r| r.style.font_size)
-        .or_else(|| geo.text_runs.first().map(|r| r.style.font_size))
+        .and_then(|p| {
+            p.runs
+                .iter()
+                .map(|r| r.style.font_size)
+                .max_by_key(|pt| pt.0.abs())
+        })
+        .or_else(|| {
+            geo.text_runs
+                .iter()
+                .map(|r| r.style.font_size)
+                .max_by_key(|pt| pt.0.abs())
+        })
         .unwrap_or(k2f_core::Pt(12_000));
     let cell_rect = Rect {
         x: geo.x,

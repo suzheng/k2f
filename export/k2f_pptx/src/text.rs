@@ -1,5 +1,7 @@
 use crate::align::{
-    host_wrap, infer_text_align, line_spacing_spc_pts, should_wrap_lock, source_lines,
+    host_wrap, infer_text_align, last_line_spc_pts as last_line_spc_from_font,
+    line_spacing_spc_pts, lock_break_char_indices, lock_ink_height, should_pin_lock_breaks,
+    should_wrap_lock, source_lines,
 };
 use crate::coord::pt_to_emu;
 use crate::ir::{ScriptPos, TextAlign, TextBox, TextRun};
@@ -8,7 +10,7 @@ use k2f_core::{
     TableDataSource, TextGlyphRun, TextPaintStyle,
 };
 use k2f_paint::parse_hex_rgba;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use ttf_parser::{name_id, Face, Language};
 
 pub(crate) struct FontCtx {
@@ -90,7 +92,7 @@ pub(crate) fn textbox_from_draw(
         return None;
     }
     let running = node.role.starts_with("running_");
-    let runs = if running {
+    let mut runs = if running {
         let text = expand_page_vars(&raw, page_idx, total_pages);
         if text.is_empty() {
             return None;
@@ -100,7 +102,13 @@ pub(crate) fn textbox_from_draw(
             .map(|r| r.style.clone())
             .unwrap_or_else(fallback_style);
         let font_name = fonts.typeface(&style.font_family);
-        split_runs(&text, &style, &node.modifiers, &font_name, 0)
+        // Glyph *ranges* still map the token source (`{{page_*}}`), so we
+        // cannot paint from lock clusters after expansion. Extra-advance on
+        // those glyphs is still tracking — same as body runs.
+        let glyph_refs: Vec<&GlyphPosition> =
+            geo.map(|g| g.glyphs.iter().collect()).unwrap_or_default();
+        let tracking = tracking_spc(&glyph_refs, &style, fonts);
+        split_runs(&text, &style, &node.modifiers, &font_name, tracking)
     } else {
         runs_from_paint(&raw, paint_runs, &node.modifiers, geo, fonts)
     };
@@ -108,43 +116,166 @@ pub(crate) fn textbox_from_draw(
         return None;
     }
     let numbered = node.marker_type == Some(ListMarkerType::Number);
-    let bullet = node.role == "list_item" || node.marker_type.is_some();
+    let is_bullet = !numbered
+        && (node.role == "list_item" || node.marker_type == Some(ListMarkerType::Bullet));
     let align = geo
         .map(|g| infer_text_align(g, &raw))
         .unwrap_or(TextAlign::Left);
+    // Prefer the largest face (body), not paint_runs[0] (often a leading super).
     let font_size = paint_runs
-        .first()
+        .iter()
         .map(|r| r.style.font_size)
+        .max_by_key(|p| p.0.abs())
+        .or_else(|| geo.map(|g| Pt(crate::align::body_font_size(g))))
         .unwrap_or(Pt(12_000));
-    let (l_ins_emu, r_ins_emu) = h_insets_emu(geo, align);
-    let wrap = !running && host_wrap(geo, align, should_wrap_lock(geo, font_size, Some(&raw)));
+    let (mut l_ins_emu, r_ins_emu) = h_insets_emu(geo, align);
+    let pin = !running
+        && !(is_bullet || numbered)
+        && should_pin_lock_breaks(geo, font_size, Some(&raw), align);
+    if pin {
+        if let Some(g) = geo {
+            runs = insert_lock_line_breaks(runs, &raw, g);
+        }
+    }
+    // Pin inserts hard `\n` at lock line starts. wrap=none prevents host
+    // reflow clipping for left text, but hosts ignore algn under wrap=none —
+    // so non-left still takes host_wrap (square when aligned).
+    let wrap = if is_bullet || numbered {
+        true
+    } else if pin && matches!(align, TextAlign::Left) {
+        false
+    } else {
+        !running
+            && host_wrap(
+                geo,
+                align,
+                !pin && should_wrap_lock(geo, font_size, Some(&raw)),
+            )
+    };
     let mut line_spc_pts = line_spacing_spc_pts(geo);
     if !wrap && line_spc_pts.is_none() {
         line_spc_pts = i32::try_from(font_size.0 / 10).ok().map(|v| v.max(100));
     }
+    let last_line_spc_pts = if pin {
+        last_line_spc_from_font(font_size)
+    } else {
+        None
+    };
+    let mut height = rect.height;
+    if let Some(ink) = lock_ink_height(geo, font_size) {
+        if ink.0 > height.0 {
+            height = ink;
+        }
+    }
+    // Literal markers — hosts clip DrawingML buChar/buAutoNum in tight gutters,
+    // and auto-numbering across floating shapes is host-order fragile.
+    if is_bullet {
+        prepend_literal_bullet(&mut runs);
+    } else if numbered {
+        prepend_literal_number(&mut runs, list_start.max(1));
+    }
+    let x_emu = pt_to_emu(rect.x);
+    let cx_emu = pt_to_emu(rect.width);
+    let mar_l_emu = if is_bullet || numbered {
+        l_ins_emu = list_outer_pad_emu(geo);
+        list_hanging_lock_emu(geo)
+    } else {
+        0
+    };
     Some(TextBox {
         node_id: node.id.clone(),
-        x_emu: pt_to_emu(rect.x),
+        x_emu,
         y_emu: pt_to_emu(rect.y),
-        cx_emu: pt_to_emu(rect.width),
-        cy_emu: pt_to_emu(rect.height),
+        cx_emu,
+        cy_emu: pt_to_emu(height),
         runs,
         align,
-        bullet,
+        bullet: is_bullet,
         numbered,
         preserve_whitespace: node.preserve_whitespace == Some(true) || node.role == "code_block",
         wrap,
         line_spc_pts,
+        last_line_spc_pts,
         t_ins_emu: top_inset_emu(geo),
         l_ins_emu,
         r_ins_emu,
-        mar_l_emu: if numbered || bullet {
-            list_hanging_emu(geo)
-        } else {
-            0
-        },
+        mar_l_emu,
         list_start: if numbered { list_start.max(1) } else { 1 },
     })
+}
+
+fn prepend_literal_bullet(runs: &mut Vec<TextRun>) {
+    let Some(first) = runs.first() else {
+        return;
+    };
+    let marker = TextRun {
+        text: "•\u{00A0}".into(),
+        font_name: "Arial".into(),
+        sz_hundredths_pt: first.sz_hundredths_pt,
+        bold: false,
+        italic: false,
+        underline: false,
+        strike: false,
+        color_hex: first.color_hex.clone(),
+        hyperlink: None,
+        script: ScriptPos::Baseline,
+        tracking_spc: 0,
+    };
+    runs.insert(0, marker);
+}
+
+fn prepend_literal_number(runs: &mut Vec<TextRun>, n: u32) {
+    let Some(first) = runs.first() else {
+        return;
+    };
+    let marker = TextRun {
+        text: format!("{n}.\u{00A0}"),
+        font_name: first.font_name.clone(),
+        sz_hundredths_pt: first.sz_hundredths_pt,
+        bold: false,
+        italic: false,
+        underline: false,
+        strike: false,
+        color_hex: first.color_hex.clone(),
+        hyperlink: None,
+        script: ScriptPos::Baseline,
+        tracking_spc: 0,
+    };
+    runs.insert(0, marker);
+}
+
+fn insert_lock_line_breaks(runs: Vec<TextRun>, text: &str, geo: &GeometryNode) -> Vec<TextRun> {
+    let breaks: HashSet<usize> = lock_break_char_indices(geo, text).into_iter().collect();
+    if breaks.is_empty() {
+        return runs;
+    }
+    let joined: String = runs.iter().map(|r| r.text.as_str()).collect();
+    let start_byte = text.find(&joined).unwrap_or(0);
+    let mut char_idx = text[..start_byte].chars().count();
+    let mut out = Vec::new();
+    for run in runs {
+        let mut buf = String::new();
+        for ch in run.text.chars() {
+            if breaks.contains(&char_idx) && !buf.is_empty() {
+                let mut head = run.clone();
+                head.text = std::mem::take(&mut buf);
+                out.push(head);
+            }
+            if breaks.contains(&char_idx) {
+                let mut nl = run.clone();
+                nl.text = "\n".into();
+                out.push(nl);
+            }
+            buf.push(ch);
+            char_idx += 1;
+        }
+        if !buf.is_empty() {
+            let mut tail = run;
+            tail.text = buf;
+            out.push(tail);
+        }
+    }
+    out
 }
 
 pub(crate) fn list_start_at(root: &SemanticNode) -> BTreeMap<String, u32> {
@@ -190,22 +321,43 @@ fn scan_list_starts(nodes: &[SemanticNode], out: &mut BTreeMap<String, u32>) {
     }
 }
 
-fn list_hanging_emu(geo: Option<&GeometryNode>) -> i64 {
+/// Left pad before the decorative marker (lock ink min x).
+fn list_outer_pad_emu(geo: Option<&GeometryNode>) -> i64 {
     let Some(geo) = geo else {
         return 0;
     };
-    let lines = crate::align::source_lines(geo);
-    if lines.is_empty() {
-        return 0;
-    }
-    let box_w = geo.width.0;
-    let min_left = lines
+    let ink_left = geo
+        .glyphs
         .iter()
-        .map(|g| crate::align::line_gaps(g, box_w).1)
+        .map(|g| g.x_offset.0)
         .min()
         .unwrap_or(0)
         .max(0);
-    pt_to_emu(Pt(min_left))
+    pt_to_emu(Pt(ink_left))
+}
+
+/// Lock marker-column width for hanging indent when the marker is a literal
+/// run. Decorative markers are `CLUSTER_NOT_SOURCE`; body starts after them.
+/// Hanging by body-left alone double-counts that column once the literal
+/// `{n}.` / `•` is prepended.
+fn list_hanging_lock_emu(geo: Option<&GeometryNode>) -> i64 {
+    let Some(geo) = geo else {
+        return 0;
+    };
+    let ink_left = geo
+        .glyphs
+        .iter()
+        .map(|g| g.x_offset.0)
+        .min()
+        .unwrap_or(0)
+        .max(0);
+    let body_left = crate::align::source_glyphs(geo)
+        .iter()
+        .map(|g| g.x_offset.0)
+        .min()
+        .unwrap_or(ink_left)
+        .max(0);
+    pt_to_emu(Pt((body_left - ink_left).max(0)))
 }
 
 fn line_fills_padded_width(pad: i128, opposite_slack: i128, box_w: i128) -> bool {
@@ -217,7 +369,7 @@ fn line_fills_padded_width(pad: i128, opposite_slack: i128, box_w: i128) -> bool
     content.saturating_mul(100) >= avail.saturating_mul(85)
 }
 
-fn top_inset_emu(geo: Option<&GeometryNode>) -> i64 {
+pub(crate) fn top_inset_emu(geo: Option<&GeometryNode>) -> i64 {
     let geo = match geo {
         Some(g) => g,
         None => return 0,
@@ -288,6 +440,7 @@ fn expand_page_vars(text: &str, page_idx: usize, total_pages: usize) -> String {
 pub(crate) fn cell_runs(
     node: Option<&SemanticNode>,
     paint_runs: &[TextGlyphRun],
+    geo: Option<&GeometryNode>,
     fonts: &FontCtx,
     header_bold: bool,
 ) -> (Vec<TextRun>, bool) {
@@ -297,19 +450,23 @@ pub(crate) fn cell_runs(
     let Some(text) = k2f_core::node_text(node) else {
         return (Vec::new(), false);
     };
-    let mut style = paint_runs
-        .first()
-        .map(|r| r.style.clone())
-        .unwrap_or_else(|| table_fallback_style(header_bold));
-    if paint_runs.is_empty() && header_bold {
-        style.bold = true;
-    }
-    let font_name = fonts.typeface(&style.font_family);
     let preserve = node.preserve_whitespace == Some(true) || node.role == "code_block";
-    (
-        split_runs(text, &style, &node.modifiers, &font_name, 0),
-        preserve,
-    )
+    let mut runs = if paint_runs.is_empty() {
+        let mut style = table_fallback_style(header_bold);
+        if header_bold {
+            style.bold = true;
+        }
+        let font_name = fonts.typeface(&style.font_family);
+        split_runs(text, &style, &node.modifiers, &font_name, 0)
+    } else {
+        runs_from_paint(text, paint_runs, &node.modifiers, geo, fonts)
+    };
+    if header_bold && paint_runs.is_empty() {
+        for r in &mut runs {
+            r.bold = true;
+        }
+    }
+    (runs, preserve)
 }
 
 fn runs_from_paint(
@@ -599,7 +756,8 @@ fn color_hex(color: &str) -> String {
 }
 
 /// PowerPoint maps RGB `000000` / `FFFFFF` onto theme `tx1`/`bg1`. Dark Mode
-/// remaps those slots even when they are stored as `a:srgbClr`.
+/// remaps those slots even when they are stored as `a:srgbClr`. Theme `dk1`/`lt1`
+/// must not use these pin values, or Word snaps the pins back onto the slots.
 pub(crate) fn pin_office_srgb(hex: &str) -> String {
     match hex {
         "000000" => "000001".into(),
@@ -851,6 +1009,77 @@ mod tests {
     }
 
     #[test]
+    fn running_header_uses_lock_glyph_tracking() {
+        let mut fonts = BTreeMap::new();
+        let bytes = roboto();
+        fonts.insert("assets/fonts/Roboto-Regular.ttf".into(), bytes.clone());
+        let ctx = FontCtx::new(&fonts);
+        let face = Face::parse(&bytes, 0).unwrap();
+        let gid = face.glyph_index('A').unwrap();
+        let native = i128::from(face.glyph_hor_advance(gid).unwrap()) * 6_800
+            / i128::from(face.units_per_em());
+        let extra = 600i128;
+        let glyphs = vec![
+            GlyphPosition {
+                glyph_id: u32::from(gid.0),
+                cluster: 0,
+                x_offset: Pt(0),
+                y_offset: Pt(0),
+                x_advance: Pt(native + extra),
+                y_advance: Pt(0),
+            },
+            GlyphPosition {
+                glyph_id: u32::from(gid.0),
+                cluster: 1,
+                x_offset: Pt(native + extra),
+                y_offset: Pt(0),
+                x_advance: Pt(native),
+                y_advance: Pt(0),
+            },
+        ];
+        let geo = GeometryNode {
+            id: "running.header.left".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(200_000),
+            height: Pt(8_000),
+            glyphs,
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        };
+        let node = SemanticNode {
+            id: "running.header.left".into(),
+            role: "running_header_left".into(),
+            content: NodeContent::Text("AA".into()),
+            ..Default::default()
+        };
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(200_000),
+            height: Pt(8_000),
+        };
+        let paint = [TextGlyphRun {
+            glyph_range: [0, 2],
+            style: TextPaintStyle {
+                font_family: "Roboto-Regular".into(),
+                font_size: Pt(6_800),
+                color: "#718096".into(),
+                bold: false,
+                italic: false,
+                strikethrough: false,
+                underline: false,
+            },
+        }];
+        let tb = textbox_from_draw(&node, &rect, &paint, Some(&geo), &ctx, 0, 3, 1).unwrap();
+        assert_eq!(
+            tb.runs[0].tracking_spc, 60,
+            "running labels must keep lock tracking after {{{{page_*}}}} expansion"
+        );
+    }
+
+    #[test]
     fn left_align_l_ins_from_glyph_gap() {
         let geo = GeometryNode {
             id: "g".into(),
@@ -927,5 +1156,93 @@ mod tests {
         };
         let (l, r) = h_insets_emu(Some(&geo), TextAlign::Left);
         assert_eq!((l, r), (0, 0));
+    }
+
+    fn dummy_text_run(text: &str) -> TextRun {
+        TextRun {
+            text: text.into(),
+            font_name: "Roboto".into(),
+            sz_hundredths_pt: 1200,
+            bold: false,
+            italic: false,
+            underline: false,
+            strike: false,
+            color_hex: "F8FAFC".into(),
+            hyperlink: None,
+            script: ScriptPos::Baseline,
+            tracking_spc: 0,
+        }
+    }
+
+    #[test]
+    fn pin_breaks_do_not_double_source_newlines() {
+        // Source already has `\n` after "Ab."; lock also wrapped "Cd wrap".
+        let text = "Ab\nCd wrap";
+        let geo = GeometryNode {
+            id: "g".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(40_000),
+            height: Pt(36_000),
+            glyphs: vec![
+                GlyphPosition {
+                    glyph_id: 1,
+                    cluster: 0,
+                    x_offset: Pt(0),
+                    y_offset: Pt(0),
+                    x_advance: Pt(12_000),
+                    y_advance: Pt(0),
+                },
+                GlyphPosition {
+                    glyph_id: 1,
+                    cluster: 1,
+                    x_offset: Pt(12_000),
+                    y_offset: Pt(0),
+                    x_advance: Pt(12_000),
+                    y_advance: Pt(0),
+                },
+                GlyphPosition {
+                    glyph_id: 1,
+                    cluster: 3,
+                    x_offset: Pt(0),
+                    y_offset: Pt(12_000),
+                    x_advance: Pt(12_000),
+                    y_advance: Pt(0),
+                },
+                GlyphPosition {
+                    glyph_id: 1,
+                    cluster: 4,
+                    x_offset: Pt(12_000),
+                    y_offset: Pt(12_000),
+                    x_advance: Pt(12_000),
+                    y_advance: Pt(0),
+                },
+                GlyphPosition {
+                    glyph_id: 1,
+                    cluster: 6,
+                    x_offset: Pt(0),
+                    y_offset: Pt(24_000),
+                    x_advance: Pt(12_000),
+                    y_advance: Pt(0),
+                },
+                GlyphPosition {
+                    glyph_id: 1,
+                    cluster: 7,
+                    x_offset: Pt(12_000),
+                    y_offset: Pt(24_000),
+                    x_advance: Pt(12_000),
+                    y_advance: Pt(0),
+                },
+            ],
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        };
+        let runs = vec![dummy_text_run(text)];
+        let out = insert_lock_line_breaks(runs, text, &geo);
+        let blob: String = out.iter().map(|r| r.text.as_str()).collect();
+        assert_eq!(blob, "Ab\nCd \nwrap", "got {blob:?}");
+        assert_eq!(blob.matches('\n').count(), 2);
+        assert!(!blob.contains("\n\n"));
     }
 }

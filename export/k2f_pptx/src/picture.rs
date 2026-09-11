@@ -42,10 +42,9 @@ fn encode_media(bytes: &[u8]) -> Result<(&'static str, Vec<u8>), PptxError> {
     if is_jpeg(bytes) {
         return Ok(("jpg", bytes.to_vec()));
     }
-    if looks_like_svg(bytes) {
-        return Ok(("svg", bytes.to_vec()));
-    }
-    if is_webp(bytes) {
+    // SVG (and WebP / other decode_raster formats) → PNG. Office hosts often
+    // leave raw `image/svg+xml` blank; paint/PDF already rasterize via resvg.
+    if looks_like_svg(bytes) || is_webp(bytes) {
         return raster_to_png(bytes);
     }
     match raster_to_png(bytes) {
@@ -112,6 +111,14 @@ mod tests {
             PptxError::Write(msg) => assert!(msg.contains("missing image")),
             other => panic!("expected Write, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn svg_encodes_as_png() {
+        let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="#00f"/></svg>"##;
+        let (ext, payload) = encode_media(svg).expect("svg must rasterize");
+        assert_eq!(ext, "png");
+        assert!(is_png(&payload), "svg must become PNG bytes");
     }
 
     #[test]

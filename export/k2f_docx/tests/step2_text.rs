@@ -599,28 +599,27 @@ fn left_align_rIns_is_zero_when_line_does_not_fill_box() {
 }
 
 #[test]
-fn running_footer_not_duplicated_in_body() {
+fn running_footer_page_numbers_in_body() {
     let doc = common::invoice();
     assert!(
         !doc.running_blocks().is_empty(),
         "invoice should have running footer"
     );
     let docx = export_opened(&doc).unwrap();
-    let footer = common::xml_in(&docx, "word/footer1.xml");
-    assert!(
-        footer.contains(" PAGE ") && footer.contains("NUMPAGES"),
-        "footer must emit PAGE and NUMPAGES fields, not a split token"
-    );
-    assert!(
-        !footer.contains("{{page"),
-        "footer must not leak template tokens"
-    );
     let body = common::xml_in(&docx, "word/document.xml");
-    assert!(!body.contains("Page 1 of 3") && !body.contains("Page {{page_current}}"));
-    assert_eq!(
-        body.matches("Page {{page_current}} of {{page_total}}")
-            .count(),
-        0
+    let blob = w_t_blob(&body);
+    assert!(
+        blob.contains("Page 1 of 3"),
+        "lock page numbers must paint in the body (Writer skips footer1.xml at pgMar 0), blob snippet: {:?}",
+        blob.find("Page").map(|i| &blob[i..i.saturating_add(40).min(blob.len())])
+    );
+    assert!(
+        !blob.contains("{{page"),
+        "body must not leak template tokens"
+    );
+    assert!(
+        !body.contains(" PAGE ") && !body.contains("NUMPAGES"),
+        "body must use lock-resolved numbers, not PAGE fields"
     );
 }
 

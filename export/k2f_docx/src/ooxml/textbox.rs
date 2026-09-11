@@ -7,20 +7,15 @@ pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, St
     let anchor = if tb.vert_center { "ctr" } else { "t" };
     let fill = match &tb.fill_hex {
         Some(hex) => super::drawing::solid_fill_xml(&word_hex_color(hex), tb.fill_alpha),
-        None => "                    <a:noFill/>\n".into(),
+        // Word Dark Mode inverts `noFill` floating text. Alpha 0 is still a
+        // fill, so glass/gradient/pictures behind the box stay visible.
+        None => super::drawing::solid_fill_xml("000001", 0),
     };
-    let (l, t, r, b) = if tb.numbered || tb.bullet {
-        // Marker column is a hanging indent on the paragraph, not shape padding.
-        // Extra lIns plus numbering indent shrinks wrap width and clips citations.
-        (0, tb.t_ins_emu, tb.r_ins_emu, tb.b_ins_emu)
-    } else {
-        (tb.l_ins_emu, tb.t_ins_emu, tb.r_ins_emu, tb.b_ins_emu)
-    };
-    let overflow = if tb.wrap {
-        ""
-    } else {
-        r#" vertOverflow="overflow" horzOverflow="overflow""#
-    };
+    let (l, t, r, b) = (tb.l_ins_emu, tb.t_ins_emu, tb.r_ins_emu, tb.b_ins_emu);
+    // Host metrics that are wider than rustybuzz wrap an extra line in a
+    // lock-tight frame. Writer clips that row unless overflow is explicit
+    // (one-liners already set this; wrapped body needs it too).
+    let overflow = r#" vertOverflow="overflow" horzOverflow="overflow""#;
     let geom = if tb.corner_emu <= 0 {
         "                    <a:prstGeom prst=\"rect\">\n                      <a:avLst/>\n                    </a:prstGeom>\n".to_string()
     } else {
@@ -37,9 +32,7 @@ pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, St
                       <a:off x="0" y="0"/>
                       <a:ext cx="{cx}" cy="{cy}"/>
                     </a:xfrm>
-{geom}{fill}                    <a:ln>
-                      <a:noFill/>
-                    </a:ln>
+{geom}{fill}{ln}
                   </wps:spPr>
                   <wps:txbx>
                     <w:txbxContent>
@@ -53,6 +46,7 @@ pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, St
         cx = tb.cx_emu,
         cy = tb.cy_emu,
         wrap = if tb.wrap { "square" } else { "none" },
+        ln = textbox_ln_xml(tb),
         l = l,
         t = t,
         r = r,
@@ -60,14 +54,38 @@ pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, St
     )
 }
 
+fn textbox_ln_xml(tb: &TextBox) -> String {
+    let Some(hex) = &tb.line_hex else {
+        return "                    <a:ln>\n                      <a:noFill/>\n                    </a:ln>\n".into();
+    };
+    let hex = word_hex_color(hex);
+    let dash = match tb.line_dash {
+        crate::ir::LineDash::Solid => "solid",
+        crate::ir::LineDash::Dash => "dash",
+        crate::ir::LineDash::Dot => "sysDot",
+    };
+    format!(
+        "                    <a:ln w=\"{w}\">\n                      <a:solidFill>\n{clr}                      </a:solidFill>\n                      <a:prstDash val=\"{dash}\"/>\n                    </a:ln>\n",
+        clr = super::drawing::srgb_clr_xml(&hex, tb.line_alpha, "                        "),
+        w = tb.line_w_emu,
+    )
+}
+
 fn txbx_content(tb: &TextBox, hyperlink_rids: &BTreeMap<String, String>) -> String {
     let paras = split_paragraphs(&tb.runs);
     let mut xml = String::new();
-    for para in &paras {
-        xml.push_str(&paragraph_xml(tb, para, hyperlink_rids));
+    let n = paras.len();
+    for (i, para) in paras.iter().enumerate() {
+        xml.push_str(&paragraph_xml(
+            tb,
+            para,
+            i,
+            i + 1 == n && n > 1,
+            hyperlink_rids,
+        ));
     }
     if paras.is_empty() {
-        xml.push_str(&paragraph_xml(tb, &[], hyperlink_rids));
+        xml.push_str(&paragraph_xml(tb, &[], 0, false, hyperlink_rids));
     }
     xml
 }
@@ -107,30 +125,69 @@ fn split_paragraphs(runs: &[TextRun]) -> Vec<Vec<TextRun>> {
 fn paragraph_xml(
     tb: &TextBox,
     runs: &[TextRun],
+    para_idx: usize,
+    last_para: bool,
     hyperlink_rids: &BTreeMap<String, String>,
 ) -> String {
     // CT_PPr is an xsd:sequence: numPr, then spacing, then ind, then jc.
     // Word (especially Mac) refuses to open the package if these are out of order.
     let mut ppr = String::from("                        <w:pPr>\n");
     if tb.numbered || tb.bullet {
-        let num_id = if tb.numbered { 2 } else { 1 };
-        ppr.push_str(&format!(
-            r#"                          <w:numPr>
+        // Literal bullets/numbers keep num_id=0 and paint the marker as a
+        // text run. Do not emit w:numPr — host auto-numbering across floating
+        // anchors renumbers by document order and caps the numId pool.
+        if tb.num_id > 0 {
+            ppr.push_str(&format!(
+                r#"                          <w:numPr>
                             <w:ilvl w:val="{}"/>
-                            <w:numId w:val="{num_id}"/>
+                            <w:numId w:val="{}"/>
                           </w:numPr>
 "#,
-            tb.ilvl
-        ));
+                tb.ilvl, tb.num_id
+            ));
+        }
     }
-    if let Some(line) = tb.line_twips {
-        ppr.push_str(&format!(
-            r#"                          <w:spacing w:line="{line}" w:lineRule="exact"/>
+    let line = if let Some(line) = tb.para_line_twips.get(para_idx).copied().flatten() {
+        Some(line)
+    } else if last_para {
+        tb.last_line_twips.or(tb.line_twips)
+    } else {
+        tb.line_twips
+    };
+    let after = tb.para_after_twips.get(para_idx).copied().unwrap_or(0);
+    // Folded stacks pin exact lock pitch so host fonts cannot grow every
+    // line and shove the stack into the roundRect floor. The final paragraph
+    // uses atLeast so descenders on PASSBAND / "and SGLang." are not sliced
+    // by an exact line box that matches rustybuzz but not the host face.
+    let folded_para = tb
+        .para_line_twips
+        .get(para_idx)
+        .copied()
+        .flatten()
+        .is_some();
+    let rule = if folded_para && last_para {
+        "atLeast"
+    } else {
+        "exact"
+    };
+    if line.is_some() || after > 0 {
+        match line {
+            Some(line) if after > 0 => ppr.push_str(&format!(
+                r#"                          <w:spacing w:after="{after}" w:line="{line}" w:lineRule="{rule}"/>
 "#
-        ));
+            )),
+            Some(line) => ppr.push_str(&format!(
+                r#"                          <w:spacing w:line="{line}" w:lineRule="{rule}"/>
+"#
+            )),
+            None => ppr.push_str(&format!(
+                r#"                          <w:spacing w:after="{after}"/>
+"#
+            )),
+        }
     }
     if tb.numbered || tb.bullet {
-        let hang = crate::coord::emu_to_twips(tb.l_ins_emu).max(0);
+        let hang = crate::coord::emu_to_twips(tb.hang_emu).max(0);
         if hang > 0 {
             ppr.push_str(&format!(
                 r#"                          <w:ind w:left="{hang}" w:hanging="{hang}"/>
@@ -307,12 +364,17 @@ mod tests {
             align: TextAlign::Left,
             bullet: false,
             numbered,
+            num_id: 0,
             ilvl: 0,
             l_ins_emu: 0,
+            hang_emu: 0,
             t_ins_emu: 0,
             r_ins_emu: 0,
             b_ins_emu: 0,
             line_twips,
+            last_line_twips: None,
+            para_line_twips: Vec::new(),
+            para_after_twips: Vec::new(),
             vert_center: false,
             preserve_whitespace: false,
             relative_height: 1,
@@ -320,6 +382,10 @@ mod tests {
             fill_alpha: 255,
             wrap: true,
             corner_emu: 0,
+            line_hex: None,
+            line_alpha: 255,
+            line_w_emu: 0,
+            line_dash: crate::ir::LineDash::Solid,
         }
     }
 
@@ -335,18 +401,29 @@ mod tests {
     }
 
     #[test]
-    fn ppr_emits_numpr_then_spacing_then_jc() {
-        let xml = paragraph_xml(&box_with(true, Some(240)), &[], &BTreeMap::new());
-        child_order(&xml, &["<w:numPr>", "<w:spacing", "<w:jc "]);
+    fn ppr_skips_numpr_for_literal_numbered_lists() {
+        let xml = paragraph_xml(&box_with(true, Some(240)), &[], 0, false, &BTreeMap::new());
+        assert!(!xml.contains("<w:numPr>"), "{xml}");
+        child_order(&xml, &["<w:spacing", "<w:jc "]);
     }
 
     #[test]
     fn ppr_emits_ind_between_spacing_and_jc_for_lists() {
         let mut tb = box_with(true, Some(240));
-        tb.l_ins_emu = 635 * 360;
-        let xml = paragraph_xml(&tb, &[], &BTreeMap::new());
-        child_order(&xml, &["<w:numPr>", "<w:spacing", "<w:ind ", "<w:jc "]);
+        tb.hang_emu = 635 * 360;
+        let xml = paragraph_xml(&tb, &[], 0, false, &BTreeMap::new());
+        assert!(!xml.contains("<w:numPr>"), "{xml}");
+        child_order(&xml, &["<w:spacing", "<w:ind ", "<w:jc "]);
         assert!(xml.contains(r#"w:hanging="360""#), "{xml}");
+    }
+
+    #[test]
+    fn ppr_emits_numpr_when_legacy_num_id_set() {
+        let mut tb = box_with(true, Some(240));
+        tb.num_id = 1001;
+        let xml = paragraph_xml(&tb, &[], 0, false, &BTreeMap::new());
+        child_order(&xml, &["<w:numPr>", "<w:spacing", "<w:jc "]);
+        assert!(xml.contains(r#"w:numId w:val="1001""#), "{xml}");
     }
 
     #[test]
@@ -358,6 +435,57 @@ mod tests {
         assert!(xml.contains("<a:noAutofit/>"), "{xml}");
         assert!(xml.contains(r#"wrap="square""#), "{xml}");
         assert!(xml.contains(r#"w:jc w:val="center""#), "{xml}");
+        assert!(xml.contains(r#"vertOverflow="overflow""#), "{xml}");
+        assert!(xml.contains(r#"horzOverflow="overflow""#), "{xml}");
+    }
+
+    #[test]
+    fn chrome_textbox_emits_transparent_solid_not_nofill() {
+        let tb = box_with(false, None);
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new());
+        assert!(
+            xml.contains("<a:solidFill>") && xml.contains(r#"<a:alpha val="0"/>"#),
+            "Word Dark Mode inverts noFill text boxes; expected alpha-0 fill, got {xml}"
+        );
+        let sppr = xml
+            .split("<wps:spPr>")
+            .nth(1)
+            .and_then(|s| s.split("</wps:spPr>").next())
+            .unwrap_or("");
+        assert!(
+            !sppr.contains("<a:noFill/>") || sppr.contains("<a:solidFill>"),
+            "shape fill must not be noFill, got {sppr}"
+        );
+        let fill_idx = sppr.find("<a:solidFill>").expect("solidFill");
+        let nofill_before = sppr[..fill_idx].contains("<a:noFill/>");
+        assert!(
+            !nofill_before,
+            "fill must be transparent solid, not noFill, got {sppr}"
+        );
+    }
+
+    #[test]
+    fn folded_pill_emits_lock_stroke() {
+        let mut tb = box_with(false, None);
+        tb.fill_hex = Some("FEF2F2".into());
+        tb.line_hex = Some("DC2626".into());
+        tb.line_w_emu = 12_700;
+        tb.corner_emu = 8_000;
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new());
+        assert!(xml.contains(r#"<a:srgbClr val="DC2626"/>"#), "{xml}");
+        assert!(xml.contains(r#"<a:ln w="12700">"#), "{xml}");
+        assert!(!xml.contains("<a:ln>\n                      <a:noFill/>"), "{xml}");
+    }
+
+    #[test]
+    fn folded_pill_translucent_stroke_emits_alpha() {
+        let mut tb = box_with(false, None);
+        tb.line_hex = Some("38BDF8".into());
+        tb.line_alpha = 0x66;
+        tb.line_w_emu = 6_350;
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new());
+        assert!(xml.contains("<a:alpha val=\"40000\"/>"), "{xml}");
+        assert!(xml.contains(r#"val="38BDF8""#), "{xml}");
     }
 
     #[test]

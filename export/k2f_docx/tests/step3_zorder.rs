@@ -28,8 +28,12 @@ fn page_background_behind_doc() {
     let xml = common::xml_in(&docx, "word/document.xml");
     let parsed = roxmltree::Document::parse(&xml).unwrap();
     let anchor = common::anchor_named(&parsed, "invoice_root::page_0::background")
-        .expect("page 0 background shape");
-    assert_eq!(common::local_attr(&anchor, "behindDoc"), Some("1"));
+        .expect("page paper drawing");
+    assert_eq!(
+        common::local_attr(&anchor, "behindDoc"),
+        Some("1"),
+        "page paper is the only behindDoc fill"
+    );
     let cell = common::anchor_named(&parsed, "invoice.header").expect("header text");
     assert_eq!(common::local_attr(&cell, "behindDoc"), Some("0"));
 }

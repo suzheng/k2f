@@ -4,7 +4,7 @@ Use `@openk2f/k2f/viewer` (`mountK2fViewer`, `<k2f-viewer>`). Types also ship on
 
 ## Official scale
 
-`Viewer.official_scale()` → `2`. Raster pages are painted at 2×; UI zoom is CSS scale of that raster.
+`Viewer.official_scale()` → `2`. Official / baseline paint is 2×. UI zoom is continuous CSS size; the screen may re-paint at a quantized display scale (LOD).
 
 ## `<k2f-viewer>` attributes
 
@@ -68,5 +68,5 @@ Use `banner: "full"` for legacy verbose strips on every state. Use `no-banner` /
 
 - Transparent spans from `viewer.text_layer(page)` over the PNG.
 - Copy: `text/plain` plus `application/x-k2f-nodes+json` when the selection intersects K2F text spans.
-- Default `text/plain` is Markdown via `viewer.selection_markdown(rangesJson)` (semantic tree). **More → Copy as Markdown / Copy as Plain Text** (persisted as `localStorage.k2f.copyFormat`); `mountK2fViewer(..., { copyFormat })` overrides the initial value.
+- Default `text/plain` is Markdown via `viewer.selection_markdown(rangesJson)` (semantic tree). **More → Copy as Markdown / Copy as Plain Text** (persisted as `localStorage.k2f.copyFormat`); `mountK2fViewer(..., { copyFormat })` overrides the initial value. Toolbar **Copy all as Markdown** copies the full document via `document_markdown()`.
 - With `editable`, toolbar **Edit** → click node → text-first on-page popover → Save and relock (not a separate DOM typography path). View mode is default; no popover until Edit is active.

@@ -2,13 +2,15 @@
 ///
 /// `dk1`/`lt1` must be `srgbClr`, not `sysClr windowText`/`window`. Office Dark Mode
 /// remaps those system colors, and RGB `#000000`/`#FFFFFF` snap to those slots, so
-/// designed black text becomes unreadable on a still-white page.
+/// designed black text becomes unreadable on a still-white page. Slot RGB must not
+/// equal the content pin (`000001` / `FFFFFE`) or Word snaps lock black/white back
+/// onto the slots and remaps them.
 pub const THEME_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="K2F">
   <a:themeElements>
     <a:clrScheme name="K2F">
-      <a:dk1><a:srgbClr val="000001"/></a:dk1>
-      <a:lt1><a:srgbClr val="FFFFFE"/></a:lt1>
+      <a:dk1><a:srgbClr val="000002"/></a:dk1>
+      <a:lt1><a:srgbClr val="FFFFFD"/></a:lt1>
       <a:dk2><a:srgbClr val="1F497D"/></a:dk2>
       <a:lt2><a:srgbClr val="EEECE1"/></a:lt2>
       <a:accent1><a:srgbClr val="4F81BD"/></a:accent1>

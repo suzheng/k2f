@@ -13,6 +13,7 @@
         { "include": "content/ex_grid.json" },
         { "include": "content/ex_poster_shell.json" },
         { "include": "content/ex_poster_growers.json" },
+        { "include": "content/ex_card_bands.json" },
         { "include": "content/ex_filled_page.json" },
         { "include": "content/ex_cover.json" },
         { "include": "content/ex_overlay.json" },

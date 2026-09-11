@@ -43,8 +43,8 @@ Serve over HTTP (not `file://`). `<k2f-viewer>` observes only `src`; `editable` 
 ## Rules
 
 1. **No `fillText`** / CSS flow for document body text.
-2. Selection uses engine `text_layer`; copy MIME: `text/plain` + `application/x-k2f-nodes+json`. Default `text/plain` is **Markdown** from the semantic tree (`selection_markdown`); **More → Copy as Plain Text** restores span text. Setting is stored as `localStorage.k2f.copyFormat`.
-3. Zoom is CSS scale of the official 2× raster; page width from `page_config`, not viewport.
+2. Selection uses engine `text_layer`; copy MIME: `text/plain` + `application/x-k2f-nodes+json`. Default `text/plain` is **Markdown** from the semantic tree (`selection_markdown`); **More → Copy as Plain Text** restores span text. Setting is stored as `localStorage.k2f.copyFormat`. Toolbar **Copy all as Markdown** copies the full document (`document_markdown`).
+3. UI zoom is continuous CSS size (`page_pt × zoom`). Official paint is **2×** (baseline / contract). The screen may re-paint visible pages at a quantized display scale (`zoom × devicePixelRatio` buckets) after a short debounce — that is not a second layout engine.
 4. `signed_by` on the file is an unbound claim — not a trusted issuer.
 
 ## Failure protocol

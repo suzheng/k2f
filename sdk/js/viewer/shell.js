@@ -5,6 +5,7 @@ import {
   iconCaret,
   iconChevronLeft,
   iconChevronRight,
+  iconCopy,
   iconExport,
   iconMinus,
   iconMoon,
@@ -98,12 +99,14 @@ export function createViewerShell({ bannerMode }) {
   exportCaret.classList.add("k2f-export-caret");
   exportWrap.append(exportBtn, exportCaret);
 
+  const copyAllBtn = iconButton("copy-all", "Copy all as Markdown", iconCopy());
   const moreBtn = iconButton("more", "More", iconMore());
 
   prev.disabled = true;
   next.disabled = true;
   zoomOut.disabled = true;
   zoomIn.disabled = true;
+  copyAllBtn.disabled = true;
   exportBtn.disabled = true;
   exportCaret.disabled = true;
 
@@ -113,6 +116,7 @@ export function createViewerShell({ bannerMode }) {
     themeBtn,
     editBtn,
     sep(),
+    copyAllBtn,
     exportWrap,
     moreBtn,
   );
@@ -157,6 +161,7 @@ export function createViewerShell({ bannerMode }) {
     editBtn,
     exportBtn,
     exportCaret,
+    copyAllBtn,
     exportMenu,
     moreBtn,
     moreMenu,

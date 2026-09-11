@@ -68,23 +68,31 @@ pub(crate) fn source_lines(geo: &GeometryNode) -> Vec<Vec<&GlyphPosition>> {
 /// Same-line glyphs stay together; wrapped lines of this face must split.
 /// Half the lock font, clamped so 5–7pt body (6.2pt leading) is not merged
 /// by the historical 7.5pt cap. 11–12pt tests keep that cap.
-fn line_cluster_tol(geo: &GeometryNode) -> i128 {
-    let fs = geo
-        .text_runs
-        .first()
+///
+/// Use the **largest** face in the box, not `text_runs[0]`. A leading
+/// superscript/subscript run is often smaller; half of that face is too
+/// tight and splits raised digits onto their own "lines", so line spacing
+/// collapses to the super→body gap (~4pt) and multi-line affiliations crush.
+pub(crate) fn body_font_size(geo: &GeometryNode) -> i128 {
+    geo.text_runs
+        .iter()
         .map(|r| r.style.font_size.0.abs())
         .filter(|n| *n > 0)
-        .unwrap_or(12_000);
-    (fs / 2).clamp(MIN_LINE_CLUSTER_TOL, MAX_LINE_CLUSTER_TOL)
+        .max()
+        .unwrap_or(12_000)
+}
+
+fn line_cluster_tol(geo: &GeometryNode) -> i128 {
+    (body_font_size(geo) / 2).clamp(MIN_LINE_CLUSTER_TOL, MAX_LINE_CLUSTER_TOL)
 }
 
 /// Office wrap on a glyph-tight lock box reflows the last word onto a clipped
 /// second line when host bold/metrics are wider than rustybuzz. Keep wrap only
-/// when the lock already wrapped *within* a paragraph, or leftover width sits
-/// in a frame tall enough for another line. One-line-tall boxes (pills,
-/// title/date rows) must not wrap. Explicit `\n` lines in a frame that only
-/// fits those lines also stay `wrap=none` so a host-wider last line does not
-/// create a clipped extra row (footer event lines, two-line labels).
+/// when the lock already wrapped *within* a paragraph. One-line-tall boxes
+/// (pills, title/date rows) must not wrap. Explicit `\n` lines stay
+/// `wrap=none` even in a padded cell that still fits N+1 lines — host wrap
+/// of a long second paragraph would paint a third row over the next cell
+/// (invoice line-items, two-line labels).
 pub(crate) fn should_wrap_lock(
     geo: Option<&GeometryNode>,
     font_size: Pt,
@@ -99,7 +107,7 @@ pub(crate) fn should_wrap_lock(
         return true;
     }
     if lines.len() >= 2 {
-        return fits_n_lines(geo, &lines[0], font_size, lines.len() + 1);
+        return false;
     }
     let Some(line) = lines.first() else {
         return true;
@@ -111,15 +119,19 @@ pub(crate) fn should_wrap_lock(
     slack >= MIN_SLACK
 }
 
-/// `wrap=none` on a wide center/justify frame makes hosts ignore `algn` and
-/// paint at `lIns` (lock-left of a page-width box). Turn wrap on when leftover
-/// width is large enough that a host-wider line still fits. Glyph-tight pills
-/// that already fill ≥85% stay `wrap=none` so they do not clip a second row.
+/// `wrap=none` on a wide center/justify/right frame makes hosts ignore `algn`
+/// and paint at `lIns` (lock-left of the box). Turn wrap on when leftover
+/// width shows the alignment. Narrow glyph-tight pills (≥85% full) stay
+/// `wrap=none` so they do not clip a second row. Wide near-full center lines
+/// (cover subtitles) still need square wrap — otherwise hosts shift them by
+/// the full left gap. Multi-line frames use `any`: a short centered second
+/// line must force wrap even when line 1 is nearly full. Left stays
+/// `wrap=none` — painting at `lIns` is correct.
 pub(crate) fn host_wrap(geo: Option<&GeometryNode>, align: TextAlign, wrap: bool) -> bool {
     if wrap {
         return true;
     }
-    if !matches!(align, TextAlign::Center | TextAlign::Justify) {
+    if matches!(align, TextAlign::Left) {
         return false;
     }
     let Some(geo) = geo else {
@@ -130,11 +142,27 @@ pub(crate) fn host_wrap(geo: Option<&GeometryNode>, align: TextAlign, wrap: bool
         return false;
     }
     let box_w = geo.width.0;
-    lines.iter().all(|line| {
+    lines.iter().any(|line| {
         let (_, left, right) = line_gaps(line, box_w);
-        left >= MIN_SLACK && right >= MIN_SLACK && !line_fills_padded_width(left, right, box_w)
+        match align {
+            // Right: only left leftover proves alignment; right may be a thin
+            // pad (< MIN_SLACK) or flush. Same fill check as Right insets.
+            TextAlign::Right => {
+                left >= MIN_SLACK && !line_fills_padded_width(right, left, box_w)
+            }
+            TextAlign::Center | TextAlign::Justify => {
+                left >= MIN_SLACK
+                    && right >= MIN_SLACK
+                    && (!line_fills_padded_width(left, right, box_w)
+                        || box_w >= WIDE_CENTER_MIN)
+            }
+            TextAlign::Left => false,
+        }
     })
 }
+
+/// ~200pt. Page-width / hero frames, not chip/pill boxes (~80–90pt).
+const WIDE_CENTER_MIN: i128 = 200_000;
 
 fn line_fills_padded_width(pad: i128, opposite_slack: i128, box_w: i128) -> bool {
     let avail = box_w.saturating_sub(pad.max(0));
@@ -156,6 +184,47 @@ fn fits_n_lines(geo: &GeometryNode, line: &[&GlyphPosition], font_size: Pt, n: u
     content_h >= font_size.0.saturating_mul(n)
 }
 
+/// Lock-wrapped paragraph in a frame that cannot fit N+1 lines: host wrap
+/// creates a clipped extra row. Caller should insert `\n` at lock line
+/// starts and keep wrap off. Justify still wraps (hard breaks would drop
+/// last-line raggedness).
+pub(crate) fn should_pin_lock_breaks(
+    geo: Option<&GeometryNode>,
+    font_size: Pt,
+    text: Option<&str>,
+    align: TextAlign,
+) -> bool {
+    if matches!(align, TextAlign::Justify) {
+        return false;
+    }
+    let Some(geo) = geo else {
+        return false;
+    };
+    let Some(text) = text else {
+        return false;
+    };
+    let lines = source_lines(geo);
+    if lines.len() < 2 || lines.len() <= source_paragraphs(text) {
+        return false;
+    }
+    !fits_n_lines(geo, &lines[0], font_size, lines.len() + 1)
+}
+
+/// Character indices (in `text`) where lock lines after the first begin.
+/// Skip a line that already follows an explicit `\n` — pinning that index
+/// would emit a blank Office paragraph (hero titles with a hard break plus wrap).
+pub(crate) fn lock_break_char_indices(geo: &GeometryNode, text: &str) -> Vec<usize> {
+    let chars: Vec<char> = text.chars().collect();
+    source_lines(geo)
+        .iter()
+        .skip(1)
+        .filter_map(|line| line.first().map(|g| g.cluster as usize))
+        .filter(|&idx| {
+            idx < chars.len() && chars[idx] != '\n' && (idx == 0 || chars[idx - 1] != '\n')
+        })
+        .collect()
+}
+
 pub(crate) fn line_gaps(glyphs: &[&GlyphPosition], box_w: i128) -> (i128, i128, i128) {
     let left = glyphs.iter().map(|g| g.x_offset.0).min().unwrap_or(0);
     let right_edge = glyphs
@@ -165,6 +234,30 @@ pub(crate) fn line_gaps(glyphs: &[&GlyphPosition], box_w: i128) -> (i128, i128, 
         .unwrap_or(0);
     let right = box_w - right_edge;
     (left.saturating_add(right), left, right)
+}
+
+/// Lock paint does not clip. A wrapped last line can start at or past
+/// `geo.height` when the box was sized for N−1 lines. Office frames clip to
+/// `cy`, so expand to that line's ink (`y_offset + font_size`).
+pub(crate) fn lock_ink_height(geo: Option<&GeometryNode>, font_size: Pt) -> Option<Pt> {
+    let geo = geo?;
+    let lines = source_lines(geo);
+    let last = lines.last()?;
+    let last_y = last.iter().map(|g| g.y_offset.0).min().unwrap_or(0).max(0);
+    let ink = last_y.saturating_add(font_size.0.max(0));
+    if ink > geo.height.0 {
+        Some(Pt(ink))
+    } else {
+        None
+    }
+}
+
+/// Exact Office line spacing is a per-paragraph box, including trailing
+/// leading after the last line. Lock leading is the gap *between* lines.
+/// Pin the last paragraph to the face size so that extra leading does not
+/// paint over the next node (PPTX overflow) or get clipped (Writer).
+pub(crate) fn last_line_spc_pts(font_size: Pt) -> Option<i32> {
+    i32::try_from(font_size.0 / 10).ok().map(|v| v.max(100))
 }
 
 pub(crate) fn line_spacing_spc_pts(geo: Option<&GeometryNode>) -> Option<i32> {
@@ -178,13 +271,18 @@ pub(crate) fn line_spacing_spc_pts(geo: Option<&GeometryNode>) -> Option<i32> {
         ys.sort_unstable();
         ys[ys.len() / 2]
     };
-    let y0 = baseline(&lines[0]);
-    let y1 = baseline(&lines[1]);
-    let delta = (y1 - y0).abs();
-    if delta < MIN_LINE_CLUSTER_TOL {
-        return None;
+    // Ignore super/sub → body gaps; real leading is ≥ ~0.8× body face.
+    let min_delta = body_font_size(geo)
+        .saturating_mul(4)
+        .saturating_div(5)
+        .max(MIN_LINE_CLUSTER_TOL);
+    for i in 0..lines.len() - 1 {
+        let delta = (baseline(&lines[i + 1]) - baseline(&lines[i])).abs();
+        if delta >= min_delta {
+            return i32::try_from(delta / 10).ok().map(|v| v.max(100));
+        }
     }
-    i32::try_from(delta / 10).ok().map(|v| v.max(100))
+    None
 }
 
 fn infer_from_gaps(left: i128, right: i128) -> TextAlign {
@@ -393,6 +491,41 @@ mod tests {
             TextAlign::Center,
             should_wrap_lock(Some(&pill), fs, None)
         ));
+        // Page-width near-full center line (cover subtitle): still square so
+        // hosts honor algn — wrap=none would shift by the full left gap.
+        let mut wide_full = geo(511_000, vec![glyph(0, 20_500, 470_000, 0)]);
+        wide_full.height = Pt(15_000);
+        assert!(host_wrap(Some(&wide_full), TextAlign::Center, false));
+        // Soft-wrapped hero title: line 1 nearly full, line 2 short centered.
+        let mut hero = geo(
+            511_000,
+            vec![
+                glyph(0, 75_000, 361_000, 0),
+                glyph(1, 178_000, 155_000, 29_000),
+            ],
+        );
+        hero.height = Pt(58_000);
+        assert!(host_wrap(Some(&hero), TextAlign::Center, false));
+    }
+
+    #[test]
+    fn host_wrap_square_for_wide_right_one_liner() {
+        let fs = Pt(7_500);
+        // Unfilled table cell: short number, right-aligned, thin right pad.
+        let mut cell = geo(78_000, vec![glyph(0, 50_000, 22_000, 4_200)]);
+        cell.height = Pt(17_400);
+        assert!(!should_wrap_lock(Some(&cell), fs, Some("$680.0")));
+        assert!(host_wrap(
+            Some(&cell),
+            TextAlign::Right,
+            should_wrap_lock(Some(&cell), fs, Some("$680.0"))
+        ));
+        let mut flush = geo(78_000, vec![glyph(0, 55_000, 23_000, 4_200)]);
+        flush.height = Pt(17_400);
+        assert!(host_wrap(Some(&flush), TextAlign::Right, false));
+        let mut tight = geo(40_000, vec![glyph(0, 2_000, 36_000, 0)]);
+        tight.height = Pt(13_000);
+        assert!(!host_wrap(Some(&tight), TextAlign::Right, false));
     }
 
     #[test]
@@ -429,5 +562,87 @@ mod tests {
             fs,
             Some("one paragraph that the lock wrapped onto two lines")
         ));
+        g.height = Pt(16_000);
+        assert!(should_pin_lock_breaks(
+            Some(&g),
+            fs,
+            Some("one paragraph that the lock wrapped onto two lines"),
+            TextAlign::Left
+        ));
+        assert!(!should_pin_lock_breaks(
+            Some(&g),
+            fs,
+            Some("bwHPC Symposium\n23.10.2023 - Mannheim"),
+            TextAlign::Left
+        ));
+        g.height = Pt(40_000);
+        assert!(
+            !should_wrap_lock(
+                Some(&g),
+                fs,
+                Some("Crystal Cloud Core Platform Commitment\nDedicated multi-tenant control plane, 99.99% uptime SLA")
+            ),
+            "padded two-line cells must not host-wrap a long second paragraph"
+        );
+        assert!(!should_pin_lock_breaks(
+            Some(&g),
+            fs,
+            Some("one paragraph that the lock wrapped onto two lines"),
+            TextAlign::Left
+        ));
+    }
+
+    #[test]
+    fn overflowing_last_line_expands_ink_height() {
+        let fs = Pt(13_000);
+        let mut g = geo(
+            250_000,
+            vec![
+                glyph(0, 0, 200_000, 0),
+                glyph(1, 0, 160_000, 18_200),
+                glyph(2, 0, 200_000, 36_400),
+                glyph(3, 0, 80_000, 54_600),
+            ],
+        );
+        g.height = Pt(54_600);
+        assert_eq!(lock_ink_height(Some(&g), fs), Some(Pt(67_600)));
+        g.height = Pt(80_000);
+        assert_eq!(lock_ink_height(Some(&g), fs), None);
+    }
+
+    #[test]
+    fn lock_breaks_skip_lines_that_already_follow_newline() {
+        // "Ab\nCd wrap" — line 2 already follows `\n`; only the wrap needs a pin.
+        let text = "Ab\nCd wrap";
+        let g = geo(
+            40_000,
+            vec![
+                glyph(0, 0, 12_000, 0),
+                glyph(1, 12_000, 12_000, 0),
+                glyph(3, 0, 12_000, 12_000),
+                glyph(4, 12_000, 12_000, 12_000),
+                glyph(6, 0, 12_000, 24_000),
+                glyph(7, 12_000, 12_000, 24_000),
+            ],
+        );
+        assert_eq!(lock_break_char_indices(&g, text), vec![6]);
+        let wrap_only = "one two";
+        let wrapped = geo(
+            40_000,
+            vec![glyph(0, 0, 20_000, 0), glyph(4, 0, 20_000, 12_000)],
+        );
+        assert_eq!(lock_break_char_indices(&wrapped, wrap_only), vec![4]);
+    }
+
+    #[test]
+    fn compact_padded_cell_is_vert_centered() {
+        // th/td with ~7.5pt pad around 7.5pt type (future-systems / similar).
+        let fs = Pt(7_500);
+        let mut g = with_font(geo(80_000, vec![glyph(0, 6_000, 40_000, 7_500)]), 7_500);
+        g.height = Pt(22_500);
+        assert!(vert_center(&g, fs));
+        let mut stretch = with_font(geo(80_000, vec![glyph(0, 6_000, 40_000, 7_500)]), 7_500);
+        stretch.height = Pt(40_000);
+        assert!(!vert_center(&stretch, fs));
     }
 }

@@ -10,7 +10,7 @@ Native lock executor for `.K2F` files. Same rules as the web viewer:
 
 Packaged builds: [k2f.dev/download](https://k2f.dev/download).
 
-Links `k2f_paint` + `k2f_package` plus the PDF / PPTX / DOCX / Markdown exporters. The official raster is `render_page` at `OFFICIAL_PNG_SCALE` (2×). Zoom is a blit-time UI scale of that bitmap (same idea as the web viewer's CSS scale); it does not re-paint the lock. Surgical edit is not in v0.
+Links `k2f_paint` + `k2f_package` plus the PDF / PPTX / DOCX / Markdown exporters. The official raster is `render_page` at `OFFICIAL_PNG_SCALE` (2×) — baseline, export, and golden comparisons. UI zoom is continuous (buttons still use steps); the screen may re-paint visible pages at a quantized display scale (LOD) after a short debounce. Surgical edit is not in v0.
 
 This crate is a workspace member but **not a default-member** (same pattern as `k2f_py`), so root `cargo test` does not pull GUI crates. CI runs `cargo test -p k2f_reader`.
 
@@ -38,19 +38,23 @@ sudo apt-get install -y pkg-config libxkbcommon-dev libxkbcommon-x11-dev libwayl
 cargo run -p k2f_reader --release -- examples/published/invoice.K2F
 ```
 
-Debug `cargo run -p k2f_reader --` also works; `--release` is snappier for first paint. Zoom samples the official bitmap at blit time.
+Debug `cargo run -p k2f_reader --` also works; `--release` is snappier for first paint. Zoom updates layout immediately; display LOD re-paints after idle when a denser bucket is needed.
 
 Title: document title for `UNSIGNED`; `K2F Reader — Signed — {title}` or `K2F Reader — Draft — {title}` when applicable; `BROKEN_INTEGRITY` / `SIGNED_BUT_BROKEN` keep the raw codes (with `status_code` under broken). Packaged app: clicking the icon opens an empty window (no Open dialog). **Open** on the toolbar, **File → Open** on macOS, or Ctrl/Cmd+O picks a `.K2F`. Double-clicking a `.K2F` (or passing it on the command line) loads that lock in the window. Toolbar with a document: Open, title, zoom `−` / `%` / `+`, copy format, **Export as** split button (last format) plus a caret menu of **Export as K2F** / **PDF** / PowerPoint / Word (**DOCX**) / Markdown / PNG / JPG — choosing a row exports immediately (same as the web viewer). Integrity chrome matches web `banner: "auto"`: quiet for `UNSIGNED`; compact Signed / Draft strips; plain-language warning for broken locks (not a full-width `BROKEN_INTEGRITY` ticker). Status bar: page, zoom, format. Pages stack vertically; the wheel scrolls them. Left/Right jump so the next sheet sits under the toolbar. Zoom scales the lock bitmap inside a stable window (default 1280×820, min 960×640).
 
-| Key | Action |
+| Key / gesture | Action |
 | --- | --- |
-| Wheel / trackpad | Scroll the stacked pages |
+| Wheel / trackpad scroll | Scroll the stacked pages |
+| **macOS** trackpad pinch | Continuous zoom about the cursor (LOD re-paints after idle) |
+| **Ctrl+wheel** (Windows / Linux / macOS) | Continuous zoom about the cursor |
 | Left / Right | Previous / next page |
-| `+` / `-` | Zoom (0.1–3.0) |
+| `+` / `-` | Stepped zoom (0.1–3.0); scroll offset kept, then clamped |
 | Drag on lock text | Select characters (I-beam cursor, blue highlight like the web viewer) |
 | Ctrl/Cmd+O | Open a `.K2F` (native Open dialog) |
 | Ctrl/Cmd+C | Copy the selection (`text/plain`) |
 | Ctrl/Cmd+Shift+S | Export in the selected format (native Save) |
+
+Pinch is a macOS/iOS winit event (`PinchGesture`); Windows and Linux use **Ctrl+wheel** for the same continuous zoom. Trackpad two-finger scroll never zooms unless Ctrl is held.
 
 Drag across a line of lock text (not the toolbar or status bar) selects glyph runs the same way the web viewer does. The highlight stays after you release; releasing also copies. A click without a drag is a collapsed selection and copies nothing.
 

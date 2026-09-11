@@ -304,6 +304,34 @@ fn unfilled_cells_get_opaque_underlay() {
 }
 
 #[test]
+fn native_table_tcpr_emits_anchor() {
+    let pptx = export_opened(&common::invoice()).unwrap();
+    let mut seen = 0usize;
+    for name in slide_xml_names(&pptx) {
+        let xml = common::xml_in(&pptx, &name);
+        let parsed = roxmltree::Document::parse(&xml).unwrap();
+        for tc in parsed.descendants().filter(|n| n.has_tag_name("tc")) {
+            seen += 1;
+            let tcpr = tc
+                .children()
+                .find(|n| n.has_tag_name("tcPr"))
+                .expect("a:tcPr");
+            let anchor = tcpr.attribute("anchor");
+            assert!(
+                anchor == Some("ctr") || anchor == Some("t"),
+                "{name}: PowerPoint reads tcPr/@anchor (default t); got {anchor:?}"
+            );
+            assert_eq!(
+                tcpr.attribute("marT"),
+                Some("0"),
+                "{name}: top padding is bodyPr tIns, not tcPr marT"
+            );
+        }
+    }
+    assert!(seen > 0, "invoice must have native table cells");
+}
+
+#[test]
 fn native_table_cells_do_not_fake_gray_grid() {
     let pptx = export_opened(&common::invoice()).unwrap();
     let xml = all_slide_xml(&pptx);

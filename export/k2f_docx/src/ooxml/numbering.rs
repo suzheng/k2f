@@ -6,16 +6,26 @@ pub(crate) fn numbering_xml() -> String {
     );
     xml.push_str(&abstract_num(0, false));
     xml.push_str(&abstract_num(1, true));
-    xml.push_str(
-        r#"  <w:num w:numId="1">
+    // Pool of numIds so each floating list text box can own one. Sharing a
+    // single numId across anchors makes some hosts (LibreOffice) indent later
+    // items as list continuations.
+    for id in 1..=64u32 {
+        xml.push_str(&format!(
+            r#"  <w:num w:numId="{id}">
     <w:abstractNumId w:val="0"/>
   </w:num>
-  <w:num w:numId="2">
+"#
+        ));
+    }
+    for id in 1001..=1064u32 {
+        xml.push_str(&format!(
+            r#"  <w:num w:numId="{id}">
     <w:abstractNumId w:val="1"/>
   </w:num>
-</w:numbering>
-"#,
-    );
+"#
+        ));
+    }
+    xml.push_str("</w:numbering>\n");
     xml
 }
 
@@ -40,7 +50,10 @@ fn abstract_num(id: u32, numbered: bool) -> String {
         <w:ind w:left="0" w:hanging="0"/>
       </w:pPr>
       <w:rPr>
+        <w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial" w:eastAsia="Arial"/>
         <w:color w:val="000001"/>
+        <w:sz w:val="18"/>
+        <w:szCs w:val="18"/>
       </w:rPr>
     </w:lvl>
 "#
@@ -56,7 +69,10 @@ fn abstract_num(id: u32, numbered: bool) -> String {
         <w:ind w:left="0" w:hanging="0"/>
       </w:pPr>
       <w:rPr>
+        <w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial" w:eastAsia="Arial"/>
         <w:color w:val="000001"/>
+        <w:sz w:val="18"/>
+        <w:szCs w:val="18"/>
       </w:rPr>
     </w:lvl>
 "#
@@ -77,6 +93,22 @@ mod tests {
         assert!(
             xml.contains(r#"<w:color w:val="000001"/>"#),
             "list markers must not use Automatic color, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"w:ascii="Arial""#),
+            "bullet face must be pinned so U+2022 renders, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"<w:sz w:val="18"/>"#),
+            "marker face size must be pinned so tight gutters still ink, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"w:numId="1""#) && xml.contains(r#"w:numId="64""#),
+            "bullet numId pool missing"
+        );
+        assert!(
+            xml.contains(r#"w:numId="1001""#),
+            "numbered numId pool missing"
         );
         assert!(
             !xml.contains(r#"w:hanging="360""#),

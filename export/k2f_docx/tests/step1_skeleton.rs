@@ -57,12 +57,19 @@ fn theme_pins_dk1_lt1_to_srgb_not_system_window_colors() {
         "dk1/lt1 must not follow OS dark mode, got {theme}"
     );
     assert!(
-        theme.contains(r#"<a:dk1><a:srgbClr val="000001"/></a:dk1>"#),
+        theme.contains(r#"<a:dk1><a:srgbClr val="000002"/></a:dk1>"#),
         "dk1 must be pinned srgb, got {theme}"
     );
     assert!(
-        theme.contains(r#"<a:lt1><a:srgbClr val="FFFFFE"/></a:lt1>"#),
+        theme.contains(r#"<a:lt1><a:srgbClr val="FFFFFD"/></a:lt1>"#),
         "lt1 must be pinned srgb, got {theme}"
+    );
+    assert!(
+        !theme.contains(r#"<a:dk1><a:srgbClr val="000001"/>"#)
+            && !theme.contains(r#"<a:lt1><a:srgbClr val="FFFFFE"/>"#)
+            && !theme.contains(r#"<a:dk1><a:srgbClr val="000000"/>"#)
+            && !theme.contains(r#"<a:lt1><a:srgbClr val="FFFFFF"/>"#),
+        "theme slots must not equal content black/white pins, got {theme}"
     );
     let ct = common::xml_in(&docx, "[Content_Types].xml");
     assert!(
@@ -83,6 +90,10 @@ fn paper_background_is_explicit_rgb_not_automatic() {
     assert!(
         xml.contains("<w:background ") && !xml.contains(r#"w:color="FFFFFF""#),
         "Word Dark Mode remaps automatic/white paper; got {xml}"
+    );
+    assert!(
+        xml.contains("invoice_root::page_0::background") && xml.contains(r#"behindDoc="1""#),
+        "page paper must be a behindDoc drawing so Dark Mode cannot drop the wash, got {xml}"
     );
     let settings = common::xml_in(&docx, "word/settings.xml");
     assert!(

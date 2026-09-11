@@ -92,6 +92,7 @@ impl TableIndex {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn paint_node_id(op: &PaintOp) -> Option<&str> {
     match op {
         PaintOp::BackdropBlur { node_id, .. }

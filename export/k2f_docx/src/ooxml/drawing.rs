@@ -1,4 +1,4 @@
-use crate::ir::{PageElement, PictureBox, ShapeBox, TextBox};
+use crate::ir::{PictureBox, ShapeBox, TextBox};
 use crate::picture::{pic_xml, raster_wsp_xml};
 use crate::xml::escape_xml;
 use std::collections::BTreeMap;
@@ -7,43 +7,6 @@ use super::textbox::textbox_wsp_xml;
 
 const SHAPE_URI: &str = "http://schemas.microsoft.com/office/word/2010/wordprocessingShape";
 const PIC_URI: &str = "http://schemas.openxmlformats.org/drawingml/2006/picture";
-
-pub(crate) fn page_bg_anchor(fill_hex: &str, cx: i64, cy: i64, doc_pr_id: u32) -> String {
-    let inner = format!(
-        r#"                <wps:wsp>
-                  <wps:cNvSpPr/>
-                  <wps:spPr>
-                    <a:xfrm>
-                      <a:off x="0" y="0"/>
-                      <a:ext cx="{cx}" cy="{cy}"/>
-                    </a:xfrm>
-                    <a:prstGeom prst="rect">
-                      <a:avLst/>
-                    </a:prstGeom>
-                    <a:solidFill>
-                      <a:srgbClr val="{fill_hex}"/>
-                    </a:solidFill>
-                    <a:ln>
-                      <a:noFill/>
-                    </a:ln>
-                  </wps:spPr>
-                  <wps:bodyPr/>
-                </wps:wsp>
-"#
-    );
-    wp_anchor(
-        0,
-        0,
-        cx,
-        cy,
-        0,
-        true,
-        doc_pr_id,
-        &format!("PageBackground{doc_pr_id}"),
-        SHAPE_URI,
-        &inner,
-    )
-}
 
 pub(crate) fn shape_wsp_xml(shape: &ShapeBox) -> String {
     let geom = if shape.corner_emu <= 0 {
@@ -58,10 +21,12 @@ pub(crate) fn shape_wsp_xml(shape: &ShapeBox) -> String {
     // Empty in-front *opaque* shells need a pinned txBox so Word does not
     // size-to-fit. Full-page gradients and glass (alpha) must not be txBoxes:
     // LibreOffice Writer paints a page-sized empty text frame over later labels.
+    // Same when later paint overlaps this shape (`pin_empty_txbox` cleared).
     let as_tx = !shape.behind_doc
         && shape.fill_hex.is_some()
         && shape.gradient.is_none()
-        && shape.fill_alpha >= 255;
+        && shape.fill_alpha >= 255
+        && shape.pin_empty_txbox;
     let cnv = if as_tx {
         "                  <wps:cNvSpPr txBox=\"1\"/>\n"
     } else {
@@ -132,7 +97,7 @@ fn gradient_fill_xml(g: &crate::ir::GradientFill) -> String {
     )
 }
 
-fn srgb_clr_xml(hex: &str, alpha: u8, indent: &str) -> String {
+pub(crate) fn srgb_clr_xml(hex: &str, alpha: u8, indent: &str) -> String {
     let hex = crate::xml::word_hex_color(hex);
     if alpha >= 255 {
         format!("{indent}<a:srgbClr val=\"{hex}\"/>\n")
@@ -159,7 +124,8 @@ fn line_xml(shape: &ShapeBox) -> String {
         crate::ir::LineDash::Dot => "sysDot",
     };
     format!(
-        "                    <a:ln w=\"{w}\">\n                      <a:solidFill>\n                        <a:srgbClr val=\"{hex}\"/>\n                      </a:solidFill>\n                      <a:prstDash val=\"{dash}\"/>\n                    </a:ln>\n",
+        "                    <a:ln w=\"{w}\">\n                      <a:solidFill>\n{clr}                      </a:solidFill>\n                      <a:prstDash val=\"{dash}\"/>\n                    </a:ln>\n",
+        clr = srgb_clr_xml(&hex, shape.line_alpha, "                        "),
         w = shape.line_w_emu,
     )
 }
@@ -215,9 +181,9 @@ pub(crate) fn picture_anchor(pic: &PictureBox, doc_pr_id: u32, embed_rid: &str) 
 
 pub(crate) fn raster_anchor(pic: &PictureBox, doc_pr_id: u32, embed_rid: &str) -> String {
     let name = format!("k2f-raster:{}", pic.node_id);
-    // Keep behindDoc=0. Writer paints behindDoc under white `w:background`, so a
-    // gradient/glass slice would vanish. Shape z-order (document order +
-    // relativeHeight) keeps later text boxes in front.
+    // Keep behindDoc=0. In-front rasters stay in the same z stack as later
+    // labels (document order + relativeHeight). Do not send a full-page
+    // gradient/glass slice behind text.
     wp_anchor(
         pic.x_emu,
         pic.y_emu,
@@ -240,10 +206,6 @@ pub(crate) fn drawing_run(anchor: &str) -> String {
       </w:r>
 "#
     )
-}
-
-pub(crate) fn element_has_bg_shape(el: &PageElement) -> bool {
-    matches!(el, PageElement::Shape(s) if s.behind_doc)
 }
 
 pub(crate) fn wp_anchor(
@@ -302,10 +264,12 @@ mod tests {
             gradient: None,
             corner_emu,
             line_hex: None,
+            line_alpha: 255,
             line_w_emu: 0,
             line_dash: LineDash::Solid,
             behind_doc: false,
             relative_height: 10,
+            pin_empty_txbox: true,
         }
     }
 
@@ -324,6 +288,34 @@ mod tests {
     }
 
     #[test]
+    fn translucent_stroke_emits_alpha() {
+        let mut shape = box_at(0);
+        shape.fill_hex = None;
+        shape.line_hex = Some("1E3A8A".into());
+        shape.line_alpha = 0x66;
+        shape.line_w_emu = 6_350;
+        let xml = shape_wsp_xml(&shape);
+        assert!(xml.contains("<a:alpha val=\"40000\"/>"), "{xml}");
+        assert!(xml.contains(r#"val="1E3A8A""#), "{xml}");
+    }
+
+    #[test]
+    fn behind_doc_contrasting_fill_keeps_solid_fill() {
+        let mut s = box_at(0);
+        s.behind_doc = true;
+        s.pin_empty_txbox = false;
+        s.fill_hex = Some("1F1F1F".into());
+        let xml = shape_anchor(&s, 3);
+        assert!(
+            xml.contains(r#"behindDoc="1""#),
+            "overlapped plaque stays behind text, got {xml}"
+        );
+        assert!(xml.contains("<a:solidFill>"), "fill must stay in OOXML, got {xml}");
+        assert!(xml.contains(r#"val="1F1F1F""#), "{xml}");
+        assert!(!xml.contains("txBox="), "behindDoc fill must not be an empty txBox, got {xml}");
+    }
+
+    #[test]
     fn in_front_fill_is_empty_textbox() {
         let xml = shape_wsp_xml(&box_at(0));
         assert!(xml.contains("txBox=\"1\""), "{xml}");
@@ -336,6 +328,11 @@ mod tests {
         assert!(!xml.contains("txBox="), "{xml}");
         assert!(!xml.contains("txbxContent"), "{xml}");
         assert!(!xml.contains("<a:noAutofit/>"), "{xml}");
+        let mut overlapped = box_at(0);
+        overlapped.pin_empty_txbox = false;
+        let xml = shape_wsp_xml(&overlapped);
+        assert!(!xml.contains("txBox="), "{xml}");
+        assert!(!xml.contains("txbxContent"), "{xml}");
     }
 
     #[test]

@@ -33,6 +33,16 @@ function circle(cx, cy, r, fill = false) {
   return el;
 }
 
+function rect(x, y, w, h, rx = 0) {
+  const el = document.createElementNS(NS, "rect");
+  el.setAttribute("x", String(x));
+  el.setAttribute("y", String(y));
+  el.setAttribute("width", String(w));
+  el.setAttribute("height", String(h));
+  if (rx) el.setAttribute("rx", String(rx));
+  return el;
+}
+
 export function iconChevronLeft() {
   return svg([path("M15 18l-6-6 6-6")]);
 }
@@ -70,4 +80,11 @@ export function iconCaret() {
 
 export function iconExport() {
   return svg([path("M12 3v12M8 11l4 4 4-4M5 21h14")]);
+}
+
+export function iconCopy() {
+  return svg([
+    rect(8, 8, 14, 14, 2),
+    path("M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"),
+  ]);
 }

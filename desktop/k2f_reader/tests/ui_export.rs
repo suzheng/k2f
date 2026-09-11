@@ -7,9 +7,9 @@ use common::{
 };
 use k2f_reader::export::ExportFormat;
 use k2f_reader::ui::{
-    accept_key, default_pdf_path, ensure_pdf_path, export_hit, export_label_x, export_menu_hit,
-    export_menu_item_hit, key_action, overlay_label, pdf_file_name, Action, KeyBind, Session,
-    EXPORT_ACTION_LABEL, HUD_HEIGHT,
+    accept_key, copy_hit, default_pdf_path, ensure_pdf_path, export_hit, export_label_x,
+    export_menu_hit, export_menu_item_hit, key_action, overlay_label, pdf_file_name, Action, KeyBind,
+    Session, COPY_ALL_TOOLTIP, EXPORT_ACTION_LABEL, HUD_HEIGHT,
 };
 use k2f_reader::AppState;
 use std::path::{Path, PathBuf};
@@ -193,6 +193,22 @@ fn hud_paints_export_pdf_on_the_right() {
     assert!(
         hits > 0,
         "Export must be painted in the toolbar, not only hit-tested"
+    );
+}
+
+#[test]
+fn copy_hit_is_icon_only_left_of_export() {
+    assert_eq!(COPY_ALL_TOOLTIP, "Copy all as Markdown");
+    let w = 1280u32;
+    let h = 100u32;
+    let export_x = export_label_x(w) as f64;
+    assert!(
+        copy_hit(w, h, EXPORT_ACTION_LABEL, export_x - 20.0, 20.0),
+        "copy icon sits just left of export"
+    );
+    assert!(
+        !copy_hit(w, h, EXPORT_ACTION_LABEL, export_x + 10.0, 20.0),
+        "export rect is not the copy control"
     );
 }
 

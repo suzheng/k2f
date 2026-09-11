@@ -27,6 +27,9 @@ pub const HUD_HEIGHT: u32 = TOOLBAR_HEIGHT + STAGE_PAD;
 /// Default split-button label (web `exportFormatLabel("k2f")`).
 pub const EXPORT_ACTION_LABEL: &str = "Export as K2F";
 
+/// Tooltip for the toolbar copy-all control.
+pub const COPY_ALL_TOOLTIP: &str = "Copy all as Markdown";
+
 const TOOLBAR_BG: u32 = 0x3A3A3C;
 const CANVAS: u32 = 0xFBFBFD;
 const TITLE: u32 = 0xF5F5F7;
@@ -36,6 +39,8 @@ const DIVIDER: u32 = 0xE8E8ED;
 const STATUS_FG: u32 = 0x8E8E93;
 const PRIMARY: u32 = 0x007AFF;
 const PRIMARY_FG: u32 = 0xFFFFFF;
+const TOOLTIP_BG: u32 = 0x1C1C1E;
+const TOOLTIP_FG: u32 = 0xF5F5F7;
 const PAD_X: u32 = 20;
 const GAP: u32 = 8;
 const ICON_BTN: u32 = 36;
@@ -82,22 +87,11 @@ pub fn dip(v: u32, scale: f32) -> u32 {
     (v as f32 * scale).round().max(1.0) as u32
 }
 
-pub fn toolbar_layout(
-    win_w: u32,
-    copy_label: &str,
-    export_label: &str,
-    zoom: &str,
-) -> ToolbarLayout {
-    toolbar_layout_at(win_w, copy_label, export_label, zoom, 1.0)
+pub fn toolbar_layout(win_w: u32, export_label: &str, zoom: &str) -> ToolbarLayout {
+    toolbar_layout_at(win_w, export_label, zoom, 1.0)
 }
 
-pub fn toolbar_layout_at(
-    win_w: u32,
-    copy_label: &str,
-    export_label: &str,
-    zoom: &str,
-    scale: f32,
-) -> ToolbarLayout {
+pub fn toolbar_layout_at(win_w: u32, export_label: &str, zoom: &str, scale: f32) -> ToolbarLayout {
     let pad = dip(PAD_X, scale) as i32;
     let gap = dip(GAP, scale) as i32;
     let btn_h = dip(BTN_H, scale);
@@ -110,9 +104,7 @@ pub fn toolbar_layout_at(
     let export_w = text_width_px(export_label, body)
         .saturating_add(dip(28, scale))
         .max(dip(84, scale));
-    let copy_w = icon
-        .saturating_add(dip(10, scale))
-        .saturating_add(text_width_px(copy_short(copy_label), body));
+    let copy_w = icon;
     let zoom_w = text_width_px(zoom, body).max(dip(44, scale));
     let open_w = text_width_px("Open", body)
         .saturating_add(dip(24, scale))
@@ -144,18 +136,9 @@ pub fn toolbar_layout_at(
     }
 }
 
-fn copy_short(copy_label: &str) -> &'static str {
-    if copy_label.contains("text") {
-        "Text"
-    } else {
-        "MD"
-    }
-}
-
 fn layout_for(app: &AppState, win_w: u32, scale: f32) -> ToolbarLayout {
     toolbar_layout_at(
         win_w,
-        app.copy_format().hud_label(),
         app.export_format().action_label(),
         &zoom_label(app),
         scale,
@@ -163,7 +146,7 @@ fn layout_for(app: &AppState, win_w: u32, scale: f32) -> ToolbarLayout {
 }
 
 pub fn export_label_x(win_w: u32) -> u32 {
-    toolbar_layout(win_w, "Copy MD", EXPORT_ACTION_LABEL, "100%")
+    toolbar_layout(win_w, EXPORT_ACTION_LABEL, "100%")
         .export
         .x
         .max(0) as u32
@@ -251,7 +234,7 @@ pub fn open_hit(win_w: u32, win_h: u32, x: f64, y: f64) -> bool {
     if !toolbar_hit_y(win_h, y, 1.0) {
         return false;
     }
-    toolbar_layout(win_w, "Copy MD", EXPORT_ACTION_LABEL, "100%")
+    toolbar_layout(win_w, EXPORT_ACTION_LABEL, "100%")
         .open
         .contains(x, y)
 }
@@ -260,7 +243,7 @@ pub fn export_hit(win_w: u32, win_h: u32, x: f64, y: f64) -> bool {
     if !toolbar_hit_y(win_h, y, 1.0) {
         return false;
     }
-    toolbar_layout(win_w, "Copy MD", EXPORT_ACTION_LABEL, "100%")
+    toolbar_layout(win_w, EXPORT_ACTION_LABEL, "100%")
         .export
         .contains(x, y)
 }
@@ -269,38 +252,28 @@ pub fn export_menu_hit(win_w: u32, win_h: u32, x: f64, y: f64) -> bool {
     if !toolbar_hit_y(win_h, y, 1.0) {
         return false;
     }
-    toolbar_layout(win_w, "Copy MD", EXPORT_ACTION_LABEL, "100%")
+    toolbar_layout(win_w, EXPORT_ACTION_LABEL, "100%")
         .export_caret
         .contains(x, y)
 }
 
 pub fn export_menu_item_hit(win_w: u32, index: usize, x: f64, y: f64) -> bool {
-    let layout = toolbar_layout(win_w, "Copy MD", EXPORT_ACTION_LABEL, "100%");
+    let layout = toolbar_layout(win_w, EXPORT_ACTION_LABEL, "100%");
     let menu = export_menu_rect(&layout, 1.0);
     export_menu_item_rect(menu, index, 1.0).contains(x, y)
 }
 
-pub fn copy_format_hit(
-    win_w: u32,
-    win_h: u32,
-    copy_label: &str,
-    export_label: &str,
-    x: f64,
-    y: f64,
-) -> bool {
+pub fn copy_hit(win_w: u32, win_h: u32, export_label: &str, x: f64, y: f64) -> bool {
     if !toolbar_hit_y(win_h, y, 1.0) {
         return false;
     }
-    toolbar_layout(win_w, copy_label, export_label, "100%")
-        .copy
-        .contains(x, y)
+    toolbar_layout(win_w, export_label, "100%").copy.contains(x, y)
 }
 
 #[allow(dead_code)]
 pub fn zoom_out_hit(
     win_w: u32,
     win_h: u32,
-    copy_label: &str,
     export_label: &str,
     zoom: &str,
     x: f64,
@@ -309,7 +282,7 @@ pub fn zoom_out_hit(
     if !toolbar_hit_y(win_h, y, 1.0) {
         return false;
     }
-    toolbar_layout(win_w, copy_label, export_label, zoom)
+    toolbar_layout(win_w, export_label, zoom)
         .zoom_out
         .contains(x, y)
 }
@@ -318,7 +291,6 @@ pub fn zoom_out_hit(
 pub fn zoom_in_hit(
     win_w: u32,
     win_h: u32,
-    copy_label: &str,
     export_label: &str,
     zoom: &str,
     x: f64,
@@ -327,7 +299,7 @@ pub fn zoom_in_hit(
     if !toolbar_hit_y(win_h, y, 1.0) {
         return false;
     }
-    toolbar_layout(win_w, copy_label, export_label, zoom)
+    toolbar_layout(win_w, export_label, zoom)
         .zoom_in
         .contains(x, y)
 }
@@ -519,18 +491,16 @@ pub fn draw_hud(
     let hover = chrome.hover;
     let pressed = chrome.pressed;
     let export_menu_open = chrome.export_menu_open;
-    let copy_label = app.copy_format().hud_label();
     let export_label = app.export_format().action_label();
     let format_label = app.export_format().hud_label();
     let zoom = zoom_label(app);
-    let layout = toolbar_layout_at(width, copy_label, export_label, &zoom, scale);
+    let layout = toolbar_layout_at(width, export_label, &zoom, scale);
     let pad = dip(PAD_X, scale) as i32;
     let tb = dip(TOOLBAR_HEIGHT, scale).min(height);
     let body = BODY_PX * scale;
     let title_px = TITLE_PX * scale;
     let cap = CAPTION_PX * scale;
     let radius = dip(RADIUS, scale);
-    let icon = dip(ICON_BTN, scale);
 
     fill_rect(buf, width, height, Rect::new(0, 0, width, tb), TOOLBAR_BG);
 
@@ -570,23 +540,7 @@ pub fn draw_hud(
 
     let (h, p) = is_hit(hover, pressed, ChromeHit::Copy);
     paint_icon_btn(buf, width, height, layout.copy, h, p, radius);
-    let copy_icon = Rect::new(layout.copy.x, layout.copy.y, icon, layout.copy.h);
-    icon_copy(buf, width, height, copy_icon, ICON);
-    let copy_text = Rect::new(
-        layout.copy.x + icon as i32,
-        layout.copy.y,
-        layout.copy.w.saturating_sub(icon),
-        layout.copy.h,
-    );
-    draw_text_centered(
-        buf,
-        width,
-        height,
-        copy_text,
-        copy_short(copy_label),
-        SUBTITLE,
-        body,
-    );
+    icon_copy(buf, width, height, layout.copy, ICON);
 
     let export_bg = if export_hot(pressed) {
         0x0066D6
@@ -698,6 +652,40 @@ pub fn draw_hud(
     if export_menu_open {
         draw_export_menu(buf, width, height, app, hover, scale, &layout);
     }
+
+    if hover == Some(ChromeHit::Copy) && !export_menu_open {
+        draw_copy_tooltip(buf, width, height, layout.copy, scale);
+    }
+}
+
+fn draw_copy_tooltip(buf: &mut [u32], width: u32, height: u32, anchor: Rect, scale: f32) {
+    let body = CAPTION_PX * scale;
+    let pad_x = dip(10, scale);
+    let pad_y = dip(6, scale);
+    let tw = text_width_px(COPY_ALL_TOOLTIP, body);
+    let th = em_height(body);
+    let tip_w = tw.saturating_add(pad_x * 2);
+    let tip_h = th.saturating_add(pad_y * 2);
+    let gap = dip(6, scale) as i32;
+    let mut x = anchor.x + (anchor.w as i32 - tip_w as i32) / 2;
+    let below = anchor.y + anchor.h as i32 + gap;
+    let above = anchor.y - tip_h as i32 - gap;
+    let mut y = if below + tip_h as i32 <= height as i32 {
+        below
+    } else {
+        above.max(0)
+    };
+    let max_x = (width as i32 - tip_w as i32 - dip(PAD_X, scale) as i32).max(0);
+    x = x.clamp(dip(PAD_X, scale) as i32, max_x);
+    if y < 0 {
+        y = 0;
+    }
+    if y + tip_h as i32 > height as i32 {
+        y = height.saturating_sub(tip_h) as i32;
+    }
+    let tip = Rect::new(x, y, tip_w, tip_h);
+    fill_round_rect(buf, width, height, tip, dip(6, scale), TOOLTIP_BG);
+    draw_text_centered(buf, width, height, tip, COPY_ALL_TOOLTIP, TOOLTIP_FG, body);
 }
 
 fn draw_export_menu(

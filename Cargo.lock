@@ -2293,7 +2293,6 @@ dependencies = [
  "serde",
  "serde_json",
  "softbuffer",
- "ttf-parser 0.25.1",
  "winit",
 ]
 

@@ -245,6 +245,12 @@ fn glass_fixture_raster_plus_editable_title() {
         !glass.descendants().any(|n| n.has_tag_name("pic")),
         "pic:pic would paint above later text boxes in LibreOffice Writer"
     );
+    assert!(
+        !glass
+            .descendants()
+            .any(|n| n.has_tag_name("txbx") || n.has_tag_name("txbxContent")),
+        "empty txBox on an overlapped glass raster covers later labels in Writer, got {xml}"
+    );
 }
 
 #[test]

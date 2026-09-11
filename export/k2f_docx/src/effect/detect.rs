@@ -27,6 +27,7 @@ pub fn box_is_effect(node_id: &str, decoration: &BoxDecoration) -> Result<bool, 
     }
     // Gradients and translucent solids are native DrawingML fills. Rasterizing
     // them as pictures makes LibreOffice Writer paint the slice above later
-    // text. Keep rasters for blur/shadow (no native equivalent).
-    Ok(decoration.shadow.is_some() || decoration.blur.is_some())
+    // text. Shadow-only boxes stay native too: an opaque shadow PNG covers
+    // later labels even as wps:wsp. Keep rasters for blur (no native equivalent).
+    Ok(decoration.blur.is_some())
 }

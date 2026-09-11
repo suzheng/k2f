@@ -1,5 +1,3 @@
-use crate::AppState;
-
 /// Same steps as `sdk/js/viewer/mount.js`, plus 2.5 / 3.0 to match `AppState` clamp.
 const ZOOM_STEPS: [f32; 12] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0];
 
@@ -47,9 +45,8 @@ pub fn key_action(bind: KeyBind, ctrl: bool, shift: bool, super_key: bool) -> Op
     }
 }
 
-pub fn step_zoom(app: &mut AppState, zoom_in: bool) {
-    let z = app.zoom();
-    let next = if zoom_in {
+pub fn next_zoom_step(z: f32, zoom_in: bool) -> f32 {
+    if zoom_in {
         ZOOM_STEPS
             .iter()
             .copied()
@@ -62,6 +59,5 @@ pub fn step_zoom(app: &mut AppState, zoom_in: bool) {
             .rev()
             .find(|&s| s < z - 0.001)
             .unwrap_or(z)
-    };
-    app.set_zoom(next);
+    }
 }
