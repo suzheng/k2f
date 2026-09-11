@@ -16,7 +16,7 @@ k2f_core = { path = "../k2f_core", version = "0.2.4" }
 k2f_paint = { path = "../k2f_paint", version = "0.2.4" }
 k2f_package = { path = "../k2f_package", version = "0.2.4" }
 thiserror = { workspace = true }
-pdf-writer = "0.13"
+pdf-writer = "0.15"
 ttf-parser = "0.21.1"
 miniz_oxide = "0.8"
 image = { version = "=0.25.6", default-features = false, features = ["png", "webp"] }
