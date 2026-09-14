@@ -23,7 +23,6 @@ pub enum PageElement {
     TextBox(TextBox),
     Shape(ShapeBox),
     Picture(PictureBox),
-    #[allow(dead_code)]
     Table(TableBox),
     #[allow(dead_code)]
     Raster(PictureBox),
@@ -112,20 +111,45 @@ pub struct PictureBox {
     pub ext: String,
 }
 
-#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct TableBox {
     pub node_id: String,
     pub rect: Rect,
+    pub header_rows: usize,
+    pub col_widths_pt: Vec<f64>,
+    pub rows: Vec<TableRow>,
 }
 
-impl PageElement {
-    pub fn textbox(&self) -> Option<&TextBox> {
-        match self {
-            Self::TextBox(tb) => Some(tb),
-            _ => None,
-        }
-    }
+#[derive(Clone, Debug)]
+pub struct TableRow {
+    pub height_pt: f64,
+    pub cells: Vec<TableCell>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TableCell {
+    #[allow(dead_code)]
+    pub node_id: String,
+    pub runs: Vec<TextRun>,
+    pub align: TextAlign,
+    pub fill_hex: Option<String>,
+    pub borders: CellBorders,
+    pub vert_center: bool,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct CellBorders {
+    pub top: Option<BorderStroke>,
+    pub left: Option<BorderStroke>,
+    pub bottom: Option<BorderStroke>,
+    pub right: Option<BorderStroke>,
+}
+
+#[derive(Clone, Debug)]
+pub struct BorderStroke {
+    pub color_hex: String,
+    pub weight_pt: f64,
+    pub dash: LineDash,
 }
 
 impl DocIR {
@@ -142,13 +166,7 @@ impl DocIR {
 fn collect_box_colors(out: &mut std::collections::BTreeSet<String>, els: &[PageElement]) {
     for el in els {
         match el {
-            PageElement::TextBox(tb) => {
-                for run in &tb.runs {
-                    if !run.color_hex.is_empty() {
-                        out.insert(run.color_hex.clone());
-                    }
-                }
-            }
+            PageElement::TextBox(tb) => collect_run_colors(out, &tb.runs),
             PageElement::Shape(s) => {
                 if let Some(hex) = &s.fill_hex {
                     out.insert(hex.clone());
@@ -157,7 +175,38 @@ fn collect_box_colors(out: &mut std::collections::BTreeSet<String>, els: &[PageE
                     out.insert(hex.clone());
                 }
             }
-            PageElement::Picture(_) | PageElement::Table(_) | PageElement::Raster(_) => {}
+            PageElement::Table(t) => {
+                for row in &t.rows {
+                    for cell in &row.cells {
+                        collect_run_colors(out, &cell.runs);
+                        if let Some(hex) = &cell.fill_hex {
+                            out.insert(hex.clone());
+                        }
+                        collect_stroke_color(out, &cell.borders.top);
+                        collect_stroke_color(out, &cell.borders.left);
+                        collect_stroke_color(out, &cell.borders.bottom);
+                        collect_stroke_color(out, &cell.borders.right);
+                    }
+                }
+            }
+            PageElement::Picture(_) | PageElement::Raster(_) => {}
         }
+    }
+}
+
+fn collect_run_colors(out: &mut std::collections::BTreeSet<String>, runs: &[TextRun]) {
+    for run in runs {
+        if !run.color_hex.is_empty() {
+            out.insert(run.color_hex.clone());
+        }
+    }
+}
+
+fn collect_stroke_color(
+    out: &mut std::collections::BTreeSet<String>,
+    stroke: &Option<BorderStroke>,
+) {
+    if let Some(s) = stroke {
+        out.insert(s.color_hex.clone());
     }
 }

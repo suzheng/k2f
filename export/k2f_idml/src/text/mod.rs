@@ -4,7 +4,7 @@ mod runs;
 
 use crate::align::{infer_text_align, source_glyphs, source_lines};
 use crate::coord::millipt_to_pt;
-use crate::ir::{TextAlign, TextBox};
+use crate::ir::{TextAlign, TextBox, TextRun};
 use font::FontCtx;
 use k2f_core::{GeometryNode, ListMarkerType, NodeContent, Rect, SemanticNode, TextGlyphRun};
 use std::collections::BTreeMap;
@@ -79,6 +79,35 @@ pub(crate) fn textbox_from_draw_ctx(
     })
 }
 
+pub(crate) fn cell_runs(
+    node: Option<&SemanticNode>,
+    paint_runs: &[TextGlyphRun],
+    geo: Option<&GeometryNode>,
+    fonts: &FontCtx,
+    header_bold: bool,
+) -> Vec<TextRun> {
+    let Some(node) = node else {
+        return Vec::new();
+    };
+    let Some(text) = k2f_core::node_text(node) else {
+        return Vec::new();
+    };
+    if text.is_empty() {
+        return Vec::new();
+    }
+    let mut runs = runs::runs_from_paint(text, paint_runs, &node.modifiers, geo, fonts);
+    if header_bold && paint_runs.is_empty() {
+        for r in &mut runs {
+            r.bold = true;
+        }
+    }
+    let leading = leading_pt(geo);
+    for r in &mut runs {
+        r.leading_pt = leading;
+    }
+    runs
+}
+
 fn insets(geo: Option<&GeometryNode>, align: TextAlign) -> (f64, f64, f64, f64) {
     let Some(geo) = geo else {
         return (0.0, 0.0, 0.0, 0.0);
@@ -89,7 +118,12 @@ fn insets(geo: Option<&GeometryNode>, align: TextAlign) -> (f64, f64, f64, f64) 
     }
     match align {
         TextAlign::Left => {
-            let left = glyphs.iter().map(|g| g.x_offset.0).min().unwrap_or(0).max(0);
+            let left = glyphs
+                .iter()
+                .map(|g| g.x_offset.0)
+                .min()
+                .unwrap_or(0)
+                .max(0);
             (0.0, millipt_to_pt(left).max(0.0), 0.0, 0.0)
         }
         TextAlign::Right => {
@@ -106,7 +140,7 @@ fn insets(geo: Option<&GeometryNode>, align: TextAlign) -> (f64, f64, f64, f64) 
     }
 }
 
-fn leading_pt(geo: Option<&GeometryNode>) -> Option<f64> {
+pub(crate) fn leading_pt(geo: Option<&GeometryNode>) -> Option<f64> {
     let geo = geo?;
     let lines = source_lines(geo);
     if lines.len() < 2 {
@@ -117,7 +151,11 @@ fn leading_pt(geo: Option<&GeometryNode>) -> Option<f64> {
     Some(millipt_to_pt((y1 - y0).abs()))
 }
 
-fn vert_center(geo: Option<&GeometryNode>, rect: &Rect, font_size: k2f_core::Pt) -> bool {
+pub(crate) fn vert_center(
+    geo: Option<&GeometryNode>,
+    rect: &Rect,
+    font_size: k2f_core::Pt,
+) -> bool {
     let Some(geo) = geo else {
         return false;
     };

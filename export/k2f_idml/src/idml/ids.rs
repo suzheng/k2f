@@ -26,3 +26,7 @@ pub fn rect_self(n: usize) -> String {
 pub fn img_self(n: usize) -> String {
     k(format!("Img{n}"))
 }
+
+pub fn tbl_self(n: usize) -> String {
+    k(format!("Tbl{n}"))
+}

@@ -1,10 +1,10 @@
 use super::graphic;
-use super::ids::{img_self, rect_self, story_self, tf_self};
+use super::ids::{img_self, rect_self, story_self, tbl_self, tf_self};
 use super::skeleton;
 use super::spread;
 use super::story;
 use crate::coord::SpreadSpace;
-use crate::ir::{DocIR, PageElement, TextBox};
+use crate::ir::{DocIR, PageElement, TableBox, TextAlign, TextBox};
 use crate::IdmlError;
 use k2f_core::LockFile;
 use k2f_paint::OpenedDocument;
@@ -15,6 +15,7 @@ struct EmitIds {
     next_tf: usize,
     next_rect: usize,
     next_img: usize,
+    next_tbl: usize,
 }
 
 pub fn build_package(
@@ -34,6 +35,7 @@ pub fn build_package(
         next_tf: 0,
         next_rect: 0,
         next_img: 0,
+        next_tbl: 0,
     };
     let mut story_srcs = Vec::new();
     let mut files = BTreeMap::new();
@@ -133,7 +135,10 @@ fn emit_elements(
                 ids.next_img += 1;
                 frames.push_str(&spread::picture_xml(pic, space, &rid, &iid));
             }
-            PageElement::Table(_) | PageElement::Raster(_) => {}
+            PageElement::Table(tbl) => {
+                emit_table(tbl, space, ids, story_srcs, frames, files);
+            }
+            PageElement::Raster(_) => {}
         }
     }
 }
@@ -154,4 +159,38 @@ fn emit_textbox(
     files.insert(src.clone(), story::story_xml(tb, &st).into_bytes());
     story_srcs.push(src);
     frames.push_str(&spread::textframe_xml(tb, space, &tf, &st));
+}
+
+fn emit_table(
+    tbl: &TableBox,
+    space: &SpreadSpace,
+    ids: &mut EmitIds,
+    story_srcs: &mut Vec<String>,
+    frames: &mut String,
+    files: &mut BTreeMap<String, Vec<u8>>,
+) {
+    let st = story_self(ids.next_st);
+    ids.next_st += 1;
+    let tf = tf_self(ids.next_tf);
+    ids.next_tf += 1;
+    let tbl_id = tbl_self(ids.next_tbl);
+    ids.next_tbl += 1;
+    let src = format!("Stories/Story_{st}.xml");
+    files.insert(
+        src.clone(),
+        story::story_table_xml(tbl, &st, &tbl_id).into_bytes(),
+    );
+    story_srcs.push(src);
+    let tb = TextBox {
+        node_id: tbl.node_id.clone(),
+        rect: tbl.rect.clone(),
+        runs: Vec::new(),
+        align: TextAlign::Left,
+        inset_top: 0.0,
+        inset_left: 0.0,
+        inset_bottom: 0.0,
+        inset_right: 0.0,
+        vert_center: false,
+    };
+    frames.push_str(&spread::textframe_xml(&tb, space, &tf, &st));
 }

@@ -116,7 +116,9 @@ pub(crate) fn expand_page_tokens(runs: Vec<TextRun>, total_pages: usize) -> Vec<
 }
 
 fn next_token(full: &str, pos: usize) -> Option<(usize, &'static str)> {
-    let cur = full[pos..].find(PAGE_CURRENT).map(|i| (pos + i, PAGE_CURRENT));
+    let cur = full[pos..]
+        .find(PAGE_CURRENT)
+        .map(|i| (pos + i, PAGE_CURRENT));
     let tot = full[pos..].find(PAGE_TOTAL).map(|i| (pos + i, PAGE_TOTAL));
     match (cur, tot) {
         (Some(a), Some(b)) if a.0 <= b.0 => Some(a),
