@@ -4,7 +4,9 @@ Experimental K2F lock → Adobe InDesign `.idml` exporter. Isolated crate; **not
 
 IDML is a one-way dump of an already-locked package. It is not a K2F source (`IDML_IS_NOT_A_SOURCE`). Geometry comes from the published lock; this is not a second layout engine.
 
-Step 1 writes a deterministic empty-ish package: one Spread per lock page, paper size from the first page, optional full-page solid fill from `ops[0]`. No text, tables, or pictures yet. Capability table comes in step 6.
+Step 2 writes native `TextFrame` + `Stories/Story_*.xml` from non-math `DrawText` (semantic `node_text`, per-run styles). Running headers/footers go on the MasterSpread once. Tables, pictures, and effects are still skipped.
+
+Fonts are **not** embedded: `Fonts.xml` lists ttf-parser family names only. If the target machine lacks that face, InDesign substitutes and visual QA will drift.
 
 ## Test
 

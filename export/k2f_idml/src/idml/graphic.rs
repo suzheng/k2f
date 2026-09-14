@@ -1,8 +1,6 @@
 use crate::coord::{DOM, NS};
 use crate::xml::escape_xml;
-use k2f_core::is_font_face_path;
-use std::collections::{BTreeMap, BTreeSet};
-use ttf_parser::{name_id, Face};
+use std::collections::BTreeSet;
 
 const XML_DECL: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>"#;
 
@@ -36,53 +34,20 @@ pub fn graphic_xml(extra_hex: &BTreeSet<String>) -> String {
     )
 }
 
-pub fn fonts_xml(fonts: &BTreeMap<String, Vec<u8>>) -> String {
-    let family = first_family(fonts);
-    let inner = match family {
-        Some(name) => {
-            let esc = escape_xml(&name);
-            format!(
-                "  <FontFamily Self=\"FontFamily/$ID/{esc}\" Name=\"{esc}\">\n    <Font Self=\"Font/$ID/{esc}-Regular\" FontFamily=\"{esc}\" Name=\"Regular\" Status=\"Installed\" FontStyleName=\"Regular\" FontType=\"OpenTypeTT\"/>\n  </FontFamily>\n"
-            )
-        }
-        None => String::new(),
-    };
+pub fn fonts_xml(families: &[String]) -> String {
+    let mut inner = String::new();
+    for name in families {
+        let esc = escape_xml(name);
+        inner.push_str(&format!(
+            "  <FontFamily Self=\"FontFamily/$ID/{esc}\" Name=\"{esc}\">\n    <Font Self=\"Font/$ID/{esc}-Regular\" FontFamily=\"{esc}\" Name=\"Regular\" Status=\"Installed\" FontStyleName=\"Regular\" FontType=\"OpenTypeTT\"/>\n  </FontFamily>\n"
+        ));
+    }
     format!(
         r#"{XML_DECL}
 <idPkg:Fonts xmlns:idPkg="{NS}" DOMVersion="{DOM}">
 {inner}</idPkg:Fonts>
 "#
     )
-}
-
-fn first_family(fonts: &BTreeMap<String, Vec<u8>>) -> Option<String> {
-    if let Some(bytes) = fonts.get("default") {
-        if let Some(name) = family_from_bytes(bytes) {
-            return Some(name);
-        }
-    }
-    for (path, bytes) in fonts {
-        if !is_font_face_path(path) {
-            continue;
-        }
-        if let Some(name) = family_from_bytes(bytes) {
-            return Some(name);
-        }
-    }
-    None
-}
-
-fn family_from_bytes(data: &[u8]) -> Option<String> {
-    let face = Face::parse(data, 0).ok()?;
-    for name in face.names() {
-        if name.name_id != name_id::FAMILY || !name.is_unicode() {
-            continue;
-        }
-        if let Some(s) = name.to_string() {
-            return Some(s);
-        }
-    }
-    None
 }
 
 fn rgb_value(hex: &str) -> String {

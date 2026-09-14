@@ -49,12 +49,16 @@ pub const BACKING_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone
 </idPkg:BackingStory>
 "#;
 
-pub fn designmap_xml(n_pages: usize) -> String {
+pub fn designmap_xml(n_pages: usize, stories: &[String]) -> String {
     let mut spreads = String::new();
     for i in 0..n_pages {
         spreads.push_str(&format!(
             "  <idPkg:Spread src=\"Spreads/Spread_k{i}.xml\"/>\n"
         ));
+    }
+    let mut story_ents = String::new();
+    for src in stories {
+        story_ents.push_str(&format!("  <idPkg:Story src=\"{src}\"/>\n"));
     }
     format!(
         r#"{XML_DECL}
@@ -66,7 +70,7 @@ pub fn designmap_xml(n_pages: usize) -> String {
   <idPkg:Tags src="XML/Tags.xml"/>
   <Layer Self="kLayer" Name="Layer 1" Visible="true" Locked="false" IgnoreWrap="false" ShowGuides="true" LockGuides="false" UngroupWhenPrinting="false"/>
   <idPkg:MasterSpread src="MasterSpreads/MasterSpread_kMaster.xml"/>
-{spreads}  <idPkg:BackingStory src="XML/BackingStory.xml"/>
+{spreads}{story_ents}  <idPkg:BackingStory src="XML/BackingStory.xml"/>
 </Document>
 "#
     )
@@ -112,14 +116,14 @@ pub fn preferences_xml(space: &SpreadSpace) -> String {
     )
 }
 
-pub fn master_xml(space: &SpreadSpace) -> String {
+pub fn master_xml(space: &SpreadSpace, frames: &str) -> String {
     let bounds = space.page_geometric_bounds();
     format!(
         r#"{XML_DECL}
 <idPkg:MasterSpread xmlns:idPkg="{NS}" DOMVersion="{DOM}">
   <MasterSpread Self="kMaster" Name="A-Master" NamePrefix="A" BaseName="Master" ItemTransform="1 0 0 1 0 0" OverriddenPageItemProps="" PageCount="1" BindingLocation="0">
     <Page Self="kMasterPage" AppliedMaster="n" GeometricBounds="{bounds}" ItemTransform="1 0 0 1 0 0" Name="A"/>
-  </MasterSpread>
+{frames}  </MasterSpread>
 </idPkg:MasterSpread>
 "#
     )

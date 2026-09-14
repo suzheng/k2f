@@ -14,3 +14,11 @@ pub fn page_self(i: usize) -> String {
 pub fn bg_self(i: usize) -> String {
     k(format!("Bg{i}"))
 }
+
+pub fn story_self(n: usize) -> String {
+    k(format!("St{n}"))
+}
+
+pub fn tf_self(n: usize) -> String {
+    k(format!("Tf{n}"))
+}

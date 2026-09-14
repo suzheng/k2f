@@ -1,12 +1,14 @@
 use super::ids::{bg_self, page_self, spread_self};
-use crate::coord::{item_transform, local_rect_path, SpreadSpace, DOM, NS};
+use crate::coord::{fmt_pt, item_transform, local_rect_path, pt_val, SpreadSpace, DOM, NS};
+use crate::ir::TextBox;
+use crate::xml::escape_xml;
 use crate::IdmlError;
 use k2f_core::{Fill, Page, PaintOp, Pt};
 use k2f_paint::{parse_hex_rgba, resolve_fill};
 
 const XML_DECL: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>"#;
 
-pub fn spread_xml(i: usize, space: &SpreadSpace, fill_hex: Option<&str>) -> String {
+pub fn spread_xml(i: usize, space: &SpreadSpace, fill_hex: Option<&str>, frames: &str) -> String {
     let bounds = space.page_geometric_bounds();
     let page_name = i + 1;
     let mut body = format!(
@@ -17,6 +19,7 @@ pub fn spread_xml(i: usize, space: &SpreadSpace, fill_hex: Option<&str>) -> Stri
     if let Some(hex) = fill_hex {
         body.push_str(&page_fill_rectangle(i, space, hex));
     }
+    body.push_str(frames);
     format!(
         r#"{XML_DECL}
 <idPkg:Spread xmlns:idPkg="{NS}" DOMVersion="{DOM}">
@@ -25,6 +28,34 @@ pub fn spread_xml(i: usize, space: &SpreadSpace, fill_hex: Option<&str>) -> Stri
 </idPkg:Spread>
 "#,
         spread = spread_self(i),
+    )
+}
+
+pub fn textframe_xml(tb: &TextBox, space: &SpreadSpace, tf_self: &str, story_self: &str) -> String {
+    let (tx, ty) = space.box_center(&tb.rect);
+    let tf = item_transform(tx, ty);
+    let w = pt_val(tb.rect.width);
+    let h = pt_val(tb.rect.height);
+    let geo = path_geometry_xml(w, h);
+    let name = escape_xml(&tb.node_id);
+    let vert = if tb.vert_center {
+        "CenterAlign"
+    } else {
+        "TopAlign"
+    };
+    let inset = format!(
+        "{} {} {} {}",
+        fmt_pt(tb.inset_top),
+        fmt_pt(tb.inset_left),
+        fmt_pt(tb.inset_bottom),
+        fmt_pt(tb.inset_right)
+    );
+    format!(
+        r#"    <TextFrame Self="{tf_self}" ParentStory="{story_self}" ContentType="TextType" ItemLayer="kLayer" FillColor="Swatch/None" StrokeWeight="0" ItemTransform="{tf}" Name="{name}" NextTextFrame="n" PreviousTextFrame="n">
+{geo}
+      <TextFramePreference TextColumnCount="1" VerticalJustification="{vert}" InsetSpacing="{inset}"/>
+    </TextFrame>
+"#
     )
 }
 
@@ -40,7 +71,7 @@ fn page_fill_rectangle(i: usize, space: &SpreadSpace, hex: &str) -> String {
     )
 }
 
-fn path_geometry_xml(w: f64, h: f64) -> String {
+pub(crate) fn path_geometry_xml(w: f64, h: f64) -> String {
     let [tl, tr, br, bl] = local_rect_path(w, h);
     format!(
         r#"      <Properties>

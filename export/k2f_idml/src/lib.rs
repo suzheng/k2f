@@ -1,10 +1,20 @@
+mod align;
+mod classify;
 mod coord;
 mod error;
 mod export;
+mod geo;
 mod idml;
+mod ir;
+mod master;
+mod text;
 mod xml;
 
+pub use align::infer_text_align;
 pub use coord::{fmt_pt, millipt_to_pt, SpreadSpace, DOM, MIME, NS};
 pub use error::IdmlError;
 pub use export::{export_bytes, export_opened};
+pub use idml::{story_xml, textframe_xml};
+pub use ir::{ScriptPos, TextAlign, TextBox, TextRun};
+pub use text::textbox_from_draw;
 pub use xml::escape_xml;

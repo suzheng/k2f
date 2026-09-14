@@ -1,3 +1,4 @@
+use crate::classify;
 use crate::idml;
 use crate::IdmlError;
 use k2f_paint::OpenedDocument;
@@ -19,7 +20,8 @@ pub fn export_opened(doc: &OpenedDocument) -> Result<Vec<u8>, IdmlError> {
     if doc.fonts().is_empty() {
         return Err(IdmlError::NoFont);
     }
-    let files = idml::build_package(doc, lock)?;
+    let ir = classify::classify_opened(doc)?;
+    let files = idml::build_package(doc, lock, &ir)?;
     idml::write_idml_zip(&files)
 }
 
