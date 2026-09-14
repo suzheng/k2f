@@ -1,5 +1,5 @@
 use super::graphic;
-use super::ids::{story_self, tf_self};
+use super::ids::{img_self, rect_self, story_self, tf_self};
 use super::skeleton;
 use super::spread;
 use super::story;
@@ -9,6 +9,13 @@ use crate::IdmlError;
 use k2f_core::LockFile;
 use k2f_paint::OpenedDocument;
 use std::collections::BTreeMap;
+
+struct EmitIds {
+    next_st: usize,
+    next_tf: usize,
+    next_rect: usize,
+    next_img: usize,
+}
 
 pub fn build_package(
     doc: &OpenedDocument,
@@ -21,33 +28,22 @@ pub fn build_package(
     }
     let page0 = &lock.geometry.pages[0];
     let space = SpreadSpace::new(page0.width, page0.height);
-    let mut fills = Vec::with_capacity(n);
-    let mut swatches = ir.collect_color_hexes();
-    for (i, page) in lock.geometry.pages.iter().enumerate() {
-        let ops = lock
-            .render_plan
-            .pages
-            .get(i)
-            .map(|p| p.ops.as_slice())
-            .unwrap_or(&[]);
-        let hex = spread::page_fill_hex(page, ops)?;
-        if let Some(ref h) = hex {
-            swatches.insert(h.clone());
-        }
-        fills.push(hex);
-    }
-    let mut next_st = 0usize;
-    let mut next_tf = 0usize;
+    let swatches = ir.collect_color_hexes();
+    let mut ids = EmitIds {
+        next_st: 0,
+        next_tf: 0,
+        next_rect: 0,
+        next_img: 0,
+    };
     let mut story_srcs = Vec::new();
     let mut files = BTreeMap::new();
     let mut page_frames = Vec::with_capacity(n);
     for page in &ir.pages {
         let mut frames = String::new();
-        emit_text_elements(
+        emit_elements(
             &page.elements,
             &space,
-            &mut next_st,
-            &mut next_tf,
+            &mut ids,
             &mut story_srcs,
             &mut frames,
             &mut files,
@@ -55,11 +51,10 @@ pub fn build_package(
         page_frames.push(frames);
     }
     let mut master_frames = String::new();
-    emit_text_elements(
+    emit_elements(
         &ir.master,
         &space,
-        &mut next_st,
-        &mut next_tf,
+        &mut ids,
         &mut story_srcs,
         &mut master_frames,
         &mut files,
@@ -104,45 +99,57 @@ pub fn build_package(
         "XML/Tags.xml".into(),
         skeleton::TAGS_XML.as_bytes().to_vec(),
     );
-    for (i, fill) in fills.iter().enumerate() {
+    for (i, frames) in page_frames.iter().enumerate() {
         files.insert(
             format!("Spreads/Spread_k{i}.xml"),
-            spread::spread_xml(i, &space, fill.as_deref(), &page_frames[i]).into_bytes(),
+            spread::spread_xml(i, &space, frames).into_bytes(),
         );
     }
     Ok(files)
 }
 
-fn emit_text_elements(
+fn emit_elements(
     elements: &[PageElement],
     space: &SpreadSpace,
-    next_st: &mut usize,
-    next_tf: &mut usize,
+    ids: &mut EmitIds,
     story_srcs: &mut Vec<String>,
     frames: &mut String,
     files: &mut BTreeMap<String, Vec<u8>>,
 ) {
     for el in elements {
-        let Some(tb) = el.textbox() else {
-            continue;
-        };
-        emit_textbox(tb, space, next_st, next_tf, story_srcs, frames, files);
+        match el {
+            PageElement::TextBox(tb) => {
+                emit_textbox(tb, space, ids, story_srcs, frames, files);
+            }
+            PageElement::Shape(shape) => {
+                let id = rect_self(ids.next_rect);
+                ids.next_rect += 1;
+                frames.push_str(&spread::rectangle_xml(shape, space, &id));
+            }
+            PageElement::Picture(pic) => {
+                let rid = rect_self(ids.next_rect);
+                ids.next_rect += 1;
+                let iid = img_self(ids.next_img);
+                ids.next_img += 1;
+                frames.push_str(&spread::picture_xml(pic, space, &rid, &iid));
+            }
+            PageElement::Table(_) | PageElement::Raster(_) => {}
+        }
     }
 }
 
 fn emit_textbox(
     tb: &TextBox,
     space: &SpreadSpace,
-    next_st: &mut usize,
-    next_tf: &mut usize,
+    ids: &mut EmitIds,
     story_srcs: &mut Vec<String>,
     frames: &mut String,
     files: &mut BTreeMap<String, Vec<u8>>,
 ) {
-    let st = story_self(*next_st);
-    *next_st += 1;
-    let tf = tf_self(*next_tf);
-    *next_tf += 1;
+    let st = story_self(ids.next_st);
+    ids.next_st += 1;
+    let tf = tf_self(ids.next_tf);
+    ids.next_tf += 1;
     let src = format!("Stories/Story_{st}.xml");
     files.insert(src.clone(), story::story_xml(tb, &st).into_bytes());
     story_srcs.push(src);

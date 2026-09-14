@@ -21,9 +21,7 @@ pub struct PageIR {
 #[derive(Clone, Debug)]
 pub enum PageElement {
     TextBox(TextBox),
-    #[allow(dead_code)]
     Shape(ShapeBox),
-    #[allow(dead_code)]
     Picture(PictureBox),
     #[allow(dead_code)]
     Table(TableBox),
@@ -86,7 +84,6 @@ pub struct TextBox {
     pub vert_center: bool,
 }
 
-#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LineDash {
     Solid,
@@ -94,7 +91,6 @@ pub enum LineDash {
     Dot,
 }
 
-#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct ShapeBox {
     pub node_id: String,
@@ -107,7 +103,6 @@ pub struct ShapeBox {
     pub line_dash: LineDash,
 }
 
-#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct PictureBox {
     pub node_id: String,
@@ -146,12 +141,23 @@ impl DocIR {
 
 fn collect_box_colors(out: &mut std::collections::BTreeSet<String>, els: &[PageElement]) {
     for el in els {
-        if let Some(tb) = el.textbox() {
-            for run in &tb.runs {
-                if !run.color_hex.is_empty() {
-                    out.insert(run.color_hex.clone());
+        match el {
+            PageElement::TextBox(tb) => {
+                for run in &tb.runs {
+                    if !run.color_hex.is_empty() {
+                        out.insert(run.color_hex.clone());
+                    }
                 }
             }
+            PageElement::Shape(s) => {
+                if let Some(hex) = &s.fill_hex {
+                    out.insert(hex.clone());
+                }
+                if let Some(hex) = &s.line_hex {
+                    out.insert(hex.clone());
+                }
+            }
+            PageElement::Picture(_) | PageElement::Table(_) | PageElement::Raster(_) => {}
         }
     }
 }

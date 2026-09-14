@@ -7,6 +7,8 @@ mod geo;
 mod idml;
 mod ir;
 mod master;
+mod picture;
+mod shape;
 mod text;
 mod xml;
 
@@ -15,6 +17,8 @@ pub use coord::{fmt_pt, millipt_to_pt, SpreadSpace, DOM, MIME, NS};
 pub use error::IdmlError;
 pub use export::{export_bytes, export_opened};
 pub use idml::{story_xml, textframe_xml};
-pub use ir::{ScriptPos, TextAlign, TextBox, TextRun};
+pub use ir::{PictureBox, ScriptPos, ShapeBox, TextAlign, TextBox, TextRun};
+pub use picture::picture_from_draw;
+pub use shape::shapes_from_box;
 pub use text::textbox_from_draw;
 pub use xml::escape_xml;
