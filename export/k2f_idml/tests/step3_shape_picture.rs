@@ -193,6 +193,37 @@ fn unresolved_fill_ref_fails() {
 }
 
 #[test]
+fn page_background_not_duplicated() {
+    let doc = common::invoice();
+    let idml = export_opened(&doc).unwrap();
+    let xml = common::xml_in(&idml, "Spreads/Spread_k0.xml");
+    let parsed = roxmltree::Document::parse(&xml).unwrap();
+    let backgrounds: Vec<_> = parsed
+        .descendants()
+        .filter(|n| {
+            n.has_tag_name("Rectangle")
+                && n.attribute("Name")
+                    .is_some_and(|name| name.contains("::background"))
+        })
+        .collect();
+    assert_eq!(
+        backgrounds.len(),
+        1,
+        "classify must emit one ::background rectangle (no ops[0] shortcut)"
+    );
+    let white_fills = parsed.descendants().filter(|n| {
+        n.has_tag_name("Rectangle")
+            && n.attribute("FillColor")
+                .is_some_and(|c| c.eq_ignore_ascii_case("Color/k2f_FFFFFF"))
+    });
+    assert_eq!(
+        white_fills.count(),
+        1,
+        "invoice page 0 must not double-paint the full-page white fill"
+    );
+}
+
+#[test]
 fn partial_border_emits_edge_bars() {
     let dec = BoxDecoration {
         border: Some(Border {
