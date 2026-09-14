@@ -1,7 +1,8 @@
 use crate::coord::millipt_to_pt;
+use crate::effect::{box_is_effect, is_rule_id};
 use crate::ir::{LineDash, ShapeBox};
 use crate::IdmlError;
-use k2f_core::{Border, BorderEdge, BorderStyle, BoxDecoration, Fill, Pt, Rect, Shadow, ShadowRef};
+use k2f_core::{Border, BorderEdge, BorderStyle, BoxDecoration, Fill, Pt, Rect};
 use k2f_paint::{parse_hex_rgba, resolve_fill};
 
 pub fn shapes_from_box(
@@ -9,10 +10,7 @@ pub fn shapes_from_box(
     rect: &Rect,
     decoration: &BoxDecoration,
 ) -> Result<Vec<ShapeBox>, IdmlError> {
-    if node_id.contains("::rule_") {
-        return Ok(Vec::new());
-    }
-    if has_engine_shadow(decoration) || decoration.blur.is_some() {
+    if is_rule_id(node_id) || box_is_effect(node_id, decoration)? {
         return Ok(Vec::new());
     }
     let fill = match resolve_fill(decoration) {
@@ -61,14 +59,6 @@ pub fn shapes_from_box(
             out.extend(edge_bars(&base, decoration.border.as_ref().unwrap(), &ln));
             Ok(out)
         }
-    }
-}
-
-fn has_engine_shadow(decoration: &BoxDecoration) -> bool {
-    match &decoration.shadow {
-        Some(ShadowRef::Inline(Shadow { layers })) => !layers.is_empty(),
-        Some(ShadowRef::Ref(_)) => true,
-        None => false,
     }
 }
 

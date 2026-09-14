@@ -1,9 +1,10 @@
 #![allow(dead_code)]
 
 use k2f_paint::OpenedDocument;
-use std::io::{Cursor, Read};
+use std::io::{Cursor, Read, Write};
 use std::path::PathBuf;
-use zip::{CompressionMethod, ZipArchive};
+use zip::write::SimpleFileOptions;
+use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 pub fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -13,8 +14,24 @@ pub fn invoice_path() -> PathBuf {
     repo_root().join("examples/published/invoice.K2F")
 }
 
+pub fn invoice_bytes() -> Vec<u8> {
+    std::fs::read(invoice_path()).unwrap()
+}
+
 pub fn invoice() -> OpenedDocument {
-    OpenedDocument::open(&std::fs::read(invoice_path()).unwrap()).unwrap()
+    OpenedDocument::open(&invoice_bytes()).unwrap()
+}
+
+pub fn fixtures_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures")
+}
+
+pub fn open_fixture(name: &str) -> Option<OpenedDocument> {
+    let path = fixtures_dir().join(name);
+    if !path.is_file() {
+        return None;
+    }
+    Some(OpenedDocument::open(&std::fs::read(path).unwrap()).unwrap())
 }
 
 pub fn contract_path() -> PathBuf {
@@ -52,4 +69,33 @@ pub fn zip_index0_name_and_method(idml: &[u8]) -> (String, CompressionMethod) {
     let mut zip = ZipArchive::new(Cursor::new(idml)).expect("idml zip");
     let file = zip.by_index(0).expect("zip index 0");
     (file.name().replace('\\', "/"), file.compression())
+}
+
+/// Copy a zip, optionally dropping or replacing named entries. Directories skipped.
+pub fn rewrite_zip(src: &[u8], mut map: impl FnMut(&str, Vec<u8>) -> Option<Vec<u8>>) -> Vec<u8> {
+    let mut input = ZipArchive::new(Cursor::new(src)).expect("src zip");
+    let mut entries = Vec::new();
+    for i in 0..input.len() {
+        let mut f = input.by_index(i).unwrap();
+        let name = f.name().replace('\\', "/");
+        if name.ends_with('/') {
+            continue;
+        }
+        let mut buf = Vec::new();
+        f.read_to_end(&mut buf).unwrap();
+        if let Some(next) = map(&name, buf) {
+            entries.push((name, next));
+        }
+    }
+    let mut cursor = Cursor::new(Vec::new());
+    {
+        let mut zip = ZipWriter::new(&mut cursor);
+        let opts = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        for (name, bytes) in &entries {
+            zip.start_file(name, opts).unwrap();
+            zip.write_all(bytes).unwrap();
+        }
+        zip.finish().unwrap();
+    }
+    cursor.into_inner()
 }

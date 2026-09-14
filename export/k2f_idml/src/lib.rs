@@ -1,6 +1,7 @@
 mod align;
 mod classify;
 mod coord;
+mod effect;
 mod error;
 mod export;
 mod geo;
@@ -16,6 +17,7 @@ mod xml;
 
 pub use align::infer_text_align;
 pub use coord::{fmt_pt, millipt_to_pt, SpreadSpace, DOM, MIME, NS};
+pub use effect::{filter_chrome_ops, ChromeKeep};
 pub use error::IdmlError;
 pub use export::{export_bytes, export_opened};
 pub use idml::{story_xml, textframe_xml};

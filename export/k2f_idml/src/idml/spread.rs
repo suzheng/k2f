@@ -79,12 +79,32 @@ pub fn rectangle_xml(shape: &ShapeBox, space: &SpreadSpace, self_id: &str) -> St
 }
 
 pub fn picture_xml(pic: &PictureBox, space: &SpreadSpace, rect_id: &str, img_id: &str) -> String {
+    framed_image_xml(pic, space, rect_id, img_id, &pic.node_id)
+}
+
+pub fn raster_xml(pic: &PictureBox, space: &SpreadSpace, rect_id: &str, img_id: &str) -> String {
+    framed_image_xml(
+        pic,
+        space,
+        rect_id,
+        img_id,
+        &format!("k2f-raster:{}", pic.node_id),
+    )
+}
+
+fn framed_image_xml(
+    pic: &PictureBox,
+    space: &SpreadSpace,
+    rect_id: &str,
+    img_id: &str,
+    name: &str,
+) -> String {
     let (tx, ty) = space.box_center(&pic.rect);
     let tf = item_transform(tx, ty);
     let w = pt_val(pic.rect.width);
     let h = pt_val(pic.rect.height);
     let geo = path_geometry_xml(w, h);
-    let name = escape_xml(&pic.node_id);
+    let name = escape_xml(name);
     let type_name = image_type_name(&pic.ext);
     let b64 = b64_76(&pic.bytes);
     let left = fmt_pt(-w / 2.0);

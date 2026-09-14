@@ -24,7 +24,6 @@ pub enum PageElement {
     Shape(ShapeBox),
     Picture(PictureBox),
     Table(TableBox),
-    #[allow(dead_code)]
     Raster(PictureBox),
 }
 

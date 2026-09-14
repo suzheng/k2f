@@ -129,18 +129,35 @@ fn emit_elements(
                 frames.push_str(&spread::rectangle_xml(shape, space, &id));
             }
             PageElement::Picture(pic) => {
-                let rid = rect_self(ids.next_rect);
-                ids.next_rect += 1;
-                let iid = img_self(ids.next_img);
-                ids.next_img += 1;
-                frames.push_str(&spread::picture_xml(pic, space, &rid, &iid));
+                emit_picture(pic, space, ids, frames, false);
             }
             PageElement::Table(tbl) => {
                 emit_table(tbl, space, ids, story_srcs, frames, files);
             }
-            PageElement::Raster(_) => {}
+            PageElement::Raster(pic) => {
+                emit_picture(pic, space, ids, frames, true);
+            }
         }
     }
+}
+
+fn emit_picture(
+    pic: &crate::ir::PictureBox,
+    space: &SpreadSpace,
+    ids: &mut EmitIds,
+    frames: &mut String,
+    raster: bool,
+) {
+    let rid = rect_self(ids.next_rect);
+    ids.next_rect += 1;
+    let iid = img_self(ids.next_img);
+    ids.next_img += 1;
+    let xml = if raster {
+        spread::raster_xml(pic, space, &rid, &iid)
+    } else {
+        spread::picture_xml(pic, space, &rid, &iid)
+    };
+    frames.push_str(&xml);
 }
 
 fn emit_textbox(
