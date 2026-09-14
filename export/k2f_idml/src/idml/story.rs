@@ -57,7 +57,7 @@ fn paragraphs(runs: &[TextRun]) -> Vec<Vec<TextRun>> {
     paras
 }
 
-fn para_xml(tb: &TextBox, runs: &[TextRun], hts: &mut usize, _last: bool) -> String {
+fn para_xml(tb: &TextBox, runs: &[TextRun], hts: &mut usize, last_para: bool) -> String {
     let just = tb.align.justification();
     let leading = runs
         .iter()
@@ -68,11 +68,11 @@ fn para_xml(tb: &TextBox, runs: &[TextRun], hts: &mut usize, _last: bool) -> Str
         .unwrap_or_default();
     let mut inner = String::new();
     if runs.is_empty() {
-        inner.push_str(&char_range(&empty_run(tb), hts, true));
+        inner.push_str(&char_range(&empty_run(tb), hts, !last_para));
     } else {
         let last = runs.len() - 1;
         for (i, run) in runs.iter().enumerate() {
-            inner.push_str(&char_range(run, hts, i == last));
+            inner.push_str(&char_range(run, hts, i == last && !last_para));
         }
     }
     format!(
