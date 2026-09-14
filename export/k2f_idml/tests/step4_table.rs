@@ -270,3 +270,49 @@ fn attr_val<'a>(xml: &'a str, name: &str) -> Option<&'a str> {
     let end = rest.find('"')?;
     Some(&rest[..end])
 }
+
+#[test]
+fn table_stories_contain_only_table() {
+    let idml = export_opened(&common::invoice()).unwrap();
+    for xml in story_files(&idml) {
+        if !xml.contains("<Table") {
+            continue;
+        }
+        let before = xml.split("<Table").next().unwrap_or("");
+        assert!(
+            !before.contains("<ParagraphStyleRange"),
+            "table Story must not wrap Table in extra paragraphs"
+        );
+        assert!(
+            !xml.contains("</Table>\n    <ParagraphStyleRange"),
+            "table Story must not append paragraphs after Table"
+        );
+    }
+}
+
+#[test]
+fn harvested_cells_skip_drawbox_on_spread() {
+    let doc = common::invoice();
+    let cell_ids = invoice_cell_ids(&doc);
+    let idml = export_opened(&doc).unwrap();
+    for name in common::unzip_names(&idml) {
+        if !name.starts_with("Spreads/") {
+            continue;
+        }
+        let xml = common::xml_in(&idml, &name);
+        for id in &cell_ids {
+            assert!(
+                !xml.contains(&format!("Name=\"{id}\"")),
+                "harvested cell {id} must not appear as Spread Rectangle/TextFrame"
+            );
+        }
+    }
+}
+
+#[test]
+fn export_table_still_byte_identical() {
+    let doc = common::invoice();
+    let a = export_opened(&doc).unwrap();
+    let b = export_opened(&doc).unwrap();
+    assert_eq!(a, b, "table export must stay deterministic");
+}
