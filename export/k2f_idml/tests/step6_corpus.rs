@@ -57,6 +57,18 @@ fn pref_page_size(idml: &[u8]) -> (String, String) {
     )
 }
 
+fn pref_page_orientation(idml: &[u8]) -> String {
+    let xml = common::xml_in(idml, "Resources/Preferences.xml");
+    let parsed = roxmltree::Document::parse(&xml).unwrap();
+    parsed
+        .descendants()
+        .find(|n| n.has_tag_name("DocumentPreference"))
+        .expect("DocumentPreference")
+        .attribute("PageOrientation")
+        .expect("PageOrientation")
+        .to_string()
+}
+
 fn open_if_present(path: &Path) -> Option<OpenedDocument> {
     if !path.is_file() {
         return None;
@@ -90,6 +102,10 @@ fn contract_opens() {
     let idml = export_opened(&doc).expect("contract.K2F must export");
     let lock = doc.lock().expect("contract is locked");
     assert_eq!(spread_count(&idml), lock.geometry.pages.len());
+    assert!(
+        spreads_blob(&idml).contains("<TextFrame"),
+        "contract must export editable TextFrame content, not an empty shell"
+    );
 }
 
 #[test]
@@ -108,6 +124,26 @@ fn widescreen_page_size() {
     let idml = export_opened(&doc).unwrap();
     assert_eq!(spread_count(&idml), lock.geometry.pages.len());
     assert_eq!(pref_page_size(&idml), ("960.000".into(), "540.000".into()));
+    assert_eq!(
+        pref_page_orientation(&idml),
+        "Landscape",
+        "960×540 pt page must set PageOrientation=Landscape"
+    );
+}
+
+#[test]
+fn crate_not_in_default_members() {
+    let cargo = std::fs::read_to_string(common::repo_root().join("Cargo.toml")).unwrap();
+    let in_members = cargo.contains("\"export/k2f_idml\"");
+    assert!(in_members, "k2f_idml must stay a workspace member");
+    let default_section = cargo
+        .split("default-members")
+        .nth(1)
+        .expect("default-members section");
+    assert!(
+        !default_section.contains("k2f_idml"),
+        "k2f_idml must not be in default-members; use cargo test -p k2f_idml"
+    );
 }
 
 #[test]
