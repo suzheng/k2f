@@ -109,18 +109,20 @@ Keep structure in `content/root.json`; add `{ "include": "content/ch01.json" }` 
 
 `verify` is not a layout review. After every pack, render the lock to PNG and **open the image**. Do not ship a file you have not looked at.
 
+**#1 visual fail: empty page bottom on a designed sheet.** `ok: pages=1` is not a fill check. If the PNG lower third is paper, copy [`ex_filled_page.json`](../catalog/content/ex_filled_page.json) as a **root child** (`height` = content box; leftover on `{fr:1}` table/notes/figure) — do not hug-stack and guess millipt. Exceptions: short letter; last page of a growing document.
+
 ```bash
 python scripts/pack_verify.py ./out/doc/source -o ./out/doc/doc.K2F --render preview.png
 # compile prints pages=N; bare preview.png → ./out/doc/tmp/preview.png; extra pages → preview-1.png …
 ```
 
-Inspect every page — especially the **bottom third**. Do not millipt-budget “this is a 3-page contract”; `pages=N` is compile output.
+Inspect every page — especially the **bottom third**. `pages=N` is compile output, not a fill ratio.
 
-- **Composed** (invoice, CV, flyer, poster, slide, card, social) — [`ex_filled_page.json`](../catalog/content/ex_filled_page.json) or [`ex_poster_shell.json`](../catalog/content/ex_poster_shell.json). `height` = content box. `--expect-pages` = page count. Duplex card: two shells; back `break_before: page`. `{fr:1}` eats leftover whenever outer height is known (not a poster feature). Leftover → table/notes/figure or dense `{fr:1}` siblings ([`ex_poster_growers.json`](../catalog/content/ex_poster_growers.json)), not a short quote. `{fr:1}` stretches the **box**, not type. No spacers / `space-between`. Short letter may stay a top-packed stack.
-- **Flow** (contract, report, thesis, paper) — **one** tree (vertical stack or one unpadded `columns`). Do not wrap each page in `p1.container` / `p2.container`. `break_before: page` on a chapter, annex, or signature page is correct. Last page may be short. Padded/grid/overlay sections do not split.
+- **Composed** — the **sheet** is the artifact (invoice, CV, flyer, poster, slide, card, social, one-page infographic/checklist/planner; a one-page “report” that must look complete is this, not flow). Copy [`ex_filled_page.json`](../catalog/content/ex_filled_page.json) or [`ex_poster_shell.json`](../catalog/content/ex_poster_shell.json) as a **child of root** (`height` = content box). `--expect-pages` = page count. Duplex card: two shells; back `break_before: page`. `{fr:1}` eats leftover whenever outer height is known (not a poster feature). Leftover → table/notes/figure or dense `{fr:1}` siblings ([`ex_poster_growers.json`](../catalog/content/ex_poster_growers.json)), not a short quote. `{fr:1}` stretches the **box**, not type. No spacers / `space-between`. A `page_shell` **role** on an auto-height stack is not the shell. Short letter may stay a top-packed stack.
+- **Flow** — the **document** is the artifact (contract, long report, thesis, paper). **one** tree (vertical stack or one unpadded `columns`). Do not wrap each page in `p1.container` / `p2.container`. `break_before: page` on a chapter, annex, or signature page is correct. Last page may be short. Padded/grid/overlay sections do not split. Do not pin a page-height shell around a document that will grow.
 - **Type size** — `font_size` on the **role** in `styles/theme.json`, never on the node.
 
-`PAGE_UNDERFILL` / `LAYOUT_SLACK` are compile warnings (`pack_verify.py` still exits 0). Invoice/CV/flyer/poster: treat `PAGE_UNDERFILL` as must-fix. Auto-height stacks never produced `LAYOUT_SLACK`; the page check is `PAGE_UNDERFILL`. Both are omitted when the page content box is shorter than 180pt (business cards) — do not pad those with dummy copy.
+`PAGE_UNDERFILL` / `LAYOUT_SLACK` are compile warnings (`pack_verify.py` still exits 0). Composed sheets: treat `PAGE_UNDERFILL` as must-fix anyway. Auto-height stacks never produced `LAYOUT_SLACK`; the page check is `PAGE_UNDERFILL`. Both are omitted when the page content box is shorter than 180pt (business cards) — do not pad those with dummy copy.
 
 If the PNG does not match the design spec, update the spec or JSON/theme and run `pack_verify.py --render` again.
 
@@ -206,7 +208,7 @@ Missing tools, empty list, kind mismatch, or fetch error → `init_package.py`. 
 | `--render preview.png` missing in CWD | Bare name lands in **`<output.K2F parent>/tmp/`**, not CWD and not `source/`. Open the path printed as `ok: rendered …`. |
 | `fr` rows without fixed grid height | Fails: `Cannot resolve fr tracks with infinite available size`. Not CSS Grid — `fr` ≠ content-auto height. Set grid `layout.height`, use `pt`/`auto` rows, or nest under a fixed-height stack (`ex_grid.json` / `ex_poster_shell.json`) |
 | Omit grid `rows` like CSS implicit tracks | Allowed only as content-auto wrapping (`ceil(n/cols)` `{auto:true}`). `fr`/`pt` must be written; declared `rows` do not grow (`ex_split_bar.json` / `ex_poster_shell.json`) |
-| Poster/slide/invoice shell is a vertical stack | Content piles at the top. Copy `ex_filled_page.json` / `ex_poster_shell.json`: pinned `height` + `{fr:1}` body row |
+| Empty lower third / hug stack “filled” by millipt math | **#1 visual fail.** Copy `ex_filled_page.json` / `ex_poster_shell.json` as a **root child**: pinned `height` + `{fr:1}` body row. `role: page_shell` on an auto-height stack is not the shell. `pack_verify` exit 0 does not mean filled |
 | `{fr:1}` on a short quote / last thin card; no `LAYOUT_SLACK` | Box grew; type did not. Leftover → figure or **equal** `{fr:1}` siblings with enough copy (`ex_poster_growers.json`). Stretched equal-height **card** interiors → `ex_card_bands.json` (inner `{auto,fr,auto}`) or stack `justify_content: center` for sparse KPI — not dummy bullets. Silence / footer at the bottom ≠ interiors filled |
 | `p1`/`p2` page containers | Don’t invent pages. One flow tree; engine fills. `break_before: page` on a chapter / annex / signature / slide 2+ / card back is fine |
 | Cover year in the footer / vertical space-between | Copy `ex_cover.json` / `ex_poster_shell.json` (`{auto:true}` + `{fr:1}` + `{auto:true}`), not padding guesses or empty spacers. Flow-only (footer not at page bottom) → vertical stack, not the `{fr:1}` shell |

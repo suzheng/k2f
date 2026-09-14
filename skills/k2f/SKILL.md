@@ -44,12 +44,14 @@ The engine — not the agent — turns A into C by running `pack` / `compile`. O
 
 ## Core rules
 
+Empty paper in the **lower third** of a designed sheet is the most common visual failure. `pack_verify.py` exit 0 / `pages=1` does **not** mean filled — open the PNG. Fix: copy [`ex_filled_page.json`](catalog/content/ex_filled_page.json) as a **root child** (`height` = content box; leftover on `{fr:1}` table/notes/figure). Short letter and the last page of a growing document may stay short.
+
 1. **Style lives only in `theme.json`, never on a node.** Putting a style field on a node is the single most common compile failure.
 2. **Never hand-edit `document.K2F.lock`.** Mutate the tree (or theme), then relock.
 3. **PDF, PPTX, and DOCX are one-way drawings of the lock, not a second source.** (`PDF_IS_NOT_A_SOURCE`, `PPTX_IS_NOT_A_SOURCE`, `DOCX_IS_NOT_A_SOURCE`)
 4. **Signing is a separate human/org step.** Agent output is `UNSIGNED` by design.
 5. **Validate after every edit.** Fix from error codes in [writing/errors.md](references/writing/errors.md); do not patch the lock.
-6. **Look at the pixels.** After pack, open every rendered page (`--render` writes `preview-1.png` …). Invoice/CV/flyer/poster/slide/card/social → filled page ([`ex_filled_page.json`](catalog/content/ex_filled_page.json)); treat `PAGE_UNDERFILL` as must-fix (skipped on canvases whose content box is shorter than 180pt). Short letter may stay top-packed. Contract/report/thesis → one flow tree; do not invent `p1`/`p2` page containers. `break_before: page` is fine on a chapter, annex, signature page, slide 2+, or card back. Details: [writing.md](references/writing.md#visual-check).
+6. **Look at the pixels — empty bottom first.** After pack, open every rendered page (`--render` writes `preview-1.png` …). If the lower third is blank paper on a designed sheet, you are not done. **Designed sheet** (invoice, CV, flyer, poster, slide, card, social, one-page infographic/checklist/planner — even if titled report) → copy [`ex_filled_page.json`](catalog/content/ex_filled_page.json) as a **root child** (pinned `height` + `{fr:1}` grower); a `page_shell` role on a hug stack is not the shell. Treat `PAGE_UNDERFILL` as must-fix even when `pack_verify.py` exits 0 (skipped if the content box is shorter than 180pt). Short letter may stay top-packed. **Growing document** (contract, long report, thesis, paper) → one flow tree; last page may be short; no `p1`/`p2` page wrappers and no page-height shell around the whole doc. `break_before: page` is fine on a chapter, annex, signature page, slide 2+, or card back. Details: [writing.md](references/writing.md#visual-check).
 
 ## Design first
 

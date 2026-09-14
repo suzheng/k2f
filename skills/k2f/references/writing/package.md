@@ -64,7 +64,7 @@ Two-column body: nested grid `{fr:1},{fr:1}` **inside** the grower row (already 
 2. Under `root`, **one** child: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json) (role `page_shell`). Set `layout.height` = content box (A4 / margin 0 → `842000`). Same grid as slides: `{auto:true}` + `{fr:1}` + `{auto:true}`.
 3. Header/footer are measured; leftover height goes to `{fr:1}`. Do **not** pre-assign millipt to every band — that fights `auto`+`fr`. Do not use a vertical stack as the page shell; no empty spacer containers.
 4. Full-bleed background: wrap the shell in `overlay` with the background child first (`ex_overlay.json`). The shell still carries the inset; the image child sets `layout.height` to the page.
-5. Verify with `python scripts/pack_verify.py <source> -o <workspace>/<name>.K2F --expect-pages 1 --render preview.png`. `PAGE_UNDERFILL` is a warning — for posters/invoices treat it as must-fix. Leftover must sit on a figure, table, or dense `{fr:1}` siblings, not a hollow card. A page-height `break_inside: avoid` **stack** with large `padding_pt` is the usual `UNSPLITTABLE_OVERFLOW` path — use the grid shell first.
+5. Verify with `python scripts/pack_verify.py <source> -o <workspace>/<name>.K2F --expect-pages 1 --render preview.png`. `PAGE_UNDERFILL` is a warning — for composed sheets treat it as must-fix. Leftover must sit on a figure, table, or dense `{fr:1}` siblings, not a hollow card. A page-height `break_inside: avoid` **stack** with large `padding_pt` is the usual `UNSPLITTABLE_OVERFLOW` path — use the grid shell first.
 
 ### Duplex / mini canvas (cards)
 
@@ -92,7 +92,7 @@ Allowed layout types and fields: `schema/nodes.schema.json` → `layout`. Copy f
 | Continuous article columns | `columns` — `ex_columns.json` |
 | Fixed side-by-side (sidebar, header bar) | horizontal `stack` or 2-col `grid` |
 | Poster / slide page shell | `ex_poster_shell.json` — role `page_shell` (safe inset), pinned height + `{auto:true}` header/footer + `{fr:1}` grower |
-| Filled page (invoice/CV/letter) | `ex_filled_page.json` — same shell; table/notes in the `{fr:1}` grower, totals in `{auto:true}` footer or `ex_split_bar` |
+| Filled page (invoice/CV/letter / one-page infographic) | `ex_filled_page.json` — same shell; table/notes in the `{fr:1}` grower, totals in `{auto:true}` footer or `ex_split_bar` |
 | Grower vertical fill (stacked `{fr:1}` rows) | `ex_poster_growers.json` — leftover on a **figure** / dense card rows, not a short quote. `{fr:1}` stretches the box, not type |
 | Poster / dashboard / N-col matrix | `grid` with `pt` tracks, or `fr` **after** a finite outer height — `ex_grid.json`. N equal columns: N `{fr:1}`; omit `rows` to wrap children |
 | Full-page background + content | `overlay` (background child first) — `ex_overlay.json` |
