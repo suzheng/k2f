@@ -1,14 +1,56 @@
 # k2f_idml
 
-Experimental K2F lock → Adobe InDesign `.idml` exporter. Isolated crate; **not** part of `k2f export-pdf` or the official `k2f` CLI yet.
+Experimental K2F lock → Adobe InDesign `.idml` exporter. Isolated crate; **not** part of `k2f export-pdf` or the official `k2f` CLI. Official `k2f export-idml` is a later step. Until then the only entry is the crate binary `k2f-idml`.
 
-IDML is a one-way dump of an already-locked package. It is not a K2F source (`IDML_IS_NOT_A_SOURCE`). Geometry comes from the published lock; this is not a second layout engine.
+IDML is a one-way dump of an already-locked package. It is not a K2F source (`IDML_IS_NOT_A_SOURCE`). Geometry comes from the published lock; this is **not a second layout engine**.
 
-Step 4 writes harvestable inline text tables as native InDesign `Table`. Step 5 slices blur / glass / engine shadow / linear gradient / translucent solid / math into `k2f-raster:` PNG images (chrome lock + `render_lockfile_page_rgb`, no `k2f_pdf` stamp). Body text, tables, and content pictures stay native.
+Do **not** stamp a full-page PNG and overlay invisible text. That is the PDF-bridge stamp path and would destroy native text, tables, and pictures.
 
-**Glass limitation (v1):** frost PNGs only blur chrome kept in the filtered lock (page background + that effect). They do not blur native cards that sit behind the glass in InDesign.
+## Capability table
 
-Fonts are **not** embedded: `Fonts.xml` lists ttf-parser family names only. If the target machine lacks that face, InDesign substitutes and visual QA will drift.
+| Input | InDesign object | Editable |
+|---|---|---|
+| Ordinary text | TextFrame + Story | yes; slight reflow is allowed |
+| Plain-text table | Table (inside the positioning TextFrame’s Story) | yes |
+| Bitmap / SVG illustration | embedded Rectangle / Image | replaceable (bytes live in the package) |
+| Opaque solid box | Rectangle | fill can be changed |
+| blur / glass / shadow / gradient / translucent / math | `k2f-raster:` Image | no |
+
+## Coordinates
+
+K2F lock: origin at the **page top-left**, **Y down**, millipt (`Pt.0 / 1000` = pt).
+
+InDesign pasteboard: origin at the **spread center**, **Y up**, points. `PathPointType/@Anchor` is `"x y"`. `GeometricBounds` is `"top left bottom right"` (y x y x).
+
+```text
+idml_x = k2f_x_pt - page_w_pt / 2
+idml_y = page_h_pt / 2 - k2f_y_pt
+```
+
+Page items are children of `Spread`, not nested in `Page`. Each lock page is one single-page spread (`FacingPages=false`).
+
+## Limits (v1)
+
+- Slight text reflow vs K2F is expected. Glyphs are not absolutely positioned.
+- **Fonts are not embedded.** `Fonts.xml` lists ttf-parser family names only. If the target machine lacks that face, InDesign substitutes and visual QA will drift.
+- Glass / blur slices sample only the chrome lock (page background plus the effect ops). They do **not** blur native card shapes sitting behind the glass.
+- Nested / image / still-Asset table cells are not native `Table` (they stay box+text+pic).
+- SVG assets are rasterized to PNG at export. No IDML → K2F import. No `.indd`. No MathML.
+- Tracking is omitted when advance cannot be measured; the writer does not fake `Tracking="0"`.
+
+## Crate binary
+
+From the `k2f/` workspace root:
+
+```bash
+cargo run -p k2f_idml -- export examples/published/invoice.K2F -o /tmp/invoice.idml
+```
+
+```text
+k2f-idml export <in.K2F> -o <out.idml>
+```
+
+`--help` states this is experimental, does not modify the source package, and is not a second layout engine. Failures print `IdmlError` to stderr and exit `1` without writing output.
 
 ## Test
 
@@ -16,22 +58,13 @@ From the `k2f/` workspace root:
 
 ```bash
 cargo test -p k2f_idml
-cargo test -p k2f_idml --test step1_skeleton
-cargo run -p k2f_idml -- export examples/published/invoice.K2F -o /tmp/invoice-step1.idml
+cargo run -p k2f_idml -- export examples/published/invoice.K2F -o /tmp/invoice.idml
 ```
 
-Do not use bare `cargo test` for this crate; it is not in `default-members`.
-
-## Crate binary
-
-```text
-k2f-idml export <in.K2F> -o <out.idml>
-```
-
-`--help` states this is experimental, does not modify the source package, and is not a second layout engine.
+Do not use bare `cargo test` for this crate; it is not in `default-members`. OSS CI checks ZIP/XML only. Visual QA against Adobe InDesign is a later private step (LibreOffice cannot open IDML).
 
 ## Delete this module
 
 1. Remove the directory `k2f/export/k2f_idml/`
 2. Remove `"export/k2f_idml"` from the `members` list in `k2f/Cargo.toml` (do not touch `default-members`)
-3. No other files should mention this crate
+3. No other files should mention this crate. The plan in `k2f-private/plans/` may stay.

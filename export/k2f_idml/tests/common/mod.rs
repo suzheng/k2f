@@ -26,8 +26,12 @@ pub fn fixtures_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures")
 }
 
+pub fn fixture_path(name: &str) -> PathBuf {
+    fixtures_dir().join(name)
+}
+
 pub fn open_fixture(name: &str) -> Option<OpenedDocument> {
-    let path = fixtures_dir().join(name);
+    let path = fixture_path(name);
     if !path.is_file() {
         return None;
     }
