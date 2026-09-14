@@ -2148,6 +2148,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "k2f_idml"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "clap",
+ "image 0.25.6",
+ "k2f_core",
+ "k2f_paint",
+ "roxmltree",
+ "thiserror 1.0.69",
+ "ttf-parser 0.21.1",
+ "zip",
+]
+
+[[package]]
 name = "k2f_layout"
 version = "0.2.4"
 dependencies = [

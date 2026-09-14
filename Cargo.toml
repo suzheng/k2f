@@ -18,6 +18,7 @@ members = [
     "desktop/k2f_reader",
     "export/k2f_pptx",
     "export/k2f_docx",
+    "export/k2f_idml",
 ]
 default-members = [
     "engine/k2f_core",
