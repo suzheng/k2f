@@ -1,5 +1,6 @@
 mod common;
 
+use base64::Engine;
 use k2f_core::{BoxDecoration, Fill, FillRef, PaintOp, Pt, Rect};
 use k2f_idml::{export_bytes, export_opened, filter_chrome_ops, ChromeKeep, IdmlError};
 use std::collections::HashSet;
@@ -74,6 +75,41 @@ fn story_contents(idml: &[u8]) -> String {
 
 fn raster_name_count(xml: &str) -> usize {
     xml.matches("k2f-raster:").count()
+}
+
+fn raster_rectangle_names(idml: &[u8]) -> Vec<String> {
+    let spread0 = common::xml_in(idml, "Spreads/Spread_k0.xml");
+    let parsed = roxmltree::Document::parse(&spread0).unwrap();
+    parsed
+        .descendants()
+        .filter(|n| n.has_tag_name("Rectangle"))
+        .filter_map(|n| n.attribute("Name"))
+        .filter(|name| name.starts_with("k2f-raster:"))
+        .map(str::to_string)
+        .collect()
+}
+
+fn first_raster_png(idml: &[u8]) -> Vec<u8> {
+    let spread0 = common::xml_in(idml, "Spreads/Spread_k0.xml");
+    let parsed = roxmltree::Document::parse(&spread0).unwrap();
+    let rect = parsed
+        .descendants()
+        .find(|n| {
+            n.has_tag_name("Rectangle")
+                && n.attribute("Name")
+                    .map(|name| name.starts_with("k2f-raster:"))
+                    .unwrap_or(false)
+        })
+        .expect("k2f-raster Rectangle");
+    let b64 = rect
+        .descendants()
+        .find(|n| n.has_tag_name("Contents"))
+        .and_then(|n| n.text())
+        .expect("raster Image Contents");
+    let compact: String = b64.chars().filter(|c| !c.is_whitespace()).collect();
+    base64::engine::general_purpose::STANDARD
+        .decode(compact)
+        .expect("valid base64 PNG payload")
 }
 
 #[test]
@@ -171,6 +207,43 @@ fn filter_ops_excludes_body_text_on_glass_fixture() {
 }
 
 #[test]
+fn filter_ops_keeps_math_chrome_from_fixture() {
+    let Some(doc) = common::open_fixture("math_frac.K2F") else {
+        return;
+    };
+    let lock = doc.lock().expect("locked");
+    let ops = &lock.render_plan.pages[0].ops;
+    let keep = ChromeKeep {
+        effect_ids: HashSet::from(["eq.frac".into()]),
+        math_text_ids: HashSet::from(["eq.frac".into()]),
+        keep_leading_page_background: true,
+        ..Default::default()
+    };
+    let filtered = filter_chrome_ops(ops, &keep);
+    assert!(
+        filtered.iter().any(|op| matches!(
+            op,
+            PaintOp::DrawText { node_id, .. } if node_id == "eq.frac"
+        )),
+        "math chrome must keep the math DrawText"
+    );
+    assert!(
+        filtered.iter().any(|op| matches!(
+            op,
+            PaintOp::DrawBox { node_id, .. } if node_id == "eq.frac::rule_0"
+        )),
+        "math chrome must keep fraction rule boxes"
+    );
+    assert!(
+        !filtered.iter().any(|op| matches!(
+            op,
+            PaintOp::DrawText { node_id, .. } if node_id == "title.math"
+        )),
+        "math chrome must drop unrelated body text"
+    );
+}
+
+#[test]
 fn glass_fixture_has_raster_and_editable_title() {
     let Some(doc) = common::open_fixture("glass_title.K2F") else {
         return;
@@ -191,6 +264,24 @@ fn glass_fixture_has_raster_and_editable_title() {
         xml.contains("<TextFrame"),
         "title text frame must still be present"
     );
+    assert_eq!(
+        raster_rectangle_names(&idml),
+        vec!["k2f-raster:card.glass".to_string()],
+        "blur+alpha glass must merge into one raster slice"
+    );
+    let png = first_raster_png(&idml);
+    assert_eq!(&png[..8], b"\x89PNG\r\n\x1a\n", "raster must embed PNG bytes");
+    assert!(png.len() > 64, "raster PNG should be non-trivial");
+}
+
+#[test]
+fn export_glass_still_byte_identical() {
+    let Some(doc) = common::open_fixture("glass_title.K2F") else {
+        return;
+    };
+    let a = export_opened(&doc).unwrap();
+    let b = export_opened(&doc).unwrap();
+    assert_eq!(a, b, "effect raster export must stay deterministic");
 }
 
 #[test]

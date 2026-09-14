@@ -21,4 +21,5 @@ ttf-parser = "0.21"
 base64 = "0.22"
 
 [dev-dependencies]
+base64 = "0.22"
 roxmltree = "0.20"

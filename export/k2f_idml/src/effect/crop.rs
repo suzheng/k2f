@@ -136,10 +136,45 @@ pub fn picture_from_crop(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use k2f_core::{BoxDecoration, Shadow, ShadowRef};
 
     #[test]
     fn millipt_to_px_matches_official_scale() {
         assert_eq!(millipt_to_px(960_000, 2.0), 1920);
         assert_eq!(millipt_to_px(0, 2.0), 0);
+    }
+
+    #[test]
+    fn expand_rect_for_shadow_unresolved_ref_fails() {
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(100_000),
+            height: Pt(40_000),
+        };
+        let decoration = BoxDecoration {
+            shadow: Some(ShadowRef::Ref("missing".into())),
+            ..Default::default()
+        };
+        let err = expand_rect_for_shadow(rect, &decoration).unwrap_err();
+        assert!(
+            err.to_string().contains("unresolved shadow ref"),
+            "got {err}"
+        );
+    }
+
+    #[test]
+    fn expand_rect_for_shadow_inline_empty_layers_is_noop() {
+        let rect = Rect {
+            x: Pt(1_000),
+            y: Pt(2_000),
+            width: Pt(100_000),
+            height: Pt(40_000),
+        };
+        let decoration = BoxDecoration {
+            shadow: Some(ShadowRef::Inline(Shadow { layers: vec![] })),
+            ..Default::default()
+        };
+        assert_eq!(expand_rect_for_shadow(rect.clone(), &decoration).unwrap(), rect);
     }
 }
