@@ -80,7 +80,7 @@ pub(crate) fn solid_fill_xml(hex: &str, alpha: u8) -> String {
     }
 }
 
-fn gradient_fill_xml(g: &crate::ir::GradientFill) -> String {
+pub(crate) fn gradient_fill_xml(g: &crate::ir::GradientFill) -> String {
     let mut gs = String::new();
     for stop in &g.stops {
         let pos = (stop.pos.saturating_mul(100)).clamp(0, 100_000);
@@ -134,6 +134,7 @@ pub(crate) fn textbox_anchor(
     tb: &TextBox,
     doc_pr_id: u32,
     hyperlink_rids: &BTreeMap<String, String>,
+    picture_rids: &BTreeMap<String, String>,
 ) -> String {
     wp_anchor(
         tb.x_emu,
@@ -145,7 +146,7 @@ pub(crate) fn textbox_anchor(
         doc_pr_id,
         &tb.node_id,
         SHAPE_URI,
-        &textbox_wsp_xml(tb, hyperlink_rids),
+        &textbox_wsp_xml(tb, hyperlink_rids, picture_rids),
     )
 }
 

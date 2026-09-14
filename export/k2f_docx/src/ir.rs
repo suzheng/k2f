@@ -68,6 +68,11 @@ pub struct TextBox {
     pub fill_hex: Option<String>,
     /// 255 = opaque. Translucent pill fills are copied from the matching DrawBox.
     pub fill_alpha: u8,
+    /// Blur/gradient chrome folded into this box so Writer cannot paint a
+    /// sibling raster over the labels.
+    pub fill_blip: Option<PictureBox>,
+    /// Native linear gradient when folding a gradient shell (no raster).
+    pub gradient: Option<GradientFill>,
     /// Copied from the matching DrawBox when the node is a decorated chip/pill.
     pub corner_emu: i64,
     /// Outline copied from the matching DrawBox (outlined badges). `None` = noFill.
@@ -247,6 +252,7 @@ impl PageElement {
         }
     }
 
+    #[allow(dead_code)]
     pub fn picture(&self) -> Option<&PictureBox> {
         match self {
             Self::Picture(p) | Self::Raster(p) => Some(p),
@@ -265,7 +271,19 @@ impl PageElement {
 }
 
 pub fn collect_pictures(elements: &[PageElement]) -> Vec<&PictureBox> {
-    elements.iter().filter_map(PageElement::picture).collect()
+    let mut out = Vec::new();
+    for e in elements {
+        match e {
+            PageElement::Picture(p) | PageElement::Raster(p) => out.push(p),
+            PageElement::TextBox(tb) => {
+                if let Some(p) = &tb.fill_blip {
+                    out.push(p);
+                }
+            }
+            PageElement::Shape(_) | PageElement::Table(_) => {}
+        }
+    }
+    out
 }
 
 pub fn has_lists(elements: &[PageElement]) -> bool {

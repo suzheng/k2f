@@ -2,15 +2,14 @@ use crate::ir::{DocField, ScriptPos, TextAlign, TextBox, TextRun};
 use crate::xml::{escape_xml, word_hex_color};
 use std::collections::BTreeMap;
 
-pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, String>) -> String {
+pub(crate) fn textbox_wsp_xml(
+    tb: &TextBox,
+    hyperlink_rids: &BTreeMap<String, String>,
+    picture_rids: &BTreeMap<String, String>,
+) -> String {
     let body = txbx_content(tb, hyperlink_rids);
     let anchor = if tb.vert_center { "ctr" } else { "t" };
-    let fill = match &tb.fill_hex {
-        Some(hex) => super::drawing::solid_fill_xml(&word_hex_color(hex), tb.fill_alpha),
-        // Word Dark Mode inverts `noFill` floating text. Alpha 0 is still a
-        // fill, so glass/gradient/pictures behind the box stay visible.
-        None => super::drawing::solid_fill_xml("000001", 0),
-    };
+    let fill = textbox_fill_xml(tb, picture_rids);
     let (l, t, r, b) = (tb.l_ins_emu, tb.t_ins_emu, tb.r_ins_emu, tb.b_ins_emu);
     // Host metrics that are wider than rustybuzz wrap an extra line in a
     // lock-tight frame. Writer clips that row unless overflow is explicit
@@ -52,6 +51,25 @@ pub(crate) fn textbox_wsp_xml(tb: &TextBox, hyperlink_rids: &BTreeMap<String, St
         r = r,
         b = b,
     )
+}
+
+fn textbox_fill_xml(tb: &TextBox, picture_rids: &BTreeMap<String, String>) -> String {
+    if let Some(blip) = &tb.fill_blip {
+        if let Some(rid) = picture_rids.get(&blip.media_name) {
+            return format!(
+                "                    <a:blipFill>\n                      <a:blip r:embed=\"{rid}\"/>\n                      <a:stretch>\n                        <a:fillRect/>\n                      </a:stretch>\n                    </a:blipFill>\n"
+            );
+        }
+    }
+    if let Some(g) = &tb.gradient {
+        return super::drawing::gradient_fill_xml(g);
+    }
+    match &tb.fill_hex {
+        Some(hex) => super::drawing::solid_fill_xml(&word_hex_color(hex), tb.fill_alpha),
+        // Word Dark Mode inverts `noFill` floating text. Alpha 0 is still a
+        // fill, so glass/gradient/pictures behind the box stay visible.
+        None => super::drawing::solid_fill_xml("000001", 0),
+    }
 }
 
 fn textbox_ln_xml(tb: &TextBox) -> String {
@@ -380,6 +398,8 @@ mod tests {
             relative_height: 1,
             fill_hex: None,
             fill_alpha: 255,
+            fill_blip: None,
+            gradient: None,
             wrap: true,
             corner_emu: 0,
             line_hex: None,
@@ -431,7 +451,7 @@ mod tests {
         let mut tb = box_with(false, None);
         tb.align = TextAlign::Center;
         tb.wrap = true;
-        let xml = textbox_wsp_xml(&tb, &BTreeMap::new());
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new());
         assert!(xml.contains("<a:noAutofit/>"), "{xml}");
         assert!(xml.contains(r#"wrap="square""#), "{xml}");
         assert!(xml.contains(r#"w:jc w:val="center""#), "{xml}");
@@ -442,7 +462,7 @@ mod tests {
     #[test]
     fn chrome_textbox_emits_transparent_solid_not_nofill() {
         let tb = box_with(false, None);
-        let xml = textbox_wsp_xml(&tb, &BTreeMap::new());
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new());
         assert!(
             xml.contains("<a:solidFill>") && xml.contains(r#"<a:alpha val="0"/>"#),
             "Word Dark Mode inverts noFill text boxes; expected alpha-0 fill, got {xml}"
@@ -471,7 +491,7 @@ mod tests {
         tb.line_hex = Some("DC2626".into());
         tb.line_w_emu = 12_700;
         tb.corner_emu = 8_000;
-        let xml = textbox_wsp_xml(&tb, &BTreeMap::new());
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new());
         assert!(xml.contains(r#"<a:srgbClr val="DC2626"/>"#), "{xml}");
         assert!(xml.contains(r#"<a:ln w="12700">"#), "{xml}");
         assert!(!xml.contains("<a:ln>\n                      <a:noFill/>"), "{xml}");
@@ -483,9 +503,31 @@ mod tests {
         tb.line_hex = Some("38BDF8".into());
         tb.line_alpha = 0x66;
         tb.line_w_emu = 6_350;
-        let xml = textbox_wsp_xml(&tb, &BTreeMap::new());
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new());
         assert!(xml.contains("<a:alpha val=\"40000\"/>"), "{xml}");
         assert!(xml.contains(r#"val="38BDF8""#), "{xml}");
+    }
+
+    #[test]
+    fn folded_raster_shell_emits_blip_fill() {
+        let mut tb = box_with(false, None);
+        tb.fill_blip = Some(crate::ir::PictureBox {
+            node_id: "doc.hero".into(),
+            x_emu: 0,
+            y_emu: 0,
+            cx_emu: 1,
+            cy_emu: 1,
+            media_name: "raster1.png".into(),
+            bytes: vec![],
+            relative_height: 0,
+            pin_empty_txbox: false,
+        });
+        let mut rids = BTreeMap::new();
+        rids.insert("raster1.png".into(), "rIdM1".into());
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &rids);
+        assert!(xml.contains(r#"<a:blipFill>"#), "{xml}");
+        assert!(xml.contains(r#"r:embed="rIdM1""#), "{xml}");
+        assert!(xml.contains("txBox=\"1\""), "{xml}");
     }
 
     #[test]
