@@ -20,6 +20,7 @@ k2f_package = { path = "../k2f_package", version = "0.2.4" }
 k2f_pdf = { path = "../k2f_pdf", version = "0.2.4" }
 k2f_pptx = { path = "../../export/k2f_pptx", version = "0.2.4" }
 k2f_docx = { path = "../../export/k2f_docx", version = "0.2.4" }
+k2f_idml = { path = "../../export/k2f_idml" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

@@ -280,6 +280,10 @@ impl Editor {
         crate::export_docx(&pack_bytes(&self.package).map_err(AgentError::from)?)
     }
 
+    pub fn export_idml_bytes(&self) -> Result<Vec<u8>, AgentError> {
+        crate::export_idml(&pack_bytes(&self.package).map_err(AgentError::from)?)
+    }
+
     pub fn save_with(
         &mut self,
         expected_content_hash: Option<&str>,

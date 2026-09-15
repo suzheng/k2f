@@ -2103,6 +2103,7 @@ dependencies = [
  "k2f_pdf",
  "k2f_pptx",
  "k2f_sdk",
+ "zip",
 ]
 
 [[package]]
@@ -2321,6 +2322,7 @@ dependencies = [
  "js-sys",
  "k2f_core",
  "k2f_docx",
+ "k2f_idml",
  "k2f_layout",
  "k2f_markdown",
  "k2f_package",
