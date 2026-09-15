@@ -8,6 +8,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
+from io import BytesIO
 from pathlib import Path
 
 import pytest
@@ -127,6 +129,25 @@ def test_export_docx_on_invoice() -> None:
         )
         assert export_docx.returncode == 0, export_docx.stderr
         assert docx.read_bytes().startswith(b"PK"), "export-docx did not write ZIP"
+
+
+@pytest.mark.skipif(not INVOICE.is_file(), reason="invoice.K2F fixture missing")
+def test_export_idml_on_invoice() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        idml = Path(tmp) / "out.idml"
+        export_idml = k2f_cmd(
+            "export-idml",
+            str(INVOICE),
+            "-o",
+            str(idml),
+        )
+        assert export_idml.returncode == 0, export_idml.stderr
+        data = idml.read_bytes()
+        assert data.startswith(b"PK"), "export-idml did not write ZIP"
+        with zipfile.ZipFile(BytesIO(data)) as archive:
+            first = archive.infolist()[0]
+            assert first.filename == "mimetype"
+            assert first.compress_type == zipfile.ZIP_STORED
 
 
 @pytest.mark.skipif(not CATALOG.is_dir(), reason="skill catalog missing")

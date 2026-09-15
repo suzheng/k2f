@@ -54,3 +54,31 @@ def test_export_idml_invoice_contains_semantic_text():
     header = json.loads(ed.get_node("invoice.header"))["content"]["value"]
     xml = _stories_xml(bytes(ed.export_idml_bytes()))
     assert header in xml, "Stories XML must include visible invoice header text"
+
+
+def test_export_idml_mimetype_stored_first():
+    ed = k2f.Editor.open_bytes(INVOICE.read_bytes())
+    idml = bytes(ed.export_idml_bytes())
+    with zipfile.ZipFile(BytesIO(idml)) as archive:
+        first = archive.infolist()[0]
+        assert first.filename == "mimetype"
+        assert first.compress_type == zipfile.ZIP_STORED
+        assert (
+            archive.read("mimetype").decode().strip()
+            == "application/vnd.adobe.indesign-idml-package"
+        )
+
+
+def test_editor_export_idml_bytes_matches_cli_export():
+    import tempfile
+
+    from test_cli import k2f_cmd
+
+    ed = k2f.Editor.open_bytes(INVOICE.read_bytes())
+    from_editor = bytes(ed.export_idml_bytes())
+    with tempfile.NamedTemporaryFile(suffix=".idml") as tmp:
+        proc = k2f_cmd("export-idml", str(INVOICE), "-o", tmp.name)
+        assert proc.returncode == 0, proc.stderr
+        from_cli = Path(tmp.name).read_bytes()
+    assert from_cli.startswith(b"PK")
+    assert from_editor == from_cli, "Editor.export_idml_bytes must match k2f export-idml"
