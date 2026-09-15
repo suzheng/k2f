@@ -23,6 +23,9 @@ export function wrapViewerWasm(wasm) {
       export_docx() {
         return call(() => super.export_docx());
       }
+      export_idml() {
+        return call(() => super.export_idml());
+      }
     },
   };
 }

@@ -99,6 +99,12 @@ export function wrapWasm(wasm) {
       export_docx() {
         return this.exportDocx();
       }
+      exportIdml() {
+        return call(() => this._ed.export_idml());
+      }
+      export_idml() {
+        return this.exportIdml();
+      }
       free() {
         this._ed.free();
       }
@@ -122,6 +128,9 @@ export function wrapWasm(wasm) {
       }
       export_docx() {
         return call(() => super.export_docx());
+      }
+      export_idml() {
+        return call(() => super.export_idml());
       }
     },
     generateSigningKey() {

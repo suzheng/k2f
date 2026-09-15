@@ -1,4 +1,4 @@
-import { createK2f, exportPdf, exportPptx, exportDocx } from "../k2f.js";
+import { createK2f, exportPdf, exportPptx, exportDocx, exportIdml } from "../k2f.js";
 import { packAuthorDir } from "./helpers/invoice-package.mjs";
 
 const k2f = await createK2f();
@@ -50,6 +50,21 @@ if (fromBytesDocx[0] !== 0x50) throw new Error("exportDocx(saved) must be a ZIP"
 const afterSaveDocx = ed.exportDocx();
 if (Buffer.from(afterSaveDocx).compare(Buffer.from(fromBytesDocx)) !== 0) {
   throw new Error("Editor.exportDocx after save must match exportDocx(bytes)");
+}
+
+const fromEditorIdml = ed.exportIdml();
+if (fromEditorIdml[0] !== 0x50 || fromEditorIdml[1] !== 0x4b) {
+  throw new Error("Editor.exportIdml must return a ZIP");
+}
+const viaAliasIdml = ed.export_idml();
+if (viaAliasIdml.length !== fromEditorIdml.length) {
+  throw new Error("export_idml alias must match exportIdml");
+}
+const fromBytesIdml = await exportIdml(saved);
+if (fromBytesIdml[0] !== 0x50) throw new Error("exportIdml(saved) must be a ZIP");
+const afterSaveIdml = ed.exportIdml();
+if (Buffer.from(afterSaveIdml).compare(Buffer.from(fromBytesIdml)) !== 0) {
+  throw new Error("Editor.exportIdml after save must match exportIdml(bytes)");
 }
 
 const pdf = await exportPdf(saved);

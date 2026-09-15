@@ -165,6 +165,11 @@ impl K2fViewer {
     pub fn export_docx(&self) -> Result<Vec<u8>, JsValue> {
         k2f_docx::export_opened(&self.doc).map_err(|e| JsValue::from_str(&e.to_string()))
     }
+
+    /// Draw the published lock into Adobe InDesign .idml. Not a second layout engine.
+    pub fn export_idml(&self) -> Result<Vec<u8>, JsValue> {
+        k2f_idml::export_opened(&self.doc).map_err(|e| JsValue::from_str(&e.to_string()))
+    }
 }
 
 fn milli(pt: f64) -> i64 {

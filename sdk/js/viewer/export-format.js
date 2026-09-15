@@ -1,10 +1,11 @@
-/** Persist export format. Order: K2F, PDF, PPTX, DOCX, Markdown, PNG, JPG. */
+/** Persist export format. Order: K2F, PDF, PPTX, DOCX, IDML, Markdown, PNG, JPG. */
 
 export const EXPORT_FORMATS = [
   { value: "k2f", label: "Export as K2F" },
   { value: "pdf", label: "Export as PDF" },
   { value: "pptx", label: "Export as PowerPoint" },
   { value: "docx", label: "Export as Word" },
+  { value: "idml", label: "Export as InDesign" },
   { value: "markdown", label: "Export as Markdown" },
   { value: "png", label: "Export as PNG" },
   { value: "jpg", label: "Export as JPG" },

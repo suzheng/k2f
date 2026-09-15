@@ -10,8 +10,9 @@ assert.equal(formatBytes(2 * 1024 * 1024), "2.0 MB");
 
 assert.equal(exportFormatLabel("pdf"), "Export as PDF");
 assert.equal(exportFormatLabel("pptx"), "Export as PowerPoint");
+assert.equal(exportFormatLabel("idml"), "Export as InDesign");
 assert.equal(normalizeExportFormat("nope"), "k2f");
-assert.equal(EXPORT_FORMATS.length, 7);
+assert.equal(EXPORT_FORMATS.length, 8);
 assert.ok(EXPORT_FORMATS.every((f) => f.label.startsWith("Export as ")));
 
 assert.equal(normalizeTheme("dark"), "dark");

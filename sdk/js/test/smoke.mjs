@@ -1,4 +1,4 @@
-import { createK2f, exportPdf, exportPptx, exportDocx } from "../k2f.js";
+import { createK2f, exportPdf, exportPptx, exportDocx, exportIdml } from "../k2f.js";
 import { invoicePackage } from "./helpers/invoice-package.mjs";
 
 const k2f = await createK2f();
@@ -24,6 +24,10 @@ if (pptx[0] !== 0x50 || pptx[1] !== 0x4b) {
 const docx = await exportDocx(bytes);
 if (docx[0] !== 0x50 || docx[1] !== 0x4b) {
   throw new Error("exportDocx must return a ZIP");
+}
+const idml = await exportIdml(bytes);
+if (idml[0] !== 0x50 || idml[1] !== 0x4b) {
+  throw new Error("exportIdml must return a ZIP");
 }
 try {
   new k2f.Viewer(pdf);
@@ -58,5 +62,5 @@ try {
   }
 }
 console.log(
-  `ok smoke invoice package pages=${viewer.page_count()} pdf=${pdf.length} pptx=${pptx.length} docx=${docx.length} banner=${viewer.banner()}`,
+  `ok smoke invoice package pages=${viewer.page_count()} pdf=${pdf.length} pptx=${pptx.length} docx=${docx.length} idml=${idml.length} banner=${viewer.banner()}`,
 );

@@ -5,4 +5,5 @@ export { initWasm, createK2f } from "./core/init.js";
 export { exportPdf } from "./core/export-pdf.js";
 export { exportPptx } from "./core/export-pptx.js";
 export { exportDocx } from "./core/export-docx.js";
+export { exportIdml } from "./core/export-idml.js";
 export { markdownToK2f, k2fToMarkdown } from "./core/markdown.js";

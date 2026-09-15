@@ -26,4 +26,8 @@ const docx = viewer.export_docx();
 if (docx[0] !== 0x50 || docx[1] !== 0x4b) {
   throw new Error("viewer-only export_docx must return a ZIP");
 }
-console.log(`ok viewer-only pages=${viewer.page_count()} png=${png.length} pptx=${pptx.length} docx=${docx.length}`);
+const idml = viewer.export_idml();
+if (idml[0] !== 0x50 || idml[1] !== 0x4b) {
+  throw new Error("viewer-only export_idml must return a ZIP");
+}
+console.log(`ok viewer-only pages=${viewer.page_count()} png=${png.length} pptx=${pptx.length} docx=${docx.length} idml=${idml.length}`);
