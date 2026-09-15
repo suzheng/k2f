@@ -79,3 +79,24 @@ fn export_idml_invoice_contains_semantic_text() {
         "Stories XML must include visible invoice header text"
     );
 }
+
+#[test]
+fn export_idml_matches_crate_export_bytes() {
+    let bytes = invoice();
+    let expected = k2f_idml::export_bytes(&bytes).unwrap();
+    let sdk = k2f_sdk::export_idml(&bytes).unwrap();
+    assert_eq!(sdk, expected);
+}
+
+#[test]
+fn export_idml_mimetype_stored_first() {
+    let idml = k2f_sdk::export_idml(&invoice()).unwrap();
+    let mut archive = ZipArchive::new(Cursor::new(idml)).unwrap();
+    let first = archive.by_index(0).unwrap();
+    assert_eq!(first.name(), "mimetype");
+    assert_eq!(first.compression(), zip::CompressionMethod::Stored);
+    assert_eq!(
+        std::io::read_to_string(first).unwrap().trim(),
+        "application/vnd.adobe.indesign-idml-package"
+    );
+}

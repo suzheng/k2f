@@ -33,6 +33,7 @@ pulldown-cmark = "0.13"
 js-sys = "0.3"
 
 [dev-dependencies]
+k2f_idml = { path = "../../export/k2f_idml" }
 k2f_paint = { path = "../k2f_paint", version = "0.2.4" }
 k2f_package = { path = "../k2f_package", version = "0.2.4" }
 k2f_core = { path = "../k2f_core", version = "0.2.4" }
