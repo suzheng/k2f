@@ -2297,6 +2297,7 @@ dependencies = [
  "image 0.25.6",
  "k2f_core",
  "k2f_docx",
+ "k2f_idml",
  "k2f_markdown",
  "k2f_package",
  "k2f_paint",

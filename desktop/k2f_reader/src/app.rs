@@ -165,12 +165,17 @@ impl AppState {
         Ok(k2f_docx::export_opened(&self.doc)?)
     }
 
+    pub fn export_idml_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        Ok(k2f_idml::export_opened(&self.doc)?)
+    }
+
     pub fn export_bytes(&self, format: ExportFormat) -> anyhow::Result<Vec<u8>> {
         match format {
             ExportFormat::K2f => self.export_k2f_bytes(),
             ExportFormat::Pdf => self.export_pdf_bytes(),
             ExportFormat::Pptx => self.export_pptx_bytes(),
             ExportFormat::Docx => self.export_docx_bytes(),
+            ExportFormat::Idml => self.export_idml_bytes(),
             ExportFormat::Markdown => self.export_markdown().map(|s| s.into_bytes()),
             ExportFormat::Png => self.export_pages_png_bytes(),
             ExportFormat::Jpg => self.export_pages_jpeg_bytes(),

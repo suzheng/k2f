@@ -26,6 +26,13 @@ pub fn export_docx(app: &AppState, out: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Draw the published lock to InDesign. Same bytes as the GUI IDML export.
+pub fn export_idml(app: &AppState, out: &Path) -> anyhow::Result<()> {
+    app.export_to(ExportFormat::Idml, out)?;
+    eprintln!("wrote {}", out.display());
+    Ok(())
+}
+
 /// Print banner on stdout. Broken / unlocked exits 1; status_code on stderr.
 pub fn verify(app: &AppState) -> anyhow::Result<()> {
     println!("{}", app.banner_str());

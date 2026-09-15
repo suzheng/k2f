@@ -1,4 +1,4 @@
-//! Binary tests for `--export-pdf` / `--export-pptx` / `--export-docx` / `--verify`. Must not open a window.
+//! Binary tests for `--export-pdf` / `--export-pptx` / `--export-docx` / `--export-idml` / `--verify`. Must not open a window.
 
 mod common;
 
@@ -12,6 +12,139 @@ use std::path::Path;
 
 fn run(args: &[&str]) -> std::process::Output {
     run_reader(args)
+}
+
+#[test]
+fn headless_export_idml() {
+    let dir = scratch("export-idml");
+    let k2f_bytes = invoice_bytes();
+    let k2f = write_k2f(&dir, &k2f_bytes);
+    let idml = dir.join("out.idml");
+    let out = run(&[
+        "--export-idml",
+        idml.to_str().unwrap(),
+        k2f.to_str().unwrap(),
+    ]);
+    assert_ok(&out);
+    assert!(
+        out.stdout.is_empty(),
+        "export-only stdout must stay empty for CI; got {:?}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    let bytes = std::fs::read(&idml).unwrap();
+    assert!(
+        bytes.starts_with(b"PK"),
+        "export must write an IDML without opening a window"
+    );
+    let app = AppState::open(&k2f_bytes).unwrap();
+    assert_eq!(
+        bytes,
+        app.export_idml_bytes().unwrap(),
+        "CLI must draw the same lock as AppState::export_idml_bytes"
+    );
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("wrote"), "{stderr}");
+}
+
+#[test]
+fn headless_rejects_idml_as_source() {
+    let dir = scratch("idml-source");
+    let k2f = write_k2f(&dir, &invoice_bytes());
+    let idml = dir.join("invoice.idml");
+    let export = run(&[
+        "--export-idml",
+        idml.to_str().unwrap(),
+        k2f.to_str().unwrap(),
+    ]);
+    assert_ok(&export);
+    let nested = dir.join("out.idml");
+    let reuse = run(&[
+        "--export-idml",
+        nested.to_str().unwrap(),
+        idml.to_str().unwrap(),
+    ]);
+    assert!(!reuse.status.success());
+    let err = String::from_utf8_lossy(&reuse.stderr);
+    assert!(
+        err.contains("IDML_IS_NOT_A_SOURCE") || err.contains("UNEXPECTED_PATH"),
+        "got {err}"
+    );
+    assert!(
+        !nested.exists(),
+        "must not write an IDML when the input is an IDML"
+    );
+}
+
+#[test]
+fn export_idml_conflicts_with_export_pdf() {
+    let dir = scratch("conflict-idml-pdf");
+    let k2f = write_k2f(&dir, &invoice_bytes());
+    let out = run(&[
+        "--export-pdf",
+        dir.join("a.pdf").to_str().unwrap(),
+        "--export-idml",
+        dir.join("a.idml").to_str().unwrap(),
+        k2f.to_str().unwrap(),
+    ]);
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        err.contains("cannot be used with") || err.contains("conflict"),
+        "{err}"
+    );
+}
+
+#[test]
+fn export_idml_conflicts_with_export_pptx() {
+    let dir = scratch("conflict-idml-pptx");
+    let k2f = write_k2f(&dir, &invoice_bytes());
+    let out = run(&[
+        "--export-pptx",
+        dir.join("a.pptx").to_str().unwrap(),
+        "--export-idml",
+        dir.join("a.idml").to_str().unwrap(),
+        k2f.to_str().unwrap(),
+    ]);
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        err.contains("cannot be used with") || err.contains("conflict"),
+        "{err}"
+    );
+}
+
+#[test]
+fn export_idml_conflicts_with_export_docx() {
+    let dir = scratch("conflict-idml-docx");
+    let k2f = write_k2f(&dir, &invoice_bytes());
+    let out = run(&[
+        "--export-docx",
+        dir.join("a.docx").to_str().unwrap(),
+        "--export-idml",
+        dir.join("a.idml").to_str().unwrap(),
+        k2f.to_str().unwrap(),
+    ]);
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        err.contains("cannot be used with") || err.contains("conflict"),
+        "{err}"
+    );
 }
 
 #[test]
@@ -377,5 +510,12 @@ fn headless_flags_require_file() {
     assert!(
         !Path::new("/tmp/k2f-reader-missing.docx").exists(),
         "must not write DOCX without a source file"
+    );
+
+    let idml = run(&["--export-idml", "/tmp/k2f-reader-missing.idml"]);
+    assert_eq!(idml.status.code(), Some(2));
+    assert!(
+        !Path::new("/tmp/k2f-reader-missing.idml").exists(),
+        "must not write IDML without a source file"
     );
 }

@@ -293,8 +293,8 @@ fn export_format_cycle_includes_pptx() {
     );
     assert_eq!(
         ExportFormat::Docx.toggle(),
-        ExportFormat::Markdown,
-        "HUD format cycle must continue after DOCX"
+        ExportFormat::Idml,
+        "HUD format cycle must reach IDML after DOCX"
     );
 }
 
@@ -327,6 +327,34 @@ fn export_format_cycle_includes_docx() {
 }
 
 #[test]
+fn export_idml_to_writes_zip() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let out = scratch("gui-export-idml").join("invoice.idml");
+    app.export_to(ExportFormat::Idml, &out).unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    assert!(bytes.starts_with(b"PK"));
+    assert_eq!(bytes, app.export_idml_bytes().unwrap());
+}
+
+#[test]
+fn export_idml_to_unlocked_writes_nothing() {
+    let app = AppState::open(&unlocked_bytes(&invoice_bytes())).unwrap();
+    let out = scratch("gui-export-idml-unlocked").join("out.idml");
+    let err = format!("{}", app.export_to(ExportFormat::Idml, &out).unwrap_err());
+    assert!(err.contains("UNLOCKED"), "got {err}");
+    assert!(!out.exists(), "must not write an IDML without a lock");
+}
+
+#[test]
+fn export_format_cycle_includes_idml() {
+    assert!(ExportFormat::ALL.contains(&ExportFormat::Idml));
+    assert_eq!(ExportFormat::Idml.extension(), "idml");
+    assert_eq!(ExportFormat::Idml.hud_label(), "IDML");
+    assert_eq!(ExportFormat::Docx.toggle(), ExportFormat::Idml);
+    assert_eq!(ExportFormat::Idml.toggle(), ExportFormat::Markdown);
+}
+
+#[test]
 fn export_action_labels_match_web_menu() {
     let labels: Vec<&str> = ExportFormat::ALL.iter().map(|f| f.action_label()).collect();
     assert_eq!(
@@ -336,6 +364,7 @@ fn export_action_labels_match_web_menu() {
             "Export as PDF",
             "Export as PowerPoint",
             "Export as Word",
+            "Export as InDesign",
             "Export as Markdown",
             "Export as PNG",
             "Export as JPG",
