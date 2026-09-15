@@ -31,3 +31,7 @@ anyhow = "1.0"
 [[bin]]
 name = "k2f"
 path = "src/main.rs"
+
+[dev-dependencies]
+k2f_idml = { path = "../../export/k2f_idml" }
+zip = { version = "2", default-features = false, features = ["deflate"] }

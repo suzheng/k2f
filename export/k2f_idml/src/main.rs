@@ -9,7 +9,7 @@ use std::process::ExitCode;
     long_about = "Experimental one-way exporter from a locked .K2F package to .idml.\n\n\
 Does not modify the source package. IDML is not a K2F source (IDML_IS_NOT_A_SOURCE).\n\
 This is not a second layout engine: page geometry comes from the published lock.\n\
-Not wired into the official `k2f` CLI (that is a later step).\n\
+The official entry is `k2f export-idml`; this crate binary is for converter development.\n\
 On failure, the IdmlError is printed to stderr and the process exits with code 1.",
     arg_required_else_help = true
 )]
