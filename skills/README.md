@@ -31,6 +31,7 @@ MCP is optional. Writing does not require it; if a site MCP is already connected
 | [exporting-pdf](k2f/references/exporting-pdf.md) | Export PDF from the published lock |
 | [exporting-pptx](k2f/references/exporting-pptx.md) | Export PPTX from the published lock |
 | [exporting-docx](k2f/references/exporting-docx.md) | Export DOCX from the published lock |
+| [exporting-idml](k2f/references/exporting-idml.md) | Export IDML from the published lock |
 | [embedding-viewer](k2f/references/embedding-viewer.md) | Embed `<k2f-viewer>` in a web app |
 | [publishing](k2f/references/publishing.md) | Publish permanent `/v/{appearance_hash}` (requires your site origin) |
 

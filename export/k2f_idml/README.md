@@ -1,6 +1,6 @@
 # k2f_idml
 
-Experimental K2F lock → Adobe InDesign `.idml` exporter. Isolated crate; **not** part of `k2f export-pdf` or the official `k2f` CLI. Official `k2f export-idml` is a later step. Until then the only entry is the crate binary `k2f-idml`.
+Experimental K2F lock → Adobe InDesign `.idml` exporter. Isolated crate; **not** part of `k2f export-pdf`. The official entry is `k2f export-idml`. The crate binary `k2f-idml` remains for converter development.
 
 IDML is a one-way dump of an already-locked package. It is not a K2F source (`IDML_IS_NOT_A_SOURCE`). Geometry comes from the published lock; this is **not a second layout engine**.
 
@@ -38,9 +38,23 @@ Page items are children of `Spread`, not nested in `Page`. Each lock page is one
 - SVG assets are rasterized to PNG at export. No IDML → K2F import. No `.indd`. No MathML.
 - Tracking is omitted when advance cannot be measured; the writer does not fake `Tracking="0"`.
 
-## Crate binary
+## Official CLI
 
 From the `k2f/` workspace root:
+
+```bash
+cargo run -p k2f -- export-idml examples/published/invoice.K2F -o /tmp/invoice.idml
+```
+
+```text
+k2f export-idml <in.K2F> -o <out.idml>
+```
+
+No `--scale`. No `--trust-pack`. Failures print the error (including `IDML_IS_NOT_A_SOURCE`) to stderr and exit `1` without writing output.
+
+## Crate binary
+
+`k2f-idml` is for crate development only. Same conversion as the official command:
 
 ```bash
 cargo run -p k2f_idml -- export examples/published/invoice.K2F -o /tmp/invoice.idml
@@ -50,7 +64,7 @@ cargo run -p k2f_idml -- export examples/published/invoice.K2F -o /tmp/invoice.i
 k2f-idml export <in.K2F> -o <out.idml>
 ```
 
-`--help` states this is experimental, does not modify the source package, and is not a second layout engine. Failures print `IdmlError` to stderr and exit `1` without writing output.
+`--help` states this is experimental, does not modify the source package, and is not a second layout engine.
 
 ## Test
 
@@ -58,13 +72,13 @@ From the `k2f/` workspace root:
 
 ```bash
 cargo test -p k2f_idml
-cargo run -p k2f_idml -- export examples/published/invoice.K2F -o /tmp/invoice.idml
+cargo run -p k2f -- export-idml examples/published/invoice.K2F -o /tmp/invoice.idml
 ```
 
-Do not use bare `cargo test` for this crate; it is not in `default-members`. OSS CI checks ZIP/XML only. Visual QA against Adobe InDesign is a later private step (LibreOffice cannot open IDML).
+Do not use bare `cargo test` for this crate; it is not in `default-members`. OSS CI checks ZIP/XML only. Visual QA against Adobe InDesign is private (LibreOffice cannot open IDML).
 
 ## Delete this module
 
 1. Remove the directory `k2f/export/k2f_idml/`
 2. Remove `"export/k2f_idml"` from the `members` list in `k2f/Cargo.toml` (do not touch `default-members`)
-3. No other files should mention this crate. The plan in `k2f-private/plans/` may stay.
+3. Drop the `k2f_cli` path dependency, `ExportIdml` command, `tests/export_idml.rs`, and skill/changelog mentions of `export-idml`. SDK / WASM / desktop wiring is later; do not leave a dangling CLI command.

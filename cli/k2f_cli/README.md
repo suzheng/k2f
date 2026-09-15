@@ -24,6 +24,7 @@ pip install k2f    # preferred: CLI on PATH + Python SDK
 | `k2f export-pdf <package> -o <out.pdf> [--scale N] [--trust-pack]` | Draw lock into PDF |
 | `k2f export-pptx <package> -o <out.pptx>` | Draw lock into PowerPoint (not a second layout engine) |
 | `k2f export-docx <package> -o <out.docx>` | Draw lock into Word (not a second layout engine) |
+| `k2f export-idml <package> -o <out.idml>` | Draw lock into InDesign (not a second layout engine) |
 | `k2f hit-test <package> --page N --x X --y Y` | Hit-test lock geometry (pt, not px) |
 | `k2f markdown <source.md> -o <out.K2F> --template <author-dir>` | Compile Markdown → `.K2F` |
 
@@ -37,6 +38,7 @@ k2f verify examples/published/invoice.K2F
 k2f export-pdf examples/published/invoice.K2F -o /tmp/invoice.pdf
 k2f export-pptx examples/published/invoice.K2F -o /tmp/invoice.pptx
 k2f export-docx examples/published/invoice.K2F -o /tmp/invoice.docx
+k2f export-idml examples/published/invoice.K2F -o /tmp/invoice.idml
 k2f markdown README.md -o /tmp/readme.K2F --template ./source
 ```
 

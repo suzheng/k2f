@@ -103,6 +103,12 @@ enum Commands {
         #[arg(short, long)]
         output: PathBuf,
     },
+    /// Draw the published lock into Adobe InDesign .idml. Not a second layout engine.
+    ExportIdml {
+        package: PathBuf,
+        #[arg(short, long)]
+        output: PathBuf,
+    },
     /// Compile Markdown to a .K2F package. `--template` is an author directory.
     Markdown {
         source: PathBuf,
@@ -321,6 +327,11 @@ fn dispatch(command: Commands) -> anyhow::Result<()> {
         }
         Commands::ExportDocx { package, output } => {
             let bytes = k2f_docx::export_bytes(&fs::read(&package)?)?;
+            fs::write(&output, bytes)?;
+            eprintln!("wrote {}", output.display());
+        }
+        Commands::ExportIdml { package, output } => {
+            let bytes = k2f_idml::export_bytes(&fs::read(&package)?)?;
             fs::write(&output, bytes)?;
             eprintln!("wrote {}", output.display());
         }

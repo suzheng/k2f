@@ -2096,6 +2096,7 @@ dependencies = [
  "anyhow",
  "clap",
  "k2f_docx",
+ "k2f_idml",
  "k2f_layout",
  "k2f_package",
  "k2f_paint",

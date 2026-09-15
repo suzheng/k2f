@@ -1,6 +1,6 @@
 ---
 name: k2f
-description: Work with K2F documents (.K2F), including creating, reading, editing, validating, converting Markdown, exporting PDF, PPTX, or Word, publishing permanent links, and embedding the viewer. Use when the task involves a K2F document, asks to produce a deterministic semantically editable document, create a CV/flyer/presentation/poster/report/book, patch by stable node id, convert Markdown↔K2F, export-pdf/Download PDF (not jsPDF/html2pdf), export-pptx/Download PowerPoint, export-docx/Download Word, publish /v/{appearance_hash}, embed k2f-viewer in Next/Vite/React, or when UNLOCKED/PDF_IS_NOT_A_SOURCE/PPTX_IS_NOT_A_SOURCE/DOCX_IS_NOT_A_SOURCE appears.
+description: Work with K2F documents (.K2F), including creating, reading, editing, validating, converting Markdown, exporting PDF, PPTX, Word, or InDesign, publishing permanent links, and embedding the viewer. Use when the task involves a K2F document, asks to produce a deterministic semantically editable document, create a CV/flyer/presentation/poster/report/book, patch by stable node id, convert Markdown↔K2F, export-pdf/Download PDF (not jsPDF/html2pdf), export-pptx/Download PowerPoint, export-docx/Download Word, export-idml/Download InDesign, publish /v/{appearance_hash}, embed k2f-viewer in Next/Vite/React, or when UNLOCKED/PDF_IS_NOT_A_SOURCE/PPTX_IS_NOT_A_SOURCE/DOCX_IS_NOT_A_SOURCE/IDML_IS_NOT_A_SOURCE appears.
 ---
 
 # K2F
@@ -48,7 +48,7 @@ Empty paper in the **lower third** of a designed sheet is the most common visual
 
 1. **Style lives only in `theme.json`, never on a node.** Putting a style field on a node is the single most common compile failure.
 2. **Never hand-edit `document.K2F.lock`.** Mutate the tree (or theme), then relock.
-3. **PDF, PPTX, and DOCX are one-way drawings of the lock, not a second source.** (`PDF_IS_NOT_A_SOURCE`, `PPTX_IS_NOT_A_SOURCE`, `DOCX_IS_NOT_A_SOURCE`)
+3. **PDF, PPTX, DOCX, and IDML are one-way drawings of the lock, not a second source.** (`PDF_IS_NOT_A_SOURCE`, `PPTX_IS_NOT_A_SOURCE`, `DOCX_IS_NOT_A_SOURCE`, `IDML_IS_NOT_A_SOURCE`)
 4. **Signing is a separate human/org step.** Agent output is `UNSIGNED` by design.
 5. **Validate after every edit.** Fix from error codes in [writing/errors.md](references/writing/errors.md); do not patch the lock.
 6. **Look at the pixels — empty bottom first.** After pack, open every rendered page (`--render` writes `preview-1.png` …). If the lower third is blank paper on a designed sheet, you are not done. **Designed sheet** (invoice, CV, flyer, poster, slide, card, social, one-page infographic/checklist/planner — even if titled report) → copy [`ex_filled_page.json`](catalog/content/ex_filled_page.json) as a **root child** (pinned `height` + `{fr:1}` grower); a `page_shell` role on a hug stack is not the shell. Treat `PAGE_UNDERFILL` as must-fix even when `pack_verify.py` exits 0 (skipped if the content box is shorter than 180pt). Short letter may stay top-packed. **Growing document** (contract, long report, thesis, paper) → one flow tree; last page may be short; no `p1`/`p2` page wrappers and no page-height shell around the whole doc. `break_before: page` is fine on a chapter, annex, signature page, slide 2+, or card back. Details: [writing.md](references/writing.md#visual-check).
@@ -111,5 +111,6 @@ Read **one** reference file for the task. Do not load all workflows.
 | Export PDF from the published lock | [references/exporting-pdf.md](references/exporting-pdf.md) — bytes / looks wrong: [pdf-contract.md](references/exporting-pdf/pdf-contract.md) |
 | Export PPTX from the published lock | [references/exporting-pptx.md](references/exporting-pptx.md) |
 | Export DOCX from the published lock | [references/exporting-docx.md](references/exporting-docx.md) |
+| Export IDML from the published lock | [references/exporting-idml.md](references/exporting-idml.md) |
 | Publish permanent `/v/{appearance_hash}` link | [references/publishing.md](references/publishing.md) |
 | Embed `<k2f-viewer>` in a web app | [references/embedding-viewer.md](references/embedding-viewer.md) |
