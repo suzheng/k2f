@@ -1,5 +1,6 @@
 import { createK2f, exportPdf, exportPptx, exportDocx, exportIdml } from "../k2f.js";
 import { invoicePackage } from "./helpers/invoice-package.mjs";
+import { zipFirstEntry } from "./helpers/zip-first-entry.mjs";
 
 const k2f = await createK2f();
 const bytes = invoicePackage(k2f);
@@ -28,6 +29,18 @@ if (docx[0] !== 0x50 || docx[1] !== 0x4b) {
 const idml = await exportIdml(bytes);
 if (idml[0] !== 0x50 || idml[1] !== 0x4b) {
   throw new Error("exportIdml must return a ZIP");
+}
+const viaViewerIdml = viewer.export_idml();
+if (Buffer.from(idml).compare(Buffer.from(viaViewerIdml)) !== 0) {
+  throw new Error("exportIdml(bytes) must match Viewer.export_idml()");
+}
+const first = zipFirstEntry(idml);
+if (first.name !== "mimetype" || first.compression !== "stored") {
+  throw new Error("IDML mimetype must be first stored entry");
+}
+const mimeBody = new TextDecoder().decode(first.data).trim();
+if (mimeBody !== "application/vnd.adobe.indesign-idml-package") {
+  throw new Error(`IDML mimetype body wrong: ${mimeBody}`);
 }
 try {
   new k2f.Viewer(pdf);
@@ -59,6 +72,17 @@ try {
   // DOCX guard is in k2f_docx::export_bytes; unpack fails earlier with UNEXPECTED_PATH.
   if (!msg.includes("DOCX_IS_NOT_A_SOURCE") && !msg.includes("UNEXPECTED_PATH")) {
     throw new Error(`expected DOCX rejection, got ${msg}`);
+  }
+}
+try {
+  new k2f.Viewer(idml);
+  throw new Error("IDML must not open as a K2F source");
+} catch (err) {
+  const msg = String(err && err.message ? err.message : err);
+  if (msg.includes("IDML must not open")) throw err;
+  // IDML guard is in k2f_idml::export_bytes; unpack fails earlier with UNEXPECTED_PATH.
+  if (!msg.includes("IDML_IS_NOT_A_SOURCE") && !msg.includes("UNEXPECTED_PATH")) {
+    throw new Error(`expected IDML rejection, got ${msg}`);
   }
 }
 console.log(
