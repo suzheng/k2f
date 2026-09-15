@@ -75,6 +75,7 @@ def test_k2f_on_path_and_help_lists_core_commands() -> None:
         "export-pdf",
         "export-pptx",
         "export-docx",
+        "export-idml",
         "markdown",
     ):
         assert cmd in help_text, f"missing {cmd} in k2f --help"

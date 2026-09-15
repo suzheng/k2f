@@ -142,4 +142,9 @@ impl Editor {
         let bytes = self.inner.export_docx_bytes().map_err(py_err)?;
         Ok(PyBytes::new(py, &bytes))
     }
+
+    fn export_idml_bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
+        let bytes = self.inner.export_idml_bytes().map_err(py_err)?;
+        Ok(PyBytes::new(py, &bytes))
+    }
 }
