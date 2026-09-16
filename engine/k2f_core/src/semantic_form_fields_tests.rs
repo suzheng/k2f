@@ -335,6 +335,55 @@ fn replace_rejects_invalid_checkbox_value() {
 }
 
 #[test]
+fn deserializes_multiline_and_checkbox_plan_json() {
+    let multiline: SemanticNode = serde_json::from_str(
+        r#"{
+            "id": "app.address",
+            "role": "form_field",
+            "variant": "box",
+            "break_inside": "avoid",
+            "content": {
+                "type": "form_field",
+                "value": {
+                    "kind": "multiline",
+                    "value": "",
+                    "placeholder": "Street address",
+                    "lines": 4
+                }
+            }
+        }"#,
+    )
+    .unwrap();
+    validate_semantic_tree(&multiline).unwrap();
+    match &multiline.content {
+        NodeContent::FormField(spec) => {
+            assert_eq!(spec.kind, FormFieldKind::Multiline);
+            assert_eq!(spec.lines, Some(4));
+        }
+        other => panic!("expected form_field, got {}", other.type_name()),
+    }
+
+    let checkbox: SemanticNode = serde_json::from_str(
+        r#"{
+            "id": "app.read",
+            "role": "form_field",
+            "variant": "checkbox",
+            "break_inside": "avoid",
+            "content": {
+                "type": "form_field",
+                "value": { "kind": "checkbox", "value": "" }
+            }
+        }"#,
+    )
+    .unwrap();
+    validate_semantic_tree(&checkbox).unwrap();
+    match &checkbox.content {
+        NodeContent::FormField(spec) => assert_eq!(spec.kind, FormFieldKind::Checkbox),
+        other => panic!("expected form_field, got {}", other.type_name()),
+    }
+}
+
+#[test]
 fn plan_section7_document_deserializes_and_validates() {
     let json = r#"{
         "id": "doc",

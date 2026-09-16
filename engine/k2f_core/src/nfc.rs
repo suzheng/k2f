@@ -79,6 +79,41 @@ mod tests {
     }
 
     #[test]
+    fn manifest_form_field_value_is_normalized() {
+        let mut manifest = Manifest {
+            title: "t".to_string(),
+            canvas_mode: CanvasMode::Paged,
+            page_config: PageConfig {
+                width: Pt(595000),
+                height: Pt(842000),
+                margin: [Pt(72000); 4],
+            },
+            root: SemanticNode {
+                id: "field".to_string(),
+                role: "form_field".to_string(),
+                content: NodeContent::FormField(crate::FormFieldSpec {
+                    kind: crate::FormFieldKind::Text,
+                    value: "e\u{0301}".to_string(),
+                    placeholder: Some("e\u{0301}".to_string()),
+                    width: None,
+                    height: None,
+                    lines: Some(1),
+                    max_length: None,
+                    required: false,
+                }),
+                ..Default::default()
+            },
+            running_blocks: vec![],
+        };
+        normalize_manifest_nfc(&mut manifest);
+        let NodeContent::FormField(spec) = &manifest.root.content else {
+            panic!("expected form_field");
+        };
+        assert_eq!(spec.value, "\u{00e9}");
+        assert_eq!(spec.placeholder.as_deref(), Some("\u{00e9}"));
+    }
+
+    #[test]
     fn manifest_text_is_normalized_before_hash() {
         let mut nfd = text_manifest("e\u{0301}");
         let mut composed = text_manifest("\u{00e9}");
