@@ -56,7 +56,7 @@ fn stories_blob(idml: &[u8]) -> String {
         for n in doc.descendants() {
             if n.has_tag_name("Content") {
                 if let Some(t) = n.text() {
-                    blob.push_str(t);
+                    blob.push_str(&t.replace('\u{00A0}', " "));
                 }
             }
         }
@@ -393,6 +393,117 @@ fn subscript_is_position_not_italic() {
 }
 
 #[test]
+fn pinned_lock_lines_nobreak_and_nbsp() {
+    // One semantic paragraph, two lock lines; second line splits color at a space
+    // (hero titles). Host wrap at that boundary overprints the next frame.
+    let text = "Editorial Grid. Narrative System.";
+    let mut glyphs = Vec::new();
+    for (i, _) in text.chars().enumerate() {
+        let y = if i < 16 { 12_000 } else { 60_000 };
+        glyphs.push(glyph(i as u32, (i as i128) * 8_000, 8_000, y));
+    }
+    let xml = story_from(
+        text,
+        vec![],
+        vec![
+            TextGlyphRun {
+                glyph_range: [0, 26],
+                style: style("#0F172A", 44_000),
+            },
+            TextGlyphRun {
+                glyph_range: [26, text.chars().count()],
+                style: style("#DC2626", 44_000),
+            },
+        ],
+        glyphs,
+        200_000,
+    );
+    assert!(
+        xml.contains(r#"NoBreak="true""#),
+        "pinned lock lines must set NoBreak, got {xml}"
+    );
+    assert!(
+        xml.contains('\u{00A0}'),
+        "pinned lock lines must glue spaces with NBSP, got {xml}"
+    );
+    assert!(
+        xml.contains("<Br/>"),
+        "lock wrap must still emit a hard break, got {xml}"
+    );
+}
+
+#[test]
+fn semantic_newline_lock_lines_still_nobreak() {
+    // Title source already has `\n`; pin is false but the second line still
+    // must not wrap at a color-split space.
+    let text = "Editorial Grid.\nNarrative System.";
+    let mut glyphs = Vec::new();
+    for (i, ch) in text.chars().enumerate() {
+        if ch == '\n' {
+            continue;
+        }
+        let y = if i < 16 { 12_000 } else { 60_000 };
+        let cluster = i as u32;
+        glyphs.push(glyph(cluster, (i as i128) * 8_000, 8_000, y));
+    }
+    let xml = story_from(
+        text,
+        vec![],
+        vec![
+            TextGlyphRun {
+                glyph_range: [0, 16],
+                style: style("#0F172A", 44_000),
+            },
+            TextGlyphRun {
+                glyph_range: [16, glyphs.len()],
+                style: style("#DC2626", 44_000),
+            },
+        ],
+        glyphs,
+        200_000,
+    );
+    assert!(
+        xml.contains(r#"NoBreak="true""#),
+        "pre-broken lock lines must still set NoBreak, got {xml}"
+    );
+    assert!(
+        xml.contains('\u{00A0}'),
+        "pre-broken lock lines must still glue spaces, got {xml}"
+    );
+}
+
+#[test]
+fn tight_nobreak_multiline_autosizes_width() {
+    let text = "Editorial Grid.\nNarrative System.";
+    let mut glyphs = Vec::new();
+    for (i, ch) in text.chars().enumerate() {
+        if ch == '\n' {
+            continue;
+        }
+        let y = if i < 16 { 12_000 } else { 60_000 };
+        glyphs.push(glyph(i as u32, (i as i128) * 10_000, 10_000, y));
+    }
+    let xml = frame_from(
+        text,
+        vec![],
+        vec![TextGlyphRun {
+            glyph_range: [0, glyphs.len()],
+            style: style("#0F172A", 44_000),
+        }],
+        glyphs,
+        180_000,
+    );
+    assert!(
+        xml.contains(r#"AutoSizingType="WidthOnly""#),
+        "tight NoBreak lines must WidthOnly-grow, got {xml}"
+    );
+    assert!(
+        xml.contains(r#"UseNoLineBreaksForAutoSizing="true""#),
+        "WidthOnly NoBreak must not wrap, got {xml}"
+    );
+}
+
+#[test]
 fn left_align_left_inset_not_zero_when_glyphs_inset() {
     let xml = frame_from(
         "A",
@@ -545,6 +656,52 @@ fn composer_is_single_line() {
     assert!(
         props.contains("$ID/HL Single"),
         "composer must be HL Single, got {story}"
+    );
+}
+
+#[test]
+fn overflowing_last_line_expands_frame_height() {
+    let text = "one two three four";
+    let mut glyphs = Vec::new();
+    let lines = ["one", "two", "three", "four"];
+    let mut cluster = 0u32;
+    for (li, word) in lines.iter().enumerate() {
+        let y = (li as i128) * 18_200;
+        for (i, _) in word.chars().enumerate() {
+            glyphs.push(glyph(cluster, i as i128 * 8_000, 8_000, y));
+            cluster += 1;
+        }
+        if li + 1 < lines.len() {
+            cluster += 1; // space
+        }
+    }
+    let node = node_with(text, vec![]);
+    let g = GeometryNode {
+        id: "g".into(),
+        x: Pt(0),
+        y: Pt(0),
+        width: Pt(80_000),
+        height: Pt(54_600),
+        glyphs,
+        text_runs: vec![],
+        fill_rects: vec![],
+        children: vec![],
+    };
+    let rect = Rect {
+        x: Pt(0),
+        y: Pt(0),
+        width: Pt(80_000),
+        height: Pt(54_600),
+    };
+    let runs = vec![TextGlyphRun {
+        glyph_range: [0, g.glyphs.len()],
+        style: style("#111111", 13_000),
+    }];
+    let tb = textbox_from_draw(&node, &rect, &runs, Some(&g), &BTreeMap::new()).unwrap();
+    assert_eq!(
+        tb.rect.height.0, 67_600,
+        "last-line ink must expand the IDML frame, got {}",
+        tb.rect.height.0
     );
 }
 

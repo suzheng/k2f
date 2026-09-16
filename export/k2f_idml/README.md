@@ -20,11 +20,11 @@ Do **not** stamp a full-page PNG and overlay invisible text. That is the PDF-bri
 
 K2F lock: origin at the **page top-left**, **Y down**, millipt (`Pt.0 / 1000` = pt).
 
-InDesign pasteboard: origin at the **spread center**, **Y up**, points. `PathPointType/@Anchor` is `"x y"`. `GeometricBounds` is `"top left bottom right"` (y x y x).
+InDesign pasteboard: origin at the **spread center**, **Y down** (negative Y is toward the page top; verified against InDesign 2026 PDF export and the IDML cookbook `ty = -pageHeight/2` page-top rule). `PathPointType/@Anchor` is `"x y"`. `GeometricBounds` is `"top left bottom right"` (y x y x).
 
 ```text
 idml_x = k2f_x_pt - page_w_pt / 2
-idml_y = page_h_pt / 2 - k2f_y_pt
+idml_y = k2f_y_pt - page_h_pt / 2
 ```
 
 Page items are children of `Spread`, not nested in `Page`. Each lock page is one single-page spread (`FacingPages=false`).

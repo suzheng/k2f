@@ -1,4 +1,5 @@
 use super::font::FontCtx;
+use super::tracking::tracking_em;
 use crate::ir::{ScriptPos, TextRun};
 use k2f_core::{GeometryNode, GlyphPosition, Modifier, Pt, TextGlyphRun, TextPaintStyle};
 use k2f_paint::parse_hex_rgba;
@@ -11,26 +12,27 @@ pub(crate) fn runs_from_paint(
     fonts: &FontCtx,
 ) -> Vec<TextRun> {
     if paint_runs.is_empty() {
-        return split_piece(text, 0, text.len(), &fallback_style(), modifiers, fonts);
+        return split_piece(text, 0, text.len(), &fallback_style(), modifiers, fonts, 0);
     }
     let default_style = &paint_runs[0].style;
-    let mut spans: Vec<(usize, usize, &TextPaintStyle)> = Vec::new();
+    let mut spans: Vec<(usize, usize, &TextPaintStyle, Vec<&GlyphPosition>)> = Vec::new();
     for pr in paint_runs {
         let Some((bs, be)) = paint_byte_range(text, pr, geo) else {
             continue;
         };
         if bs < be {
-            spans.push((bs, be, &pr.style));
+            let glyphs = paint_glyphs(pr, geo);
+            spans.push((bs, be, &pr.style, glyphs));
         }
     }
-    spans.sort_by_key(|(bs, _, _)| *bs);
+    spans.sort_by_key(|(bs, _, _, _)| *bs);
     let mut out = Vec::new();
     // Page tokens must keep the full source string so `{{page_*}}` can be
     // rewritten after paint-run splits.
     let keep_full = text.contains("{{page_current}}") || text.contains("{{page_total}}");
-    if let Some(&(first, _, _)) = spans.first() {
+    if let Some(&(first, _, _, _)) = spans.first() {
         let mut pos = if keep_full { 0 } else { first };
-        for (bs, be, style) in spans {
+        for (bs, be, style, glyphs) in spans {
             if be <= pos {
                 continue;
             }
@@ -43,9 +45,13 @@ pub(crate) fn runs_from_paint(
                     default_style,
                     modifiers,
                     fonts,
+                    0,
                 ));
             }
-            out.extend(split_piece(text, start, be, style, modifiers, fonts));
+            let tracking = tracking_em(&glyphs, style, fonts);
+            out.extend(split_piece(
+                text, start, be, style, modifiers, fonts, tracking,
+            ));
             pos = pos.max(be);
         }
         if keep_full && pos < text.len() {
@@ -56,6 +62,7 @@ pub(crate) fn runs_from_paint(
                 default_style,
                 modifiers,
                 fonts,
+                0,
             ));
         }
     }
@@ -67,9 +74,25 @@ pub(crate) fn runs_from_paint(
             default_style,
             modifiers,
             fonts,
+            0,
         ));
     }
     out
+}
+
+fn paint_glyphs<'a>(pr: &TextGlyphRun, geo: Option<&'a GeometryNode>) -> Vec<&'a GlyphPosition> {
+    let Some(geo) = geo else {
+        return Vec::new();
+    };
+    let start = pr.glyph_range[0];
+    let end = pr.glyph_range[1].min(geo.glyphs.len());
+    if start >= end {
+        return Vec::new();
+    }
+    geo.glyphs[start..end]
+        .iter()
+        .filter(|g| g.cluster != GlyphPosition::CLUSTER_NOT_SOURCE)
+        .collect()
 }
 
 fn paint_byte_range(
@@ -102,6 +125,7 @@ fn split_piece(
     style: &TextPaintStyle,
     modifiers: &[Modifier],
     fonts: &FontCtx,
+    tracking: i32,
 ) -> Vec<TextRun> {
     let mut cuts = vec![bs, be];
     for m in modifiers {
@@ -128,7 +152,7 @@ fn split_piece(
         if piece.is_empty() {
             continue;
         }
-        let mut run = run_from_style(&piece, style, fonts);
+        let mut run = run_from_style(&piece, style, fonts, tracking);
         for m in modifiers {
             let [s, e] = m.range;
             if s <= a && b <= e {
@@ -140,7 +164,7 @@ fn split_piece(
     out
 }
 
-fn run_from_style(text: &str, style: &TextPaintStyle, fonts: &FontCtx) -> TextRun {
+fn run_from_style(text: &str, style: &TextPaintStyle, fonts: &FontCtx, tracking: i32) -> TextRun {
     TextRun {
         text: text.to_string(),
         font_name: fonts.typeface(&style.font_family),
@@ -154,6 +178,7 @@ fn run_from_style(text: &str, style: &TextPaintStyle, fonts: &FontCtx) -> TextRu
         script: ScriptPos::Baseline,
         leading_pt: None,
         auto_page_number: false,
+        tracking,
     }
 }
 

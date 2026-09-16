@@ -7,7 +7,7 @@ const XML_DECL: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?
 
 pub fn story_xml(tb: &TextBox, story_self: &str) -> String {
     let mut hts = 0usize;
-    let body = para_xml::write_paras(tb.align, &tb.runs, &mut hts);
+    let body = para_xml::write_paras(tb.align, &tb.runs, &mut hts, tb.no_break);
     wrap_story(story_self, &body)
 }
 

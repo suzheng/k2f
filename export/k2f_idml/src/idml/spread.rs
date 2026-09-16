@@ -41,10 +41,30 @@ pub fn textframe_xml(tb: &TextBox, space: &SpreadSpace, tf_self: &str, story_sel
         fmt_pt(tb.inset_bottom),
         fmt_pt(tb.inset_right)
     );
+    let autosize = if tb.autosize_width {
+        let no_wrap = if tb.autosize_no_wrap {
+            r#" UseNoLineBreaksForAutoSizing="true""#
+        } else {
+            r#" UseNoLineBreaksForAutoSizing="false""#
+        };
+        format!(
+            r#" AutoSizingType="WidthOnly" AutoSizingReferencePoint="{}"{no_wrap}"#,
+            tb.autosize_refer
+        )
+    } else if tb.autosize_height {
+        let refer = match tb.align {
+            crate::ir::TextAlign::Center => "TopCenterPoint",
+            crate::ir::TextAlign::Right => "TopRightPoint",
+            crate::ir::TextAlign::Left | crate::ir::TextAlign::Justify => "TopLeftPoint",
+        };
+        format!(r#" AutoSizingType="HeightOnly" AutoSizingReferencePoint="{refer}""#)
+    } else {
+        String::new()
+    };
     format!(
         r#"    <TextFrame Self="{tf_self}" ParentStory="{story_self}" ContentType="TextType" ItemLayer="kLayer" FillColor="Swatch/None" StrokeWeight="0" ItemTransform="{tf}" Name="{name}" NextTextFrame="n" PreviousTextFrame="n">
 {geo}
-      <TextFramePreference TextColumnCount="1" VerticalJustification="{vert}" InsetSpacing="{inset}"/>
+      <TextFramePreference TextColumnCount="1" VerticalJustification="{vert}" InsetSpacing="{inset}" FirstBaselineOffset="Ascent"{autosize}/>
     </TextFrame>
 "#
     )
@@ -63,9 +83,15 @@ pub fn rectangle_xml(shape: &ShapeBox, space: &SpreadSpace, self_id: &str) -> St
     };
     let stroke = stroke_attrs(shape);
     let corners = if shape.corner_pt > 0.0 {
+        // DOM 16 (CS5+ live corners) ignores CS4 CornerOption/CornerRadius unless
+        // each corner is set. Write both so CS4 readers still round uniformly.
+        let r = fmt_pt(shape.corner_pt);
         format!(
-            " CornerOption=\"RoundedCorner\" CornerRadius=\"{}\"",
-            fmt_pt(shape.corner_pt)
+            " CornerOption=\"RoundedCorner\" CornerRadius=\"{r}\" \
+             TopLeftCornerOption=\"RoundedCorner\" TopLeftCornerRadius=\"{r}\" \
+             TopRightCornerOption=\"RoundedCorner\" TopRightCornerRadius=\"{r}\" \
+             BottomLeftCornerOption=\"RoundedCorner\" BottomLeftCornerRadius=\"{r}\" \
+             BottomRightCornerOption=\"RoundedCorner\" BottomRightCornerRadius=\"{r}\""
         )
     } else {
         String::new()
@@ -108,9 +134,9 @@ fn framed_image_xml(
     let type_name = image_type_name(&pic.ext);
     let b64 = b64_76(&pic.bytes);
     let left = fmt_pt(-w / 2.0);
-    let top = fmt_pt(h / 2.0);
+    let top = fmt_pt(-h / 2.0);
     let right = fmt_pt(w / 2.0);
-    let bottom = fmt_pt(-h / 2.0);
+    let bottom = fmt_pt(h / 2.0);
     format!(
         r#"    <Rectangle Self="{rect_id}" ContentType="GraphicType" ItemLayer="kLayer" FillColor="Swatch/None" StrokeWeight="0" ItemTransform="{tf}" Name="{name}">
 {geo}
@@ -181,4 +207,47 @@ pub(crate) fn path_geometry_xml(w: f64, h: f64) -> String {
         </PathGeometry>
       </Properties>"#
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::{LineDash, ShapeBox};
+    use k2f_core::{Pt, Rect};
+
+    #[test]
+    fn rounded_rect_emits_live_corner_attrs() {
+        let shape = ShapeBox {
+            node_id: "pill".into(),
+            rect: Rect {
+                x: Pt(0),
+                y: Pt(0),
+                width: Pt(80_000),
+                height: Pt(20_000),
+            },
+            fill_hex: Some("E05A47".into()),
+            fill_alpha: 255,
+            corner_pt: 20.0,
+            line_hex: None,
+            line_w_pt: 0.0,
+            line_dash: LineDash::Solid,
+        };
+        let space = SpreadSpace {
+            page_w: 960.0,
+            page_h: 540.0,
+        };
+        let xml = rectangle_xml(&shape, &space, "kRect0");
+        for attr in [
+            "TopLeftCornerOption=\"RoundedCorner\"",
+            "TopRightCornerOption=\"RoundedCorner\"",
+            "BottomLeftCornerOption=\"RoundedCorner\"",
+            "BottomRightCornerOption=\"RoundedCorner\"",
+            "TopLeftCornerRadius=\"20.000\"",
+            "TopRightCornerRadius=\"20.000\"",
+            "BottomLeftCornerRadius=\"20.000\"",
+            "BottomRightCornerRadius=\"20.000\"",
+        ] {
+            assert!(xml.contains(attr), "missing {attr} in {xml}");
+        }
+    }
 }

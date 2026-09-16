@@ -38,24 +38,24 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, IdmlError> {
             .get(page_idx)
             .map(|p| p.ops.as_slice())
             .unwrap_or(&[]);
-        ir_pages.push(PageIR {
-            elements: scan::scan_ops(
-                ops,
-                page,
-                page_idx,
-                lock,
-                Layer::Body,
-                doc,
-                &fonts,
-                &running_ids,
-                &list_starts,
-                &tables,
-                &mut media_n,
-                &mut raster_n,
-            )?,
-        });
+        let mut elements = scan::scan_ops(
+            ops,
+            page,
+            page_idx,
+            lock,
+            Layer::Body,
+            doc,
+            &fonts,
+            &running_ids,
+            &list_starts,
+            &tables,
+            &mut media_n,
+            &mut raster_n,
+        )?;
+        crate::autosize::clamp_width_autosize(&mut elements);
+        ir_pages.push(PageIR { elements });
     }
-    let master_els = scan_master(
+    let mut master_els = scan_master(
         doc,
         lock,
         &fonts,
@@ -66,6 +66,7 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, IdmlError> {
         &mut media_n,
         &mut raster_n,
     )?;
+    crate::autosize::clamp_width_autosize(&mut master_els);
     let mut used = BTreeSet::new();
     used.insert(fonts.default_family().to_string());
     for page in &ir_pages {

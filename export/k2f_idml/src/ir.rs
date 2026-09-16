@@ -27,6 +27,17 @@ pub enum PageElement {
     Raster(PictureBox),
 }
 
+impl PageElement {
+    pub(crate) fn rect(&self) -> &Rect {
+        match self {
+            Self::TextBox(tb) => &tb.rect,
+            Self::Shape(s) => &s.rect,
+            Self::Picture(p) | Self::Raster(p) => &p.rect,
+            Self::Table(t) => &t.rect,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TextAlign {
     Left,
@@ -67,6 +78,8 @@ pub struct TextRun {
     pub script: ScriptPos,
     pub leading_pt: Option<f64>,
     pub auto_page_number: bool,
+    /// InDesign Tracking in 1/1000 em. 0 means omit (do not fake Tracking="0").
+    pub tracking: i32,
 }
 
 #[derive(Clone, Debug)]
@@ -80,6 +93,16 @@ pub struct TextBox {
     pub inset_bottom: f64,
     pub inset_right: f64,
     pub vert_center: bool,
+    /// Grow the frame horizontally so host metrics do not wrap a lock one-liner.
+    pub autosize_width: bool,
+    /// IDML AutoSizingReferencePoint when `autosize_width`.
+    pub autosize_refer: &'static str,
+    /// `UseNoLineBreaksForAutoSizing` — single-line lock frames only.
+    pub autosize_no_wrap: bool,
+    /// Grow height so extra host wrap is not clipped (overset).
+    pub autosize_height: bool,
+    /// Lock-pinned lines: CharacterStyleRange NoBreak (PPTX wrap=none analog).
+    pub no_break: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

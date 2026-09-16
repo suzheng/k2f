@@ -39,18 +39,24 @@ impl SpreadSpace {
     }
 
     pub fn page_geometric_bounds(&self) -> String {
+        // IDML GeometricBounds is "top left bottom right". InDesign spread Y
+        // increases downward, so page top is -cy and page bottom is +cy.
         format!(
             "{} {} {} {}",
-            fmt_pt(self.cy()),
-            fmt_pt(-self.cx()),
             fmt_pt(-self.cy()),
+            fmt_pt(-self.cx()),
+            fmt_pt(self.cy()),
             fmt_pt(self.cx())
         )
     }
 
-    /// K2F top-left Y-down millipt → IDML pasteboard (spread center, Y-up).
+    /// K2F top-left Y-down pt → IDML pasteboard (spread center, Y-down).
+    ///
+    /// Adobe's IDML cookbook places the page top at `ty = -pageHeight/2`.
+    /// InDesign 2026 PDF export matches that: negative Y is toward the top of
+    /// the page. A Y-up mapping mirrored every object.
     pub fn k2f_to_idml(&self, x_pt: f64, y_pt: f64) -> (f64, f64) {
-        (x_pt - self.cx(), self.cy() - y_pt)
+        (x_pt - self.cx(), y_pt - self.cy())
     }
 
     pub fn box_center(&self, rect: &Rect) -> (f64, f64) {
@@ -60,15 +66,15 @@ impl SpreadSpace {
     }
 }
 
-/// Local path around object center, Y-up. Returns TL, TR, BR, BL as `"x y"`.
+/// Local path around object center, Y-down. Returns TL, TR, BR, BL as `"x y"`.
 pub fn local_rect_path(w: f64, h: f64) -> [String; 4] {
     let hw = w / 2.0;
     let hh = h / 2.0;
     [
-        format!("{} {}", fmt_pt(-hw), fmt_pt(hh)),
-        format!("{} {}", fmt_pt(hw), fmt_pt(hh)),
-        format!("{} {}", fmt_pt(hw), fmt_pt(-hh)),
         format!("{} {}", fmt_pt(-hw), fmt_pt(-hh)),
+        format!("{} {}", fmt_pt(hw), fmt_pt(-hh)),
+        format!("{} {}", fmt_pt(hw), fmt_pt(hh)),
+        format!("{} {}", fmt_pt(-hw), fmt_pt(hh)),
     ]
 }
 
@@ -96,10 +102,14 @@ mod tests {
         };
         let (x, y) = sp.k2f_to_idml(0.0, 0.0);
         assert!((x + 297.5).abs() < 1e-9);
-        assert!((y - 421.0).abs() < 1e-9);
+        assert!((y + 421.0).abs() < 1e-9);
         let (x2, y2) = sp.k2f_to_idml(595.0, 842.0);
         assert!((x2 - 297.5).abs() < 1e-9);
-        assert!((y2 + 421.0).abs() < 1e-9);
+        assert!((y2 - 421.0).abs() < 1e-9);
+        assert_eq!(
+            sp.page_geometric_bounds(),
+            "-421.000 -297.500 421.000 297.500"
+        );
     }
 
     #[test]

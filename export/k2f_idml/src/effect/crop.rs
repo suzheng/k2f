@@ -175,6 +175,9 @@ mod tests {
             shadow: Some(ShadowRef::Inline(Shadow { layers: vec![] })),
             ..Default::default()
         };
-        assert_eq!(expand_rect_for_shadow(rect.clone(), &decoration).unwrap(), rect);
+        assert_eq!(
+            expand_rect_for_shadow(rect.clone(), &decoration).unwrap(),
+            rect
+        );
     }
 }

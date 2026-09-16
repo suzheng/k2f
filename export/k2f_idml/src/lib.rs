@@ -1,4 +1,5 @@
 mod align;
+mod autosize;
 mod classify;
 mod coord;
 mod effect;

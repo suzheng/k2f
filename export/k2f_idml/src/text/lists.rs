@@ -75,6 +75,7 @@ fn marker_run(first: &TextRun, text: &str) -> TextRun {
         script: ScriptPos::Baseline,
         leading_pt: first.leading_pt,
         auto_page_number: false,
+        tracking: first.tracking,
     }
 }
 

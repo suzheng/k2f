@@ -208,6 +208,11 @@ fn emit_table(
         inset_bottom: 0.0,
         inset_right: 0.0,
         vert_center: false,
+        autosize_width: false,
+        autosize_refer: "CenterLeftPoint",
+        autosize_no_wrap: false,
+        autosize_height: false,
+        no_break: false,
     };
     frames.push_str(&spread::textframe_xml(&tb, space, &tf, &st));
 }

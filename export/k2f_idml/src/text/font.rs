@@ -36,7 +36,7 @@ impl FontCtx {
         &self.default_family
     }
 
-    fn bytes_for(&self, family: &str) -> Option<&[u8]> {
+    pub(crate) fn bytes_for(&self, family: &str) -> Option<&[u8]> {
         if let Some(b) = self.bytes.get(family) {
             return Some(b.as_slice());
         }

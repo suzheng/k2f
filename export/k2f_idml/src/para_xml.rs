@@ -2,13 +2,18 @@ use crate::coord::fmt_pt;
 use crate::ir::{ScriptPos, TextAlign, TextRun};
 use crate::xml::escape_xml;
 
-pub(crate) fn write_paras(align: TextAlign, runs: &[TextRun], hts: &mut usize) -> String {
+pub(crate) fn write_paras(
+    align: TextAlign,
+    runs: &[TextRun],
+    hts: &mut usize,
+    no_break: bool,
+) -> String {
     let paras = paragraphs(runs);
     let n = paras.len();
     let fallback = runs.first().cloned().unwrap_or_else(default_run);
     let mut body = String::new();
     for (i, para) in paras.iter().enumerate() {
-        body.push_str(&para_xml(align, para, &fallback, hts, i + 1 == n));
+        body.push_str(&para_xml(align, para, &fallback, hts, i + 1 == n, no_break));
     }
     body
 }
@@ -27,6 +32,7 @@ pub(crate) fn default_run() -> TextRun {
         script: ScriptPos::Baseline,
         leading_pt: None,
         auto_page_number: false,
+        tracking: 0,
     }
 }
 
@@ -70,6 +76,7 @@ fn para_xml(
     fallback: &TextRun,
     hts: &mut usize,
     last_para: bool,
+    no_break: bool,
 ) -> String {
     let just = align.justification();
     let leading = runs
@@ -81,15 +88,15 @@ fn para_xml(
         .unwrap_or_default();
     let mut inner = String::new();
     if runs.is_empty() {
-        inner.push_str(&char_range(fallback, hts, !last_para));
+        inner.push_str(&char_range(fallback, hts, !last_para, no_break));
     } else {
         let last = runs.len() - 1;
         for (i, run) in runs.iter().enumerate() {
-            inner.push_str(&char_range(run, hts, i == last && !last_para));
+            inner.push_str(&char_range(run, hts, i == last && !last_para, no_break));
         }
     }
     format!(
-        r#"    <ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/[No paragraph style]" Justification="{just}" Hyphenation="false" AutoLeading="0"{lead_attr}>
+        r#"    <ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/[No paragraph style]" Justification="{just}" Hyphenation="false" SpaceBefore="0" SpaceAfter="0"{lead_attr}>
       <Properties>
         <AppliedComposer>$ID/HL Single</AppliedComposer>
       </Properties>
@@ -98,13 +105,16 @@ fn para_xml(
     )
 }
 
-fn char_range(run: &TextRun, hts: &mut usize, with_br: bool) -> String {
+fn char_range(run: &TextRun, hts: &mut usize, with_br: bool, no_break: bool) -> String {
     let size = fmt_pt(run.size_pt);
     let fill = format!("Color/k2f_{}", run.color_hex);
     let style = font_style(run);
     let mut attrs = format!(
         r#"AppliedCharacterStyle="CharacterStyle/$ID/[No character style]" PointSize="{size}" FillColor="{fill}" FontStyle="{style}""#
     );
+    if no_break {
+        attrs.push_str(r#" NoBreak="true""#);
+    }
     if run.underline {
         attrs.push_str(r#" Underline="true""#);
     }
@@ -115,6 +125,9 @@ fn char_range(run: &TextRun, hts: &mut usize, with_br: bool) -> String {
         ScriptPos::Sub => attrs.push_str(r#" Position="Subscript""#),
         ScriptPos::Super => attrs.push_str(r#" Position="Superscript""#),
         ScriptPos::Baseline => {}
+    }
+    if run.tracking != 0 {
+        attrs.push_str(&format!(r#" Tracking="{}""#, run.tracking));
     }
     let font = escape_xml(&run.font_name);
     let mut kids = String::new();

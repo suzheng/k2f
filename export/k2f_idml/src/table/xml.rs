@@ -54,7 +54,7 @@ fn cell_xml(table_self: &str, r: usize, c: usize, cell: &TableCell, hts: &mut us
         None => "FillColor=\"Swatch/None\"".into(),
     };
     let edges = cell_edge_attrs(&cell.borders);
-    let paras = para_xml::write_paras(cell.align, &cell.runs, hts);
+    let paras = para_xml::write_paras(cell.align, &cell.runs, hts, false);
     format!(
         "      <Cell Self=\"{table_self}_r{r}c{c}\" Name=\"{c}:{r}\" RowSpan=\"1\" ColumnSpan=\"1\" AppliedCellStyle=\"CellStyle/$ID/[None]\" Justification=\"{just}\" VerticalJustification=\"{vert}\" {fill}{edges}>\n{paras}      </Cell>\n"
     )
