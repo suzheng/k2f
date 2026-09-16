@@ -29,7 +29,7 @@ pub use load_dir::{load_dir, load_from_file_map};
 pub use manifest::PackageManifest;
 pub use pack::{pack_bytes, validate_package_schema};
 pub use package::Package;
-pub use schema::{bundled_schema_files, validate_theme_json};
+pub use schema::{bundled_schema_files, validate_content_json, validate_theme_json};
 pub use sign::{generate_secret_key, sign_package, utc_unix_seconds, SecretKey};
 pub use unpack::unpack_bytes;
 pub use verify::{appearance_hash_for_lock, verify_package};

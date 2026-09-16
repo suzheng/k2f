@@ -1,9 +1,10 @@
 //! Step 4: real catalog/example authoring — compile, markdown emit, no `____` import.
 
 use k2f_core::{for_each_form_field, for_each_node, NodeContent, SemanticNode};
-use k2f_package::unpack_bytes;
+use k2f_package::{unpack_bytes, validate_content_json};
 use k2f_paint::OpenedDocument;
 use k2f_sdk::{k2f_to_markdown, markdown_to_k2f, Editor, MarkdownOptions};
+use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
 
@@ -163,5 +164,39 @@ fn markdown_underscores_are_not_imported_as_form_fields() {
     assert!(
         bodies.iter().any(|t| t.contains("[____]")),
         "literal blanks must stay body text: {bodies:?}"
+    );
+}
+
+#[test]
+fn catalog_ex_form_passes_package_nodes_schema() {
+    let node = load_ex_form();
+    let value = serde_json::to_value(&node).unwrap();
+    validate_content_json(&value, "skills/k2f/catalog/content/ex_form.json").unwrap();
+}
+
+#[test]
+fn contract_signature_fields_pass_package_nodes_schema() {
+    let path = repo_root().join("examples/contract/content/signatures.json");
+    let json = fs::read_to_string(&path).unwrap();
+    let value: Value = serde_json::from_str(&json).unwrap();
+    validate_content_json(&value, path.to_str().unwrap()).unwrap();
+}
+
+#[test]
+fn published_mcp_tools_json_matches_engine_catalog() {
+    let engine = fs::read_to_string(repo_root().join("engine/k2f_mcp/mcp_tools.json")).unwrap();
+    let public = fs::read_to_string(repo_root().join("sdk/js/public/mcp_tools.json")).unwrap();
+    assert_eq!(
+        engine,
+        public,
+        "sdk/js/public/mcp_tools.json must mirror engine/k2f_mcp/mcp_tools.json"
+    );
+    assert!(
+        engine.contains("form_field"),
+        "MCP instructions must mention form_field"
+    );
+    assert!(
+        engine.contains("never draw ____"),
+        "MCP instructions must forbid underscore blanks"
     );
 }
