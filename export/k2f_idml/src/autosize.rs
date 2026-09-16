@@ -7,6 +7,10 @@ const GROW_ROOM: i128 = 10_000;
 /// NoBreak overset hides the whole line if we are even 1pt short — use the
 /// full gap as pad. WidthOnly is still off so growth cannot cross the sibling.
 const GAP_KEEP: i128 = 0;
+/// Pad below this: host metrics cannot grow, so NoBreak would overset the
+/// rest of the story (flush column body beside the next card). Drop NoBreak
+/// and HeightOnly-grow instead of hiding lines.
+const FLUSH_PAD: i128 = 2_000;
 
 /// WidthOnly has no max: a shrink-wrapped label beside a badge grows through
 /// the sibling. NoBreak + a too-tight lock box oversets (hides) the whole
@@ -41,6 +45,7 @@ pub(crate) fn clamp_width_autosize(elements: &mut [PageElement]) {
             // Positive Tracking is 1/1000 em extra per gap. On a shrink-wrapped
             // left label it is why the line is wider than the lock box and runs
             // through the badge. Isolated labels keep tracking + WidthOnly.
+            let mut pad = 0i128;
             if grow_right && !grow_left {
                 for run in &mut tb.runs {
                     if run.tracking > 0 {
@@ -48,7 +53,8 @@ pub(crate) fn clamp_width_autosize(elements: &mut [PageElement]) {
                     }
                 }
                 if let Some(gap) = right_gap {
-                    tb.rect.width = Pt(tb.rect.width.0 + pad_for_gap(gap));
+                    pad = pad_for_gap(gap);
+                    tb.rect.width = Pt(tb.rect.width.0 + pad);
                 }
             } else if grow_left && !grow_right {
                 for run in &mut tb.runs {
@@ -57,10 +63,28 @@ pub(crate) fn clamp_width_autosize(elements: &mut [PageElement]) {
                     }
                 }
                 if let Some(gap) = left_gap {
-                    let pad = pad_for_gap(gap);
+                    pad = pad_for_gap(gap);
                     tb.rect.x = Pt(tb.rect.x.0 - pad);
                     tb.rect.width = Pt(tb.rect.width.0 + pad);
                 }
+            } else {
+                pad = match (left_gap, right_gap) {
+                    (Some(l), Some(r)) => pad_for_gap(l).min(pad_for_gap(r)),
+                    (Some(l), None) => pad_for_gap(l),
+                    (None, Some(r)) => pad_for_gap(r),
+                    (None, None) => 0,
+                };
+            }
+            // Flush sibling: expanding 0pt leaves NoBreak lines one host-em
+            // over-wide, and InDesign oversets the rest of the story. Multi-line
+            // lock-pinned body is the same even with an 8pt pad — that slack
+            // fits a short label, not a full-width paragraph. Allow wrap
+            // (unglue NBSP) and HeightOnly so leftover words stay visible.
+            let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
+            if tb.no_break && (pad < FLUSH_PAD || multi) {
+                tb.no_break = false;
+                unglue_nbsp(&mut tb.runs);
+                tb.autosize_height = true;
             }
         }
     }
@@ -71,6 +95,17 @@ fn pad_for_gap(gap: i128) -> i128 {
         0
     } else {
         gap - GAP_KEEP
+    }
+}
+
+fn unglue_nbsp(runs: &mut [crate::ir::TextRun]) {
+    for run in runs {
+        if run.auto_page_number {
+            continue;
+        }
+        if run.text.contains('\u{00A0}') {
+            run.text = run.text.replace('\u{00A0}', " ");
+        }
     }
 }
 
@@ -247,6 +282,10 @@ mod tests {
             left.runs[0].tracking, 0,
             "tight stack must drop overflowing tracking"
         );
+        assert!(
+            left.no_break,
+            "8pt gap still NoBreak (pad is enough for a short label)"
+        );
         let PageElement::TextBox(badge) = &els[1] else {
             panic!("textbox")
         };
@@ -292,6 +331,65 @@ mod tests {
         clamp_width_autosize(&mut els);
         assert!(is_width(&els[0]));
         assert_eq!(width(&els[0]), 520_000);
+    }
+
+    #[test]
+    fn flush_neighbor_drops_nobreak_instead_of_overset() {
+        // 0pt gap — column body flush with the next card (poster metrics).
+        let mut els = vec![
+            tb("body", 0, 180_000, true, "CenterLeftPoint"),
+            shape(180_000, 0, 80_000, 90_000),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.runs[0].text = "endures\u{00A0}is\u{00A0}an\u{00A0}immense".into();
+        }
+        clamp_width_autosize(&mut els);
+        assert!(!is_width(&els[0]), "must not WidthOnly through the card");
+        assert_eq!(width(&els[0]), 180_000, "zero gap adds no pad");
+        let PageElement::TextBox(body) = &els[0] else {
+            panic!("textbox")
+        };
+        assert!(
+            !body.no_break,
+            "flush sibling must allow wrap instead of overset"
+        );
+        assert!(
+            body.autosize_height,
+            "extra wrap must HeightOnly rather than clip"
+        );
+        assert!(
+            !body.runs[0].text.contains('\u{00A0}'),
+            "NBSP glue must undo so host can wrap"
+        );
+    }
+
+    #[test]
+    fn multiline_body_beside_card_drops_nobreak() {
+        // 8pt gap is enough for a short pill, not a lock-pinned paragraph.
+        let mut els = vec![
+            tb("body", 0, 174_000, true, "CenterLeftPoint"),
+            shape(182_000, 0, 80_000, 90_000),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.runs[0].text = "In the oceanic abyss\nextinguishes completely".into();
+            t.runs[0].text = t.runs[0].text.replace(' ', "\u{00A0}");
+        }
+        clamp_width_autosize(&mut els);
+        assert!(!is_width(&els[0]));
+        assert_eq!(width(&els[0]), 182_000, "still expand through the 8pt gap");
+        let PageElement::TextBox(body) = &els[0] else {
+            panic!("textbox")
+        };
+        assert!(!body.no_break, "pinned body must wrap, not overset");
+        assert!(body.autosize_height);
+        assert!(
+            !body.runs[0].text.contains('\u{00A0}'),
+            "NBSP glue must undo so host can wrap"
+        );
+        assert!(
+            body.runs[0].text.contains('\n'),
+            "lock line breaks stay"
+        );
     }
 
     #[test]
