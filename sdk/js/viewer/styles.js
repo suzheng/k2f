@@ -346,8 +346,8 @@ export const VIEWER_CSS = `
   border: 1px solid transparent;
   outline: none;
   box-shadow: none;
-  background: #fff;
-  color: #1a1a1a;
+  background: var(--k2f-surface);
+  color: var(--k2f-text);
   font-family: inherit;
   line-height: 1.4;
   resize: none;
@@ -361,7 +361,7 @@ export const VIEWER_CSS = `
   appearance: auto;
   -webkit-appearance: checkbox;
   padding: 0;
-  background: #fff;
+  background: var(--k2f-surface);
   accent-color: var(--k2f-primary);
   cursor: pointer;
 }

@@ -107,8 +107,9 @@ export function bindFormFill({
     try {
       for (const [id, value] of dirty) ed.replaceText(id, value);
       const bytes = ed.save();
-      dirty.clear();
       await onRelock?.(bytes);
+      dirty.clear();
+      syncSaveButton();
     } catch (err) {
       onError?.(err);
     }

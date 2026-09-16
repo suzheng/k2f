@@ -163,4 +163,55 @@ const fields = [
   ]);
 }
 
+{
+  const wrap = document.createElement("div");
+  wrap.dataset.page = "0";
+  const wraps = [wrap];
+  let editing = true;
+  const saveButton = { hidden: true, disabled: true, addEventListener() {} };
+  const fill = bindFormFill({
+    wrapsOf: () => wraps,
+    viewerOf: () => ({ form_fields: () => JSON.stringify(fields) }),
+    editorOf: () => null,
+    zoomOf: () => 1,
+    editingOf: () => editing,
+    saveButton,
+    signal: new AbortController().signal,
+  });
+  fill.sync();
+  assert.ok(wrap.querySelector(".k2f-form-layer"));
+  editing = false;
+  fill.sync();
+  assert.equal(wrap.querySelector(".k2f-form-layer"), null);
+}
+
+{
+  const calls = [];
+  const saveButton = { hidden: true, disabled: true, addEventListener() {} };
+  const fill = bindFormFill({
+    wrapsOf: () => [],
+    viewerOf: () => ({ form_fields: () => JSON.stringify(fields) }),
+    editorOf: () => ({
+      replaceText(id, value) {
+        calls.push(["replace", id, value]);
+      },
+      save() {
+        calls.push(["save"]);
+        return new Uint8Array([1]);
+      },
+    }),
+    zoomOf: () => 1,
+    editingOf: () => true,
+    saveButton,
+    onRelock: async () => {
+      throw new Error("relock failed");
+    },
+    onError: () => {},
+  });
+  fill.set("ex.form.name", "Bob");
+  await fill.save();
+  assert.deepEqual(calls, [["replace", "ex.form.name", "Bob"], ["save"]]);
+  assert.equal(saveButton.disabled, false);
+}
+
 console.log("ok form-layer overlay DOM + batched Save");

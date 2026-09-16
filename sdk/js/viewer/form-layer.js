@@ -70,7 +70,15 @@ function checkboxControl(current, readOnly) {
 }
 
 function place(el, css, kind, zoom) {
-  const inset = kind === "checkbox" ? 0 : Math.max(1, 2 * zoom);
+  if (kind === "checkbox") {
+    const size = Math.min(css.width, css.height) * 0.85;
+    el.style.left = `${css.left + (css.width - size) / 2}px`;
+    el.style.top = `${css.top + (css.height - size) / 2}px`;
+    el.style.width = `${size}px`;
+    el.style.height = `${size}px`;
+    return;
+  }
+  const inset = Math.max(1, 2 * zoom);
   el.style.left = `${css.left + inset}px`;
   el.style.top = `${css.top + inset}px`;
   el.style.width = `${Math.max(0, css.width - inset * 2)}px`;
