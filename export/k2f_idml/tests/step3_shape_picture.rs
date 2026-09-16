@@ -1,7 +1,8 @@
 mod common;
 
 use k2f_core::{
-    Border, BorderEdge, BorderStyle, BoxDecoration, FillRef, PaintOp, Pt, Rect, Shadow, ShadowRef,
+    Border, BorderEdge, BorderStyle, BoxDecoration, Fill, FillRef, PaintOp, Pt, Rect, Shadow,
+    ShadowRef,
 };
 use k2f_idml::{export_opened, picture_from_draw, shapes_from_box, IdmlError, SpreadSpace};
 use std::collections::BTreeMap;
@@ -244,4 +245,67 @@ fn partial_border_emits_edge_bars() {
         boxes.iter().all(|s| s.line_hex.is_none()),
         "partial border must not set four-side Stroke"
     );
+}
+
+#[test]
+fn translucent_stroke_is_not_opaque_native_line() {
+    let dec = BoxDecoration {
+        background: Some(FillRef::Inline(Fill::Solid {
+            color: "#F7FAFA".into(),
+        })),
+        border: Some(Border {
+            width_pt: 400,
+            color: "#0E2A2A1A".into(),
+            edges: vec![
+                BorderEdge::Top,
+                BorderEdge::Right,
+                BorderEdge::Bottom,
+                BorderEdge::Left,
+            ],
+            style: BorderStyle::Solid,
+        }),
+        ..Default::default()
+    };
+    let boxes = shapes_from_box("card.front", &sample_rect(), &dec).unwrap();
+    assert!(
+        boxes.is_empty(),
+        "alpha<255 hairline must not strip to an opaque native Stroke, got {:?}",
+        boxes
+            .iter()
+            .map(|s| (
+                s.node_id.as_str(),
+                s.line_hex.as_deref(),
+                s.fill_hex.as_deref()
+            ))
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn opaque_stroke_stays_native() {
+    let dec = BoxDecoration {
+        background: Some(FillRef::Inline(Fill::Solid {
+            color: "#F7FAFA".into(),
+        })),
+        border: Some(Border {
+            width_pt: 400,
+            color: "#0E2A2A".into(),
+            edges: vec![
+                BorderEdge::Top,
+                BorderEdge::Right,
+                BorderEdge::Bottom,
+                BorderEdge::Left,
+            ],
+            style: BorderStyle::Solid,
+        }),
+        ..Default::default()
+    };
+    let boxes = shapes_from_box("card.front", &sample_rect(), &dec).unwrap();
+    assert_eq!(
+        boxes.len(),
+        1,
+        "opaque four-side stroke stays one rectangle"
+    );
+    assert_eq!(boxes[0].line_hex.as_deref(), Some("0E2A2A"));
+    assert_eq!(boxes[0].fill_hex.as_deref(), Some("F7FAFA"));
 }

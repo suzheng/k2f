@@ -84,6 +84,17 @@ pub(crate) fn clamp_width_autosize(elements: &mut [PageElement]) {
             if tb.no_break && (pad < FLUSH_PAD || multi) {
                 tb.no_break = false;
                 unglue_nbsp(&mut tb.runs);
+                let nbreaks: usize = tb
+                    .runs
+                    .iter()
+                    .map(|r| r.text.matches('\n').count())
+                    .sum();
+                // 2-line display breaks (title / DEPTHS) stay. 3+ lock wraps
+                // are paragraph reflow — keep them as `\n` and leftover words
+                // wrap *plus* the forced break, overprinting the next card.
+                if nbreaks >= 2 {
+                    collapse_lock_newlines(&mut tb.runs);
+                }
                 tb.autosize_height = true;
             }
         }
@@ -105,6 +116,17 @@ fn unglue_nbsp(runs: &mut [crate::ir::TextRun]) {
         }
         if run.text.contains('\u{00A0}') {
             run.text = run.text.replace('\u{00A0}', " ");
+        }
+    }
+}
+
+fn collapse_lock_newlines(runs: &mut [crate::ir::TextRun]) {
+    for run in runs {
+        if run.auto_page_number {
+            continue;
+        }
+        if run.text.contains('\n') {
+            run.text = run.text.replace('\n', " ");
         }
     }
 }
@@ -371,8 +393,8 @@ mod tests {
             shape(182_000, 0, 80_000, 90_000),
         ];
         if let PageElement::TextBox(t) = &mut els[0] {
-            t.runs[0].text = "In the oceanic abyss\nextinguishes completely".into();
-            t.runs[0].text = t.runs[0].text.replace(' ', "\u{00A0}");
+            t.runs[0].text = "In the oceanic abyss\nextinguishes completely\nthreshold what endures"
+                .replace(' ', "\u{00A0}");
         }
         clamp_width_autosize(&mut els);
         assert!(!is_width(&els[0]));
@@ -387,8 +409,28 @@ mod tests {
             "NBSP glue must undo so host can wrap"
         );
         assert!(
-            body.runs[0].text.contains('\n'),
-            "lock line breaks stay"
+            !body.runs[0].text.contains('\n'),
+            "3+ lock wraps collapse so host reflows as one paragraph"
+        );
+    }
+
+    #[test]
+    fn two_line_title_keeps_display_break() {
+        let mut els = vec![
+            tb("title", 0, 174_000, true, "CenterLeftPoint"),
+            shape(182_000, 0, 80_000, 40_000),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.runs[0].text = "RESONANCE BEYOND THE PHOTIC\nDEPTHS".into();
+        }
+        clamp_width_autosize(&mut els);
+        let PageElement::TextBox(title) = &els[0] else {
+            panic!("textbox")
+        };
+        assert!(!title.no_break);
+        assert!(
+            title.runs[0].text.contains('\n'),
+            "2-line display break must not collapse"
         );
     }
 

@@ -29,7 +29,7 @@ pub fn is_full_page(page_w: Pt, page_h: Pt, rect: &Rect) -> bool {
 }
 
 /// Boxes that cannot be native InDesign rectangles: blur, engine shadow,
-/// linear gradient, or translucent solid. Fraction rules stay with math.
+/// linear gradient, or translucent solid fill/stroke. Fraction rules stay with math.
 pub fn box_is_effect(node_id: &str, decoration: &BoxDecoration) -> Result<bool, IdmlError> {
     if is_rule_id(node_id) {
         return Ok(false);
@@ -38,6 +38,9 @@ pub fn box_is_effect(node_id: &str, decoration: &BoxDecoration) -> Result<bool, 
         return Ok(true);
     }
     if has_engine_shadow(decoration) {
+        return Ok(true);
+    }
+    if translucent_border(decoration)? {
         return Ok(true);
     }
     match resolve_fill(decoration) {
@@ -63,4 +66,18 @@ fn translucent_solid(color: &str) -> Result<bool, IdmlError> {
     let [_, _, _, a] = parse_hex_rgba(color)
         .ok_or_else(|| IdmlError::Write(format!("unparseable fill color '{color}'")))?;
     Ok(a < 255)
+}
+
+/// Opaque native Stroke strips the alpha byte, so a 10% hairline becomes a
+/// solid ink rim. Slice those boxes instead (same path as translucent fill).
+fn translucent_border(decoration: &BoxDecoration) -> Result<bool, IdmlError> {
+    let Some(border) = decoration.border.as_ref() else {
+        return Ok(false);
+    };
+    if border.width_pt <= 0 || border.edges.is_empty() {
+        return Ok(false);
+    }
+    let [_, _, _, a] = parse_hex_rgba(&border.color)
+        .ok_or_else(|| IdmlError::Write(format!("unparseable color '{}'", border.color)))?;
+    Ok(a > 0 && a < 255)
 }
