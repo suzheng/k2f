@@ -7,13 +7,23 @@ pub(crate) fn write_paras(
     runs: &[TextRun],
     hts: &mut usize,
     no_break: bool,
+    first_line_indent_pt: f64,
 ) -> String {
     let paras = paragraphs(runs);
     let n = paras.len();
     let fallback = runs.first().cloned().unwrap_or_else(default_run);
     let mut body = String::new();
     for (i, para) in paras.iter().enumerate() {
-        body.push_str(&para_xml(align, para, &fallback, hts, i + 1 == n, no_break));
+        let indent = if i == 0 { first_line_indent_pt } else { 0.0 };
+        body.push_str(&para_xml(
+            align,
+            para,
+            &fallback,
+            hts,
+            i + 1 == n,
+            no_break,
+            indent,
+        ));
     }
     body
 }
@@ -77,6 +87,7 @@ fn para_xml(
     hts: &mut usize,
     last_para: bool,
     no_break: bool,
+    first_line_indent_pt: f64,
 ) -> String {
     let just = align.justification();
     let leading = runs
@@ -86,6 +97,11 @@ fn para_xml(
     let lead_attr = leading
         .map(|v| format!(r#" Leading="{}""#, fmt_pt(v)))
         .unwrap_or_default();
+    let indent_attr = if first_line_indent_pt > 0.0 {
+        format!(r#" FirstLineIndent="{}""#, fmt_pt(first_line_indent_pt))
+    } else {
+        String::new()
+    };
     let mut inner = String::new();
     if runs.is_empty() {
         inner.push_str(&char_range(fallback, hts, !last_para, no_break));
@@ -96,7 +112,7 @@ fn para_xml(
         }
     }
     format!(
-        r#"    <ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/[No paragraph style]" Justification="{just}" Hyphenation="false" SpaceBefore="0" SpaceAfter="0"{lead_attr}>
+        r#"    <ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/[No paragraph style]" Justification="{just}" Hyphenation="false" SpaceBefore="0" SpaceAfter="0"{lead_attr}{indent_attr}>
       <Properties>
         <AppliedComposer>$ID/HL Single</AppliedComposer>
       </Properties>

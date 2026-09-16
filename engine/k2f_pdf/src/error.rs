@@ -10,6 +10,8 @@ pub enum PdfError {
     RasterOp(&'static str),
     #[error("PDF export scale must be 2, 3, or 4 (got {0})")]
     InvalidScale(f32),
+    #[error("FILLABLE_EXCLUSIVE: fillable widgets cannot share a trust-pack verify page; pass --flatten")]
+    FillableExclusive,
     #[error("{0}")]
     Paint(#[from] k2f_paint::PaintError),
     #[error("package: {0}")]

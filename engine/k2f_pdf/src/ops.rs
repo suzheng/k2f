@@ -1,6 +1,6 @@
 use k2f_core::{LockFile, PaintOp};
 use k2f_paint::{placed_glyphs, PaintError};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use ttf_parser::Face;
 
 use crate::box_op::{draw_box, draw_placeholder};
@@ -14,6 +14,7 @@ pub fn paint_page(
     page_idx: usize,
     faces: &HashMap<String, Face<'_>>,
     images: &BTreeMap<String, ImageRes>,
+    skip_text: &HashSet<String>,
 ) -> Result<PageDraw, PdfError> {
     if lock.has_unknown_paint_ops() {
         return Err(PdfError::UnknownOp);
@@ -43,6 +44,9 @@ pub fn paint_page(
                 rect,
                 runs,
             } => {
+                if skip_text.contains(node_id) {
+                    continue;
+                }
                 let geo = k2f_paint::geo_for_op_str(&geo_by_id, node_id, rect)
                     .ok_or_else(|| PaintError::MissingGeometry(node_id.clone()))?;
                 for g in placed_glyphs(faces, geo, rect, runs)? {

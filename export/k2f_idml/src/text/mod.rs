@@ -34,7 +34,7 @@ pub(crate) fn textbox_from_draw_ctx(
     geo: Option<&GeometryNode>,
     fonts: &FontCtx,
     list_start: u32,
-    master_pages: Option<usize>,
+    page_tokens: Option<(usize, usize)>,
 ) -> Option<TextBox> {
     if node.role == "math" || matches!(node.content, NodeContent::Math(_)) {
         return None;
@@ -44,8 +44,8 @@ pub(crate) fn textbox_from_draw_ctx(
         return None;
     }
     let mut runs = runs::runs_from_paint(raw, paint_runs, &node.modifiers, geo, fonts);
-    if let Some(total) = master_pages {
-        runs = lists::expand_page_tokens(runs, total);
+    if let Some((total, current)) = page_tokens {
+        runs = lists::expand_page_tokens(runs, total, current);
     }
     if runs.is_empty() {
         return None;
@@ -85,11 +85,14 @@ pub(crate) fn textbox_from_draw_ctx(
         run.leading_pt = leading;
     }
     let (inset_top, inset_left, inset_bottom, inset_right) = insets(geo, align);
+    let first_line_indent_pt = infer_first_line_indent(geo, align);
     let nlines = geo.map(|g| source_lines(g).len()).unwrap_or(0);
     // WidthOnly on wrapping multi-line frames can collapse to a narrow column.
     // NoBreak lines cannot wrap, so WidthOnly grows to the longest lock line
     // instead of oversetting. Still gated on tight ink so wide footers do not
-    // shrink and re-anchor.
+    // shrink and re-anchor. UseNoLineBreaks is single-line only: on 2+ lock
+    // lines it sizes the frame as one unwrapped paragraph and ItemTransform-
+    // grows through a two-column gutter.
     let autosize_width = if no_break {
         (nlines <= 1 && should_autosize_width(geo, align))
             || should_autosize_width_for_nobreak(geo, align)
@@ -101,7 +104,7 @@ pub(crate) fn textbox_from_draw_ctx(
     } else {
         autosize_reference(geo, align)
     };
-    let autosize_no_wrap = nlines <= 1 || (no_break && autosize_width);
+    let autosize_no_wrap = nlines <= 1;
     // Paint does not clip glyphs whose line origin sits on/past box height.
     // Skip HeightOnly when WidthOnly is on: extra wrap is already prevented.
     let autosize_height = nlines >= 2 && !autosize_width;
@@ -121,12 +124,14 @@ pub(crate) fn textbox_from_draw_ctx(
         inset_left,
         inset_bottom,
         inset_right,
+        first_line_indent_pt,
         vert_center,
         autosize_width,
         autosize_refer,
         autosize_no_wrap,
         autosize_height,
         no_break,
+        semantic_newlines: raw.contains('\n'),
     })
 }
 
@@ -241,7 +246,7 @@ pub(crate) fn cell_runs(
     runs
 }
 
-fn insets(geo: Option<&GeometryNode>, align: TextAlign) -> (f64, f64, f64, f64) {
+pub(crate) fn insets(geo: Option<&GeometryNode>, align: TextAlign) -> (f64, f64, f64, f64) {
     let Some(geo) = geo else {
         return (0.0, 0.0, 0.0, 0.0);
     };
@@ -286,6 +291,32 @@ fn insets(geo: Option<&GeometryNode>, align: TextAlign) -> (f64, f64, f64, f64) 
         }
         TextAlign::Center | TextAlign::Justify => (top_pt, 0.0, bottom_pt, 0.0),
     }
+}
+
+/// Extra indent of the first lock line vs later lines (Left only).
+/// Common left padding stays on the frame (`inset_left`); this is `FirstLineIndent`.
+pub(crate) fn infer_first_line_indent(geo: Option<&GeometryNode>, align: TextAlign) -> f64 {
+    if !matches!(align, TextAlign::Left) {
+        return 0.0;
+    }
+    let Some(geo) = geo else {
+        return 0.0;
+    };
+    let lines = source_lines(geo);
+    if lines.len() < 2 {
+        return 0.0;
+    }
+    let first = lines[0]
+        .iter()
+        .map(|g| g.x_offset.0)
+        .min()
+        .unwrap_or(0);
+    let rest = lines[1..]
+        .iter()
+        .flat_map(|line| line.iter().map(|g| g.x_offset.0))
+        .min()
+        .unwrap_or(first);
+    millipt_to_pt((first - rest).max(0))
 }
 
 pub(crate) fn leading_pt(geo: Option<&GeometryNode>) -> Option<f64> {

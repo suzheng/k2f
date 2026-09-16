@@ -5,7 +5,7 @@ use crate::align::infer_text_align;
 use crate::coord::millipt_to_pt;
 use crate::geo::find_geo;
 use crate::ir::{TableBox, TableCell, TableRow, TextAlign};
-use crate::text::{cell_runs, vert_center, TextFonts};
+use crate::text::{cell_runs, insets, vert_center, TextFonts};
 use crate::IdmlError;
 use k2f_core::{
     find_in_trees, node_text, GeometryNode, NodeContent, Page, PaintOp, Rect, RunningBlockNode,
@@ -181,6 +181,7 @@ fn build_cell(
         width: geo.width,
         height: geo.height,
     };
+    let (inset_top, inset_left, inset_bottom, inset_right) = insets(Some(geo), align);
     Ok(TableCell {
         node_id: node.map(|n| n.id.clone()).unwrap_or_else(|| geo.id.clone()),
         runs,
@@ -188,5 +189,9 @@ fn build_cell(
         fill_hex: paint.and_then(|p| p.fill_hex.clone()),
         borders: cell_borders(paint.and_then(|p| p.border.as_ref()))?,
         vert_center: vert_center(Some(geo), &cell_rect, font_size),
+        inset_top,
+        inset_left,
+        inset_bottom,
+        inset_right,
     })
 }

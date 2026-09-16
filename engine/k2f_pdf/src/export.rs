@@ -1,8 +1,9 @@
 use k2f_paint::{load_faces, OpenedDocument};
 use miniz_oxide::deflate::{compress_to_vec_zlib, CompressionLevel};
-use pdf_writer::{Filter, Finish, Name, Pdf, Rect, TextStr};
-use std::collections::BTreeMap;
+use pdf_writer::{Filter, Finish, Name, Pdf, Rect, Ref, TextStr};
+use std::collections::{BTreeMap, HashSet};
 
+use crate::acroform;
 use crate::error::PdfError;
 use crate::ids::Alloc;
 use crate::image::{collect_image_srcs, embed_images, embed_rgb, ImageRes};
@@ -18,6 +19,8 @@ pub struct PdfExportOptions {
     pub scale: PdfScale,
     /// When true, each page gets a source caption and a final integrity verification page.
     pub trust_pack: bool,
+    /// When true, paint field glyphs into page content and omit AcroForm widgets.
+    pub flatten: bool,
 }
 
 impl PdfExportOptions {
@@ -25,11 +28,17 @@ impl PdfExportOptions {
         Self {
             scale,
             trust_pack: false,
+            flatten: false,
         }
     }
 
     pub const fn with_trust_pack(mut self) -> Self {
         self.trust_pack = true;
+        self
+    }
+
+    pub const fn with_flatten(mut self) -> Self {
+        self.flatten = true;
         self
     }
 }
@@ -45,7 +54,14 @@ pub fn export_bytes(package_bytes: &[u8]) -> Result<Vec<u8>, PdfError> {
 }
 
 pub fn export_bytes_at(package_bytes: &[u8], scale: PdfScale) -> Result<Vec<u8>, PdfError> {
-    export_opened(&OpenedDocument::open(package_bytes)?, scale)
+    export_bytes_with(package_bytes, PdfExportOptions::new(scale))
+}
+
+pub fn export_bytes_with(
+    package_bytes: &[u8],
+    options: PdfExportOptions,
+) -> Result<Vec<u8>, PdfError> {
+    export_opened(&OpenedDocument::open(package_bytes)?, options)
 }
 
 pub fn export_opened(
@@ -57,6 +73,17 @@ pub fn export_opened(
     if doc.fonts().is_empty() {
         return Err(PdfError::Write("package has no embedded font".into()));
     }
+    let fields = doc.form_fields();
+    if options.trust_pack && !options.flatten && !fields.is_empty() {
+        return Err(PdfError::FillableExclusive);
+    }
+    let fillable = !options.flatten && !fields.is_empty();
+    let skip_text: HashSet<String> = if fillable {
+        fields.iter().map(|f| f.id.clone()).collect()
+    } else {
+        HashSet::new()
+    };
+
     let faces = load_faces(doc.fonts())?;
     let mut alloc = Alloc::new();
     let catalog_id = alloc.bump();
@@ -78,6 +105,7 @@ pub fn export_opened(
         page_ids.push(alloc.bump());
         content_ids.push(alloc.bump());
     }
+    let acro = fillable.then(|| acroform::alloc(&mut alloc, &fields));
 
     let hash = lock.appearance_hash.as_str();
     {
@@ -91,7 +119,13 @@ pub fn export_opened(
         info.finish();
     }
 
-    pdf.catalog(catalog_id).pages(pages_id);
+    {
+        let mut cat = pdf.catalog(catalog_id);
+        cat.pages(pages_id);
+        if let Some(acro) = acro.as_ref() {
+            acroform::write_catalog_form(&mut cat, acro);
+        }
+    }
     pdf.pages(pages_id)
         .kids(page_ids.iter().copied())
         .count(total as i32);
@@ -118,12 +152,12 @@ pub fn export_opened(
             page_stamps.push(stamp);
             out
         } else {
-            paint_page(lock, i, &faces, &images)?
+            paint_page(lock, i, &faces, &images, &skip_text)?
         };
         if options.trust_pack {
             draw_source_caption(&mut page_draw, &faces, hash);
         }
-        let mut glyphs = select::collect_page(doc, i, &faces)?;
+        let mut glyphs = select::collect_page(doc, i, &faces, &skip_text)?;
         if options.trust_pack {
             glyphs.extend(select::collect_caption(page_draw.page_h, &faces, hash));
         }
@@ -143,6 +177,17 @@ pub fn export_opened(
 
     select::write(&mut pdf, &fonts, doc.fonts(), &faces, &gid_maps);
 
+    let page_heights: Vec<f64> = lock
+        .geometry
+        .pages
+        .iter()
+        .map(|p| p.height.as_f64_pt())
+        .collect();
+    let annots = match acro.as_ref() {
+        Some(acro) => acroform::write_widgets(&mut pdf, acro, &fields, &page_ids, &page_heights),
+        None => vec![Vec::new(); total],
+    };
+
     for (i, (w, h, raw, stamps)) in pages.into_iter().enumerate() {
         write_page(
             &mut pdf,
@@ -155,6 +200,7 @@ pub fn export_opened(
             &images,
             &stamps,
             &fonts,
+            annots.get(i).map(Vec::as_slice).unwrap_or(&[]),
         );
     }
 
@@ -164,36 +210,42 @@ pub fn export_opened(
 #[allow(clippy::too_many_arguments)]
 fn write_page(
     pdf: &mut Pdf,
-    pages_id: pdf_writer::Ref,
-    page_id: pdf_writer::Ref,
-    content_id: pdf_writer::Ref,
+    pages_id: Ref,
+    page_id: Ref,
+    content_id: Ref,
     width_pt: f64,
     height_pt: f64,
     raw: &[u8],
     images: &BTreeMap<String, ImageRes>,
     stamps: &[ImageRes],
     fonts: &FontSet,
+    annots: &[Ref],
 ) {
     {
         let mut p = pdf.page(page_id);
         p.parent(pages_id);
         p.media_box(Rect::new(0.0, 0.0, width_pt as f32, height_pt as f32));
         p.contents(content_id);
-        let mut res = p.resources();
-        if !images.is_empty() || !stamps.is_empty() {
-            let mut xo = res.x_objects();
-            for img in images.values() {
-                xo.pair(Name(img.name.as_bytes()), img.id);
+        {
+            let mut res = p.resources();
+            if !images.is_empty() || !stamps.is_empty() {
+                let mut xo = res.x_objects();
+                for img in images.values() {
+                    xo.pair(Name(img.name.as_bytes()), img.id);
+                }
+                for stamp in stamps {
+                    xo.pair(Name(stamp.name.as_bytes()), stamp.id);
+                }
             }
-            for stamp in stamps {
-                xo.pair(Name(stamp.name.as_bytes()), stamp.id);
+            if !fonts.slots.is_empty() {
+                let mut fo = res.fonts();
+                for slot in &fonts.slots {
+                    fo.pair(Name(slot.name.as_bytes()), slot.type0);
+                }
             }
         }
-        if !fonts.slots.is_empty() {
-            let mut fo = res.fonts();
-            for slot in &fonts.slots {
-                fo.pair(Name(slot.name.as_bytes()), slot.type0);
-            }
+        if !annots.is_empty() {
+            p.annotations(annots.iter().copied());
         }
     }
     let compressed = compress_to_vec_zlib(raw, CompressionLevel::DefaultLevel as u8);

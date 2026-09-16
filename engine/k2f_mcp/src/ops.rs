@@ -274,6 +274,7 @@ impl K2fState {
         session_id: &str,
         path: &str,
         scale: Option<f32>,
+        flatten: bool,
     ) -> Result<Value, ToolError> {
         if path.trim().is_empty() {
             return Err(ToolError::path_required("export_pdf"));
@@ -282,11 +283,15 @@ impl K2fState {
             Some(s) => k2f_sdk::parse_pdf_scale(s).map_err(ToolError::from_agent)?,
             None => k2f_sdk::PdfScale::DEFAULT,
         };
+        let mut options = k2f_sdk::PdfExportOptions::new(scale);
+        if flatten {
+            options = options.with_flatten();
+        }
         let id = SessionStore::parse_id(session_id)?;
         let session = self.sessions.get(&id)?;
         let SessionKind::Editor(ed) = &session.kind;
         let pdf = ed
-            .export_pdf_bytes_at(scale)
+            .export_pdf_bytes_with(options)
             .map_err(ToolError::from_agent)?;
         let path = resolve_path(path)?;
         fs::write(&path, &pdf).map_err(|e| ToolError::invalid(format!("write {path:?}: {e}")))?;

@@ -118,19 +118,24 @@ impl Editor {
         Ok(PyBytes::new(py, &bytes))
     }
 
-    #[pyo3(signature = (scale=2.0))]
+    #[pyo3(signature = (scale=2.0, flatten=False))]
     fn export_pdf_bytes_at<'py>(
         &self,
         py: Python<'py>,
         scale: f32,
+        flatten: bool,
     ) -> PyResult<Bound<'py, PyBytes>> {
         let scale = k2f_sdk::parse_pdf_scale(scale).map_err(py_err)?;
-        let bytes = self.inner.export_pdf_bytes_at(scale).map_err(py_err)?;
+        let mut options = k2f_sdk::PdfExportOptions::new(scale);
+        if flatten {
+            options = options.with_flatten();
+        }
+        let bytes = self.inner.export_pdf_bytes_with(options).map_err(py_err)?;
         Ok(PyBytes::new(py, &bytes))
     }
 
     fn export_pdf_bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
-        self.export_pdf_bytes_at(py, 2.0)
+        self.export_pdf_bytes_at(py, 2.0, false)
     }
 
     fn export_pptx_bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {

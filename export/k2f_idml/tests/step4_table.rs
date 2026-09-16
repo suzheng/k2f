@@ -310,6 +310,27 @@ fn harvested_cells_skip_drawbox_on_spread() {
 }
 
 #[test]
+fn table_cells_write_text_insets() {
+    let idml = export_opened(&common::invoice()).unwrap();
+    let mut found = false;
+    for xml in story_files(&idml) {
+        if !xml.contains("<Table") {
+            continue;
+        }
+        found = true;
+        assert!(
+            xml.contains("TextLeftInset="),
+            "cells must set TextLeftInset (override InDesign 4pt default), got {xml}"
+        );
+        assert!(
+            xml.contains("TextTopInset="),
+            "cells must set TextTopInset, got {xml}"
+        );
+    }
+    assert!(found, "invoice must contain a Table");
+}
+
+#[test]
 fn export_table_still_byte_identical() {
     let doc = common::invoice();
     let a = export_opened(&doc).unwrap();

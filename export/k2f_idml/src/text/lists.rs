@@ -82,7 +82,11 @@ fn marker_run(first: &TextRun, text: &str) -> TextRun {
 const PAGE_CURRENT: &str = "{{page_current}}";
 const PAGE_TOTAL: &str = "{{page_total}}";
 
-pub(crate) fn expand_page_tokens(runs: Vec<TextRun>, total_pages: usize) -> Vec<TextRun> {
+pub(crate) fn expand_page_tokens(
+    runs: Vec<TextRun>,
+    total_pages: usize,
+    current: usize,
+) -> Vec<TextRun> {
     if runs.is_empty() {
         return runs;
     }
@@ -104,8 +108,8 @@ pub(crate) fn expand_page_tokens(runs: Vec<TextRun>, total_pages: usize) -> Vec<
         }
         let mut run = style_at(&runs, i).clone();
         if tok == PAGE_CURRENT {
-            run.text.clear();
-            run.auto_page_number = true;
+            run.text = current.to_string();
+            run.auto_page_number = false;
         } else {
             run.text = total.clone();
             run.auto_page_number = false;

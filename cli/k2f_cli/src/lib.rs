@@ -90,6 +90,9 @@ enum Commands {
         /// Append per-page source captions and a final integrity verification page.
         #[arg(long)]
         trust_pack: bool,
+        /// Paint field glyphs into page content and omit AcroForm widgets.
+        #[arg(long)]
+        flatten: bool,
     },
     /// Draw the published lock into a PowerPoint .pptx. Not a second layout engine.
     ExportPptx {
@@ -309,12 +312,16 @@ fn dispatch(command: Commands) -> anyhow::Result<()> {
             output,
             scale,
             trust_pack,
+            flatten,
         } => {
             let scale = PdfScale::from_f32(scale).map_err(|e| anyhow::anyhow!(e))?;
             let doc = OpenedDocument::open(&fs::read(&package)?)?;
             let mut options = PdfExportOptions::new(scale);
             if trust_pack {
                 options = options.with_trust_pack();
+            }
+            if flatten {
+                options = options.with_flatten();
             }
             let pdf = export_opened(&doc, options)?;
             fs::write(&output, pdf)?;

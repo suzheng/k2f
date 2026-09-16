@@ -14,7 +14,8 @@ Do **not** stamp a full-page PNG and overlay invisible text. That is the PDF-bri
 | Plain-text table | Table (inside the positioning TextFrame’s Story) | yes |
 | Bitmap / SVG illustration | embedded Rectangle / Image | replaceable (bytes live in the package) |
 | Opaque solid box | Rectangle | fill can be changed |
-| blur / glass / shadow / gradient / translucent / math | `k2f-raster:` Image | no |
+| Engine shadow-only (no blur) | native Rectangle; glow dropped | yes |
+| blur / glass / gradient / translucent / math | `k2f-raster:` Image | no |
 
 ## Coordinates
 
@@ -34,6 +35,7 @@ Page items are children of `Spread`, not nested in `Page`. Each lock page is one
 - Slight text reflow vs K2F is expected. Glyphs are not absolutely positioned.
 - **Fonts are not embedded.** `Fonts.xml` lists ttf-parser family names only. If the target machine lacks that face, InDesign substitutes and visual QA will drift.
 - Glass / blur slices sample only the chrome lock (page background plus the effect ops). They do **not** blur native card shapes sitting behind the glass.
+- Engine shadows on otherwise-native boxes are dropped. An expanded opaque PNG of the glow halo covers earlier labels (invoice totals, raised plaques).
 - Nested / image / still-Asset table cells are not native `Table` (they stay box+text+pic).
 - SVG assets are rasterized to PNG at export. No IDML → K2F import. No `.indd`. No MathML.
 - Tracking is omitted when advance cannot be measured; the writer does not fake `Tracking="0"`.

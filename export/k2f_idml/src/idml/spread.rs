@@ -23,7 +23,21 @@ pub fn spread_xml(i: usize, space: &SpreadSpace, items: &str) -> String {
 }
 
 pub fn textframe_xml(tb: &TextBox, space: &SpreadSpace, tf_self: &str, story_self: &str) -> String {
-    let (tx, ty) = space.box_center(&tb.rect);
+    textframe_xml_on(tb, space, tf_self, story_self, false)
+}
+
+pub(crate) fn textframe_xml_on(
+    tb: &TextBox,
+    space: &SpreadSpace,
+    tf_self: &str,
+    story_self: &str,
+    on_master: bool,
+) -> String {
+    let (tx, ty) = if on_master {
+        space.box_center_master(&tb.rect)
+    } else {
+        space.box_center(&tb.rect)
+    };
     let tf = item_transform(tx, ty);
     let w = pt_val(tb.rect.width);
     let h = pt_val(tb.rect.height);
@@ -70,8 +84,22 @@ pub fn textframe_xml(tb: &TextBox, space: &SpreadSpace, tf_self: &str, story_sel
     )
 }
 
+#[allow(dead_code)]
 pub fn rectangle_xml(shape: &ShapeBox, space: &SpreadSpace, self_id: &str) -> String {
-    let (tx, ty) = space.box_center(&shape.rect);
+    rectangle_xml_on(shape, space, self_id, false)
+}
+
+pub(crate) fn rectangle_xml_on(
+    shape: &ShapeBox,
+    space: &SpreadSpace,
+    self_id: &str,
+    on_master: bool,
+) -> String {
+    let (tx, ty) = if on_master {
+        space.box_center_master(&shape.rect)
+    } else {
+        space.box_center(&shape.rect)
+    };
     let tf = item_transform(tx, ty);
     let w = pt_val(shape.rect.width);
     let h = pt_val(shape.rect.height);
@@ -104,10 +132,12 @@ pub fn rectangle_xml(shape: &ShapeBox, space: &SpreadSpace, self_id: &str) -> St
     )
 }
 
+#[allow(dead_code)]
 pub fn picture_xml(pic: &PictureBox, space: &SpreadSpace, rect_id: &str, img_id: &str) -> String {
-    framed_image_xml(pic, space, rect_id, img_id, &pic.node_id)
+    framed_image_xml(pic, space, rect_id, img_id, &pic.node_id, false)
 }
 
+#[allow(dead_code)]
 pub fn raster_xml(pic: &PictureBox, space: &SpreadSpace, rect_id: &str, img_id: &str) -> String {
     framed_image_xml(
         pic,
@@ -115,6 +145,34 @@ pub fn raster_xml(pic: &PictureBox, space: &SpreadSpace, rect_id: &str, img_id: 
         rect_id,
         img_id,
         &format!("k2f-raster:{}", pic.node_id),
+        false,
+    )
+}
+
+pub(crate) fn picture_xml_on(
+    pic: &PictureBox,
+    space: &SpreadSpace,
+    rect_id: &str,
+    img_id: &str,
+    on_master: bool,
+) -> String {
+    framed_image_xml(pic, space, rect_id, img_id, &pic.node_id, on_master)
+}
+
+pub(crate) fn raster_xml_on(
+    pic: &PictureBox,
+    space: &SpreadSpace,
+    rect_id: &str,
+    img_id: &str,
+    on_master: bool,
+) -> String {
+    framed_image_xml(
+        pic,
+        space,
+        rect_id,
+        img_id,
+        &format!("k2f-raster:{}", pic.node_id),
+        on_master,
     )
 }
 
@@ -124,8 +182,13 @@ fn framed_image_xml(
     rect_id: &str,
     img_id: &str,
     name: &str,
+    on_master: bool,
 ) -> String {
-    let (tx, ty) = space.box_center(&pic.rect);
+    let (tx, ty) = if on_master {
+        space.box_center_master(&pic.rect)
+    } else {
+        space.box_center(&pic.rect)
+    };
     let tf = item_transform(tx, ty);
     let w = pt_val(pic.rect.width);
     let h = pt_val(pic.rect.height);

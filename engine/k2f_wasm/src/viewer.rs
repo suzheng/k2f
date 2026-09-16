@@ -156,9 +156,18 @@ impl K2fViewer {
     }
 
     pub fn export_pdf_at(&self, scale: f32) -> Result<Vec<u8>, JsValue> {
+        self.export_pdf_with(scale, false)
+    }
+
+    /// `flatten` paints field glyphs and omits AcroForm widgets.
+    pub fn export_pdf_with(&self, scale: f32, flatten: bool) -> Result<Vec<u8>, JsValue> {
         let scale =
             k2f_pdf::PdfScale::from_f32(scale).map_err(|e| JsValue::from_str(&e.to_string()))?;
-        k2f_pdf::export_opened(&self.doc, scale).map_err(|e| JsValue::from_str(&e.to_string()))
+        let mut options = k2f_pdf::PdfExportOptions::new(scale);
+        if flatten {
+            options = options.with_flatten();
+        }
+        k2f_pdf::export_opened(&self.doc, options).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     /// Draw the published lock into a PowerPoint deck. Not a second layout engine.

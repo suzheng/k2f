@@ -64,6 +64,14 @@ impl SpreadSpace {
         let y = pt_val(rect.y) + pt_val(rect.height) / 2.0;
         self.k2f_to_idml(x, y)
     }
+
+    /// MasterSpread items: InDesign applies the page as if its origin were
+    /// the top-center, adding `+cy` to spread-center Y. Compensate so running
+    /// headers stay in the top margin instead of mid-page (behind body text).
+    pub fn box_center_master(&self, rect: &Rect) -> (f64, f64) {
+        let (tx, ty) = self.box_center(rect);
+        (tx, ty - self.cy())
+    }
 }
 
 /// Local path around object center, Y-down. Returns TL, TR, BR, BL as `"x y"`.
@@ -127,5 +135,26 @@ mod tests {
         let (tx, ty) = sp.box_center(&rect);
         assert!(tx.abs() < 1e-9);
         assert!(ty.abs() < 1e-9);
+    }
+
+    #[test]
+    fn master_box_center_shifts_up_by_cy() {
+        let sp = SpreadSpace {
+            page_w: 595.0,
+            page_h: 842.0,
+        };
+        let header = Rect {
+            x: Pt(48_000),
+            y: Pt(0),
+            width: Pt(372_955),
+            height: Pt(10_125),
+        };
+        let (tx, ty) = sp.box_center(&header);
+        let (mtx, mty) = sp.box_center_master(&header);
+        assert!((mtx - tx).abs() < 1e-9);
+        assert!((mty - (ty - 421.0)).abs() < 1e-9);
+        // Written Y is above the page box; InDesign's master mapping brings
+        // it back to the top margin (lock y ≈ 5pt → spread ty ≈ -416).
+        assert!(mty < -800.0);
     }
 }

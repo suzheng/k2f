@@ -219,7 +219,7 @@ fn empty_path_is_path_required() {
     let session_id = open_json["session_id"].as_str().unwrap();
     let err = state.save(session_id, None, "").unwrap_err();
     assert_eq!(err.code, "PATH_REQUIRED");
-    let err = state.export_pdf(session_id, "  ", None).unwrap_err();
+    let err = state.export_pdf(session_id, "  ", None, false).unwrap_err();
     assert_eq!(err.code, "PATH_REQUIRED");
 }
 

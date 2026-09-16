@@ -31,10 +31,8 @@ pub(super) fn scan_ops(
     let root = doc.semantic_root();
     let running = doc.running_blocks();
     let assets = doc.assets();
-    let master_pages = match layer {
-        Layer::Body => None,
-        Layer::Master { total_pages } => Some(total_pages),
-    };
+    let expand_pages = Some((lock.geometry.pages.len(), page_idx + 1));
+    let is_master = matches!(layer, Layer::Master { .. });
     let mut elements = Vec::new();
     let mut seen_master = HashSet::new();
     let mut emitted_tables = HashSet::new();
@@ -44,7 +42,7 @@ pub(super) fn scan_ops(
             continue;
         }
         if let Some(nid) = paint_node_id(op) {
-            if !keep_node(nid, running_ids, master_pages.is_some(), &mut seen_master) {
+            if !keep_node(nid, running_ids, is_master, &mut seen_master) {
                 continue;
             }
         }
@@ -102,7 +100,7 @@ pub(super) fn scan_ops(
                     geo,
                     fonts,
                     list_starts.get(&node.id).copied().unwrap_or(1),
-                    master_pages,
+                    expand_pages,
                 ) {
                     elements.push(PageElement::TextBox(tb));
                 }

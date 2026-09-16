@@ -1,7 +1,5 @@
 use crate::IdmlError;
-use k2f_core::{
-    BoxDecoration, Fill, NodeContent, Pt, Rect, SemanticNode, Shadow, ShadowRef, ROLE_MATH,
-};
+use k2f_core::{BoxDecoration, Fill, NodeContent, Pt, Rect, SemanticNode, ROLE_MATH};
 use k2f_paint::{parse_hex_rgba, resolve_fill};
 use std::collections::HashSet;
 
@@ -28,16 +26,18 @@ pub fn is_full_page(page_w: Pt, page_h: Pt, rect: &Rect) -> bool {
     rect.x == Pt(0) && rect.y == Pt(0) && rect.width == page_w && rect.height == page_h
 }
 
-/// Boxes that cannot be native InDesign rectangles: blur, engine shadow,
-/// linear gradient, or translucent solid fill/stroke. Fraction rules stay with math.
+/// Boxes that cannot be native InDesign rectangles: blur, linear gradient,
+/// or translucent solid fill/stroke. Fraction rules stay with math.
+///
+/// Shadow-only boxes stay native fill+stroke. An opaque shadow PNG is
+/// expanded for blur/spread, so it covers earlier labels that sit in the
+/// glow halo (invoice totals, raised plaques). Same iceberg as PPTX/DOCX.
+/// Keep rasters for blur (no native equivalent). Glow is a v1 gap.
 pub fn box_is_effect(node_id: &str, decoration: &BoxDecoration) -> Result<bool, IdmlError> {
     if is_rule_id(node_id) {
         return Ok(false);
     }
     if decoration.blur.is_some() {
-        return Ok(true);
-    }
-    if has_engine_shadow(decoration) {
         return Ok(true);
     }
     if translucent_border(decoration)? {
@@ -51,14 +51,6 @@ pub fn box_is_effect(node_id: &str, decoration: &BoxDecoration) -> Result<bool, 
             Err(IdmlError::Write(format!("unresolved fill ref '{name}'")))
         }
         Err(e) => Err(e.into()),
-    }
-}
-
-pub fn has_engine_shadow(decoration: &BoxDecoration) -> bool {
-    match &decoration.shadow {
-        Some(ShadowRef::Inline(Shadow { layers })) => !layers.is_empty(),
-        Some(ShadowRef::Ref(_)) => true,
-        None => false,
     }
 }
 
@@ -80,4 +72,44 @@ fn translucent_border(decoration: &BoxDecoration) -> Result<bool, IdmlError> {
     let [_, _, _, a] = parse_hex_rgba(&border.color)
         .ok_or_else(|| IdmlError::Write(format!("unparseable color '{}'", border.color)))?;
     Ok(a > 0 && a < 255)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use k2f_core::{Blur, BlurRef, FillRef, Shadow, ShadowRef};
+
+    fn opaque_glow_plaque() -> BoxDecoration {
+        BoxDecoration {
+            background: Some(FillRef::Inline(Fill::Solid {
+                color: "#092230".into(),
+            })),
+            shadow: Some(ShadowRef::Ref("glow_cyan".into())),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn shadow_only_opaque_box_is_not_effect() {
+        let dec = opaque_glow_plaque();
+        assert!(
+            !box_is_effect("card.grand_total", &dec).unwrap(),
+            "engine shadow must not force a k2f-raster slice"
+        );
+        let layers = BoxDecoration {
+            background: Some(FillRef::Inline(Fill::Solid {
+                color: "#0F1424".into(),
+            })),
+            shadow: Some(ShadowRef::Inline(Shadow { layers: vec![] })),
+            ..Default::default()
+        };
+        assert!(!box_is_effect("card.panel", &layers).unwrap());
+    }
+
+    #[test]
+    fn blur_still_is_effect() {
+        let mut dec = opaque_glow_plaque();
+        dec.blur = Some(BlurRef::Inline(Blur { radius_pt: 8 }));
+        assert!(box_is_effect("card.glass", &dec).unwrap());
+    }
 }

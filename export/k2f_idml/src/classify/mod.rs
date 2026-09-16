@@ -11,7 +11,7 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 pub(crate) enum Layer {
     Body,
-    Master { total_pages: usize },
+    Master { #[allow(dead_code)] total_pages: usize },
 }
 
 pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, IdmlError> {
@@ -52,7 +52,7 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, IdmlError> {
             &mut media_n,
             &mut raster_n,
         )?;
-        crate::autosize::clamp_width_autosize(&mut elements);
+        crate::autosize::apply(&mut elements, page.width.0);
         ir_pages.push(PageIR { elements });
     }
     let mut master_els = scan_master(
@@ -66,14 +66,14 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, IdmlError> {
         &mut media_n,
         &mut raster_n,
     )?;
-    crate::autosize::clamp_width_autosize(&mut master_els);
+    let page0 = &pages[0];
+    crate::autosize::apply(&mut master_els, page0.width.0);
     let mut used = BTreeSet::new();
     used.insert(fonts.default_family().to_string());
     for page in &ir_pages {
         collect_fonts(&mut used, &page.elements);
     }
     collect_fonts(&mut used, &master_els);
-    let page0 = &pages[0];
     Ok(DocIR {
         title: doc.title().to_string(),
         page_w_pt: crate::coord::pt_val(page0.width),
@@ -130,9 +130,13 @@ pub(crate) fn keep_node(
 ) -> bool {
     let running = running_ids.contains(node_id);
     if is_master {
-        running && seen_master.insert(node_id.to_string())
+        // MasterSpread Y does not match body spread Y in InDesign 2026 (headers
+        // land mid-page or off the pasteboard). Running items stay on the body
+        // spread in paint order, above the page fill.
+        let _ = (running, seen_master);
+        false
     } else {
-        !running
+        true
     }
 }
 

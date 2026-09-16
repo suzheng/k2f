@@ -364,6 +364,10 @@
           "scale": {
             "type": "number",
             "description": "Raster stamp scale for gradient/shadow/blur pages: 2, 3, or 4 (default 2)"
+          },
+          "flatten": {
+            "type": "boolean",
+            "description": "If true, paint field glyphs into page content and omit AcroForm widgets"
           }
         },
         "required": ["session_id", "path"]

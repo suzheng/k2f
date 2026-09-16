@@ -92,6 +92,8 @@ pub struct TextBox {
     pub inset_left: f64,
     pub inset_bottom: f64,
     pub inset_right: f64,
+    /// Extra first-line indent (pt) beyond `inset_left`. 0 = omit.
+    pub first_line_indent_pt: f64,
     pub vert_center: bool,
     /// Grow the frame horizontally so host metrics do not wrap a lock one-liner.
     pub autosize_width: bool,
@@ -103,6 +105,9 @@ pub struct TextBox {
     pub autosize_height: bool,
     /// Lock-pinned lines: CharacterStyleRange NoBreak (PPTX wrap=none analog).
     pub no_break: bool,
+    /// Author `\n` in `node_text` (seal stacks, pre-broken titles). Must not be
+    /// collapsed by the lock-wrap reflow path.
+    pub semantic_newlines: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -157,6 +162,10 @@ pub struct TableCell {
     pub fill_hex: Option<String>,
     pub borders: CellBorders,
     pub vert_center: bool,
+    pub inset_top: f64,
+    pub inset_left: f64,
+    pub inset_bottom: f64,
+    pub inset_right: f64,
 }
 
 #[derive(Clone, Debug, Default)]

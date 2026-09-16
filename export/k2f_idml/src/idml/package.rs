@@ -49,6 +49,7 @@ pub fn build_package(
             &mut story_srcs,
             &mut frames,
             &mut files,
+            false,
         );
         page_frames.push(frames);
     }
@@ -60,6 +61,7 @@ pub fn build_package(
         &mut story_srcs,
         &mut master_frames,
         &mut files,
+        true,
     );
     files.insert(
         "designmap.xml".into(),
@@ -117,25 +119,26 @@ fn emit_elements(
     story_srcs: &mut Vec<String>,
     frames: &mut String,
     files: &mut BTreeMap<String, Vec<u8>>,
+    on_master: bool,
 ) {
     for el in elements {
         match el {
             PageElement::TextBox(tb) => {
-                emit_textbox(tb, space, ids, story_srcs, frames, files);
+                emit_textbox(tb, space, ids, story_srcs, frames, files, on_master);
             }
             PageElement::Shape(shape) => {
                 let id = rect_self(ids.next_rect);
                 ids.next_rect += 1;
-                frames.push_str(&spread::rectangle_xml(shape, space, &id));
+                frames.push_str(&spread::rectangle_xml_on(shape, space, &id, on_master));
             }
             PageElement::Picture(pic) => {
-                emit_picture(pic, space, ids, frames, false);
+                emit_picture(pic, space, ids, frames, false, on_master);
             }
             PageElement::Table(tbl) => {
-                emit_table(tbl, space, ids, story_srcs, frames, files);
+                emit_table(tbl, space, ids, story_srcs, frames, files, on_master);
             }
             PageElement::Raster(pic) => {
-                emit_picture(pic, space, ids, frames, true);
+                emit_picture(pic, space, ids, frames, true, on_master);
             }
         }
     }
@@ -147,15 +150,16 @@ fn emit_picture(
     ids: &mut EmitIds,
     frames: &mut String,
     raster: bool,
+    on_master: bool,
 ) {
     let rid = rect_self(ids.next_rect);
     ids.next_rect += 1;
     let iid = img_self(ids.next_img);
     ids.next_img += 1;
     let xml = if raster {
-        spread::raster_xml(pic, space, &rid, &iid)
+        spread::raster_xml_on(pic, space, &rid, &iid, on_master)
     } else {
-        spread::picture_xml(pic, space, &rid, &iid)
+        spread::picture_xml_on(pic, space, &rid, &iid, on_master)
     };
     frames.push_str(&xml);
 }
@@ -167,6 +171,7 @@ fn emit_textbox(
     story_srcs: &mut Vec<String>,
     frames: &mut String,
     files: &mut BTreeMap<String, Vec<u8>>,
+    on_master: bool,
 ) {
     let st = story_self(ids.next_st);
     ids.next_st += 1;
@@ -175,7 +180,7 @@ fn emit_textbox(
     let src = format!("Stories/Story_{st}.xml");
     files.insert(src.clone(), story::story_xml(tb, &st).into_bytes());
     story_srcs.push(src);
-    frames.push_str(&spread::textframe_xml(tb, space, &tf, &st));
+    frames.push_str(&spread::textframe_xml_on(tb, space, &tf, &st, on_master));
 }
 
 fn emit_table(
@@ -185,6 +190,7 @@ fn emit_table(
     story_srcs: &mut Vec<String>,
     frames: &mut String,
     files: &mut BTreeMap<String, Vec<u8>>,
+    on_master: bool,
 ) {
     let st = story_self(ids.next_st);
     ids.next_st += 1;
@@ -207,12 +213,14 @@ fn emit_table(
         inset_left: 0.0,
         inset_bottom: 0.0,
         inset_right: 0.0,
+        first_line_indent_pt: 0.0,
         vert_center: false,
         autosize_width: false,
         autosize_refer: "CenterLeftPoint",
         autosize_no_wrap: false,
         autosize_height: false,
         no_break: false,
+        semantic_newlines: false,
     };
-    frames.push_str(&spread::textframe_xml(&tb, space, &tf, &st));
+    frames.push_str(&spread::textframe_xml_on(&tb, space, &tf, &st, on_master));
 }
