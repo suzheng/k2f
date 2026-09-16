@@ -143,6 +143,8 @@ export class Viewer {
   hit_test(page: number, x_pt: number, y_pt: number): string | undefined;
   hit_selection(page: number, x_pt: number, y_pt: number): string | undefined;
   boxes_for(id: string): string;
+  /** JSON array of FormFieldLocJson. Empty when the document has no form fields. */
+  form_fields(): string;
   clipboard(id: string): string | undefined;
   selection(id: string): string | undefined;
   text_layer(page: number): string;
@@ -160,6 +162,20 @@ export interface SelectionJson {
   text?: string | null;
   char_range?: [number, number] | null;
   node?: unknown;
+}
+
+export interface FormFieldLocJson {
+  id: string;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  kind: "text" | "multiline" | "checkbox";
+  value: string;
+  placeholder?: string;
+  required: boolean;
+  max_length?: number;
 }
 
 export interface TextSpanJson {

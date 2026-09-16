@@ -419,3 +419,56 @@ fn plan_section7_document_deserializes_and_validates() {
     };
     assert_eq!(node_text(&children[1]), Some(""));
 }
+
+#[test]
+fn for_each_form_field_walks_in_document_order() {
+    let node: SemanticNode = serde_json::from_str(
+        r#"{
+        "id": "doc",
+        "role": "document",
+        "content": {
+            "type": "container",
+            "value": {
+                "children": [
+                    {
+                        "id": "doc.name",
+                        "role": "form_field",
+                        "break_inside": "avoid",
+                        "content": {
+                            "type": "form_field",
+                            "value": { "kind": "text", "value": "" }
+                        }
+                    },
+                    {
+                        "id": "doc.body",
+                        "role": "body",
+                        "content": { "type": "text", "value": "after" }
+                    },
+                    {
+                        "id": "doc.agree",
+                        "role": "form_field",
+                        "variant": "checkbox",
+                        "break_inside": "avoid",
+                        "content": {
+                            "type": "form_field",
+                            "value": { "kind": "checkbox", "value": "" }
+                        }
+                    }
+                ]
+            }
+        }
+    }"#,
+    )
+    .unwrap();
+    let mut ids = Vec::new();
+    crate::for_each_form_field(&node, &mut |n, spec| {
+        ids.push((n.id.clone(), spec.kind.as_str().to_string()));
+    });
+    assert_eq!(
+        ids,
+        vec![
+            ("doc.name".into(), "text".into()),
+            ("doc.agree".into(), "checkbox".into()),
+        ]
+    );
+}

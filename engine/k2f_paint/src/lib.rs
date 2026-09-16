@@ -7,6 +7,7 @@ mod error;
 mod executor;
 mod export;
 mod fill;
+mod form_fields;
 mod geo_index;
 mod geom;
 mod glyphs;
@@ -29,6 +30,7 @@ pub use export::{
     export_pages_png_official, png_to_jpeg,
 };
 pub use fill::resolve_fill;
+pub use form_fields::FormFieldLoc;
 pub use geo_index::{geo_for_op, geo_for_op_str, index_geometry_multi, index_geometry_multi_str};
 pub use geom::parse_hex_rgba;
 pub use glyphs::{baseline_y_pt, face_for, glyph_origin_pt, placed_glyphs, PlacedGlyph};

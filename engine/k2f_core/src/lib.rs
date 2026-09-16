@@ -83,7 +83,8 @@ pub use search::{search_tree, search_trees};
 pub use selection::{clipboard_of, selection_of, selection_with_ids, Clipboard, Selection};
 pub use semantic_code_blocks::CodeBlockValue;
 pub use semantic_form_fields::{
-    FormFieldKind, FormFieldSpec, CHECKBOX_CHECKED, CHECKBOX_UNCHECKED, ROLE_FORM_FIELD,
+    for_each_form_field, for_each_form_field_in_trees, FormFieldKind, FormFieldSpec,
+    CHECKBOX_CHECKED, CHECKBOX_UNCHECKED, ROLE_FORM_FIELD,
 };
 pub use semantic_lists::ListMarkerType;
 pub use semantic_math::ROLE_MATH;

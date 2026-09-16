@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{K2FError, NodeContent, Pt, SemanticNode};
+use crate::{for_each_node, K2FError, NodeContent, Pt, RunningBlockNode, SemanticNode};
 
 /// Semantic role for fillable form fields (lock-size boxes; value does not reflow).
 pub const ROLE_FORM_FIELD: &str = "form_field";
@@ -100,9 +100,7 @@ pub fn validate_form_field_invariants(node: &SemanticNode) -> Result<(), K2FErro
         });
     }
 
-    if spec.kind.is_checkbox()
-        && spec.value != CHECKBOX_UNCHECKED
-        && spec.value != CHECKBOX_CHECKED
+    if spec.kind.is_checkbox() && spec.value != CHECKBOX_UNCHECKED && spec.value != CHECKBOX_CHECKED
     {
         return Err(K2FError::FormFieldCheckboxValue {
             node_id: node.id.clone(),
@@ -132,4 +130,28 @@ pub fn validate_form_field_invariants(node: &SemanticNode) -> Result<(), K2FErro
     }
 
     Ok(())
+}
+
+/// Visit every `FormField` node in document order (containers, then table cells).
+pub fn for_each_form_field(
+    node: &SemanticNode,
+    visit: &mut impl FnMut(&SemanticNode, &FormFieldSpec),
+) {
+    for_each_node(node, &mut |n| {
+        if let NodeContent::FormField(spec) = &n.content {
+            visit(n, spec);
+        }
+    });
+}
+
+/// Root plus running blocks. Running blocks must not contain fields (validated elsewhere).
+pub fn for_each_form_field_in_trees(
+    root: &SemanticNode,
+    running: &[RunningBlockNode],
+    visit: &mut impl FnMut(&SemanticNode, &FormFieldSpec),
+) {
+    for_each_form_field(root, visit);
+    for rb in running {
+        for_each_form_field(&rb.node, visit);
+    }
 }

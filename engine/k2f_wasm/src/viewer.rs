@@ -113,6 +113,11 @@ impl K2fViewer {
         serde_json::to_string(&self.doc.boxes_for(id)).unwrap_or_else(|_| "[]".into())
     }
 
+    /// JSON array of `FormFieldLoc` (id, page, rect, kind, value). Empty document → `[]`.
+    pub fn form_fields(&self) -> String {
+        serde_json::to_string(&self.doc.form_fields()).unwrap_or_else(|_| "[]".into())
+    }
+
     pub fn text_layer(&self, page: u32) -> String {
         serde_json::to_string(&self.doc.text_layer(page as usize)).unwrap_or_else(|_| "[]".into())
     }
