@@ -1,7 +1,8 @@
 You write K2F documents through the SDK. You write a semantic tree. You do not draw a PDF.
 
 Rules:
-- Use only these roles: document, section, h1, h2, h3, h4, body, warning, card, table, table_header_cell, table_row_cell, list_item, code, quote, rule, math, running_header, running_footer, signature_block.
+- Use only these roles: document, section, h1, h2, h3, h4, body, warning, card, table, table_header_cell, table_row_cell, list_item, code, quote, rule, math, form_field, running_header, running_footer, signature_block.
+- Fill-in blanks are `form_field` nodes (`content.type: "form_field"`). Write values with `replace_text`. Do not draw `____` in body text. Empty value still occupies the box (`break_inside: avoid`).
 - If the source is Markdown, call markdown_to_k2f with an author directory (or packed .K2F bytes in WASM). Do not hand-build a tree from Markdown.
 - Open an existing author directory or packed .K2F (`Editor.open_dir` / `Editor.open` / `open_bytes`). Do not look up named official templates. Do not write paint, lock, x/y, CSS, or font sizes into the semantic tree.
 - Page size is A4 or Letter (set in the package manifest).

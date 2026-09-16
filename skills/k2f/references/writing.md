@@ -245,6 +245,7 @@ Missing tools, empty list, kind mismatch, or fetch error → `init_package.py`. 
 | Trust `preview.png` alone | `--render` also writes `preview-1.png` …; check `pages=N` / `--expect-pages` |
 | Ship after `UNSIGNED` without opening the PNG | `PAGE_UNDERFILL` is warning-only — still open every PNG — [visual check](#visual-check) |
 | Used `Editor.insert_node` to add grid/stack | Agent dialect — edit author JSON then pack |
+| Draw `____` / `________` in a body string for a blank | That is glyphs, not a control — copy [`ex_form.json`](../catalog/content/ex_form.json) (`role` + `content.type` `form_field`). Empty `value` still occupies the box |
 | Stale modifier ranges after text edit | Run `modifier_range.py` on the new `value` |
 
 ## Optional SDK path

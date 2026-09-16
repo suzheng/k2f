@@ -1,0 +1,194 @@
+{
+  "id": "ex.form",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.form.title",
+          "role": "h1",
+          "keep_with_next": true,
+          "content": { "type": "text", "value": "Catalog: application" }
+        },
+        {
+          "id": "ex.form.name_row",
+          "role": "section",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.form.name_label",
+                  "role": "body",
+                  "content": { "type": "text", "value": "Full name" }
+                },
+                {
+                  "id": "ex.form.name",
+                  "role": "form_field",
+                  "variant": "underline",
+                  "break_inside": "avoid",
+                  "content": {
+                    "type": "form_field",
+                    "value": {
+                      "kind": "text",
+                      "value": "",
+                      "placeholder": "Full legal name"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "layout": {
+            "type": "grid",
+            "columns": [{ "auto": true }, { "fr": 1 }],
+            "column_gap": 12000,
+            "cell_align": { "x": "stretch", "y": "center" }
+          }
+        },
+        {
+          "id": "ex.form.address_label",
+          "role": "body",
+          "content": { "type": "text", "value": "Street address" }
+        },
+        {
+          "id": "ex.form.address",
+          "role": "form_field",
+          "variant": "box",
+          "break_inside": "avoid",
+          "content": {
+            "type": "form_field",
+            "value": {
+              "kind": "multiline",
+              "value": "",
+              "placeholder": "Street address",
+              "lines": 4
+            }
+          }
+        },
+        {
+          "id": "ex.form.agree_row",
+          "role": "section",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.form.agree",
+                  "role": "form_field",
+                  "variant": "checkbox",
+                  "break_inside": "avoid",
+                  "content": {
+                    "type": "form_field",
+                    "value": { "kind": "checkbox", "value": "" }
+                  }
+                },
+                {
+                  "id": "ex.form.agree_label",
+                  "role": "body",
+                  "content": {
+                    "type": "text",
+                    "value": "I have read and agree to the terms."
+                  }
+                }
+              ]
+            }
+          },
+          "layout": {
+            "type": "stack",
+            "direction": "horizontal",
+            "gap": 8000,
+            "align_items": "center"
+          }
+        },
+        {
+          "id": "ex.form.sign",
+          "role": "signature_block",
+          "break_inside": "avoid",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.form.sign.name_row",
+                  "role": "section",
+                  "content": {
+                    "type": "container",
+                    "value": {
+                      "children": [
+                        {
+                          "id": "ex.form.sign.name_label",
+                          "role": "body",
+                          "content": { "type": "text", "value": "Name" }
+                        },
+                        {
+                          "id": "ex.form.sign.name",
+                          "role": "form_field",
+                          "variant": "underline",
+                          "break_inside": "avoid",
+                          "content": {
+                            "type": "form_field",
+                            "value": {
+                              "kind": "text",
+                              "value": "",
+                              "placeholder": "Signature name"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "layout": {
+                    "type": "grid",
+                    "columns": [{ "auto": true }, { "fr": 1 }],
+                    "column_gap": 12000,
+                    "cell_align": { "x": "stretch", "y": "center" }
+                  }
+                },
+                {
+                  "id": "ex.form.sign.date_row",
+                  "role": "section",
+                  "content": {
+                    "type": "container",
+                    "value": {
+                      "children": [
+                        {
+                          "id": "ex.form.sign.date_label",
+                          "role": "body",
+                          "content": { "type": "text", "value": "Date" }
+                        },
+                        {
+                          "id": "ex.form.sign.date",
+                          "role": "form_field",
+                          "variant": "underline",
+                          "break_inside": "avoid",
+                          "content": {
+                            "type": "form_field",
+                            "value": {
+                              "kind": "text",
+                              "value": "",
+                              "placeholder": "YYYY-MM-DD"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "layout": {
+                    "type": "grid",
+                    "columns": [{ "auto": true }, { "fr": 1 }],
+                    "column_gap": 12000,
+                    "cell_align": { "x": "stretch", "y": "center" }
+                  }
+                }
+              ]
+            }
+          },
+          "layout": { "type": "stack", "direction": "vertical", "gap": 12000 }
+        }
+      ]
+    }
+  },
+  "layout": { "type": "stack", "direction": "vertical", "gap": 12000 }
+}

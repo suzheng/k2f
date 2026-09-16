@@ -77,11 +77,12 @@ The CLI's `engine_commit_sha` may differ from the Editor that saved. `k2f verify
 
 ## `replace_text`
 
-Allowed content types: **`Text`** and **`Math`** (Math replaces TeX source).  
+Allowed content types: **`Text`**, **`Math`** (Math replaces TeX source), and **`FormField`** (writes the field `value`; checkbox only `""` / `"true"`).  
 **Not** CodeBlock, Table, Image, Container → `WRONG_CONTENT`.
 
 - Tables: replace text on **cell** node ids, never the table root.
 - Lists: item ids often look like `{listId}.i{n}`; replace those text nodes.
+- Form fields: same API as body text — `replace_text("app.name", "Alice")`. Over `max_length` fails. Filling does not reflow following nodes.
 - Running header/footer: same id APIs (outline includes running trees).
 - Replacing text drops modifiers that no longer fit the new UTF-8 length.
 
@@ -89,7 +90,7 @@ Allowed content types: **`Text`** and **`Math`** (Math replaces TeX source).
 
 - Role and optional `variant` must exist in **this package's** theme (`UNKNOWN_ROLE` / unknown variant otherwise).
 - Custom legal/contract themes often use **`critical_warning`**, not the SDK skin name `warning`.
-- Side effects in core: `warning` / `critical_warning` / `signature_block` / `math` → `break_inside: avoid`; `h1`–`h4` → `keep_with_next`.
+- Side effects in core: `warning` / `critical_warning` / `signature_block` / `math` / `form_field` → `break_inside: avoid`; `h1`–`h4` → `keep_with_next`.
 
 ## `insert_node`
 
@@ -105,7 +106,7 @@ Rules:
 - **No** `x` / `y` (or other coordinate fields) → `INVALID_ARGUMENT`.
 - Id must match dotted pattern; must be unique (`DUPLICATE_ID` / `INVALID_ID`).
 - Insert JSON is validated against the **agent profile** role enum first:
-  `document`, `section`, `h1`–`h4`, `body`, `warning`, `card`, `table`, `table_header_cell`, `table_row_cell`, `list_item`, `code`, `quote`, `rule`, `math`, `running_header`, `running_footer`, `signature_block`
+  `document`, `section`, `h1`–`h4`, `body`, `warning`, `card`, `table`, `table_header_cell`, `table_row_cell`, `list_item`, `code`, `quote`, `rule`, `math`, `form_field`, `running_header`, `running_footer`, `signature_block`
   then against the package theme.
 - Custom theme roles (e.g. `critical_warning`): **insert** with `body` or `warning`, then **`set_role`** to the custom role.
 - Columns: insert a container with `layout: { "type": "columns", "count": 2, "gap": … }` (gap in millipt). Full-width child: `column_span: "all"`.
@@ -122,6 +123,7 @@ Rules:
 | Kind | How to edit (SDK) | How to edit (JSON — default) |
 |------|-------------------|------------------------------|
 | Text / Math | `replace_text` | Edit `content.value` in the node JSON |
+| FormField | `replace_text` on the field id (`""`/`"true"` for checkbox) | Copy [`ex_form.json`](../../catalog/content/ex_form.json); edit `content.value.value` |
 | CodeBlock | Not via `replace_text`; delete + insert or regenerate | Edit or replace node in JSON |
 | Table | Cell text ids; or delete table + insert new table JSON | Edit cell nodes in JSON |
 | List item | `replace_text` on item; or insert/delete items | Edit item nodes in parent's `children` |

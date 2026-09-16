@@ -1,4 +1,4 @@
-use crate::catalog::assert_catalog_matches_handlers;
+use crate::catalog::{assert_catalog_matches_handlers, load_catalog};
 use crate::error::ToolError;
 use crate::ops::{default_publish_origin, K2fState};
 use crate::resources::{list_session_resources, read_resource, resource_templates};
@@ -493,8 +493,6 @@ impl K2fServer {
     }
 }
 
-const SERVER_INSTRUCTIONS: &str = "K2F MCP: copy an author directory (create) or open/markdown_to_k2f → Editor. insert_node/replace_text/set_role on Editor. save writes .K2F (relock); save_dir writes author source. export_pdf requires path. sign is not a tool.";
-
 #[tool_handler(router = self.tool_router)]
 impl ServerHandler for K2fServer {
     fn get_info(&self) -> ServerInfo {
@@ -504,7 +502,7 @@ impl ServerHandler for K2fServer {
                 .enable_resources()
                 .build(),
         )
-        .with_instructions(SERVER_INSTRUCTIONS)
+        .with_instructions(load_catalog().instructions.as_deref().unwrap_or(""))
     }
 
     fn list_resources(

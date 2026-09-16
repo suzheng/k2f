@@ -30,7 +30,8 @@
         { "include": "content/ex_code.json" },
         { "include": "content/ex_math.json" },
         { "include": "content/ex_math_numbered.json" },
-        { "include": "content/ex_image.json" }
+        { "include": "content/ex_image.json" },
+        { "include": "content/ex_form.json" }
       ]
     }
   },

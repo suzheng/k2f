@@ -105,6 +105,8 @@ Comments may combine whitespace-separated tokens (`variant=glass keep_with_next=
 
 Exporter may emit `columns={count} gap={gap}` for layout hints. **Import does not parse `columns=`.**
 
+Form fields export as `<!-- k2f: form_field kind=text|multiline|checkbox id=… -->` plus the value (checkbox `[ ]` / `[x]`). **Import does not parse `form_field` and does not treat `[____]` or underscore runs as fields.** Author blanks in JSON (`ex_form.json`).
+
 Also exported: running header/footer as `header=` / `footer=` comments; list-item hints as trailing `<!-- k2f: … -->` on the same line.
 
 ## Validation loop
