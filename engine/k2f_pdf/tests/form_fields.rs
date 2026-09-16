@@ -196,6 +196,61 @@ fn form_field_trust_pack_flatten_exports() {
 }
 
 #[test]
+fn form_field_fillable_omits_value_from_page_content() {
+    let mut ed = blank_form();
+    ed.replace_text("root.name", "Alice").unwrap();
+    let doc = save_open(&mut ed);
+    let fillable = export_opened(&doc, opts()).unwrap();
+    let painted = common::extract::extract_pdf_text(&fillable);
+    assert!(
+        !painted.contains("Alice"),
+        "fillable export must skip field DrawText; painted {painted:?}"
+    );
+    assert!(
+        common::acroform::field_values(&fillable)
+            .iter()
+            .any(|v| v == "Alice"),
+        "value must live in widget /V only"
+    );
+}
+
+#[test]
+fn form_field_text_widget_sets_multiline_maxlen_and_required() {
+    let doc = save_open(&mut blank_form());
+    let pdf = export_opened(&doc, opts()).unwrap();
+    let name = common::acroform::field_by_alt_name(&pdf, "root.name").expect("name field");
+    assert_eq!(
+        common::acroform::field_type(&name).as_deref(),
+        Some("Tx")
+    );
+    assert_eq!(common::acroform::field_int(&name, b"MaxLen"), Some(80));
+    assert_eq!(common::acroform::field_int(&name, b"Ff"), Some(2), "required bit");
+
+    let address =
+        common::acroform::field_by_alt_name(&pdf, "root.address").expect("address field");
+    assert_eq!(
+        common::acroform::field_type(&address).as_deref(),
+        Some("Tx")
+    );
+    assert_eq!(
+        common::acroform::field_int(&address, b"Ff"),
+        Some(4096),
+        "multiline bit"
+    );
+}
+
+#[test]
+fn form_field_checkbox_widget_is_button_type() {
+    let doc = save_open(&mut blank_form());
+    let pdf = export_opened(&doc, opts()).unwrap();
+    let agree = common::acroform::field_by_alt_name(&pdf, "root.agree").expect("checkbox");
+    assert_eq!(
+        common::acroform::field_type(&agree).as_deref(),
+        Some("Btn")
+    );
+}
+
+#[test]
 fn form_field_sdk_export_pdf_matches_default_fillable() {
     let mut ed = blank_form();
     ed.replace_text("root.name", "Alice").unwrap();

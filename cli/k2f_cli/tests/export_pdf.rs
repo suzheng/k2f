@@ -200,6 +200,30 @@ fn export_pdf_flatten_omits_acroform() {
 }
 
 #[test]
+fn export_pdf_trust_pack_form_document_errors_fillable_exclusive() {
+    let dir = std::env::temp_dir().join(format!("k2f-pdf-trust-form-{}", std::process::id()));
+    fs::create_dir_all(&dir).unwrap();
+    let pkg = pack_compiled_contract(&dir);
+    let out = dir.join("trust.pdf");
+    let export = k2f()
+        .args([
+            "export-pdf",
+            "--trust-pack",
+            pkg.to_str().unwrap(),
+            "-o",
+            out.to_str().unwrap(),
+        ])
+        .output()
+        .unwrap();
+    assert!(!export.status.success());
+    let err = String::from_utf8_lossy(&export.stderr);
+    assert!(
+        err.contains("FILLABLE_EXCLUSIVE"),
+        "trust-pack + fillable fields must fail, got {err}"
+    );
+}
+
+#[test]
 fn export_pdf_help_lists_flatten() {
     let out = k2f().args(["export-pdf", "--help"]).output().unwrap();
     assert!(out.status.success());

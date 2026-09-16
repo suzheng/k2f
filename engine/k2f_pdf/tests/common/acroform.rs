@@ -62,6 +62,27 @@ pub fn field_values(pdf: &[u8]) -> Vec<String> {
         .collect()
 }
 
+pub fn field_by_alt_name(pdf: &[u8], alt: &str) -> Option<Dictionary> {
+    field_dicts(pdf).into_iter().find(|d| {
+        d.get(b"TU")
+            .ok()
+            .map(text_of)
+            .as_deref()
+            .is_some_and(|tu| tu == alt)
+    })
+}
+
+pub fn field_type(d: &Dictionary) -> Option<String> {
+    d.get(b"FT").ok().map(text_of)
+}
+
+pub fn field_int(d: &Dictionary, key: &[u8]) -> Option<i64> {
+    match d.get(key).ok()? {
+        Object::Integer(v) => Some(*v),
+        _ => None,
+    }
+}
+
 pub fn glyph_note_count(pdf: &[u8]) -> usize {
     let parsed = Document::load_mem(pdf).expect("pdf");
     let mut n = 0;
