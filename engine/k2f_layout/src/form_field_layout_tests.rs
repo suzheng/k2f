@@ -298,14 +298,8 @@ fn checkbox_square_and_mark() {
     assert_eq!(a.width, a.height, "checkbox must be square");
     assert_eq!(a.width, b.width);
     assert_eq!(a.height, b.height);
-    let font_size = Pt(11_000);
-    let delta = (a.width.0 - font_size.0).abs();
-    assert!(
-        delta <= font_size.0,
-        "side {} should be the same order as font_size {}",
-        a.width.0,
-        font_size.0
-    );
+    assert_eq!(a.width, Pt(11_000), "checkbox side equals role font_size");
+    assert_eq!(a.height, Pt(11_000));
     assert!(a.glyphs.is_empty(), "unchecked checkbox has no mark");
     assert!(!b.glyphs.is_empty(), "checked checkbox must paint a mark");
 }
@@ -372,4 +366,101 @@ fn break_inside_avoid_keeps_field_on_one_page() {
     let boxes = boxes_for(&lock, "doc.name");
     assert_eq!(boxes.len(), 1, "field must not split across pages");
     assert_eq!(lock.geometry.pages.len(), 2, "field should move as a unit");
+}
+
+#[test]
+fn plan_section_7_minimal_json_compiles() {
+    let json = r#"{
+        "title": "form-field smoke",
+        "canvas_mode": "paged",
+        "page_config": { "width": 595000, "height": 842000, "margin": [72000, 72000, 72000, 72000] },
+        "root": {
+            "id": "doc",
+            "role": "document",
+            "layout": { "type": "stack", "direction": "vertical", "gap": 8000 },
+            "content": {
+                "type": "container",
+                "value": {
+                    "children": [
+                        {
+                            "id": "doc.name_label",
+                            "role": "body",
+                            "content": { "type": "text", "value": "Name" }
+                        },
+                        {
+                            "id": "doc.name",
+                            "role": "form_field",
+                            "variant": "underline",
+                            "break_inside": "avoid",
+                            "content": {
+                                "type": "form_field",
+                                "value": { "kind": "text", "value": "", "placeholder": "Full name" }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }"#;
+    let lock = compile(json);
+    let field = only_box(&lock, "doc.name");
+    assert!(field.width.0 > 0);
+    assert!(field.height.0 > 0);
+    assert!(field.glyphs.is_empty());
+    assert!(
+        field_ops(&lock, "doc.name")
+            .iter()
+            .any(|op| matches!(op, PaintOp::DrawBox { .. }))
+    );
+}
+
+#[test]
+fn explicit_height_overrides_line_count() {
+    let json = a4_root(
+        r#"{
+            "id": "doc.fixed",
+            "role": "form_field",
+            "variant": "box",
+            "break_inside": "avoid",
+            "content": {
+                "type": "form_field",
+                "value": {
+                    "kind": "multiline",
+                    "value": "",
+                    "lines": 3,
+                    "height": 120000
+                }
+            }
+        }"#,
+    );
+    let lock = compile(&json);
+    assert_eq!(only_box(&lock, "doc.fixed").height, Pt(120_000));
+}
+
+#[test]
+fn placeholder_is_metadata_only_not_painted() {
+    let json = a4_root(
+        r#"{
+            "id": "doc.name",
+            "role": "form_field",
+            "variant": "underline",
+            "break_inside": "avoid",
+            "content": {
+                "type": "form_field",
+                "value": {
+                    "kind": "text",
+                    "value": "",
+                    "placeholder": "Full legal name"
+                }
+            }
+        }"#,
+    );
+    let lock = compile(&json);
+    let geo = only_box(&lock, "doc.name");
+    assert!(geo.glyphs.is_empty());
+    let lock_str = serde_json::to_string(&lock).expect("lock json");
+    assert!(
+        !lock_str.contains("Full legal name"),
+        "placeholder must not appear in lock output"
+    );
 }
