@@ -140,6 +140,23 @@ fn form_field_fill_and_relock_keeps_signature_geometry() {
 }
 
 #[test]
+fn form_field_relock_changes_appearance_hash() {
+    let mut ed = build_form();
+    let bytes_a = ed.save_bytes().unwrap();
+    let doc_a = OpenedDocument::open(&bytes_a).unwrap();
+    let appearance_a = doc_a.appearance_hash().unwrap().to_string();
+
+    ed.replace_text("root.name", "Alice").unwrap();
+    let bytes_b = ed.save_bytes().unwrap();
+    let doc_b = OpenedDocument::open(&bytes_b).unwrap();
+    assert_ne!(
+        appearance_a,
+        doc_b.appearance_hash().unwrap(),
+        "filled field glyphs must change appearance_hash"
+    );
+}
+
+#[test]
 fn form_field_checkbox_replace_text_true_survives_relock() {
     let mut ed = build_form();
     ed.replace_text("root.agree", "true").unwrap();

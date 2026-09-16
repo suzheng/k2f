@@ -181,6 +181,25 @@ fn empty_form_field_has_geometry_but_no_glyphs() {
 }
 
 #[test]
+fn form_fields_json_kind_is_snake_case_for_viewer() {
+    let doc = OpenedDocument::open(&pack_form_doc()).unwrap();
+    let json = serde_json::to_string(&doc.form_fields()).unwrap();
+    assert!(json.contains(r#""kind":"text""#));
+    assert!(json.contains(r#""kind":"checkbox""#));
+    assert!(
+        !json.contains("Multiline") && !json.contains("Checkbox") && !json.contains("Text"),
+        "WASM/JS expects snake_case kind strings: {json}"
+    );
+}
+
+#[test]
+fn form_fields_preserves_document_order() {
+    let doc = OpenedDocument::open(&pack_form_doc()).unwrap();
+    let ids: Vec<_> = doc.form_fields().into_iter().map(|f| f.id).collect();
+    assert_eq!(ids, vec!["root.name", "root.agree"]);
+}
+
+#[test]
 fn unlocked_pack_omits_form_fields_without_boxes() {
     let bytes = pack_form_doc();
     let mut pkg = k2f_package::unpack_bytes(&bytes).unwrap();
