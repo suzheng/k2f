@@ -109,7 +109,10 @@ fn save_open(ed: &mut Editor) -> OpenedDocument {
 fn form_field_default_export_writes_acroform_matching_query() {
     let doc = pack_dir("examples/contract");
     let fields = doc.form_fields();
-    assert!(!fields.is_empty(), "compiled contract must have form fields");
+    assert!(
+        !fields.is_empty(),
+        "compiled contract must have form fields"
+    );
     let pdf = export_opened(&doc, opts()).unwrap();
     let dicts = common::acroform::field_dicts(&pdf);
     assert_eq!(dicts.len(), fields.len());
@@ -176,10 +179,7 @@ fn form_field_trust_pack_without_flatten_is_fillable_exclusive() {
     let doc = pack_dir("examples/contract");
     let err = export_opened(&doc, opts().with_trust_pack()).unwrap_err();
     let msg = err.to_string();
-    assert!(
-        msg.contains("FILLABLE_EXCLUSIVE"),
-        "got {msg}"
-    );
+    assert!(msg.contains("FILLABLE_EXCLUSIVE"), "got {msg}");
 }
 
 #[test]

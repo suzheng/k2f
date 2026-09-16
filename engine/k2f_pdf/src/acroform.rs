@@ -104,7 +104,8 @@ fn write_checkbox_appearances(pdf: &mut Pdf, on_id: Ref, off_id: Ref) {
     on.line_to(0.8, 0.2);
     on.stroke();
     pdf.form_xobject(on_id, &on.finish()).bbox(bbox);
-    pdf.form_xobject(off_id, &Content::new().finish()).bbox(bbox);
+    pdf.form_xobject(off_id, &Content::new().finish())
+        .bbox(bbox);
 }
 
 fn write_field(
@@ -163,10 +164,11 @@ fn write_field(
                 Name(b"Off")
             };
             annot.appearance_state(as_name);
-            annot.appearance().normal().streams().pairs([
-                (Name(b"Yes"), on),
-                (Name(b"Off"), off),
-            ]);
+            annot
+                .appearance()
+                .normal()
+                .streams()
+                .pairs([(Name(b"Yes"), on), (Name(b"Off"), off)]);
         }
     }
 }

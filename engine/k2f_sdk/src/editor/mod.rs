@@ -273,11 +273,11 @@ impl Editor {
         self.export_pdf_bytes_with(PdfExportOptions::new(scale))
     }
 
-    pub fn export_pdf_bytes_with(
-        &self,
-        options: PdfExportOptions,
-    ) -> Result<Vec<u8>, AgentError> {
-        crate::export_pdf_with(&pack_bytes(&self.package).map_err(AgentError::from)?, options)
+    pub fn export_pdf_bytes_with(&self, options: PdfExportOptions) -> Result<Vec<u8>, AgentError> {
+        crate::export_pdf_with(
+            &pack_bytes(&self.package).map_err(AgentError::from)?,
+            options,
+        )
     }
 
     pub fn export_pptx_bytes(&self) -> Result<Vec<u8>, AgentError> {

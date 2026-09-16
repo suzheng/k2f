@@ -43,13 +43,13 @@ pub use error::{
     PDF_IS_NOT_A_SOURCE, PPTX_IS_NOT_A_SOURCE, SCHEMA_INVALID, TABLE_ROW_MISMATCH, UNKNOWN_ID,
     UNKNOWN_ROLE, WRONG_CONTENT,
 };
+pub use idml::export_idml;
 pub use k2f_pdf::{PdfExportOptions, PdfScale};
 pub use markdown::{
     k2f_to_markdown, markdown_to_k2f, ConversionReport, MarkdownOptions, MarkdownResult,
 };
 pub use page::PageSize;
 pub use pdf::{export_pdf, export_pdf_at, export_pdf_with, parse_pdf_scale};
-pub use idml::export_idml;
 pub use pptx::export_pptx;
 pub use sign::{generate_key, sign, GeneratedKey};
 

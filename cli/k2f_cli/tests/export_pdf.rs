@@ -131,7 +131,10 @@ fn pack_compiled_contract(dir: &std::path::Path) -> PathBuf {
         "pack: {}",
         String::from_utf8_lossy(&pack.stderr)
     );
-    let compile = k2f().args(["compile", pkg.to_str().unwrap()]).output().unwrap();
+    let compile = k2f()
+        .args(["compile", pkg.to_str().unwrap()])
+        .output()
+        .unwrap();
     assert!(
         compile.status.success(),
         "compile: {}",
@@ -147,7 +150,12 @@ fn export_pdf_form_fields_default_writes_acroform() {
     let pkg = pack_compiled_contract(&dir);
     let out = dir.join("fillable.pdf");
     let export = k2f()
-        .args(["export-pdf", pkg.to_str().unwrap(), "-o", out.to_str().unwrap()])
+        .args([
+            "export-pdf",
+            pkg.to_str().unwrap(),
+            "-o",
+            out.to_str().unwrap(),
+        ])
         .output()
         .unwrap();
     assert!(

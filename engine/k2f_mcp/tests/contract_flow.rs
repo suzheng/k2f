@@ -96,12 +96,7 @@ fn create_from_template_then_insert() {
     let src = repo_root().join("templates/legal");
     let _ = std::fs::remove_dir_all(&dest);
     let created = state
-        .create(
-            "Empty",
-            dest.to_str().unwrap(),
-            src.to_str().unwrap(),
-            "A4",
-        )
+        .create("Empty", dest.to_str().unwrap(), src.to_str().unwrap(), "A4")
         .unwrap();
     assert_eq!(created["kind"].as_str().unwrap(), "editor");
     let session_id = created["session_id"].as_str().unwrap();
