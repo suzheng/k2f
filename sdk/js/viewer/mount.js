@@ -28,6 +28,7 @@ import { exportDocument } from "./export-actions.js";
 import { bindPdfQualityDialog } from "./pdf-quality-dialog.js";
 import { bindFullscreen } from "./fullscreen.js";
 import { bindEditMode } from "./edit-mode.js";
+import { bindFormFill } from "./form-fill.js";
 import { ZOOM_STEPS, fitZoom, stageInnerWidth } from "./zoom-fit.js";
 import { DISPLAY_PAINT_DEBOUNCE_MS } from "./display-scale.js";
 import { bindTheme } from "./theme.js";
@@ -107,12 +108,14 @@ export async function mountK2fViewer(host, bytes, options = {}) {
   });
 
   const highlight = bindHighlight();
+  let formFill = null;
   const editMode = bindEditMode({
     button: els.editBtn,
     canEdit: editable,
     signal,
     onChange: (editing) => {
       if (!editing) edit.clear();
+      formFill?.sync();
     },
   });
   const edit = bindPopover({
@@ -125,9 +128,26 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     highlight,
     onRelock: async (nextBytes, id) => {
       await open(nextBytes);
+      if (!id || !viewer) return;
       const boxes = JSON.parse(viewer.boxes_for(id));
       if (boxes.length) nav.go(boxes[0].page);
       selectId(id);
+    },
+    onError: (err) => {
+      if (bannerMode !== "off") paintOpenError(els.banner, errorMessage(err), bannerMode);
+      chromeScroll.syncPin();
+    },
+  });
+  formFill = bindFormFill({
+    wrapsOf: () => stack.wraps(),
+    viewerOf: () => viewer,
+    editorOf: () => editor,
+    zoomOf: () => zoom,
+    editingOf: () => editMode.editing(),
+    saveButton: els.saveBtn,
+    signal,
+    onRelock: async (nextBytes) => {
+      await open(nextBytes);
     },
     onError: (err) => {
       if (bannerMode !== "off") paintOpenError(els.banner, errorMessage(err), bannerMode);
@@ -322,6 +342,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
         item.dataset.value !== "fit" && Number(item.dataset.value) === zoom ? "true" : "false";
     }
     stack.layout(viewer, zoom);
+    if (editMode.editing()) formFill?.sync();
     scheduleDisplayPaint();
     updateStatus();
     const id = edit.id();
@@ -335,7 +356,12 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     const sel = JSON.parse(raw);
     const url = linkUrlFromSelection(sel);
     if (url) openLink(url);
-    if (editMode.editing()) edit.show(sel);
+    if (editMode.editing() && formFill?.isField(id)) {
+      edit.clear();
+      formFill.focus(id);
+    } else if (editMode.editing()) {
+      edit.show(sel);
+    }
     emit(host, "k2f-select", sel);
   }
 
@@ -343,6 +369,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     packageBytes = nextBytes;
     stack.clear();
     edit.clear();
+    formFill?.clear();
     editMode.setEditing(false);
     highlight.hide();
     if (viewer) {
@@ -513,6 +540,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     (e) => {
       if (!viewer || viewer.page_count() === 0) return;
       if (e.target.closest(".k2f-popover")) return;
+      if (e.target.closest(".k2f-form-layer")) return;
       if (dragged()) return;
       const sel = window.getSelection();
       if (sel && !sel.isCollapsed && sel.toString()) return;
@@ -533,7 +561,13 @@ export async function mountK2fViewer(host, bytes, options = {}) {
       const next = JSON.parse(raw);
       const url = linkUrlFromSelection(next);
       if (url) openLink(url);
-      if (editMode.editing()) edit.show(next);
+      if (editMode.editing() && formFill?.isField(next.id)) {
+        edit.clear();
+        highlight.hide();
+        formFill.focus(next.id);
+      } else if (editMode.editing()) {
+        edit.show(next);
+      }
       emit(host, "k2f-select", next);
     },
     { signal },

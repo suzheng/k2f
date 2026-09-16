@@ -220,6 +220,13 @@ export const VIEWER_CSS = `
 .k2f-toolbar .k2f-edit[aria-pressed="true"]:hover:not(:disabled) {
   background: var(--k2f-primary-hover);
 }
+.k2f-save {
+  width: auto;
+  padding: 0 12px;
+}
+.k2f-toolbar .k2f-save {
+  width: auto;
+}
 .k2f-export {
   display: inline-flex;
   align-items: stretch;
@@ -323,9 +330,48 @@ export const VIEWER_CSS = `
   overflow: hidden;
 }
 .k2f-text-layer span::selection { background: rgba(0, 122, 255, 0.28); }
+.k2f-form-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+.k2f-form-layer input,
+.k2f-form-layer textarea {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: auto;
+  margin: 0;
+  border: 1px solid transparent;
+  outline: none;
+  box-shadow: none;
+  background: #fff;
+  color: #1a1a1a;
+  font-family: inherit;
+  line-height: 1.4;
+  resize: none;
+  padding: 0 4px;
+}
+.k2f-form-layer input:focus,
+.k2f-form-layer textarea:focus {
+  border-color: var(--k2f-highlight);
+}
+.k2f-form-layer input[type="checkbox"] {
+  appearance: auto;
+  -webkit-appearance: checkbox;
+  padding: 0;
+  background: #fff;
+  accent-color: var(--k2f-primary);
+  cursor: pointer;
+}
+.k2f-form-layer[data-readonly] input,
+.k2f-form-layer[data-readonly] textarea {
+  pointer-events: none;
+}
 .k2f-popover {
   position: absolute;
-  z-index: 3;
+  z-index: 4;
   width: 260px;
   padding: 10px;
   background: var(--k2f-surface);

@@ -87,6 +87,12 @@ export function createViewerShell({ bannerMode }) {
   const editBtn = button("edit", "Edit");
   editBtn.classList.add("k2f-edit");
   editBtn.hidden = true;
+  const saveBtn = button("save", "Save");
+  saveBtn.classList.add("k2f-save");
+  saveBtn.hidden = true;
+  saveBtn.disabled = true;
+  saveBtn.setAttribute("aria-label", "Save");
+  saveBtn.title = "Save";
 
   const exportWrap = document.createElement("div");
   exportWrap.className = "k2f-export";
@@ -115,6 +121,7 @@ export function createViewerShell({ bannerMode }) {
     sep(),
     themeBtn,
     editBtn,
+    saveBtn,
     sep(),
     copyAllBtn,
     exportWrap,
@@ -159,6 +166,7 @@ export function createViewerShell({ bannerMode }) {
     zoomMenu,
     themeBtn,
     editBtn,
+    saveBtn,
     exportBtn,
     exportCaret,
     copyAllBtn,
