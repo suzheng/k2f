@@ -1,9 +1,9 @@
 use crate::alignment::align_offset_and_size;
 use crate::fixed_size::subtract_if_bounded;
 use crate::grid::{grid_axis_gaps, resolve_tracks, sum_prefix, sum_with_gaps};
-use crate::resolved_style::{padding_for_role_variant, resolve_self_align};
+use crate::resolved_style::{align_for_child, padding_for_role_variant};
 use crate::{arrange_node, measure_node, LayoutContext, Point, Size, SizeConstraint};
-use k2f_core::{Align, GeometryNode, Pt, SemanticNode, TableDataSource, TableSpec};
+use k2f_core::{Align, GeometryNode, NodeContent, Pt, SemanticNode, TableDataSource, TableSpec};
 
 fn table_axis_gaps(spec: &TableSpec) -> (Pt, Pt) {
     grid_axis_gaps(spec.gap, spec.row_gap, spec.column_gap)
@@ -158,14 +158,21 @@ pub(crate) fn arrange_table_fragment(
             let cell_size = Size::new(col_sizes[c], row_heights[frag_r]);
             let cell_constraint = SizeConstraint::new(Size::ZERO, cell_size);
             let measured = measure_node(cell, cell_constraint, ctx)?;
-            // Cross-axis of the row: role `self_align` (default stretch = v1 full cell).
-            let align_y = resolve_self_align(&cell.role, cell.variant.as_deref(), ctx.theme)
-                .unwrap_or(Align::Stretch);
+            let (dx, child_w) = if matches!(cell.content, NodeContent::FormField(_)) {
+                align_offset_and_size(
+                    align_for_child(cell, Align::Stretch, ctx.theme),
+                    cell_size.width,
+                    measured.width,
+                )
+            } else {
+                (Pt::ZERO, cell_size.width)
+            };
+            let align_y = align_for_child(cell, Align::Stretch, ctx.theme);
             let (dy, child_h) = align_offset_and_size(align_y, cell_size.height, measured.height);
             let child_geo = arrange_node(
                 cell,
-                Point::new(cell_x, cell_y + dy),
-                Size::new(cell_size.width, child_h),
+                Point::new(cell_x + dx, cell_y + dy),
+                Size::new(child_w, child_h),
                 ctx,
             )?;
             composed_children.push(child_geo);

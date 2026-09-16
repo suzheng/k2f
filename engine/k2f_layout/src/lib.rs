@@ -4,6 +4,7 @@ mod compile;
 mod fixed_size;
 mod flow;
 mod fonts;
+mod form_field;
 pub mod grid;
 pub mod layout_context;
 mod leaf;
@@ -16,6 +17,7 @@ pub mod pagination;
 mod render_plan;
 pub mod resolved_style;
 mod running_blocks;
+mod shape_run;
 mod slack;
 pub mod style;
 mod table;
@@ -195,6 +197,8 @@ mod code_role_tests;
 mod columns_tests;
 #[cfg(test)]
 mod compile_svg_tests;
+#[cfg(test)]
+mod form_field_layout_tests;
 #[cfg(test)]
 mod grid_tests;
 #[cfg(test)]

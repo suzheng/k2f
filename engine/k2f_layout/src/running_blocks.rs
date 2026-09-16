@@ -1,5 +1,5 @@
 use crate::alignment::align_offset_and_size;
-use crate::resolved_style::resolve_self_align;
+use crate::resolved_style::align_for_child;
 use crate::{arrange_node, measure_node, LayoutContext, Point, Size, SizeConstraint};
 use k2f_core::{
     Align, Manifest, NodeContent, Pt, RunningBlockPosition, SemanticNode, TableDataSource,
@@ -54,9 +54,7 @@ pub fn inject_running_blocks(
             let constraint = SizeConstraint::new(Size::ZERO, Size::new(content_w, remaining_h));
             let measured = measure_node(&substituted, constraint, ctx)?;
 
-            let self_align =
-                resolve_self_align(&substituted.role, substituted.variant.as_deref(), ctx.theme);
-            let align_mode = self_align.unwrap_or(Align::Start);
+            let align_mode = align_for_child(&substituted, Align::Start, ctx.theme);
             let (dx, child_w) = align_offset_and_size(align_mode, content_w, measured.width);
 
             // Place within the header/footer band; geometry is appended after main content so it paints as overlay.

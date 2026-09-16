@@ -1,5 +1,5 @@
 use crate::alignment::align_offset_and_size;
-use crate::resolved_style::resolve_self_align;
+use crate::resolved_style::align_for_child;
 use crate::{LayoutContext, Paginator, Point, Size, SizeConstraint};
 use k2f_core::{
     Align, BreakBefore, BreakInside, CanvasMode, LayoutHint, NodeContent, Pt, SemanticNode,
@@ -164,8 +164,7 @@ pub(crate) fn place_item(
     canvas_mode: CanvasMode,
     ctx: &LayoutContext,
 ) -> Result<(), String> {
-    let self_align = resolve_self_align(&node.role, node.variant.as_deref(), ctx.theme);
-    let align_mode = self_align.unwrap_or(align_items);
+    let align_mode = align_for_child(node, align_items, ctx.theme);
 
     if canvas_mode == CanvasMode::Paged {
         if node.break_before == BreakBefore::Page && !paginator.at_content_top() {

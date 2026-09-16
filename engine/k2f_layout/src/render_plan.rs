@@ -10,6 +10,7 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 enum NodeContentInfo {
     Text,
+    FormField,
     Math,
     Image { src: String },
     TableReference { source: String, view_mode: String },
@@ -108,7 +109,7 @@ fn index_semantic_tree(node: &k2f_core::SemanticNode, out: &mut HashMap<String, 
         NodeContent::Text(_) => NodeContentInfo::Text,
         NodeContent::CodeBlock(_) => NodeContentInfo::Text,
         NodeContent::Math(_) => NodeContentInfo::Math,
-        NodeContent::FormField(_) => NodeContentInfo::Text,
+        NodeContent::FormField(_) => NodeContentInfo::FormField,
         NodeContent::Image { src, .. } => NodeContentInfo::Image { src: src.clone() },
         NodeContent::TableReference {
             source, view_mode, ..
@@ -218,6 +219,15 @@ fn append_ops_for_geometry(
                 rect,
                 runs: geo.text_runs.clone(),
             });
+        }
+        NodeContentInfo::FormField => {
+            if !geo.text_runs.is_empty() {
+                ops.push(PaintOp::DrawText {
+                    node_id: geo.id.clone(),
+                    rect,
+                    runs: geo.text_runs.clone(),
+                });
+            }
         }
         NodeContentInfo::Math => {
             emit_math_rules(geo, info, theme, ops);

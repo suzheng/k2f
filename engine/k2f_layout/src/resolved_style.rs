@@ -2,7 +2,7 @@ use crate::list_style::ListStyle;
 use crate::style::{apply_patch, resolve_base_style, Style};
 use crate::theme::{Theme, ThemeDecoration};
 use crate::visual_primitives::EdgeInsetsPt;
-use k2f_core::{Align, Pt};
+use k2f_core::{Align, NodeContent, Pt, SemanticNode};
 
 /// Insets in fixed-point pt units (1/1000 pt).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -73,6 +73,17 @@ pub fn resolve_self_align(role: &str, variant: Option<&str>, theme: &Theme) -> O
     }
 
     role_style.self_align
+}
+
+/// Parent align, then role `self_align`. Form fields never stretch: the reserved box is locked.
+pub(crate) fn align_for_child(node: &SemanticNode, parent_align: Align, theme: &Theme) -> Align {
+    let resolved =
+        resolve_self_align(&node.role, node.variant.as_deref(), theme).unwrap_or(parent_align);
+    if matches!(node.content, NodeContent::FormField(_)) && resolved == Align::Stretch {
+        Align::Start
+    } else {
+        resolved
+    }
 }
 
 /// Resolve the box decoration for a role, then apply any role-variant overrides.
