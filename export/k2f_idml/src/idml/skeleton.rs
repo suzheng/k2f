@@ -2,6 +2,9 @@ use crate::coord::{fmt_pt, SpreadSpace, DOM, NS};
 use crate::xml::escape_xml;
 
 const XML_DECL: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>"#;
+/// InDesign refuses IDML without this PI (error 29441 / "format not supported").
+const AID_PI: &str =
+    r#"<?aid style="50" type="document" readerVersion="6.0" featureSet="257" product="16.0(0)" ?>"#;
 
 pub const CONTAINER_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -62,6 +65,7 @@ pub fn designmap_xml(n_pages: usize, stories: &[String]) -> String {
     }
     format!(
         r#"{XML_DECL}
+{AID_PI}
 <Document xmlns:idPkg="{NS}" DOMVersion="{DOM}" Self="kDoc">
   <idPkg:Preferences src="Resources/Preferences.xml"/>
   <idPkg:Styles src="Resources/Styles.xml"/>

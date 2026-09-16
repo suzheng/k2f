@@ -118,6 +118,16 @@ fn unknown_paint_op_gate_present() {
 }
 
 #[test]
+fn designmap_has_aid_processing_instruction() {
+    let idml = export_opened(&common::invoice()).unwrap();
+    let map = common::xml_in(&idml, "designmap.xml");
+    assert!(
+        map.contains(r#"<?aid style="50" type="document" readerVersion="6.0" featureSet="257""#),
+        "InDesign requires the aid PI on designmap.xml, got {map}"
+    );
+}
+
+#[test]
 fn required_parts_present() {
     let doc = common::invoice();
     let idml = export_opened(&doc).unwrap();
