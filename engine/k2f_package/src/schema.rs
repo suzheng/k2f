@@ -437,4 +437,14 @@ mod tests {
         let err = validate_root_json(&node).unwrap_err().to_string();
         assert!(err.contains(crate::CODE_SCHEMA_INVALID), "got {err}");
     }
+
+    #[test]
+    fn official_starter_theme_accepts_form_field_role() {
+        let theme: Value = serde_json::from_str(include_str!(
+            "../../../skills/k2f/starter/styles/theme.json"
+        ))
+        .unwrap();
+        assert!(theme["roles"]["form_field"]["variants"]["underline"].is_object());
+        validate_theme_json(&theme).unwrap();
+    }
 }

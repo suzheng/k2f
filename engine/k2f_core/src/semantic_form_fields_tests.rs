@@ -268,3 +268,105 @@ fn omitted_break_inside_is_allowed() {
     node.break_inside = BreakInside::Auto;
     validate_semantic_tree(&node).unwrap();
 }
+
+#[test]
+fn rejects_zero_height() {
+    let node = field_node(
+        "app.name",
+        FormFieldSpec {
+            kind: FormFieldKind::Text,
+            value: String::new(),
+            placeholder: None,
+            width: Some(Pt(220000)),
+            height: Some(Pt(0)),
+            lines: Some(1),
+            max_length: None,
+            required: false,
+        },
+    );
+    let err = validate_semantic_tree(&node).unwrap_err();
+    assert!(matches!(err, K2FError::FormFieldSize { .. }));
+    assert!(err.to_string().contains("FORM_FIELD_SIZE"));
+}
+
+#[test]
+fn rejects_value_longer_than_max_length() {
+    let node = field_node(
+        "app.name",
+        FormFieldSpec {
+            kind: FormFieldKind::Text,
+            value: "abcd".to_string(),
+            placeholder: None,
+            width: None,
+            height: None,
+            lines: Some(1),
+            max_length: Some(3),
+            required: false,
+        },
+    );
+    let err = validate_semantic_tree(&node).unwrap_err();
+    assert!(matches!(
+        err,
+        K2FError::FormFieldMaxLength { max: 3, got: 4, .. }
+    ));
+    assert!(err.to_string().contains("FORM_FIELD_MAX_LENGTH"));
+}
+
+#[test]
+fn replace_rejects_invalid_checkbox_value() {
+    let mut root = field_node(
+        "app.read",
+        FormFieldSpec {
+            kind: FormFieldKind::Checkbox,
+            value: String::new(),
+            placeholder: None,
+            width: None,
+            height: None,
+            lines: None,
+            max_length: None,
+            required: false,
+        },
+    );
+    let err = replace_node_text(&mut root, &mut [], "app.read", "yes").unwrap_err();
+    assert!(matches!(err, NodeEditError::InvalidCheckboxValue(_)));
+    assert_eq!(node_text(&root), Some(""));
+    replace_node_text(&mut root, &mut [], "app.read", "true").unwrap();
+    assert_eq!(node_text(&root), Some("true"));
+}
+
+#[test]
+fn plan_section7_document_deserializes_and_validates() {
+    let json = r#"{
+        "id": "doc",
+        "role": "document",
+        "layout": { "type": "stack", "direction": "vertical", "gap": 8000 },
+        "content": {
+            "type": "container",
+            "value": {
+                "children": [
+                    {
+                        "id": "doc.name_label",
+                        "role": "body",
+                        "content": { "type": "text", "value": "Name" }
+                    },
+                    {
+                        "id": "doc.name",
+                        "role": "form_field",
+                        "variant": "underline",
+                        "break_inside": "avoid",
+                        "content": {
+                            "type": "form_field",
+                            "value": { "kind": "text", "value": "", "placeholder": "Full name" }
+                        }
+                    }
+                ]
+            }
+        }
+    }"#;
+    let node: SemanticNode = serde_json::from_str(json).unwrap();
+    validate_semantic_tree(&node).unwrap();
+    let NodeContent::Container { children } = &node.content else {
+        panic!("expected container");
+    };
+    assert_eq!(node_text(&children[1]), Some(""));
+}

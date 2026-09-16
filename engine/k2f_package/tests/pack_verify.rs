@@ -3,8 +3,8 @@ mod common;
 use common::{compile_pkg, load_contract_engine, load_font, packed_contract, repo_root};
 use k2f_core::{CanvasMode, Pt};
 use k2f_package::{
-    pack_bytes, package_from_engine, unpack_bytes, verify_package, VerifyStatus, CODE_NODE_ID,
-    CODE_SCHEMA_INVALID,
+    load_dir, pack_bytes, package_from_engine, unpack_bytes, verify_package, VerifyStatus,
+    CODE_NODE_ID, CODE_SCHEMA_INVALID,
 };
 use std::fs;
 
@@ -257,6 +257,35 @@ fn pack_rejects_svg_textpath() {
         err.to_string().contains(k2f_package::CODE_IMAGE_SIZE),
         "got {err}"
     );
+}
+
+#[test]
+fn pack_accepts_form_field_on_real_contract() {
+    let mut pkg = load_dir(&repo_root().join("examples/contract")).expect("load examples/contract");
+    match &mut pkg.root.content {
+        k2f_core::NodeContent::Container { children } => children.push(k2f_core::SemanticNode {
+            id: "contract.applicant_name".into(),
+            role: "form_field".into(),
+            variant: Some("underline".into()),
+            break_inside: k2f_core::BreakInside::Avoid,
+            content: k2f_core::NodeContent::FormField(k2f_core::FormFieldSpec {
+                kind: k2f_core::FormFieldKind::Text,
+                value: String::new(),
+                placeholder: Some("Full legal name".into()),
+                width: Some(k2f_core::Pt(220000)),
+                height: None,
+                lines: Some(1),
+                max_length: None,
+                required: false,
+            }),
+            ..Default::default()
+        }),
+        other => panic!(
+            "contract root must be a container, got {}",
+            other.type_name()
+        ),
+    }
+    pack_bytes(&pkg).unwrap();
 }
 
 #[test]
