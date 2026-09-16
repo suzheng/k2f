@@ -25,6 +25,7 @@ mod running_blocks_validation;
 mod search;
 mod selection;
 mod semantic_code_blocks;
+mod semantic_form_fields;
 mod semantic_lists;
 mod semantic_math;
 mod sha256_hex;
@@ -35,6 +36,8 @@ pub mod visual_primitives;
 
 #[cfg(test)]
 mod semantic_code_blocks_tests;
+#[cfg(test)]
+mod semantic_form_fields_tests;
 #[cfg(test)]
 mod semantic_math_tests;
 
@@ -79,6 +82,9 @@ pub use running_blocks_validation::validate_manifest_running_blocks;
 pub use search::{search_tree, search_trees};
 pub use selection::{clipboard_of, selection_of, selection_with_ids, Clipboard, Selection};
 pub use semantic_code_blocks::CodeBlockValue;
+pub use semantic_form_fields::{
+    FormFieldKind, FormFieldSpec, CHECKBOX_CHECKED, CHECKBOX_UNCHECKED, ROLE_FORM_FIELD,
+};
 pub use semantic_lists::ListMarkerType;
 pub use semantic_math::ROLE_MATH;
 pub use sha256_hex::sha256_hex;
@@ -408,6 +414,8 @@ pub enum NodeContent {
     CodeBlock(CodeBlockValue),
     /// TeX-subset math source (NFC-normalized). Display formulas use role `"math"`.
     Math(String),
+    /// Fillable field. Declared box size; `value` does not drive measure.
+    FormField(FormFieldSpec),
     /// Deterministic image sizing (in Pt). The engine does not inspect binary image assets.
     /// Callers must provide a stable size hint to eliminate placeholders.
     Image {
@@ -429,6 +437,22 @@ pub enum NodeContent {
         width: Pt,
         height: Pt,
     },
+}
+
+impl NodeContent {
+    /// JSON `content.type` tag for this variant.
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            NodeContent::Text(_) => "text",
+            NodeContent::CodeBlock(_) => "code_block",
+            NodeContent::Math(_) => "math",
+            NodeContent::FormField(_) => "form_field",
+            NodeContent::Image { .. } => "image",
+            NodeContent::Container { .. } => "container",
+            NodeContent::Table(_) => "table",
+            NodeContent::TableReference { .. } => "table_reference",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1247,6 +1271,28 @@ pub enum K2FError {
     MathModifiersNotAllowed { node_id: String },
     #[error("math node '{node_id}' has empty TeX source")]
     MathEmpty { node_id: String },
+    #[error("FORM_FIELD_ROLE: node '{node_id}' requires content.type = \"form_field\" (got {got})")]
+    FormFieldRoleRequiresFormFieldContent { node_id: String, got: String },
+    #[error("FORM_FIELD_CONTENT: node '{node_id}' has content.type = \"form_field\" but role is '{role}' (expected role \"form_field\")")]
+    FormFieldContentRequiresFormFieldRole { node_id: String, role: String },
+    #[error("FORM_FIELD_LAYOUT: form field node '{node_id}' cannot specify layout (must be omitted/null)")]
+    FormFieldLayoutNotAllowed { node_id: String },
+    #[error("FORM_FIELD_MODIFIERS: form field node '{node_id}' cannot have modifiers")]
+    FormFieldModifiersNotAllowed { node_id: String },
+    #[error("FORM_FIELD_CHECKBOX_VALUE: form field node '{node_id}' checkbox value must be \"\" or \"true\" (got {got})")]
+    FormFieldCheckboxValue { node_id: String, got: String },
+    #[error("FORM_FIELD_LINES: form field node '{node_id}' lines must be >= 1 (got {got})")]
+    FormFieldLines { node_id: String, got: u32 },
+    #[error("FORM_FIELD_SIZE: form field node '{node_id}' width/height must be > 0")]
+    FormFieldSize { node_id: String },
+    #[error("FORM_FIELD_MAX_LENGTH: form field node '{node_id}' value length {got} exceeds max_length {max}")]
+    FormFieldMaxLength {
+        node_id: String,
+        max: u32,
+        got: usize,
+    },
+    #[error("FORM_FIELD_IN_RUNNING: form field node '{node_id}' cannot appear in a running block")]
+    FormFieldInRunning { node_id: String },
     #[error("running blocks are only supported when canvas_mode is 'paged'")]
     RunningBlocksRequirePagedMode,
     #[error("running block node '{node_id}' uses unknown placeholder '{{{{{token}}}}}'")]
@@ -1289,6 +1335,7 @@ fn validate_node(node: &SemanticNode) -> Result<(), K2FError> {
     semantic_lists::validate_list_item_invariants(node)?;
     semantic_code_blocks::validate_code_block_invariants(node)?;
     semantic_math::validate_math_invariants(node)?;
+    semantic_form_fields::validate_form_field_invariants(node)?;
 
     match &node.content {
         NodeContent::Text(text) => {

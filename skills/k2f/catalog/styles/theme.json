@@ -31,7 +31,8 @@
     "borders": {
       "subtle": { "color": "#1515151A", "width_pt": 500 },
       "subtle_bottom": { "color": "#1515151A", "width_pt": 500, "edges": ["bottom"] },
-      "subtle_hbar": { "color": "#1515151A", "width_pt": 500, "edges": ["top", "bottom"] }
+      "subtle_hbar": { "color": "#1515151A", "width_pt": 500, "edges": ["top", "bottom"] },
+      "contrast": { "color": "#1515154D", "width_pt": 1000 }
     },
     "shadows": {
       "elevation.1": {
@@ -306,6 +307,21 @@
       "box_decoration": {
         "background": "signature",
         "padding_pt": 16000
+      }
+    },
+    "form_field": {
+      "font_family": "Roboto-Regular",
+      "font_size": 11000,
+      "line_height_mult": 1400,
+      "color": "ink",
+      "box_decoration": {
+        "padding_pt": { "top": 2000, "right": 4000, "bottom": 2000, "left": 4000 },
+        "border": "subtle_bottom"
+      },
+      "variants": {
+        "underline": { "box_decoration": { "border": "subtle_bottom" } },
+        "box": { "box_decoration": { "border": "subtle", "corner_radius": "small" } },
+        "checkbox": { "box_decoration": { "border": "contrast", "corner_radius": "small" } }
       }
     },
     "rule": {

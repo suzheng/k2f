@@ -55,6 +55,14 @@ impl From<NodeEditError> for AgentError {
             NodeEditError::DuplicateId(id) => {
                 Self::new(DUPLICATE_ID, format!("duplicate node id '{id}'"))
             }
+            NodeEditError::MaxLengthExceeded { id, max, got } => Self::new(
+                INVALID_ARGUMENT,
+                format!("value for '{id}' exceeds max_length {max} (got {got} characters)"),
+            ),
+            NodeEditError::InvalidCheckboxValue(id) => Self::new(
+                INVALID_ARGUMENT,
+                format!("checkbox '{id}' value must be \"\" or \"true\""),
+            ),
         }
     }
 }

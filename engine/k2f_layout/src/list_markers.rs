@@ -48,6 +48,7 @@ fn walk_node(node: &SemanticNode, theme: &Theme, out: &mut ListMarkerMap) -> Res
         NodeContent::Text(_)
         | NodeContent::CodeBlock(_)
         | NodeContent::Math(_)
+        | NodeContent::FormField(_)
         | NodeContent::Image { .. }
         | NodeContent::TableReference { .. } => {}
     }

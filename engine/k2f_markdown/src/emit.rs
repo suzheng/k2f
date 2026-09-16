@@ -1,7 +1,7 @@
 use crate::encode::apply_inline_markdown;
 use k2f_core::{
-    ListMarkerType, NodeContent, RunningBlockNode, RunningBlockPosition, SemanticNode,
-    TableDataSource, TableSpec,
+    FormFieldKind, FormFieldSpec, ListMarkerType, NodeContent, RunningBlockNode,
+    RunningBlockPosition, SemanticNode, TableDataSource, TableSpec, CHECKBOX_CHECKED,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -91,6 +91,7 @@ fn emit_node(node: &SemanticNode, opts: MarkdownEmitOptions, out: &mut String) {
             push(out, &format!("$$\n{tex}\n$$"));
             blank(out);
         }
+        NodeContent::FormField(spec) => emit_form_field(node, spec, opts, out),
         _ => {}
     }
 }
@@ -205,7 +206,40 @@ fn cell_text(node: &SemanticNode) -> String {
     match &node.content {
         NodeContent::Text(t) => apply_inline_markdown(t, &node.modifiers).replace('|', "\\|"),
         NodeContent::Math(tex) => format!("${}$", tex.replace('|', "\\|")),
+        NodeContent::FormField(spec) => form_field_plain(spec).replace('|', "\\|"),
         _ => String::new(),
+    }
+}
+
+fn emit_form_field(
+    node: &SemanticNode,
+    spec: &FormFieldSpec,
+    opts: MarkdownEmitOptions,
+    out: &mut String,
+) {
+    if opts.hints {
+        comment(
+            out,
+            &format!(
+                "form_field kind={} id={}",
+                spec.kind.as_str(),
+                sanitize_comment(&node.id)
+            ),
+        );
+    }
+    push(out, &form_field_plain(spec));
+    blank(out);
+}
+
+fn form_field_plain(spec: &FormFieldSpec) -> String {
+    if spec.kind == FormFieldKind::Checkbox {
+        if spec.value == CHECKBOX_CHECKED {
+            "[x]".to_string()
+        } else {
+            "[ ]".to_string()
+        }
+    } else {
+        spec.value.clone()
     }
 }
 

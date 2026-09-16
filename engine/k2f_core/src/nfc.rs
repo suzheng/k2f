@@ -20,6 +20,12 @@ fn normalize_node_text(node: &mut crate::SemanticNode) {
         NodeContent::Math(text) => {
             *text = nfc(text);
         }
+        NodeContent::FormField(spec) => {
+            spec.value = nfc(&spec.value);
+            if let Some(placeholder) = spec.placeholder.as_mut() {
+                *placeholder = nfc(placeholder);
+            }
+        }
         NodeContent::CodeBlock(CodeBlockValue::Text(text)) => {
             *text = nfc(text);
         }

@@ -1,6 +1,6 @@
 use crate::{
-    validate_semantic_tree, validate_semantic_tree_with_theme_vocab, CanvasMode, K2FError,
-    Manifest, NodeContent, SemanticNode, TableDataSource, ThemeVocab,
+    for_each_node, validate_semantic_tree, validate_semantic_tree_with_theme_vocab, CanvasMode,
+    K2FError, Manifest, NodeContent, SemanticNode, TableDataSource, ThemeVocab,
 };
 
 pub fn validate_manifest_running_blocks(
@@ -20,10 +20,24 @@ pub fn validate_manifest_running_blocks(
         validate_semantic_tree(&rb.node)?;
         validate_semantic_tree_with_theme_vocab(&rb.node, theme_vocab)?;
         validate_running_block_placeholders(&rb.node)?;
+        reject_form_fields_in_running(&rb.node)?;
     }
 
     crate::validate_manifest_node_ids(manifest)?;
 
+    Ok(())
+}
+
+fn reject_form_fields_in_running(node: &SemanticNode) -> Result<(), K2FError> {
+    let mut bad_id = None;
+    for_each_node(node, &mut |n| {
+        if matches!(n.content, NodeContent::FormField(_)) && bad_id.is_none() {
+            bad_id = Some(n.id.clone());
+        }
+    });
+    if let Some(node_id) = bad_id {
+        return Err(K2FError::FormFieldInRunning { node_id });
+    }
     Ok(())
 }
 
@@ -242,5 +256,35 @@ mod tests {
         });
         let err = validate_manifest_running_blocks(&m, &vocab).unwrap_err();
         assert!(matches!(err, K2FError::RunningBlocksRequirePagedMode));
+    }
+
+    #[test]
+    fn rejects_form_field_in_running_block() {
+        let mut vocab = vocab_with_role("body");
+        vocab
+            .roles
+            .insert("form_field".to_string(), Default::default());
+        let mut m = minimal_manifest(text_node("root", "body", "hi"));
+        m.running_blocks.push(RunningBlockNode {
+            position: RunningBlockPosition::Header,
+            node: SemanticNode {
+                id: "rb.field".to_string(),
+                role: "form_field".to_string(),
+                content: crate::NodeContent::FormField(crate::FormFieldSpec {
+                    kind: crate::FormFieldKind::Text,
+                    value: String::new(),
+                    placeholder: None,
+                    width: None,
+                    height: None,
+                    lines: Some(1),
+                    max_length: None,
+                    required: false,
+                }),
+                ..Default::default()
+            },
+        });
+        let err = validate_manifest_running_blocks(&m, &vocab).unwrap_err();
+        assert!(matches!(err, K2FError::FormFieldInRunning { .. }));
+        assert!(err.to_string().contains("FORM_FIELD_IN_RUNNING"));
     }
 }

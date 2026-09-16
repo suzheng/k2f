@@ -402,4 +402,39 @@ mod tests {
         });
         validate_theme_json(&theme).unwrap();
     }
+
+    #[test]
+    fn form_field_node_is_schema_valid() {
+        let node = json!({
+            "id": "app.applicant.full_name",
+            "role": "form_field",
+            "variant": "underline",
+            "break_inside": "avoid",
+            "content": {
+                "type": "form_field",
+                "value": {
+                    "kind": "text",
+                    "value": "",
+                    "placeholder": "Full legal name",
+                    "width": 220000,
+                    "lines": 1
+                }
+            }
+        });
+        validate_root_json(&node).unwrap();
+    }
+
+    #[test]
+    fn form_field_unknown_kind_is_schema_invalid() {
+        let node = json!({
+            "id": "app.name",
+            "role": "form_field",
+            "content": {
+                "type": "form_field",
+                "value": { "kind": "dropdown", "value": "" }
+            }
+        });
+        let err = validate_root_json(&node).unwrap_err().to_string();
+        assert!(err.contains(crate::CODE_SCHEMA_INVALID), "got {err}");
+    }
 }

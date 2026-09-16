@@ -143,6 +143,28 @@
         {
           "additionalProperties": false,
           "properties": {
+            "type": { "const": "form_field" },
+            "value": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": { "enum": ["text", "multiline", "checkbox"] },
+                "value": { "type": "string" },
+                "placeholder": { "type": "string" },
+                "width": { "type": "integer", "minimum": 1 },
+                "height": { "type": "integer", "minimum": 1 },
+                "lines": { "type": "integer", "minimum": 1 },
+                "max_length": { "type": "integer", "minimum": 1 },
+                "required": { "type": "boolean" }
+              },
+              "required": ["kind", "value"]
+            }
+          },
+          "required": ["type", "value"]
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
             "type": { "const": "image" },
             "value": {
               "type": "object",

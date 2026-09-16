@@ -108,6 +108,7 @@ fn index_semantic_tree(node: &k2f_core::SemanticNode, out: &mut HashMap<String, 
         NodeContent::Text(_) => NodeContentInfo::Text,
         NodeContent::CodeBlock(_) => NodeContentInfo::Text,
         NodeContent::Math(_) => NodeContentInfo::Math,
+        NodeContent::FormField(_) => NodeContentInfo::Text,
         NodeContent::Image { src, .. } => NodeContentInfo::Image { src: src.clone() },
         NodeContent::TableReference {
             source, view_mode, ..

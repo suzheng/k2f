@@ -17,6 +17,10 @@ pub fn measure_node(
         NodeContent::Text(text) => measure_text(text, node, constraint, ctx),
         NodeContent::CodeBlock(code) => measure_code_block(code, node, constraint, ctx),
         NodeContent::Math(tex) => crate::math::measure_math(tex, node, ctx),
+        NodeContent::FormField(_) => Err(format!(
+            "FORM_FIELD_NEEDS_LAYOUT: node '{}': form field layout is not implemented yet",
+            node.id
+        )),
         NodeContent::Image { width, height, .. } => {
             measure_image(*width, *height, node, constraint, ctx)
         }

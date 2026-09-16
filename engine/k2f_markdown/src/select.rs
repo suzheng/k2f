@@ -65,7 +65,7 @@ fn filter_node(
             Some(out)
         }
         NodeContent::Table(spec) => project_table(node, spec, by_id, selected),
-        NodeContent::Text(_) | NodeContent::Math(_) => {
+        NodeContent::Text(_) | NodeContent::Math(_) | NodeContent::FormField(_) => {
             let r = by_id.get(node.id.as_str())?;
             Some(slice_text_node(node, r.char_start, r.char_end))
         }

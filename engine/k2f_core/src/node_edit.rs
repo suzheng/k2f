@@ -1,6 +1,6 @@
 use crate::{
-    find_node, find_node_mut, for_each_node, nfc, BreakInside, NodeContent, RunningBlockNode,
-    SemanticNode, TableDataSource,
+    find_node, find_node_mut, for_each_node, nfc, BreakInside, FormFieldKind, NodeContent,
+    RunningBlockNode, SemanticNode, TableDataSource, CHECKBOX_CHECKED, CHECKBOX_UNCHECKED,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -15,6 +15,12 @@ pub enum NodeEditError {
     },
     CannotDeleteRoot,
     DuplicateId(String),
+    MaxLengthExceeded {
+        id: String,
+        max: u32,
+        got: usize,
+    },
+    InvalidCheckboxValue(String),
 }
 
 impl std::fmt::Display for NodeEditError {
@@ -31,6 +37,15 @@ impl std::fmt::Display for NodeEditError {
             }
             Self::CannotDeleteRoot => write!(f, "cannot delete root"),
             Self::DuplicateId(id) => write!(f, "duplicate node id '{id}'"),
+            Self::MaxLengthExceeded { id, max, got } => {
+                write!(
+                    f,
+                    "value for '{id}' exceeds max_length {max} (got {got} characters)"
+                )
+            }
+            Self::InvalidCheckboxValue(id) => {
+                write!(f, "checkbox '{id}' value must be \"\" or \"true\"")
+            }
         }
     }
 }
@@ -39,6 +54,7 @@ pub fn node_text(node: &SemanticNode) -> Option<&str> {
     match &node.content {
         NodeContent::Text(s) => Some(s.as_str()),
         NodeContent::Math(s) => Some(s.as_str()),
+        NodeContent::FormField(spec) => Some(spec.value.as_str()),
         NodeContent::CodeBlock(v) => match v {
             crate::CodeBlockValue::Text(s) => Some(s.as_str()),
             crate::CodeBlockValue::Lines(_) => None,
@@ -94,6 +110,27 @@ pub fn replace_node_text(
             *existing = nfc(text);
             Ok(())
         }
+        NodeContent::FormField(spec) => {
+            let next = nfc(text);
+            if spec.kind == FormFieldKind::Checkbox
+                && next != CHECKBOX_UNCHECKED
+                && next != CHECKBOX_CHECKED
+            {
+                return Err(NodeEditError::InvalidCheckboxValue(id.into()));
+            }
+            if let Some(max) = spec.max_length {
+                let got = next.chars().count();
+                if got > max as usize {
+                    return Err(NodeEditError::MaxLengthExceeded {
+                        id: id.into(),
+                        max,
+                        got,
+                    });
+                }
+            }
+            spec.value = next;
+            Ok(())
+        }
         _ => Err(NodeEditError::NotText(id.into())),
     }
 }
@@ -103,7 +140,7 @@ pub fn apply_role(node: &mut SemanticNode, role: &str, variant: Option<&str>) {
     node.role = role.to_string();
     node.variant = variant.map(str::to_string);
     match role {
-        "warning" | "critical_warning" | "signature_block" | "math" => {
+        "warning" | "critical_warning" | "signature_block" | "math" | "form_field" => {
             node.break_inside = BreakInside::Avoid
         }
         "h1" | "h2" | "h3" | "h4" => node.keep_with_next = true,
@@ -285,6 +322,9 @@ mod tests {
         assert_eq!(n.break_inside, BreakInside::Avoid);
         apply_role(&mut n, "math", None);
         assert_eq!(n.break_inside, BreakInside::Avoid);
+        apply_role(&mut n, "form_field", Some("underline"));
+        assert_eq!(n.break_inside, BreakInside::Avoid);
+        assert_eq!(n.variant.as_deref(), Some("underline"));
         apply_role(&mut n, "warning", Some("glass"));
         assert_eq!(n.variant.as_deref(), Some("glass"));
         assert_eq!(n.break_inside, BreakInside::Avoid);

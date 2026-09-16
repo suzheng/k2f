@@ -29,6 +29,10 @@ pub fn arrange_node(
         NodeContent::Text(_) => arrange_text(node, position, size, ctx),
         NodeContent::CodeBlock(code) => arrange_code_block(node, code, position, size, ctx),
         NodeContent::Math(tex) => arrange_math(node, tex, position, size, ctx),
+        NodeContent::FormField(_) => Err(format!(
+            "FORM_FIELD_NEEDS_LAYOUT: node '{}': form field layout is not implemented yet",
+            node.id
+        )),
         NodeContent::Image { .. } => Ok(arrange_leaf(node, position, size)),
         NodeContent::Container { children } => {
             arrange_container(node, children, position, size, ctx)
