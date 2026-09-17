@@ -60,10 +60,16 @@ pub(crate) fn textbox_from_draw_ctx(
         .map(|r| r.style.font_size)
         .max_by_key(|p| p.0.abs())
         .unwrap_or(k2f_core::Pt(12_000));
+    let nlines = geo
+        .map(|g| body_lines(g, &node.modifiers).len())
+        .unwrap_or(0);
     let pin = should_pin_lock_breaks(geo, font_size, Some(raw), align, &node.modifiers);
     if pin {
         if let Some(g) = geo {
-            insert_lock_breaks(&mut runs, &lock_break_char_indices(g, raw));
+            insert_lock_breaks(
+                &mut runs,
+                &lock_break_char_indices(g, raw, &node.modifiers),
+            );
         }
     }
     let numbered = node.marker_type == Some(ListMarkerType::Number);
@@ -74,11 +80,11 @@ pub(crate) fn textbox_from_draw_ctx(
     } else if numbered {
         lists::prepend_literal_number(&mut runs, list_start.max(1));
     }
-    // Each lock line is already wrapped. Host metrics still wrap at spaces
-    // and at paint-run boundaries (color splits); HeightOnly then overprints
-    // the next object. NoBreak + NBSP is the IDML analog of PPTX wrap=none.
-    // Applies even when semantic newlines already match lock lines (pin=false).
-    let no_break = !matches!(align, TextAlign::Justify);
+    // Tight 2-line display titles keep NoBreak + NBSP (PPTX wrap=none analog).
+    // Column wrap must reflow in InDesign: pinning those lines as `<Br/>` and
+    // gluing spaces double-wraps when the host frame is a different width.
+    let host_reflow = nlines >= 3 || (nlines >= 2 && geo.is_some_and(has_full_width_lock_line));
+    let no_break = !matches!(align, TextAlign::Justify) && !host_reflow;
     if no_break {
         glue_lock_line_spaces(&mut runs);
     }
@@ -88,9 +94,6 @@ pub(crate) fn textbox_from_draw_ctx(
     }
     let (mut inset_top, inset_left, mut inset_bottom, inset_right) = insets(geo, align);
     let first_line_indent_pt = infer_first_line_indent(geo, align);
-    let nlines = geo
-        .map(|g| body_lines(g, &node.modifiers).len())
-        .unwrap_or(0);
     // WidthOnly on wrapping multi-line frames can collapse to a narrow column.
     // NoBreak lines cannot wrap, so WidthOnly grows to the longest lock line
     // instead of oversetting. Still gated on tight ink so wide footers do not
@@ -111,7 +114,10 @@ pub(crate) fn textbox_from_draw_ctx(
     let autosize_no_wrap = nlines <= 1;
     // Paint does not clip glyphs whose line origin sits on/past box height.
     // Skip HeightOnly when WidthOnly is on: extra wrap is already prevented.
-    let autosize_height = nlines >= 2 && !autosize_width;
+    // Justified column body is lock-positioned in a stack: HeightOnly shrinks
+    // when host leading/wrap differs and inflates the gap to the next frame.
+    let autosize_height =
+        nlines >= 2 && !autosize_width && !matches!(align, TextAlign::Justify);
     let mut rect = rect.clone();
     if let Some(ink) = lock_ink_height(geo, font_size) {
         if ink.0 > rect.height.0 {
@@ -344,9 +350,24 @@ pub(crate) fn leading_pt(geo: Option<&GeometryNode>, modifiers: &[Modifier]) -> 
     if lines.len() < 2 {
         return None;
     }
-    let y0 = lines[0].iter().map(|g| g.y_offset.0).min()?;
-    let y1 = lines[1].iter().map(|g| g.y_offset.0).min()?;
-    Some(millipt_to_pt((y1 - y0).abs()))
+    let mut ys: Vec<i128> = lines
+        .iter()
+        .filter_map(|line| line.iter().map(|g| g.y_offset.0).min())
+        .collect();
+    if ys.len() < 2 {
+        return None;
+    }
+    ys.sort_unstable();
+    let mut gaps: Vec<i128> = ys
+        .windows(2)
+        .map(|w| (w[1] - w[0]).abs())
+        .filter(|g| *g > 0)
+        .collect();
+    if gaps.is_empty() {
+        return None;
+    }
+    gaps.sort_unstable();
+    Some(millipt_to_pt(gaps[gaps.len() / 2]))
 }
 
 pub(crate) fn vert_center(
@@ -536,6 +557,35 @@ mod tests {
         assert!(
             !vert_center(Some(&geo), &rect, Pt(7_800)),
             "full-width grid meta must not vertically center"
+        );
+    }
+
+    fn line_geo(ys: &[i128]) -> GeometryNode {
+        GeometryNode {
+            id: "body".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(400_000),
+            height: Pt(80_000),
+            glyphs: ys
+                .iter()
+                .enumerate()
+                .map(|(i, y)| glyph(i as u32, 0, 80_000, *y))
+                .collect(),
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        }
+    }
+
+    #[test]
+    fn leading_uses_median_gap_not_first_pair() {
+        // A superscript-sized first gap must not become paragraph leading.
+        let geo = line_geo(&[0, 3_000, 17_000, 31_000]);
+        let pt = leading_pt(Some(&geo), &[]).expect("leading");
+        assert!(
+            (pt - 14.0).abs() < 0.01,
+            "median wrap gap is 14pt, got {pt}"
         );
     }
 }

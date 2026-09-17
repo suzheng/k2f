@@ -218,7 +218,9 @@ fn emit_table(
         autosize_width: false,
         autosize_refer: "CenterLeftPoint",
         autosize_no_wrap: false,
-        autosize_height: false,
+        // Row-height sum can round 0.001pt above lock height; HeightOnly keeps
+        // the last row from clipping in InDesign.
+        autosize_height: true,
         no_break: false,
         semantic_newlines: false,
         lock_line_count: 0,

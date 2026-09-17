@@ -173,7 +173,8 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
             continue;
         }
         // Full-width paper titles with author `\n`: WidthOnly + CenterPoint
-        // flattens semantic paragraphs into one clipped line in InDesign.
+        // concatenates semantic paragraphs onto one clipped line in InDesign.
+        // HeightOnly + drop NoBreak lets each author line stack using Leading.
         if tb.semantic_newlines
             && tb.lock_line_count >= 2
             && matches!(tb.align, TextAlign::Center)
@@ -184,6 +185,7 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                 tb.autosize_width = false;
                 tb.autosize_no_wrap = false;
                 tb.autosize_height = true;
+                drop_nobreak(tb);
             }
             continue;
         }
@@ -237,8 +239,7 @@ fn repair_left_nobreak(
                 tb.autosize_no_wrap = false;
                 tb.autosize_height = false;
             } else {
-                tb.no_break = false;
-                unglue_nbsp(&mut tb.runs);
+                drop_nobreak(tb);
                 for run in &mut tb.runs {
                     if run.tracking > 0 {
                         run.tracking = 0;
@@ -256,7 +257,7 @@ fn repair_left_nobreak(
     }
     if stacked_lock_column_sibling(me, rects, my_i) || stacked_right_edge_sibling(me, rects, my_i)
     {
-        if is_page_centered(me, page_w) {
+        if is_page_centered(me, page_w) && !stacked_lock_column_sibling(me, rects, my_i) {
             apply_page_center_autosize(tb);
             return;
         }
@@ -264,8 +265,7 @@ fn repair_left_nobreak(
         if extra >= MIN_OPEN {
             tb.rect.width = Pt(tb.rect.width.0 + extra);
         } else {
-            tb.no_break = false;
-            unglue_nbsp(&mut tb.runs);
+            drop_nobreak(tb);
         }
         return;
     }
@@ -286,6 +286,16 @@ fn repair_nobreak_overset(elements: &mut [PageElement]) {
         }
         let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
         let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
+        // Author affiliation / title stacks: semantic `\n` paragraphs with
+        // HeightOnly. NoBreak on every paragraph oversets and hides the story.
+        if tb.semantic_newlines
+            && tb.autosize_height
+            && tb.lock_line_count >= 2
+            && !column_sibling(&rects[i], &rects, i)
+        {
+            drop_nobreak(tb);
+            continue;
+        }
         if tb.autosize_height
             && tb.lock_line_count >= 2
             && (multi || nbreaks >= 1)
@@ -293,8 +303,7 @@ fn repair_nobreak_overset(elements: &mut [PageElement]) {
             && !tb.semantic_newlines
             && !should_widthonly_two_line_nobreak(tb, nbreaks)
         {
-            tb.no_break = false;
-            unglue_nbsp(&mut tb.runs);
+            drop_nobreak(tb);
             for run in &mut tb.runs {
                 if run.tracking > 0 {
                     run.tracking = 0;
@@ -335,10 +344,8 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
             if stacked {
                 let extra = open_right(me, &rects, i, page_w);
                 if let PageElement::TextBox(tb) = &mut elements[i] {
-                    if is_page_centered(me, page_w.unwrap_or(me.width.0)) {
-                        apply_page_center_autosize(tb);
-                        continue;
-                    }
+                    // Grid column copy on the page midline stays left-aligned;
+                    // page_center_autosize is for isolated centered pills only.
                     tb.autosize_width = false;
                     tb.autosize_no_wrap = false;
                     tb.autosize_height = false;
@@ -353,11 +360,7 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
                 tb.autosize_no_wrap = false;
                 tb.autosize_height = true;
                 if tb.no_break {
-                    tb.no_break = false;
-                    unglue_nbsp(&mut tb.runs);
-                    if should_collapse_lock_newlines(tb, nbreaks) {
-                        collapse_lock_newlines(&mut tb.runs);
-                    }
+                    drop_nobreak(tb);
                 }
             }
             continue;
@@ -455,7 +458,9 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
                         0
                     };
                     if extra >= MIN_OPEN {
-                        if page_w.is_some_and(|pw| is_page_centered(&tb.rect, pw)) {
+                        if page_w.is_some_and(|pw| is_page_centered(&tb.rect, pw))
+                            && !column_sibling(&tb.rect, &rects, i)
+                        {
                             apply_page_center_autosize(tb);
                         } else if grow_right && !grow_left {
                             tb.rect.width = Pt(tb.rect.width.0 + extra);
@@ -471,15 +476,10 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
                     tb.autosize_no_wrap = false;
                     tb.autosize_height = false;
                 } else {
-                    tb.no_break = false;
-                    unglue_nbsp(&mut tb.runs);
-                    // 2-line display breaks (title / DEPTHS) stay. 3+ lock wraps
-                    // are paragraph reflow — keep them as `\n` and leftover words
-                    // wrap *plus* the forced break, overprinting the next card.
-                    // Author newlines (seal stacks) must not be flattened.
-                    if should_collapse_lock_newlines(tb, nbreaks) {
-                        collapse_lock_newlines(&mut tb.runs);
-                    }
+                    // 2-line display breaks (title / DEPTHS) stay. Column wrap
+                    // (full-width or 3+ lock lines) collapses so leftover words
+                    // do not wrap *plus* the forced lock break.
+                    drop_nobreak(tb);
                     tb.autosize_height = true;
                 }
             }
@@ -496,6 +496,10 @@ fn pad_for_gap(gap: i128) -> i128 {
 }
 
 fn is_page_centered(me: &Rect, page_w: i128) -> bool {
+    // Full-width column bodies share the page midpoint but are not centered pills.
+    if me.width.0 * 10 >= page_w * 8 {
+        return false;
+    }
     let cx = me.x.0 + me.width.0 / 2;
     (cx - page_w / 2).abs() <= PAGE_CENTER_TOL
 }
@@ -529,16 +533,26 @@ fn should_widthonly_two_line_nobreak(tb: &TextBox, nbreaks: usize) -> bool {
     tb.rect.width.0 <= WIDE_LOOSE_TITLE_W
 }
 
-/// Lock-pinned wrap breaks (`nbreaks == lock_line_count - 1`) in left-aligned
-/// column bodies must stay as `\n` so InDesign matches lock line starts.
+/// Drop NoBreak and flatten lock-pinned wrap breaks so the host reflows at
+/// the actual frame width. Semantic `\n` (titles, seal stacks) stay.
+fn drop_nobreak(tb: &mut TextBox) {
+    let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
+    tb.no_break = false;
+    unglue_nbsp(&mut tb.runs);
+    if should_collapse_lock_newlines(tb, nbreaks) {
+        collapse_lock_newlines(&mut tb.runs);
+    }
+}
+
+/// Flatten lock-pinned wrap breaks when the host is allowed to reflow.
+/// Keep a designed 2-line display break (title / DEPTHS). Collapse column
+/// wrap — including left-aligned body whose `\n` count matches lock lines —
+/// so a narrower IDML frame does not wrap *and* keep the old break points.
 fn should_collapse_lock_newlines(tb: &TextBox, nbreaks: usize) -> bool {
-    if tb.semantic_newlines || nbreaks < 2 {
+    if tb.semantic_newlines || nbreaks == 0 {
         return false;
     }
-    if matches!(tb.align, TextAlign::Left)
-        && tb.lock_line_count >= 2
-        && nbreaks == tb.lock_line_count.saturating_sub(1)
-    {
+    if nbreaks == 1 && !tb.full_width_lock_line {
         return false;
     }
     true
@@ -1112,6 +1126,34 @@ mod tests {
             !body.runs[0].text.contains('\n'),
             "3+ lock wraps collapse so host reflows as one paragraph"
         );
+    }
+
+    #[test]
+    fn left_column_body_with_matching_lock_lines_collapses() {
+        // Production lock_line_count matches wrap lines. The old exception
+        // kept those `\n` so InDesign wrapped at the lock points *and* at the
+        // (different) frame width.
+        let mut els = vec![
+            tb("body", 0, 174_000, true, "CenterLeftPoint"),
+            shape(182_000, 0, 80_000, 90_000),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.lock_line_count = 3;
+            t.full_width_lock_line = true;
+            t.runs[0].text =
+                "In the oceanic abyss\nextinguishes completely\nthreshold what endures"
+                    .replace(' ', "\u{00A0}");
+        }
+        clamp_width_autosize(&mut els);
+        let PageElement::TextBox(body) = &els[0] else {
+            panic!("textbox")
+        };
+        assert!(!body.no_break, "column body must wrap, not overset");
+        assert!(
+            !body.runs[0].text.contains('\n'),
+            "matching lock-line wraps must still collapse, got {:?}",
+            body.runs[0].text
+        );
         assert!(
             !body.runs[0].text.contains("  "),
             "collapsed lock breaks must not leave double spaces, got {:?}",
@@ -1186,6 +1228,62 @@ mod tests {
             "overlapping chrome must not turn off WidthOnly"
         );
         assert_eq!(width(&els[1]), 200_000);
+    }
+
+    #[test]
+    fn center_semantic_two_line_title_keeps_heightonly() {
+        // academic-serif-classic paper.title: two semantic paragraphs, center.
+        let mut els = vec![tb("paper.title", 0, 499_000, false, "TopCenterPoint")];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.no_break = true;
+            t.autosize_height = true;
+            t.semantic_newlines = true;
+            t.lock_line_count = 2;
+            t.align = TextAlign::Center;
+            t.runs[0].text =
+                "Deterministic Semantic Layout Compilation\nfor Academic Publishing Systems"
+                    .into();
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(title) = &els[0] else {
+            panic!("textbox")
+        };
+        assert!(
+            !title.autosize_width,
+            "WidthOnly concatenates the two title lines into one overflow"
+        );
+        assert!(title.autosize_height);
+        assert!(
+            !title.no_break,
+            "NoBreak+HeightOnly oversets and hides the title"
+        );
+        assert!(
+            title.runs[0].text.contains('\n'),
+            "author newline must stay"
+        );
+    }
+
+    #[test]
+    fn affiliation_stack_drops_nobreak() {
+        let mut els = vec![tb("paper.affiliations", 0, 499_000, false, "TopLeftPoint")];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.no_break = true;
+            t.autosize_height = true;
+            t.semantic_newlines = true;
+            t.lock_line_count = 4;
+            t.runs[0].text =
+                "1 Department of Computer Science\n2 Laboratory for Information\n3 Institute for Automated Reasoning\n*Correspondence: a@b.c"
+                    .into();
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(aff) = &els[0] else {
+            panic!("textbox")
+        };
+        assert!(
+            !aff.no_break,
+            "4-line affiliation stack must not NoBreak+HeightOnly overset"
+        );
+        assert!(aff.autosize_height);
     }
 
     #[test]
@@ -1731,6 +1829,37 @@ mod tests {
         );
         assert_eq!(mono.rect.width.0, 43_825, "lock width must stay");
         assert_eq!(mono.rect.x.0, 158_087, "lock left edge must stay");
+    }
+
+    #[test]
+    fn page_centered_grid_column_stays_left_aligned() {
+        // bauhaus-geometric card2: middle column sits on the page midline but
+        // ink is flush-left. page_center_autosize must not promote to Center.
+        let page_w = 595_000i128;
+        let col_w = 148_333i128;
+        let col_x = (page_w - col_w) / 2;
+        let mut els = vec![
+            tb("card1.tag", col_x - col_w - 10_000, col_w, true, "CenterLeftPoint"),
+            tb("card2.tag", col_x, col_w, true, "CenterLeftPoint"),
+            tb("card3.tag", col_x + col_w + 10_000, col_w, true, "CenterLeftPoint"),
+        ];
+        if let PageElement::TextBox(t) = &mut els[1] {
+            t.runs[0].text = "WERKSTATT 02 / TYPO".into();
+        }
+        apply(&mut els, page_w);
+        let PageElement::TextBox(mid) = &els[1] else {
+            panic!("textbox")
+        };
+        assert_eq!(
+            mid.align,
+            TextAlign::Left,
+            "middle grid column must stay left-aligned"
+        );
+        assert_ne!(
+            mid.autosize_refer,
+            "CenterPoint",
+            "column label must not re-anchor about center"
+        );
     }
 
     #[test]

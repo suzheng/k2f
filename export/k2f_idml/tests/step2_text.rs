@@ -438,6 +438,52 @@ fn pinned_lock_lines_nobreak_and_nbsp() {
 }
 
 #[test]
+fn full_width_column_body_does_not_pin_or_nobreak() {
+    // Lock wrapped because the column was full — IDML must reflow, not keep
+    // those wrap points as <Br/> when the host frame width differs.
+    let text = "Founded upon the timeless tenets of architectural restraint and tactile warmth Atelier crafts holistic brand atmospheres curated editorial expressions and bespoke spatial narratives for discerning houses across the globe.";
+    let w = 200_000i128;
+    let mut glyphs = Vec::new();
+    let n = text.chars().count();
+    let per = (n / 3).max(1);
+    for (i, _) in text.chars().enumerate() {
+        let line = i / per;
+        let col = i % per;
+        let y = line as i128 * 15_000;
+        let x = if line == 0 {
+            col as i128 * (w / per as i128)
+        } else {
+            col as i128 * 8_000
+        };
+        let adv = if line == 0 { w / per as i128 } else { 8_000 };
+        glyphs.push(glyph(i as u32, x, adv, y));
+    }
+    let xml = story_from(
+        text,
+        vec![],
+        vec![TextGlyphRun {
+            glyph_range: [0, n],
+            style: style("#3D3229", 10_000),
+        }],
+        glyphs,
+        w,
+    );
+    assert!(
+        !xml.contains("<Br/>"),
+        "column wrap must not hard-break, got {xml}"
+    );
+    assert!(
+        !xml.contains(r#"NoBreak="true""#),
+        "column wrap must reflow, got {xml}"
+    );
+    assert_eq!(
+        xml.matches("<ParagraphStyleRange").count(),
+        1,
+        "must stay one paragraph, got {xml}"
+    );
+}
+
+#[test]
 fn semantic_newline_lock_lines_still_nobreak() {
     // Title source already has `\n`; pin is false but the second line still
     // must not wrap at a color-split space.
@@ -505,6 +551,51 @@ fn tight_nobreak_multiline_autosizes_width() {
     assert!(
         !xml.contains(r#"UseNoLineBreaksForAutoSizing="true""#),
         "multi-line WidthOnly must size to the longest lock line, not the unwrapped paragraph, got {xml}"
+    );
+}
+
+#[test]
+fn two_line_letter_body_stays_in_lock_frame() {
+    let text = "I will send a small swatch book by courier on Thursday, along with a note on lead times for the hand-stitched editions. Please let me know if you would like a second set.";
+    let w = 504_000i128;
+    let mut glyphs = Vec::new();
+    let chars: Vec<char> = text.chars().collect();
+    let split = 90usize;
+    for (i, _) in chars.iter().enumerate() {
+        let (x, y, adv) = if i < split {
+            (i as i128 * 5_307, 0, 5_307)
+        } else {
+            ((i - split) as i128 * 6_144, 12_600, 6_144)
+        };
+        glyphs.push(glyph(i as u32, x, adv, y));
+    }
+    let xml = frame_from(
+        text,
+        vec![],
+        vec![TextGlyphRun {
+            glyph_range: [0, glyphs.len()],
+            style: style("#1A1A1A", 11_000),
+        }],
+        glyphs.clone(),
+        w,
+    );
+    assert!(
+        !xml.contains(r#"AutoSizingType="WidthOnly""#),
+        "wrapping letter body must keep the lock width, got {xml}"
+    );
+    let story = story_from(
+        text,
+        vec![],
+        vec![TextGlyphRun {
+            glyph_range: [0, glyphs.len()],
+            style: style("#1A1A1A", 11_000),
+        }],
+        glyphs,
+        w,
+    );
+    assert!(
+        !story.contains(r#"NoBreak="true""#),
+        "wrapping letter body must reflow in the lock frame, got {story}"
     );
 }
 
@@ -684,6 +775,11 @@ fn composer_is_single_line() {
         .find(|n| n.has_tag_name("ParagraphStyleRange"))
         .expect("ParagraphStyleRange");
     assert_eq!(para.attribute("Hyphenation"), Some("false"));
+    assert_eq!(
+        para.attribute("AutoLeading"),
+        Some("0"),
+        "AutoLeading must be 0 so numeric Leading applies"
+    );
     let props = para
         .children()
         .find(|n| n.has_tag_name("Properties"))

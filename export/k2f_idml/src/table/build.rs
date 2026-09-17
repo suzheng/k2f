@@ -8,8 +8,8 @@ use crate::ir::{TableBox, TableCell, TableRow, TextAlign};
 use crate::text::{cell_runs, insets, TextFonts};
 use crate::IdmlError;
 use k2f_core::{
-    find_in_trees, node_text, GeometryNode, NodeContent, Page, PaintOp, Rect, RunningBlockNode,
-    SemanticNode,
+    find_in_trees, node_text, GeometryNode, NodeContent, Page, PaintOp, Pt, Rect,
+    RunningBlockNode, SemanticNode,
 };
 use std::collections::HashMap;
 
@@ -44,13 +44,18 @@ pub(crate) fn table_on_page(
         return Ok(None);
     };
     inherit_table_chrome(&mut rows_out, paints.get(table_id))?;
+    let row_sum_millipt = rows_out
+        .iter()
+        .map(|r| (r.height_pt * 1000.0).ceil() as i128)
+        .sum();
+    let height = Pt(geo.height.0.max(row_sum_millipt));
     Ok(Some(TableBox {
         node_id: table_id.to_string(),
         rect: Rect {
             x: geo.x,
             y: geo.y,
             width: geo.width,
-            height: geo.height,
+            height,
         },
         header_rows: meta.header_rows.min(rows_out.len()),
         col_widths_pt,

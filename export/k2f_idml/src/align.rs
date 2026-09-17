@@ -93,8 +93,13 @@ fn source_paragraphs(text: &str) -> usize {
     text.split('\n').filter(|s| !s.is_empty()).count().max(1)
 }
 
-/// Pin lock wrap points whenever glyph lines exceed semantic paragraphs.
-/// A tight-height check is not used: extra host wrap overprints in IDML.
+/// Pin lock wrap points only for tight 2-line display titles.
+///
+/// Column body that wrapped because the lock frame was full must *not* become
+/// hard `<Br/>` in IDML. Host metrics and missing fonts change line width;
+/// keeping the lock wrap points then double-wraps ("atmospheres," / "for" on
+/// their own lines). Slight reflow is the IDML contract. 3+ lock lines, or any
+/// line that fills the frame, is column wrap — not a designed display break.
 pub(crate) fn should_pin_lock_breaks(
     geo: Option<&GeometryNode>,
     _font_size: k2f_core::Pt,
@@ -115,7 +120,13 @@ pub(crate) fn should_pin_lock_breaks(
         return false;
     }
     let lines = body_lines(geo, modifiers);
-    lines.len() >= 2 && lines.len() > source_paragraphs(text)
+    if lines.len() < 2 || lines.len() <= source_paragraphs(text) {
+        return false;
+    }
+    if lines.len() >= 3 || has_full_width_lock_line(geo) {
+        return false;
+    }
+    true
 }
 
 const INK_SLACK: i128 = 16_000;
@@ -193,25 +204,31 @@ fn ink_tighter_than(geo: Option<&GeometryNode>, align: TextAlign, slack_limit: i
             return false;
         }
     }
-    // Wrapped paragraph body: any lock line that fills the box edge-to-edge is
-    // host wrap, not tight shrink-wrapped ink (bibliography entries, column copy).
-    if lines.len() >= 2 {
-        for line in &lines {
-            let (_, left, right) = line_gaps(line, box_w);
-            if left <= MIN_SLACK && right <= MIN_SLACK {
-                return false;
-            }
-        }
+    // Wrapped paragraph body: a lock line that fills the column is host wrap,
+    // not shrink-wrapped display ink. WidthOnly then grows about ItemTransform
+    // and the glyphs spill past both sides of the original box.
+    if lines.len() >= 2 && has_full_width_lock_line(geo) {
+        return false;
     }
     min_right < slack_limit || min_slack < slack_limit
 }
 
-/// True when any lock line spans the full frame width (host wrap, not tight ink).
+/// True when any lock line spans the column (host wrap, not tight display ink).
+///
+/// Exact edge-to-edge is rare: rustybuzz leaves a few pt of right slack on the
+/// line that triggered the wrap. Treating that as "tight" enabled WidthOnly,
+/// and InDesign grew the frame around its center past the original border.
 pub(crate) fn has_full_width_lock_line(geo: &GeometryNode) -> bool {
     let box_w = geo.width.0;
+    if box_w <= 0 {
+        return false;
+    }
     source_lines(geo).iter().any(|line| {
         let (_, left, right) = line_gaps(line, box_w);
-        left <= MIN_SLACK && right <= MIN_SLACK
+        if left > MIN_SLACK {
+            return false;
+        }
+        right <= MIN_SLACK || right.saturating_mul(10) <= box_w
     })
 }
 
@@ -232,9 +249,13 @@ pub(crate) fn autosize_reference(geo: Option<&GeometryNode>, align: TextAlign) -
 }
 
 /// Character indices in `text` where lock lines after the first begin.
-pub(crate) fn lock_break_char_indices(geo: &GeometryNode, text: &str) -> Vec<usize> {
+pub(crate) fn lock_break_char_indices(
+    geo: &GeometryNode,
+    text: &str,
+    modifiers: &[Modifier],
+) -> Vec<usize> {
     let chars: Vec<char> = text.chars().collect();
-    source_lines(geo)
+    body_lines(geo, modifiers)
         .iter()
         .skip(1)
         .filter_map(|line| line.first().map(|g| g.cluster as usize))
@@ -392,15 +413,12 @@ mod tests {
     }
 
     #[test]
-    fn nearly_full_width_single_line_skips_nobreak_widthonly() {
+    fn wrapped_multiline_body_skips_nobreak_widthonly() {
         // Bibliography-style entry: line 1 fills the column, line 2 is short.
         let w = 483_000i128;
         let geo = geo(
             w,
-            vec![
-                glyph(0, 0, 483_000, 0),
-                glyph(0, 0, 101_316, 12_600),
-            ],
+            vec![glyph(0, 0, 483_000, 0), glyph(0, 0, 101_316, 12_600)],
         );
         assert!(
             !should_autosize_width_for_nobreak(Some(&geo), TextAlign::Left),
@@ -429,20 +447,77 @@ mod tests {
     }
 
     #[test]
-    fn tight_multiline_display_title_keeps_nobreak_widthonly() {
-        let w = 180_000i128;
+    fn two_line_letter_body_with_wrap_slack_is_full_width() {
+        // botanical-banner p2: 504pt column, longest lock line ~12pt short.
+        let w = 504_000i128;
         let geo = geo(
             w,
-            vec![
-                glyph(0, 0, 10_000, 12_000),
-                glyph(15, 0, 10_000, 12_000),
-                glyph(0, 0, 10_000, 60_000),
-                glyph(10, 0, 10_000, 60_000),
-            ],
+            vec![glyph(0, 0, 477_663, 0), glyph(90, 0, 491_544, 12_600)],
         );
+        assert!(
+            has_full_width_lock_line(&geo),
+            "12pt leftover on a 504pt column is wrap remainder, not tight ink"
+        );
+        assert!(
+            !should_autosize_width_for_nobreak(Some(&geo), TextAlign::Left),
+            "2-line letter body must not WidthOnly-grow past the box"
+        );
+        let text = "I will send a small swatch book by courier on Thursday, along with a note on lead times for the hand-stitched editions. Please let me know if you would like a second set for your London studio.";
+        assert!(
+            !should_pin_lock_breaks(Some(&geo), Pt(11_000), Some(text), TextAlign::Left, &[]),
+            "column wrap must reflow in the lock frame, not pin NoBreak lines"
+        );
+    }
+
+    #[test]
+    fn tight_multiline_display_title_keeps_nobreak_widthonly() {
+        let w = 180_000i128;
+        let mut glyphs = Vec::new();
+        for (i, ch) in "Editorial Grid.\nNarrative System.".chars().enumerate() {
+            if ch == '\n' {
+                continue;
+            }
+            let y = if i < 16 { 12_000 } else { 60_000 };
+            glyphs.push(glyph(i as u32, (i as i128 % 16) * 10_000, 10_000, y));
+        }
+        let geo = geo(w, glyphs);
         assert!(
             should_autosize_width_for_nobreak(Some(&geo), TextAlign::Left),
             "tight 2-line display title still WidthOnly-grows"
+        );
+    }
+
+    #[test]
+    fn full_width_column_wrap_does_not_pin() {
+        let text = "The quick brown fox jumps over the lazy dog and then wraps again.";
+        let w = 200_000i128;
+        let g = geo(
+            w,
+            vec![
+                glyph(0, 0, 200_000, 0),
+                glyph(20, 0, 80_000, 15_000),
+                glyph(40, 0, 50_000, 30_000),
+            ],
+        );
+        assert!(
+            !should_pin_lock_breaks(Some(&g), Pt(12_000), Some(text), TextAlign::Left, &[]),
+            "column wrap must not pin lock breaks"
+        );
+    }
+
+    #[test]
+    fn two_line_display_title_still_pins() {
+        let text = "Editorial Grid. Narrative System.";
+        let w = 200_000i128;
+        let mut glyphs = Vec::new();
+        for (i, _) in text.chars().enumerate() {
+            let y = if i < 16 { 12_000 } else { 60_000 };
+            glyphs.push(glyph(i as u32, (i as i128 % 16) * 8_000, 8_000, y));
+        }
+        let g = geo(w, glyphs);
+        assert!(
+            should_pin_lock_breaks(Some(&g), Pt(44_000), Some(text), TextAlign::Left, &[]),
+            "tight 2-line display title still pins"
         );
     }
 

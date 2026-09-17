@@ -26,6 +26,7 @@ pub(crate) fn write_paras(
     let mut body = String::new();
     for (i, para) in paras.iter().enumerate() {
         let indent = if i == 0 { first_line_indent_pt } else { 0.0 };
+        let end_with_br = semantic_newlines && i + 1 < paras.len();
         body.push_str(&para_xml(
             align,
             &para.runs,
@@ -35,6 +36,7 @@ pub(crate) fn write_paras(
             indent,
             para.space_after_pt,
             semantic_newlines,
+            end_with_br,
         ));
     }
     body
@@ -144,6 +146,7 @@ fn para_xml(
     first_line_indent_pt: f64,
     space_after_pt: f64,
     semantic_newlines: bool,
+    end_with_br: bool,
 ) -> String {
     let just = align.justification();
     let leading = runs
@@ -168,8 +171,12 @@ fn para_xml(
             inner.push_str(&char_range(run, hts, no_break, semantic_newlines));
         }
     }
+    if end_with_br {
+        let br_run = runs.last().unwrap_or(fallback);
+        inner.push_str(&char_range_br(br_run, no_break));
+    }
     format!(
-        r#"    <ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/[No paragraph style]" Justification="{just}" Hyphenation="false" SpaceBefore="0" SpaceAfter="{}"{lead_attr}{indent_attr}>
+        r#"    <ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/[No paragraph style]" Justification="{just}" Hyphenation="false" AutoLeading="0" SpaceBefore="0" SpaceAfter="{}"{lead_attr}{indent_attr}>
       <Properties>
         <AppliedComposer>$ID/HL Single</AppliedComposer>
       </Properties>
@@ -201,6 +208,9 @@ fn char_range(run: &TextRun, hts: &mut usize, no_break: bool, semantic_newlines:
     let mut attrs = format!(
         r#"AppliedCharacterStyle="CharacterStyle/$ID/[No character style]" PointSize="{size}" FillColor="{fill}" FontStyle="{style}""#
     );
+    if let Some(lead) = run.leading_pt {
+        attrs.push_str(&format!(r#" Leading="{}""#, fmt_pt(lead)));
+    }
     if no_break {
         attrs.push_str(r#" NoBreak="true""#);
     }
@@ -253,6 +263,9 @@ fn char_range_br(run: &TextRun, no_break: bool) -> String {
     let mut attrs = format!(
         r#"AppliedCharacterStyle="CharacterStyle/$ID/[No character style]" PointSize="{size}" FillColor="{fill}" FontStyle="{style}""#
     );
+    if let Some(lead) = run.leading_pt {
+        attrs.push_str(&format!(r#" Leading="{}""#, fmt_pt(lead)));
+    }
     if no_break {
         attrs.push_str(r#" NoBreak="true""#);
     }
@@ -282,16 +295,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn semantic_newlines_do_not_emit_redundant_br() {
+    fn semantic_newlines_emit_br_between_paragraphs() {
         let mut run = default_run();
         run.text = "Line one\nLine two".into();
         run.leading_pt = Some(14.0);
         let mut hts = 0usize;
         let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0, true);
         assert_eq!(xml.matches("<ParagraphStyleRange").count(), 2);
+        assert_eq!(
+            xml.matches("<Br/>").count(),
+            1,
+            "IDML needs a Br between semantic paragraphs, got {xml}"
+        );
         assert!(
-            !xml.contains("<Br/>"),
-            "ParagraphStyleRange already ends the paragraph, got {xml}"
+            xml.contains(r#"AutoLeading="0""#),
+            "AutoLeading must be off so numeric Leading applies, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"Leading="14.000""#),
+            "character and paragraph Leading must be numeric, got {xml}"
         );
     }
 
@@ -332,6 +354,11 @@ mod tests {
         );
         assert_eq!(xml.matches("<Content>Hello</Content>").count(), 1);
         assert_eq!(xml.matches("<Content>World</Content>").count(), 1);
+        assert_eq!(
+            xml.matches("<Br/>").count(),
+            1,
+            "paragraph mark between Hello and World, got {xml}"
+        );
         assert!(
             !xml.contains("<Content>Hello\n\nWorld</Content>"),
             "must not dump the first run into the gap, got {xml}"
