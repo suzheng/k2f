@@ -87,7 +87,9 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                 {
                     continue;
                 }
-                if stacked_lock_column_sibling(&rects[i], &rects, i) {
+                if stacked_lock_column_sibling(&rects[i], &rects, i)
+                    || stacked_right_edge_sibling(&rects[i], &rects, i)
+                {
                     continue;
                 }
                 let extra = open_right(&rects[i], &rects, i, Some(page_w));
@@ -207,7 +209,9 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
             {
                 continue;
             }
-            if stacked_lock_column_sibling(me, &rects, i) {
+            if stacked_lock_column_sibling(me, &rects, i)
+                || stacked_right_edge_sibling(me, &rects, i)
+            {
                 continue;
             }
         }
@@ -399,6 +403,26 @@ fn vertical_stack_gap(a: &Rect, b: &Rect) -> Option<i128> {
     } else {
         None
     }
+}
+
+/// Stacked frames that share the same right edge (x+width) but may differ in
+/// left edge / width — common in right-aligned signature blocks. Growing one
+/// tight NoBreak line into the page margin shifts ItemTransform right and walks
+/// past the lines above.
+fn stacked_right_edge_sibling(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
+    let my_right = me.x.0 + me.width.0;
+    for (j, other) in rects.iter().enumerate() {
+        if j == my_i || other.x.0 + other.width.0 != my_right {
+            continue;
+        }
+        if !x_overlap(me, other) {
+            continue;
+        }
+        if vertical_stack_gap(me, other).is_some_and(|g| g < GROW_ROOM) {
+            return true;
+        }
+    }
+    false
 }
 
 /// Stacked frames that share the same lock column (x/width). Growing one tight
@@ -1189,6 +1213,51 @@ mod tests {
             "must not grow past the page"
         );
         assert!(!lead.autosize_height);
+    }
+
+    #[test]
+    fn stacked_right_edge_block_keeps_lock_width() {
+        // Right-aligned end block: each line has a different width but the
+        // same right edge. open_right would shift ItemTransform right.
+        let right = 384_000i128;
+        let mut els = vec![
+            tb("closing", right - 238_686, 238_686, true, "CenterLeftPoint"),
+            tb("signature", right - 243_061, 243_061, true, "CenterLeftPoint"),
+            tb("meta", right - 194_842, 194_842, true, "CenterLeftPoint"),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.rect.y = Pt(488_800);
+            t.rect.height = Pt(17_250);
+            t.runs[0].text = "With our warmest love & heartfelt appreciation,".into();
+        }
+        if let PageElement::TextBox(t) = &mut els[1] {
+            t.rect.y = Pt(511_050);
+            t.rect.height = Pt(24_700);
+            t.runs[0].text = "Julian & Vivienne Sterling".into();
+            t.runs[0].bold = true;
+        }
+        if let PageElement::TextBox(t) = &mut els[2] {
+            t.rect.y = Pt(540_750);
+            t.rect.height = Pt(13_300);
+            t.runs[0].text = "The Sterling Celebration · Autumn 2026".into();
+        }
+        apply(&mut els, 420_000);
+        for (i, (id, w)) in [
+            ("closing", 238_686),
+            ("signature", 243_061),
+            ("meta", 194_842),
+        ]
+        .iter()
+        .enumerate()
+        {
+            let PageElement::TextBox(tb) = &els[i] else {
+                panic!("textbox")
+            };
+            assert_eq!(tb.node_id, *id);
+            assert_eq!(tb.rect.width.0, *w, "{id} lock width");
+            assert_eq!(tb.rect.x.0 + tb.rect.width.0, right, "{id} right edge");
+            assert!(tb.autosize_width, "{id} keeps WidthOnly for host slack");
+        }
     }
 
     #[test]
