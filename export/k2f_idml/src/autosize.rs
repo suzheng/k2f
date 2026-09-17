@@ -22,6 +22,12 @@ const MIN_OPEN: i128 = 4_000;
 /// gap and dropping WidthOnly leaves NoBreak 1pt short, and InDesign hides
 /// the whole line. Pills/cards (50pt+) still clamp — see adjacent_label.
 const SMALL_SIBLING: i128 = 40_000;
+/// Left 2-line display titles wider than this with loose ink keep HeightOnly so
+/// WidthOnly shrink does not re-anchor the block toward center.
+const WIDE_LOOSE_TITLE_W: i128 = 400_000;
+/// Single-line NoBreak without WidthOnly: only auto-enable WidthOnly below
+/// this frame width. Wide loose frames (author lines) must not re-anchor.
+const NARROW_NOBREAK_W: i128 = 300_000;
 
 /// NoBreak without WidthOnly oversets (hides) the whole story when host
 /// metrics are even 1pt wider than the lock box — 2-line titles, tracked
@@ -31,6 +37,7 @@ pub(crate) fn apply(elements: &mut [PageElement], page_w: i128) {
     enable_widthonly_beside_icons(elements);
     ensure_nobreak_width(elements, page_w);
     clamp_width_autosize_on(elements, Some(page_w));
+    repair_nobreak_overset(elements);
     drop_tracking_on_nobreak_multiline(elements);
 }
 
@@ -101,7 +108,9 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
         // left margin — expand the lock rect into the open right instead.
         // Column siblings stay WidthOnly so clamp can wrap in the lock column.
         if matches!(tb.align, TextAlign::Left) {
-            if stacked_graphic_caption(&rects[i], &rects, i) {
+            if stacked_graphic_caption(&rects[i], &rects, i)
+                && !stacked_lock_column_sibling(&rects[i], &rects, i)
+            {
                 if let PageElement::TextBox(tb) = &mut elements[i] {
                     tb.autosize_width = true;
                     tb.autosize_no_wrap = true;
@@ -143,16 +152,40 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                     }
                 }
             }
+            if let PageElement::TextBox(tb) = &mut elements[i] {
+                let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
+                let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
+                repair_left_nobreak(tb, &rects[i], &rects, i, page_w, multi, nbreaks);
+            }
+            continue;
+        }
+        // Full-width paper titles with author `\n`: WidthOnly + CenterPoint
+        // flattens semantic paragraphs into one clipped line in InDesign.
+        if tb.semantic_newlines
+            && tb.lock_line_count >= 2
+            && matches!(tb.align, TextAlign::Center)
+            && rects[i].width.0 > WIDE_LOOSE_TITLE_W
+            && !column_sibling(&rects[i], &rects, i)
+        {
+            if let PageElement::TextBox(tb) = &mut elements[i] {
+                tb.autosize_width = false;
+                tb.autosize_no_wrap = false;
+                tb.autosize_height = true;
+            }
             continue;
         }
         if tb.autosize_width {
             continue;
         }
-        // Center/Right single-line without HeightOnly: same shrink is toward
-        // the reference point and is correct. Skip only when there is no
-        // extra line that HeightOnly+NoBreak would otherwise overset.
+        // Center/Right single-line without HeightOnly: WidthOnly-grow so host
+        // metrics do not overset and hide the story.
         let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
         if !tb.autosize_height && nbreaks == 0 {
+            if let PageElement::TextBox(tb) = &mut elements[i] {
+                tb.autosize_width = true;
+                tb.autosize_no_wrap = true;
+                tb.autosize_height = false;
+            }
             continue;
         }
         // UseNoLineBreaks on 2+ lock lines sizes the frame as one unwrapped
@@ -166,6 +199,83 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
             // paragraph. Single-line NoBreak still uses UseNoLineBreaks.
             tb.autosize_no_wrap = nbreaks == 0;
             tb.autosize_height = false;
+        }
+    }
+}
+
+/// Left NoBreak frames that never got WidthOnly: host metrics overset the lock
+/// box and InDesign hides the story (letter recipient lines, body paragraphs).
+fn repair_left_nobreak(
+    tb: &mut crate::ir::TextBox,
+    me: &Rect,
+    rects: &[Rect],
+    my_i: usize,
+    page_w: i128,
+    multi: bool,
+    nbreaks: usize,
+) {
+    if !tb.no_break {
+        return;
+    }
+    if tb.autosize_height && !tb.autosize_width && tb.lock_line_count >= 2 {
+        if (multi || nbreaks >= 1) && !column_sibling(me, rects, my_i) && !tb.semantic_newlines {
+            tb.no_break = false;
+            unglue_nbsp(&mut tb.runs);
+            for run in &mut tb.runs {
+                if run.tracking > 0 {
+                    run.tracking = 0;
+                }
+            }
+        }
+        return;
+    }
+    if tb.autosize_width || tb.autosize_height || multi || nbreaks > 0 {
+        return;
+    }
+    if me.width.0 >= NARROW_NOBREAK_W {
+        return;
+    }
+    if stacked_lock_column_sibling(me, rects, my_i) || stacked_right_edge_sibling(me, rects, my_i)
+    {
+        let extra = open_right(me, rects, my_i, Some(page_w));
+        if extra >= MIN_OPEN {
+            tb.rect.width = Pt(tb.rect.width.0 + extra);
+        } else {
+            tb.no_break = false;
+            unglue_nbsp(&mut tb.runs);
+        }
+        return;
+    }
+    tb.autosize_width = true;
+    tb.autosize_no_wrap = true;
+}
+
+/// Final pass: HeightOnly + NoBreak without WidthOnly still oversets in InDesign
+/// when lock-pinned lines are wider than host metrics expect.
+fn repair_nobreak_overset(elements: &mut [PageElement]) {
+    let rects: Vec<Rect> = elements.iter().map(|el| el.rect().clone()).collect();
+    for i in 0..elements.len() {
+        let PageElement::TextBox(tb) = &mut elements[i] else {
+            continue;
+        };
+        if !tb.no_break || tb.autosize_width {
+            continue;
+        }
+        let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
+        let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
+        if tb.autosize_height
+            && tb.lock_line_count >= 2
+            && (multi || nbreaks >= 1)
+            && !column_sibling(&rects[i], &rects, i)
+            && !tb.semantic_newlines
+        {
+            tb.no_break = false;
+            unglue_nbsp(&mut tb.runs);
+            for run in &mut tb.runs {
+                if run.tracking > 0 {
+                    run.tracking = 0;
+                }
+            }
         }
     }
 }
@@ -708,6 +818,8 @@ mod tests {
             autosize_height: false,
             no_break: true,
             semantic_newlines: false,
+            lock_line_count: 1,
+            first_baseline_leading_offset: false,
         })
     }
 
@@ -1377,13 +1489,17 @@ mod tests {
             t.runs[0].tracking = 13;
             t.no_break = true;
             t.autosize_height = true;
+            t.lock_line_count = 2;
         }
         apply(&mut els, 595_000);
         let PageElement::TextBox(body) = &els[0] else {
             panic!("textbox")
         };
         assert_eq!(body.runs[0].tracking, 0);
-        assert!(body.no_break);
+        assert!(
+            !body.no_break,
+            "HeightOnly lock-pinned body must wrap so InDesign does not hide the story"
+        );
     }
 
     #[test]
@@ -1398,6 +1514,7 @@ mod tests {
                     .into();
             t.autosize_height = false;
             t.no_break = true;
+            t.lock_line_count = 4;
         }
         apply(&mut els, 595_000);
         let PageElement::TextBox(body) = &els[0] else {
@@ -1411,7 +1528,10 @@ mod tests {
             body.autosize_height,
             "multi-line left must HeightOnly after WidthOnly cleared"
         );
-        assert!(body.no_break, "lock-pinned body keeps NoBreak");
+        assert!(
+            !body.no_break,
+            "full-width lock-pinned body must wrap so InDesign does not hide the story"
+        );
     }
 
     #[test]

@@ -221,6 +221,8 @@ fn emit_table(
         autosize_height: false,
         no_break: false,
         semantic_newlines: false,
+        lock_line_count: 0,
+        first_baseline_leading_offset: false,
     };
     frames.push_str(&spread::textframe_xml_on(&tb, space, &tf, &st, on_master));
 }

@@ -108,6 +108,12 @@ pub struct TextBox {
     /// Author `\n` in `node_text` (seal stacks, pre-broken titles). Must not be
     /// collapsed by the lock-wrap reflow path.
     pub semantic_newlines: bool,
+    /// Glyph line count from lock geometry (`body_lines`). Used when `\n` is
+    /// absent but lock paint wrapped, or for wide multi-line body like a one-liner beside a stacked heading.
+    pub lock_line_count: usize,
+    /// Lock-pinned lines already encode baseline y in geometry; `Ascent` adds
+    /// extra top slack and oversets the frame bottom in InDesign.
+    pub first_baseline_leading_offset: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

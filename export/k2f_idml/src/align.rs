@@ -1,5 +1,5 @@
 use crate::ir::TextAlign;
-use k2f_core::{GeometryNode, GlyphPosition, Pt};
+use k2f_core::{GeometryNode, GlyphPosition, Modifier, Pt};
 
 const MIN_SLACK: i128 = 2_000;
 
@@ -52,6 +52,32 @@ pub(crate) fn source_lines(geo: &GeometryNode) -> Vec<Vec<&GlyphPosition>> {
     lines
 }
 
+/// Lock rows that contain only superscript/subscript modifier glyphs are not
+/// separate wrap lines — they sit above/below the main baseline (author marks).
+pub(crate) fn body_lines<'a>(
+    geo: &'a GeometryNode,
+    modifiers: &[Modifier],
+) -> Vec<Vec<&'a GlyphPosition>> {
+    source_lines(geo)
+        .into_iter()
+        .filter(|line| !is_script_only_line(line, modifiers))
+        .collect()
+}
+
+fn is_script_only_line(line: &[&GlyphPosition], modifiers: &[Modifier]) -> bool {
+    if line.is_empty() {
+        return true;
+    }
+    line.iter().all(|g| {
+        let c = g.cluster as usize;
+        modifiers.iter().any(|m| {
+            (m.mod_type == "superscript" || m.mod_type == "subscript")
+                && m.range[0] <= c
+                && c < m.range[1]
+        })
+    })
+}
+
 pub(crate) fn line_gaps(glyphs: &[&GlyphPosition], box_w: i128) -> (i128, i128, i128) {
     let left = glyphs.iter().map(|g| g.x_offset.0).min().unwrap_or(0);
     let right_edge = glyphs
@@ -74,6 +100,7 @@ pub(crate) fn should_pin_lock_breaks(
     _font_size: k2f_core::Pt,
     text: Option<&str>,
     align: TextAlign,
+    modifiers: &[Modifier],
 ) -> bool {
     if matches!(align, TextAlign::Justify) {
         return false;
@@ -84,7 +111,10 @@ pub(crate) fn should_pin_lock_breaks(
     let Some(text) = text else {
         return false;
     };
-    let lines = source_lines(geo);
+    if text.contains('\n') {
+        return false;
+    }
+    let lines = body_lines(geo, modifiers);
     lines.len() >= 2 && lines.len() > source_paragraphs(text)
 }
 
@@ -308,5 +338,35 @@ mod tests {
         assert_eq!(lock_ink_height(Some(&g), fs), Some(Pt(67_600)));
         g.height = Pt(80_000);
         assert_eq!(lock_ink_height(Some(&g), fs), None);
+    }
+
+    #[test]
+    fn superscript_glyph_row_does_not_pin_lock_breaks() {
+        let text = "Alexander H. Sterling1,*, Elena Rostova2, and Marcus Vance3";
+        let mods = vec![
+            Modifier {
+                range: [21, 24],
+                mod_type: "superscript".into(),
+                intent: "default".into(),
+            },
+            Modifier {
+                range: [39, 40],
+                mod_type: "superscript".into(),
+                intent: "default".into(),
+            },
+            Modifier {
+                range: [58, 59],
+                mod_type: "superscript".into(),
+                intent: "default".into(),
+            },
+        ];
+        let g = geo(483_000, vec![
+            glyph(21, 193_583, 8_000, -4_950),
+            glyph(0, 71_997, 8_000, 0),
+        ]);
+        assert!(
+            !should_pin_lock_breaks(Some(&g), Pt(11_000), Some(text), TextAlign::Right, &mods),
+            "superscript rows must not insert a lock break at char 0"
+        );
     }
 }

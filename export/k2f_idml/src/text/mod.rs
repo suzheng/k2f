@@ -4,14 +4,16 @@ mod runs;
 mod tracking;
 
 use crate::align::{
-    autosize_reference, infer_text_align, line_gaps, lock_break_char_indices, lock_ink_height,
-    should_autosize_width, should_autosize_width_for_nobreak, should_pin_lock_breaks,
-    source_glyphs, source_lines,
+    autosize_reference, body_lines, infer_text_align, line_gaps, lock_break_char_indices,
+    lock_ink_height, should_autosize_width, should_autosize_width_for_nobreak,
+    should_pin_lock_breaks, source_glyphs, source_lines,
 };
 use crate::coord::millipt_to_pt;
 use crate::ir::{TextAlign, TextBox, TextRun};
 use font::FontCtx;
-use k2f_core::{GeometryNode, ListMarkerType, NodeContent, Rect, SemanticNode, TextGlyphRun};
+use k2f_core::{
+    GeometryNode, ListMarkerType, Modifier, NodeContent, Rect, SemanticNode, TextGlyphRun,
+};
 use std::collections::BTreeMap;
 
 pub(crate) use font::FontCtx as TextFonts;
@@ -58,7 +60,7 @@ pub(crate) fn textbox_from_draw_ctx(
         .map(|r| r.style.font_size)
         .max_by_key(|p| p.0.abs())
         .unwrap_or(k2f_core::Pt(12_000));
-    let pin = should_pin_lock_breaks(geo, font_size, Some(raw), align);
+    let pin = should_pin_lock_breaks(geo, font_size, Some(raw), align, &node.modifiers);
     if pin {
         if let Some(g) = geo {
             insert_lock_breaks(&mut runs, &lock_break_char_indices(g, raw));
@@ -80,13 +82,15 @@ pub(crate) fn textbox_from_draw_ctx(
     if no_break {
         glue_lock_line_spaces(&mut runs);
     }
-    let leading = leading_pt(geo);
+    let leading = leading_pt(geo, &node.modifiers);
     for run in &mut runs {
         run.leading_pt = leading;
     }
     let (mut inset_top, inset_left, mut inset_bottom, inset_right) = insets(geo, align);
     let first_line_indent_pt = infer_first_line_indent(geo, align);
-    let nlines = geo.map(|g| source_lines(g).len()).unwrap_or(0);
+    let nlines = geo
+        .map(|g| body_lines(g, &node.modifiers).len())
+        .unwrap_or(0);
     // WidthOnly on wrapping multi-line frames can collapse to a narrow column.
     // NoBreak lines cannot wrap, so WidthOnly grows to the longest lock line
     // instead of oversetting. Still gated on tight ink so wide footers do not
@@ -136,6 +140,16 @@ pub(crate) fn textbox_from_draw_ctx(
         autosize_height,
         no_break,
         semantic_newlines: raw.contains('\n'),
+        lock_line_count: nlines,
+        first_baseline_leading_offset: nlines >= 2
+            && geo
+                .and_then(|g| {
+                    source_glyphs(g)
+                        .iter()
+                        .map(|gp| gp.y_offset.0)
+                        .min()
+                })
+                .is_some_and(|y| y < 1_000),
     })
 }
 

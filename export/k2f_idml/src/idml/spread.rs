@@ -55,6 +55,11 @@ pub(crate) fn textframe_xml_on(
         fmt_pt(tb.inset_bottom),
         fmt_pt(tb.inset_right)
     );
+    let baseline = if tb.first_baseline_leading_offset {
+        "LeadingOffset"
+    } else {
+        "Ascent"
+    };
     let autosize = if tb.autosize_width {
         let no_wrap = if tb.autosize_no_wrap {
             r#" UseNoLineBreaksForAutoSizing="true""#
@@ -78,7 +83,7 @@ pub(crate) fn textframe_xml_on(
     format!(
         r#"    <TextFrame Self="{tf_self}" ParentStory="{story_self}" ContentType="TextType" ItemLayer="kLayer" FillColor="Swatch/None" StrokeWeight="0" ItemTransform="{tf}" Name="{name}" NextTextFrame="n" PreviousTextFrame="n">
 {geo}
-      <TextFramePreference TextColumnCount="1" VerticalJustification="{vert}" InsetSpacing="{inset}" FirstBaselineOffset="Ascent"{autosize}/>
+      <TextFramePreference TextColumnCount="1" VerticalJustification="{vert}" InsetSpacing="{inset}" FirstBaselineOffset="{baseline}"{autosize}/>
     </TextFrame>
 "#
     )
