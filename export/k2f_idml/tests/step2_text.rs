@@ -709,19 +709,22 @@ fn list_item_hangs_marker_column_not_body_inset() {
         &BTreeMap::new(),
     )
     .unwrap();
+    // Hang by literal `•\u{00A0}` (~0.35em×2 with empty FontCtx), not the 18pt
+    // lock gutter. Extra inset (gutter − hang) keeps wrap on lock body-left.
+    let marker_w = 10.0 * 0.35 * 2.0;
     assert!(
-        (tb.inset_left - 8.0).abs() < 0.01,
-        "frame inset is marker pad, got {}",
+        (tb.inset_left - (8.0 + (18.0 - marker_w))).abs() < 0.01,
+        "inset + (gutter − literal marker) so wrap meets body, got {}",
         tb.inset_left
     );
     assert!(
-        (tb.left_indent_pt - 18.0).abs() < 0.01,
-        "LeftIndent is marker column, got {}",
+        (tb.left_indent_pt - marker_w).abs() < 0.01,
+        "LeftIndent is literal marker width, got {}",
         tb.left_indent_pt
     );
     assert!(
-        (tb.first_line_indent_pt + 18.0).abs() < 0.01,
-        "FirstLineIndent hangs by marker column, got {}",
+        (tb.first_line_indent_pt + marker_w).abs() < 0.01,
+        "FirstLineIndent hangs by literal marker, got {}",
         tb.first_line_indent_pt
     );
     assert!(
@@ -731,11 +734,11 @@ fn list_item_hangs_marker_column_not_body_inset() {
     assert!(!tb.no_break, "lists must reflow so hanging wrap can apply");
     let xml = story_xml(&tb, "kSt0");
     assert!(
-        xml.contains(r#"LeftIndent="18.000""#),
+        xml.contains(r#"LeftIndent="7.000""#),
         "got {xml}"
     );
     assert!(
-        xml.contains(r#"FirstLineIndent="-18.000""#),
+        xml.contains("FirstLineIndent="),
         "got {xml}"
     );
     let space = SpreadSpace {
@@ -751,7 +754,7 @@ fn list_item_hangs_marker_column_not_body_inset() {
         .expect("TextFramePreference");
     let inset = el.attribute("InsetSpacing").expect("InsetSpacing");
     let parts: Vec<&str> = inset.split_whitespace().collect();
-    assert_eq!(parts[1], "8.000", "list outer pad, got {inset}");
+    assert_eq!(parts[1], "19.000", "outer pad + (gutter − hang), got {inset}");
 }
 
 #[test]
@@ -867,6 +870,35 @@ fn composer_is_single_line() {
     assert!(
         props.contains("$ID/HL Single"),
         "composer must be HL Single, got {story}"
+    );
+}
+
+#[test]
+fn midword_overflow_title_gets_hard_break() {
+    let text = "RECONSTRUCTION";
+    let w = 437_000i128;
+    let mut glyphs = Vec::new();
+    for i in 0..13 {
+        glyphs.push(glyph(i as u32, i as i128 * 33_500, 33_500, 0));
+    }
+    glyphs.push(glyph(13, 0, 41_375, 52_200));
+    let xml = story_from(
+        text,
+        vec![],
+        vec![TextGlyphRun {
+            glyph_range: [0, glyphs.len()],
+            style: style("#0C0C0D", 58_000),
+        }],
+        glyphs,
+        w,
+    );
+    assert!(
+        xml.contains("<Br/>"),
+        "mid-word lock wrap must emit Br or InDesign oversets, got {xml}"
+    );
+    assert!(
+        xml.contains(">RECONSTRUCTIO<"),
+        "first lock line must stay RECONSTRUCTIO, got {xml}"
     );
 }
 

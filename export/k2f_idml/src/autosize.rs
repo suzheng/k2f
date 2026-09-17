@@ -61,6 +61,10 @@ fn pin_lock_height_on_column_body(elements: &mut [PageElement]) {
         let PageElement::TextBox(tb) = el else {
             continue;
         };
+        if tb.vert_center {
+            tb.autosize_height = false;
+            continue;
+        }
         if tb.semantic_newlines {
             continue;
         }
@@ -157,13 +161,24 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
             let no_break = tb.no_break;
             let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
             let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
-            // Stacked left column *beside* a divider/card: WidthOnly about
-            // ItemTransform recenters the block (color-block person column).
-            // Isolated stacks (signature name/title) keep WidthOnly.
-            if want_width && stacked_col && side_col {
+            // Stacked left column: WidthOnly about ItemTransform recenters
+            // each hug line independently (eyebrow vs title, card labels,
+            // checklist rows). Isolated right-edge stacks (signature name)
+            // still keep WidthOnly unless they are left-aligned.
+            if want_width && stacked_col {
                 if let PageElement::TextBox(tb) = &mut elements[i] {
                     tb.autosize_width = false;
                     tb.autosize_no_wrap = false;
+                }
+            }
+            if want_width && side_col && !stacked_col {
+                if let PageElement::TextBox(tb) = &mut elements[i] {
+                    tb.autosize_width = false;
+                    tb.autosize_no_wrap = false;
+                    let extra = open_right(&rects[i], &rects, i, Some(page_w));
+                    if extra >= MIN_OPEN {
+                        tb.rect.width = Pt(tb.rect.width.0 + extra);
+                    }
                 }
             }
             if want_width && !side_col {
@@ -174,9 +189,16 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                 {
                     continue;
                 }
-                if stacked_lock_column_sibling(&rects[i], &rects, i)
-                    || stacked_right_edge_sibling(&rects[i], &rects, i)
-                {
+                if stacked_lock_column_sibling(&rects[i], &rects, i) {
+                    continue;
+                }
+                if stacked_right_edge_sibling(&rects[i], &rects, i) {
+                    // Left-aligned date/caption in a right-edge stack: WidthOnly
+                    // shrinks about the box center and the left edge walks in.
+                    if let PageElement::TextBox(tb) = &mut elements[i] {
+                        tb.autosize_width = false;
+                        tb.autosize_no_wrap = false;
+                    }
                     continue;
                 }
                 if is_page_centered(&rects[i], page_w) {
@@ -325,8 +347,10 @@ fn repair_left_nobreak(
         }
         return;
     }
-    tb.autosize_width = true;
-    tb.autosize_no_wrap = true;
+    let extra = open_right(me, rects, my_i, Some(page_w));
+    if extra >= MIN_OPEN {
+        tb.rect.width = Pt(tb.rect.width.0 + extra);
+    }
 }
 
 /// Final pass: HeightOnly + NoBreak without WidthOnly still oversets in InDesign
@@ -582,6 +606,9 @@ fn should_widthonly_two_line_nobreak(tb: &TextBox, nbreaks: usize) -> bool {
     if tb.full_width_lock_line {
         return false;
     }
+    if tb.rect.width.0 > WIDE_LOOSE_TITLE_W {
+        return false;
+    }
     if !tb.semantic_newlines {
         return true;
     }
@@ -608,10 +635,48 @@ fn should_collapse_lock_newlines(tb: &TextBox, nbreaks: usize) -> bool {
     if tb.semantic_newlines || nbreaks == 0 {
         return false;
     }
+    if has_midword_newline(&tb.runs) {
+        return false;
+    }
     if nbreaks == 1 && !tb.full_width_lock_line {
         return false;
     }
     true
+}
+
+/// A newline on a spaceless line is a pinned mid-word wrap.
+/// Column wrap like abyss/extinguishes has spaces on the previous line.
+fn has_midword_newline(runs: &[crate::ir::TextRun]) -> bool {
+    let full: String = runs.iter().map(|r| r.text.as_str()).collect();
+    let chars: Vec<char> = full.chars().collect();
+    let mut prev = 0usize;
+    for (i, &ch) in chars.iter().enumerate() {
+        if ch != '\n' {
+            continue;
+        }
+        if i > 0
+            && i + 1 < chars.len()
+            && !chars[i - 1].is_whitespace()
+            && !chars[i + 1].is_whitespace()
+            && !chars[prev..i].iter().any(|c| c.is_whitespace())
+        {
+            return true;
+        }
+        prev = i + 1;
+    }
+    false
+}
+        if i > 0
+            && i + 1 < chars.len()
+            && !chars[i - 1].is_whitespace()
+            && !chars[i + 1].is_whitespace()
+            && !chars[prev..i].iter().any(|c| c.is_whitespace())
+        {
+            return true;
+        }
+        prev = i + 1;
+    }
+    false
 }
 
 fn unglue_nbsp(runs: &mut [crate::ir::TextRun]) {
@@ -769,14 +834,19 @@ fn stacked_graphic_caption(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
 }
 
 fn stacked_lock_column_sibling(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
+    const COL_X_TOL: i128 = 2_000;
+    const COL_STACK_GAP: i128 = 16_000;
     for (j, other) in rects.iter().enumerate() {
-        if j == my_i || me.x.0 != other.x.0 || me.width.0 != other.width.0 {
+        if j == my_i || (me.x.0 - other.x.0).abs() > COL_X_TOL {
+            continue;
+        }
+        if covers(other, me) || covers(me, other) {
             continue;
         }
         if !x_overlap(me, other) {
             continue;
         }
-        if vertical_stack_gap(me, other).is_some_and(|g| g < GROW_ROOM) {
+        if vertical_stack_gap(me, other).is_some_and(|g| g <= COL_STACK_GAP) {
             return true;
         }
     }
@@ -1280,6 +1350,29 @@ mod tests {
         assert!(
             title.runs[0].text.contains('\n'),
             "2-line display break must not collapse"
+        );
+    }
+
+    #[test]
+    fn midword_lock_wrap_does_not_collapse() {
+        let mut els = vec![
+            tb("hero.title_2", 0, 437_000, true, "CenterLeftPoint"),
+            shape(450_000, 0, 64_000, 90_000),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.lock_line_count = 2;
+            t.full_width_lock_line = true;
+            t.autosize_height = true;
+            t.runs[0].text = "RECONSTRUCTIO\nN".into();
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(title) = &els[0] else {
+            panic!("textbox")
+        };
+        let joined: String = title.runs.iter().map(|r| r.text.as_str()).collect();
+        assert!(
+            joined.contains('\n') && joined.starts_with("RECONSTRUCTIO") && joined.ends_with('N'),
+            "mid-word Br must survive autosize, got {joined:?}"
         );
     }
 
@@ -2064,5 +2157,34 @@ mod tests {
             "lock wrap before the CTA must stay"
         );
         assert_eq!(body.rect.y.0 + body.rect.height.0, 21_000, "lock height stays");
+    }
+
+    #[test]
+    fn vert_center_folio_keeps_lock_height_beside_sibling() {
+        let mut els = vec![
+            tb("footer.left", 52_000, 417_455, false, "CenterLeftPoint"),
+            tb("footer.right", 469_455, 73_545, true, "CenterPoint"),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.rect.y = Pt(776_600);
+            t.rect.height = Pt(20_400);
+            t.vert_center = true;
+            t.runs[0].text = "CONFIDENTIAL RECORD".into();
+            t.runs[0].tracking = 0;
+        }
+        if let PageElement::TextBox(t) = &mut els[1] {
+            t.rect.y = Pt(776_600);
+            t.rect.height = Pt(20_400);
+            t.vert_center = true;
+            t.align = TextAlign::Center;
+            t.runs[0].text = "PAGE 1 OF 1".into();
+            t.runs[0].tracking = 0;
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(folio) = &els[1] else {
+            panic!("textbox")
+        };
+        assert!(!folio.autosize_height, "CenterAlign needs lock height");
+        assert_eq!(folio.rect.height.0, 20_400);
     }
 }

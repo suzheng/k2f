@@ -52,7 +52,9 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, IdmlError> {
             &mut media_n,
             &mut raster_n,
         )?;
+        let keep = snapshot_fill_tracking(&elements);
         crate::autosize::apply(&mut elements, page.width.0);
+        restore_fill_tracking(&mut elements, &keep);
         ir_pages.push(PageIR { elements });
     }
     let mut master_els = scan_master(
@@ -67,7 +69,9 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, IdmlError> {
         &mut raster_n,
     )?;
     let page0 = &pages[0];
+    let keep_master = snapshot_fill_tracking(&master_els);
     crate::autosize::apply(&mut master_els, page0.width.0);
+    restore_fill_tracking(&mut master_els, &keep_master);
     let mut used = BTreeSet::new();
     used.insert((
         fonts.default_family().to_string(),
@@ -140,6 +144,38 @@ pub(crate) fn keep_node(
         false
     } else {
         true
+    }
+}
+
+/// Autosize may drop positive tracking so hug labels do not run through a
+/// badge. Letter-spaced titles that already fill the lock box must keep it.
+fn snapshot_fill_tracking(elements: &[PageElement]) -> Vec<Vec<i32>> {
+    elements
+        .iter()
+        .map(|el| match el {
+            PageElement::TextBox(tb)
+                if tb.full_width_lock_line && tb.lock_line_count <= 1 =>
+            {
+                tb.runs.iter().map(|r| r.tracking).collect()
+            }
+            _ => Vec::new(),
+        })
+        .collect()
+}
+
+fn restore_fill_tracking(elements: &mut [PageElement], saved: &[Vec<i32>]) {
+    for (el, tracks) in elements.iter_mut().zip(saved) {
+        if tracks.is_empty() {
+            continue;
+        }
+        let PageElement::TextBox(tb) = el else {
+            continue;
+        };
+        for (run, &t) in tb.runs.iter_mut().zip(tracks) {
+            if t != 0 {
+                run.tracking = t;
+            }
+        }
     }
 }
 

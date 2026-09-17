@@ -250,6 +250,7 @@ fn char_range(run: &TextRun, hts: &mut usize, no_break: bool, semantic_newlines:
     let mut attrs = format!(
         r#"AppliedCharacterStyle="CharacterStyle/$ID/[No character style]" PointSize="{size}" FillColor="{fill}" FontStyle="{style}""#
     );
+    attrs.push_str(&synthetic_face_attrs(run));
     if let Some(lead) = run.leading_pt {
         attrs.push_str(&format!(r#" Leading="{}""#, fmt_pt(lead)));
     }
@@ -296,6 +297,21 @@ fn char_range(run: &TextRun, hts: &mut usize, no_break: bool, semantic_newlines:
     )
 }
 
+fn synthetic_face_attrs(run: &TextRun) -> String {
+    let mut s = String::new();
+    if let Some(deg) = run.synthetic_skew_deg() {
+        s.push_str(&format!(r#" Skew="{}""#, fmt_pt(deg)));
+    }
+    if let Some(w) = run.synthetic_stroke_pt() {
+        s.push_str(&format!(
+            r#" StrokeWeight="{}" StrokeColor="Color/k2f_{}""#,
+            fmt_pt(w),
+            run.color_hex
+        ));
+    }
+    s
+}
+
 fn char_range_br(run: &TextRun, no_break: bool) -> String {
     let size = fmt_pt(run.size_pt);
     let fill = format!("Color/k2f_{}", run.color_hex);
@@ -303,6 +319,7 @@ fn char_range_br(run: &TextRun, no_break: bool) -> String {
     let mut attrs = format!(
         r#"AppliedCharacterStyle="CharacterStyle/$ID/[No character style]" PointSize="{size}" FillColor="{fill}" FontStyle="{style}""#
     );
+    attrs.push_str(&synthetic_face_attrs(run));
     if let Some(lead) = run.leading_pt {
         attrs.push_str(&format!(r#" Leading="{}""#, fmt_pt(lead)));
     }
@@ -445,5 +462,45 @@ mod tests {
             !xml.contains(r#"FontStyle="Regular""#),
             "got {xml}"
         );
+    }
+
+    #[test]
+    fn regular_italic_uses_skew_not_missing_face() {
+        let mut run = default_run();
+        run.text = "Thank You".into();
+        run.italic = true;
+        run.bold = true;
+        run.size_pt = 27.0;
+        run.face_style = "Regular".into();
+        let mut hts = 0usize;
+        let xml = write_paras(TextAlign::Center, &[run], &mut hts, true, 0.0, 0.0, false);
+        assert!(
+            xml.contains(r#"FontStyle="Regular""#),
+            "Regular-only packages must not advertise Bold Italic, got {xml}"
+        );
+        assert!(
+            !xml.contains(r#"FontStyle="Bold Italic""#),
+            "got {xml}"
+        );
+        assert!(
+            xml.contains(r#"Skew="12.000""#),
+            "synthetic italic must shear like K2F paint, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"StrokeWeight="0.900""#),
+            "synthetic bold must stroke 1/30 em, got {xml}"
+        );
+    }
+
+    #[test]
+    fn real_italic_face_is_not_double_skewed() {
+        let mut run = default_run();
+        run.text = "Cite".into();
+        run.italic = true;
+        run.face_style = "Italic".into();
+        let mut hts = 0usize;
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0, 0.0, false);
+        assert!(xml.contains(r#"FontStyle="Italic""#), "got {xml}");
+        assert!(!xml.contains("Skew="), "real italic must not faux-skew, got {xml}");
     }
 }

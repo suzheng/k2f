@@ -4,9 +4,10 @@ mod runs;
 mod tracking;
 
 use crate::align::{
-    autosize_reference, body_lines, has_full_width_lock_line, infer_text_align_for, line_gaps,
-    lock_break_char_indices, lock_ink_height, should_autosize_width,
-    should_autosize_width_for_nobreak, should_pin_lock_breaks, source_glyphs, source_lines,
+    autosize_reference, body_lines, has_full_width_lock_line, has_midword_lock_wrap,
+    infer_text_align_for, line_gaps, lock_break_char_indices, lock_ink_height,
+    should_autosize_width, should_autosize_width_for_nobreak, should_pin_lock_breaks,
+    source_glyphs, source_lines,
 };
 use crate::coord::millipt_to_pt;
 use crate::ir::{TextAlign, TextBox, TextRun};
@@ -52,7 +53,7 @@ pub(crate) fn textbox_from_draw_ctx(
     if runs.is_empty() {
         return None;
     }
-    let align = geo
+    let mut align = geo
         .map(|g| infer_text_align_for(g, raw, &node.modifiers))
         .unwrap_or(TextAlign::Left);
     let font_size = paint_runs
@@ -67,6 +68,9 @@ pub(crate) fn textbox_from_draw_ctx(
     let bullet =
         !numbered && (node.role == "list_item" || node.marker_type == Some(ListMarkerType::Bullet));
     let is_list = bullet || numbered;
+    if is_list {
+        align = TextAlign::Left;
+    }
     // Literal markers change first-line width; lock wrap points and NoBreak
     // would overset or double-indent. Lists reflow with hanging indent.
     let pin = !is_list && should_pin_lock_breaks(geo, font_size, Some(raw), align, &node.modifiers);
@@ -86,7 +90,11 @@ pub(crate) fn textbox_from_draw_ctx(
     // Tight 2-line display titles keep NoBreak + NBSP (PPTX wrap=none analog).
     // Column wrap must reflow in InDesign: pinning those lines as `<Br/>` and
     // gluing spaces double-wraps when the host frame is a different width.
-    let host_reflow = nlines >= 3 || (nlines >= 2 && geo.is_some_and(has_full_width_lock_line));
+    // Spaceless mid-word lock wraps are not column wrap — InDesign cannot
+    // break the token, so those frames stay pinned instead of host-reflow.
+    let midword = geo.is_some_and(|g| has_midword_lock_wrap(g, raw, &node.modifiers));
+    let host_reflow =
+        !midword && (nlines >= 3 || (nlines >= 2 && geo.is_some_and(has_full_width_lock_line)));
     let no_break = !is_list && !matches!(align, TextAlign::Justify) && !host_reflow;
     if no_break {
         glue_lock_line_spaces(&mut runs);
@@ -99,11 +107,25 @@ pub(crate) fn textbox_from_draw_ctx(
     let mut first_line_indent_pt = infer_first_line_indent(geo, align);
     let mut left_indent_pt = 0.0;
     if is_list {
-        // Outer pad → frame inset; marker column → LeftIndent hanging.
-        // The literal `•` / `{n}.` already occupies that gutter on line one.
-        inset_left = lists::list_outer_pad_pt(geo);
-        left_indent_pt = lists::list_hanging_pt(geo);
-        first_line_indent_pt = -left_indent_pt;
+        // Hang wrap lines by the literal `•\u{00A0}` / `{n}.\u{00A0}` width, not
+        // the lock gutter (often 16pt). Otherwise wrap lines indent past line-1 text.
+        let marker = if numbered {
+            format!("{}.\u{00A0}", list_start.max(1))
+        } else {
+            "•\u{00A0}".into()
+        };
+        let size = runs.first().map(|r| r.size_pt).unwrap_or(12.0);
+        let family = runs.first().map(|r| r.font_name.as_str()).unwrap_or("");
+        let marker_w = lists::literal_marker_width_pt(fonts, family, size, &marker);
+        let gutter = lists::list_hanging_pt(geo);
+        let hang = if gutter > 0.01 {
+            marker_w.min(gutter).max(0.01)
+        } else {
+            marker_w.max(0.01)
+        };
+        inset_left = lists::list_outer_pad_pt(geo) + (gutter - hang).max(0.0);
+        left_indent_pt = hang;
+        first_line_indent_pt = -hang;
     }
     // WidthOnly on wrapping multi-line frames can collapse to a narrow column.
     // NoBreak lines cannot wrap, so WidthOnly grows to the longest lock line

@@ -116,6 +116,10 @@ fn source_paragraphs(text: &str) -> usize {
 /// keeping the lock wrap points then double-wraps ("atmospheres," / "for" on
 /// their own lines). Slight reflow is the IDML contract. 3+ lock lines, or any
 /// line that fills the frame, is column wrap — not a designed display break.
+///
+/// Exception: a wrap inside a spaceless token. InDesign will not break that
+/// word (Hyphenation is off), so the whole story oversets. The lock already
+/// chose the break; pin it.
 pub(crate) fn should_pin_lock_breaks(
     geo: Option<&GeometryNode>,
     _font_size: k2f_core::Pt,
@@ -139,10 +143,39 @@ pub(crate) fn should_pin_lock_breaks(
     if lines.len() < 2 || lines.len() <= source_paragraphs(text) {
         return false;
     }
+    if has_midword_lock_wrap(geo, text, modifiers) {
+        return true;
+    }
     if lines.len() >= 3 || has_full_width_lock_line(geo) {
         return false;
     }
     true
+}
+
+/// True when a lock line is a single unbreakable token that the lock wrapped.
+///
+/// Column body wraps at spaces. InDesign can reflow those lines. A spaceless
+/// line (RECONSTRUCTION) has no wrap opportunity, so the lock break must be
+/// pinned or the whole story oversets.
+pub(crate) fn has_midword_lock_wrap(
+    geo: &GeometryNode,
+    text: &str,
+    modifiers: &[Modifier],
+) -> bool {
+    let chars: Vec<char> = text.chars().collect();
+    let mut prev = 0usize;
+    for &idx in &lock_break_char_indices(geo, text, modifiers) {
+        if idx > 0
+            && idx < chars.len()
+            && !chars[idx].is_whitespace()
+            && !chars[idx - 1].is_whitespace()
+            && !chars[prev..idx].iter().any(|c| c.is_whitespace())
+        {
+            return true;
+        }
+        prev = idx;
+    }
+    false
 }
 
 const INK_SLACK: i128 = 16_000;
@@ -588,6 +621,32 @@ mod tests {
         assert!(
             should_pin_lock_breaks(Some(&g), Pt(44_000), Some(text), TextAlign::Left, &[]),
             "tight 2-line display title still pins"
+        );
+    }
+
+    #[test]
+    fn midword_overflow_title_still_pins() {
+        // Monumental single-word title: lock wraps inside the word because
+        // the token is wider than the column (RECONSTRUCTION → N).
+        let text = "RECONSTRUCTION";
+        let w = 437_000i128;
+        let mut glyphs = Vec::new();
+        for i in 0..13 {
+            glyphs.push(glyph(i as u32, i as i128 * 33_500, 33_500, 0));
+        }
+        glyphs.push(glyph(13, 0, 41_375, 52_200));
+        let g = geo(w, glyphs);
+        assert!(
+            has_full_width_lock_line(&g),
+            "first line fills the column"
+        );
+        assert!(
+            has_midword_lock_wrap(&g, text, &[]),
+            "wrap starts at N on a spaceless line"
+        );
+        assert!(
+            should_pin_lock_breaks(Some(&g), Pt(58_000), Some(text), TextAlign::Left, &[]),
+            "mid-word overflow must pin or InDesign oversets the word"
         );
     }
 

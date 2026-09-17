@@ -81,27 +81,56 @@ pub struct TextRun {
     pub auto_page_number: bool,
     /// InDesign Tracking in 1/1000 em. 0 means omit (do not fake Tracking="0").
     pub tracking: i32,
-    /// TTF subfamily when not bold/italic (`Book`, `Regular`, `Light`, …).
+    /// TTF subfamily of the embedded face (`Book`, `Regular`, `Light`, …).
     pub face_style: String,
 }
 
+/// K2F paint shears synthetic italic by 0.2126 (atan ≈ 12°).
+const SYNTHETIC_ITALIC_SKEW_DEG: f64 = 12.0;
+/// K2F paint strokes Regular-only bold at 1/30 em.
+const SYNTHETIC_BOLD_EM: f64 = 30.0;
+
 impl TextRun {
-    /// InDesign `FontStyle` / `FontStyleName`. Bold/italic modifiers win.
+    /// InDesign `FontStyle` / `FontStyleName` for the embedded face.
+    ///
+    /// Paint `bold`/`italic` on a Regular-only package are synthetic (shear +
+    /// stroke). Advertising `Bold`/`Italic` here makes InDesign substitute a
+    /// missing style and drop the slant/weight.
     pub fn idml_font_style(&self) -> String {
-        match (self.bold, self.italic) {
-            (true, true) => "Bold Italic".into(),
-            (true, false) => "Bold".into(),
-            (false, true) => "Italic".into(),
-            (false, false) => {
-                let s = self.face_style.trim();
-                if s.is_empty() {
-                    "Regular".into()
-                } else {
-                    s.to_string()
-                }
-            }
+        let s = self.face_style.trim();
+        if s.is_empty() {
+            "Regular".into()
+        } else {
+            s.to_string()
         }
     }
+
+    /// Faux italic when paint asked for italic but the face is not italic.
+    pub fn synthetic_skew_deg(&self) -> Option<f64> {
+        if self.italic && !face_style_is_italic(&self.face_style) {
+            Some(SYNTHETIC_ITALIC_SKEW_DEG)
+        } else {
+            None
+        }
+    }
+
+    /// Faux bold when paint asked for bold but the face is not bold.
+    pub fn synthetic_stroke_pt(&self) -> Option<f64> {
+        if self.bold && !face_style_is_bold(&self.face_style) && self.size_pt > 0.0 {
+            Some(self.size_pt / SYNTHETIC_BOLD_EM)
+        } else {
+            None
+        }
+    }
+}
+
+fn face_style_is_italic(style: &str) -> bool {
+    let l = style.to_ascii_lowercase();
+    l.contains("italic") || l.contains("oblique")
+}
+
+fn face_style_is_bold(style: &str) -> bool {
+    style.to_ascii_lowercase().contains("bold")
 }
 
 #[derive(Clone, Debug)]

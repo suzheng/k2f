@@ -1,3 +1,4 @@
+use super::font::FontCtx;
 use crate::align::source_glyphs;
 use crate::coord::millipt_to_pt;
 use crate::ir::{ScriptPos, TextRun};
@@ -60,6 +61,42 @@ pub(crate) fn list_hanging_pt(geo: Option<&GeometryNode>) -> f64 {
     let ink = ink_left(geo);
     let body = body_left(geo).unwrap_or(ink);
     millipt_to_pt((body - ink).max(0))
+}
+
+/// Advance of the IDML marker we actually prepend (`•\u{00A0}` / `{n}.\u{00A0}`).
+pub(crate) fn literal_marker_width_pt(
+    fonts: &FontCtx,
+    family: &str,
+    size_pt: f64,
+    marker: &str,
+) -> f64 {
+    let fallback = size_pt * 0.35 * marker.chars().count() as f64;
+    if size_pt <= 0.0 || marker.is_empty() {
+        return fallback.max(0.01);
+    }
+    let Some(data) = fonts.bytes_for(family) else {
+        return fallback.max(0.01);
+    };
+    let Ok(face) = ttf_parser::Face::parse(data, 0) else {
+        return fallback.max(0.01);
+    };
+    let upem = f64::from(face.units_per_em());
+    if upem == 0.0 {
+        return fallback.max(0.01);
+    }
+    let mut w = 0.0;
+    for ch in marker.chars() {
+        let Some(gid) = face.glyph_index(ch) else {
+            w += size_pt * 0.35;
+            continue;
+        };
+        let Some(adv) = face.glyph_hor_advance(gid) else {
+            w += size_pt * 0.35;
+            continue;
+        };
+        w += f64::from(adv) * size_pt / upem;
+    }
+    w.max(0.01)
 }
 
 fn ink_left(geo: Option<&GeometryNode>) -> i128 {

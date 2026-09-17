@@ -1,23 +1,12 @@
 use super::font::FontCtx;
-use crate::align::line_gaps;
-use k2f_core::{GeometryNode, GlyphPosition, TextPaintStyle};
-
-const FILL_SLACK: i128 = 2_000;
-
-/// Lock ink flush with both box edges — spacing is container-fit, not em tracking.
-pub(crate) fn ink_fills_box(geo: Option<&GeometryNode>, glyphs: &[&GlyphPosition]) -> bool {
-    let Some(geo) = geo else {
-        return false;
-    };
-    if glyphs.is_empty() {
-        return false;
-    }
-    let (_, left, right) = line_gaps(glyphs, geo.width.0);
-    left.saturating_add(right) < FILL_SLACK
-}
+use k2f_core::{GlyphPosition, TextPaintStyle};
 
 /// Extra lock advance vs the face's native advance, as IDML Tracking (1/1000 em).
 /// Omit when unmeasurable — never fake `Tracking="0"`.
+///
+/// Letter-spaced display titles often fill the lock box *and* contain spaces.
+/// `tracking_em` is the median extra, so justified wrap (extra only on spaces)
+/// still lands near 0.
 pub(crate) fn tracking_em(
     glyphs: &[&GlyphPosition],
     style: &TextPaintStyle,
@@ -61,7 +50,7 @@ pub(crate) fn tracking_em(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use k2f_core::{GeometryNode, Pt};
+    use k2f_core::Pt;
     use std::collections::BTreeMap;
     use std::path::PathBuf;
 
@@ -108,40 +97,5 @@ mod tests {
         };
         let refs: Vec<&GlyphPosition> = glyphs.iter().collect();
         assert_eq!(tracking_em(&refs, &style, &ctx), -125);
-    }
-
-    #[test]
-    fn ink_fills_box_skips_tracking() {
-        let glyphs = [
-            GlyphPosition {
-                glyph_id: 1,
-                cluster: 0,
-                x_offset: Pt(0),
-                y_offset: Pt(0),
-                x_advance: Pt(50_000),
-                y_advance: Pt(0),
-            },
-            GlyphPosition {
-                glyph_id: 2,
-                cluster: 1,
-                x_offset: Pt(50_000),
-                y_offset: Pt(0),
-                x_advance: Pt(50_000),
-                y_advance: Pt(0),
-            },
-        ];
-        let geo = GeometryNode {
-            id: "g".into(),
-            x: Pt(0),
-            y: Pt(0),
-            width: Pt(100_000),
-            height: Pt(10_000),
-            glyphs: glyphs.to_vec(),
-            text_runs: vec![],
-            fill_rects: vec![],
-            children: vec![],
-        };
-        let refs: Vec<&GlyphPosition> = glyphs.iter().collect();
-        assert!(ink_fills_box(Some(&geo), &refs));
     }
 }
