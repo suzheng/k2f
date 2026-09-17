@@ -17,31 +17,91 @@ const HOST_LINE_PAD: i128 = 24_000;
 /// Skip the margin-grow path if the open side is thinner than this — wrapping
 /// is then the only way leftover glyphs stay visible.
 const MIN_OPEN: i128 = 4_000;
+/// Verified-badge / avatar-icon width. A 6pt gap to a 14pt icon is not a
+/// column sibling: WidthOnly only grows the host-metrics delta. Padding that
+/// gap and dropping WidthOnly leaves NoBreak 1pt short, and InDesign hides
+/// the whole line. Pills/cards (50pt+) still clamp — see adjacent_label.
+const SMALL_SIBLING: i128 = 40_000;
 
 /// NoBreak without WidthOnly oversets (hides) the whole story when host
 /// metrics are even 1pt wider than the lock box — 2-line titles, tracked
 /// labels. Give those frames WidthOnly first; `clamp_width_autosize` still
 /// caps growth against siblings.
 pub(crate) fn apply(elements: &mut [PageElement], page_w: i128) {
-    ensure_nobreak_width(elements);
+    enable_widthonly_beside_icons(elements);
+    ensure_nobreak_width(elements, page_w);
     clamp_width_autosize_on(elements, Some(page_w));
 }
 
-fn ensure_nobreak_width(elements: &mut [PageElement]) {
+/// Tight NoBreak display lines beside a verified badge / avatar icon need
+/// WidthOnly so host Roboto does not overset and hide the whole story.
+fn enable_widthonly_beside_icons(elements: &mut [PageElement]) {
+    let rects: Vec<Rect> = elements.iter().map(|el| el.rect().clone()).collect();
+    for i in 0..elements.len() {
+        let PageElement::TextBox(tb) = &mut elements[i] else {
+            continue;
+        };
+        if !tb.no_break || tb.autosize_width {
+            continue;
+        }
+        let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
+        let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
+        if multi || nbreaks > 0 {
+            continue;
+        }
+        if small_side_blocker(&rects[i], &rects, i, &tb.autosize_refer)
+            .is_some_and(|w| w <= SMALL_SIBLING)
+        {
+            tb.autosize_width = true;
+            tb.autosize_no_wrap = true;
+        }
+    }
+}
+
+fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
     let rects: Vec<Rect> = elements.iter().map(|el| el.rect().clone()).collect();
     for i in 0..elements.len() {
         let PageElement::TextBox(tb) = &elements[i] else {
             continue;
         };
-        if !tb.no_break || tb.autosize_width {
+        if !tb.no_break {
             continue;
         }
         // Wide left-aligned frames (authors, ABSTRACT, 2-line display titles
         // that do not fill the box) must not WidthOnly-shrink: InDesign
         // re-anchors about ItemTransform and the line looks centered.
         // Tight lock ink already set autosize_width in textbox_from_draw
-        // (48pt slack). Forcing it here would shrink a loose frame.
+        // (48pt slack). Forcing it here would shrink a loose frame. Isolated
+        // tight leads still WidthOnly-grow about the center and walk off the
+        // left margin — expand the lock rect into the open right instead.
+        // Column siblings stay WidthOnly so clamp can wrap in the lock column.
         if matches!(tb.align, TextAlign::Left) {
+            if tb.autosize_width && !column_sibling(&rects[i], &rects, i) {
+                let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
+                let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
+                if tb.no_break
+                    && !multi
+                    && nbreaks == 0
+                    && small_side_blocker(&rects[i], &rects, i, &tb.autosize_refer)
+                        .is_some_and(|w| w <= SMALL_SIBLING)
+                {
+                    continue;
+                }
+                if stacked_lock_column_sibling(&rects[i], &rects, i) {
+                    continue;
+                }
+                let extra = open_right(&rects[i], &rects, i, Some(page_w));
+                if let PageElement::TextBox(tb) = &mut elements[i] {
+                    tb.autosize_width = false;
+                    tb.autosize_no_wrap = false;
+                    if extra >= MIN_OPEN {
+                        tb.rect.width = Pt(tb.rect.width.0 + extra);
+                    }
+                }
+            }
+            continue;
+        }
+        if tb.autosize_width {
             continue;
         }
         // Center/Right single-line without HeightOnly: same shrink is toward
@@ -90,6 +150,22 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
         // expands about ItemTransform and the body eats the sidenote (and vice
         // versa). Any-distance side sibling: stay in the lock column.
         if (multi || nbreaks >= 1) && column_sibling(me, &rects, i) {
+            // Extra wrap + HeightOnly overprints a stacked sibling a few pt
+            // below (grid card body → CTA). Keep lock lines glued and grow
+            // into the open right margin instead of dropping NoBreak.
+            let stacked = nearest_below_gap(me, &rects, i).is_some_and(|g| g < GROW_ROOM);
+            if stacked {
+                let extra = open_right(me, &rects, i, page_w);
+                if let PageElement::TextBox(tb) = &mut elements[i] {
+                    tb.autosize_width = false;
+                    tb.autosize_no_wrap = false;
+                    tb.autosize_height = false;
+                    if extra >= MIN_OPEN {
+                        tb.rect.width = Pt(tb.rect.width.0 + extra);
+                    }
+                }
+                continue;
+            }
             if let PageElement::TextBox(tb) = &mut elements[i] {
                 tb.autosize_width = false;
                 tb.autosize_no_wrap = false;
@@ -121,6 +197,19 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
         };
         if grow_right_gap.is_none() && grow_left_gap.is_none() && !other_flush {
             continue;
+        }
+        // Single lock line beside a small icon: keep WidthOnly. The 6pt gap
+        // to a verified badge used to disable it, pad 6pt, and keep NoBreak
+        // — host Roboto then overset and hid "KRONOS // NIGHTFALL".
+        if tb.no_break && !multi && nbreaks == 0 {
+            if small_side_blocker(me, &rects, i, &tb.autosize_refer)
+                .is_some_and(|w| w <= SMALL_SIBLING)
+            {
+                continue;
+            }
+            if stacked_lock_column_sibling(me, &rects, i) {
+                continue;
+            }
         }
         if let PageElement::TextBox(tb) = &mut elements[i] {
             tb.autosize_width = false;
@@ -226,13 +315,48 @@ fn unglue_nbsp(runs: &mut [crate::ir::TextRun]) {
 }
 
 fn collapse_lock_newlines(runs: &mut [crate::ir::TextRun]) {
-    for run in runs {
+    for run in runs.iter_mut() {
         if run.auto_page_number {
             continue;
         }
         if run.text.contains('\n') {
             run.text = run.text.replace('\n', " ");
         }
+    }
+    // `insert_lock_breaks` puts `\n` before the next line's first glyph, so
+    // "lock \ntypefaces" is common. Replacing `\n` with a space would leave
+    // a double word-gap in the reflowed paragraph.
+    let mut prev_space = false;
+    for run in runs.iter_mut() {
+        if run.auto_page_number {
+            continue;
+        }
+        let mut out = String::with_capacity(run.text.len());
+        for ch in run.text.chars() {
+            let is_space = ch == ' ' || ch == '\u{00A0}';
+            if is_space {
+                if prev_space {
+                    continue;
+                }
+                out.push(' ');
+                prev_space = true;
+            } else {
+                prev_space = false;
+                out.push(ch);
+            }
+        }
+        run.text = out;
+    }
+}
+
+fn small_side_blocker(me: &Rect, rects: &[Rect], my_i: usize, refer: &str) -> Option<i128> {
+    let (grow_left, grow_right) = grow_dirs(refer);
+    match (grow_left, grow_right) {
+        (false, true) => nearest_right_blocker_w(me, rects, my_i),
+        (true, false) => nearest_left_blocker_w(me, rects, my_i),
+        (true, true) => nearest_right_blocker_w(me, rects, my_i)
+            .or_else(|| nearest_left_blocker_w(me, rects, my_i)),
+        (false, false) => None,
     }
 }
 
@@ -257,6 +381,60 @@ fn y_overlap(a: &Rect, b: &Rect) -> bool {
     let b0 = b.y.0;
     let b1 = b.y.0 + b.height.0;
     a0 < b1 && b0 < a1
+}
+
+fn x_overlap(a: &Rect, b: &Rect) -> bool {
+    let a0 = a.x.0;
+    let a1 = a.x.0 + a.width.0;
+    let b0 = b.x.0;
+    let b1 = b.x.0 + b.width.0;
+    a0 < b1 && b0 < a1
+}
+
+fn vertical_stack_gap(a: &Rect, b: &Rect) -> Option<i128> {
+    if a.y.0 + a.height.0 <= b.y.0 {
+        Some(b.y.0 - (a.y.0 + a.height.0))
+    } else if b.y.0 + b.height.0 <= a.y.0 {
+        Some(a.y.0 - (b.y.0 + b.height.0))
+    } else {
+        None
+    }
+}
+
+/// Stacked frames that share the same lock column (x/width). Growing one tight
+/// NoBreak line into the page margin would walk its right edge past siblings
+/// (signature name/title/org in one end block).
+fn stacked_lock_column_sibling(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
+    for (j, other) in rects.iter().enumerate() {
+        if j == my_i || me.x.0 != other.x.0 || me.width.0 != other.width.0 {
+            continue;
+        }
+        if !x_overlap(me, other) {
+            continue;
+        }
+        if vertical_stack_gap(me, other).is_some_and(|g| g < GROW_ROOM) {
+            return true;
+        }
+    }
+    false
+}
+
+/// Gap to the nearest stacked sibling (not containing chrome). `None` if the
+/// rest of the column below `me` is empty.
+fn nearest_below_gap(me: &Rect, rects: &[Rect], my_i: usize) -> Option<i128> {
+    let my_bottom = me.y.0 + me.height.0;
+    let mut best: Option<i128> = None;
+    for (j, other) in rects.iter().enumerate() {
+        if j == my_i || !x_overlap(me, other) || covers(other, me) || covers(me, other) {
+            continue;
+        }
+        let o_top = other.y.0;
+        if o_top >= my_bottom {
+            let gap = o_top - my_bottom;
+            best = Some(best.map_or(gap, |g| g.min(gap)));
+        }
+    }
+    best
 }
 
 /// Strictly left or right, any distance. Containing chrome is not a sibling.
@@ -307,6 +485,44 @@ fn nearest_right_gap(me: &Rect, rects: &[Rect], my_i: usize) -> Option<i128> {
         best = Some(best.map_or(gap, |g| g.min(gap)));
     }
     best
+}
+
+fn nearest_right_blocker_w(me: &Rect, rects: &[Rect], my_i: usize) -> Option<i128> {
+    let my_right = me.x.0 + me.width.0;
+    let mut best: Option<(i128, i128)> = None;
+    for (j, other) in rects.iter().enumerate() {
+        if j == my_i || !blocks_grow_right(me, other) {
+            continue;
+        }
+        let gap = other.x.0 - my_right;
+        let w = other.width.0;
+        best = Some(match best {
+            None => (gap, w),
+            Some((g, _)) if gap < g => (gap, w),
+            Some((g, ow)) if gap == g => (g, ow.min(w)),
+            Some(prev) => prev,
+        });
+    }
+    best.map(|(_, w)| w)
+}
+
+fn nearest_left_blocker_w(me: &Rect, rects: &[Rect], my_i: usize) -> Option<i128> {
+    let my_left = me.x.0;
+    let mut best: Option<(i128, i128)> = None;
+    for (j, other) in rects.iter().enumerate() {
+        if j == my_i || !blocks_grow_left(me, other) {
+            continue;
+        }
+        let gap = my_left - (other.x.0 + other.width.0);
+        let w = other.width.0;
+        best = Some(match best {
+            None => (gap, w),
+            Some((g, _)) if gap < g => (gap, w),
+            Some((g, ow)) if gap == g => (g, ow.min(w)),
+            Some(prev) => prev,
+        });
+    }
+    best.map(|(_, w)| w)
 }
 
 fn nearest_left_gap(me: &Rect, rects: &[Rect], my_i: usize) -> Option<i128> {
@@ -428,6 +644,40 @@ mod tests {
 
     fn width(el: &PageElement) -> i128 {
         el.rect().width.0
+    }
+
+    #[test]
+    fn tight_line_beside_icon_keeps_widthonly() {
+        // Glow-feed profile name: 149pt ink-tight line, 6pt gap, 14pt badge.
+        // Padding the gap and dropping WidthOnly oversets (hides) the name.
+        let mut els = vec![
+            tb("profile.name", 102_000, 149_342, true, "CenterLeftPoint"),
+            shape(257_342, 0, 14_000, 14_000),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.runs[0].text = "KRONOS\u{00A0}//\u{00A0}NIGHTFALL".into();
+            t.runs[0].tracking = 0;
+            t.runs[0].size_pt = 14.5;
+            t.runs[0].bold = true;
+        }
+        apply(&mut els, 600_000);
+        assert!(
+            is_width(&els[0]),
+            "icon sibling must not disable WidthOnly on a tight display name"
+        );
+        assert_eq!(
+            width(&els[0]),
+            149_342,
+            "lock rect stays; InDesign WidthOnly grows only the host delta"
+        );
+        let PageElement::TextBox(name) = &els[0] else {
+            panic!("textbox")
+        };
+        assert!(name.no_break, "name must stay one glued line");
+        assert!(
+            !name.autosize_height,
+            "must not HeightOnly-wrap onto the handle row"
+        );
     }
 
     #[test]
@@ -572,6 +822,44 @@ mod tests {
         assert!(
             !body.runs[0].text.contains('\n'),
             "3+ lock wraps collapse so host reflows as one paragraph"
+        );
+        assert!(
+            !body.runs[0].text.contains("  "),
+            "collapsed lock breaks must not leave double spaces, got {:?}",
+            body.runs[0].text
+        );
+    }
+
+    #[test]
+    fn collapsed_lock_breaks_squeeze_space_before_newline() {
+        // Pin inserts `\n` at the next line's first glyph, so the lock space
+        // stays: "lock \ntypefaces". Collapse must not become "lock  typefaces".
+        let mut els = vec![
+            tb("body", 0, 174_000, true, "CenterLeftPoint"),
+            shape(182_000, 0, 80_000, 90_000),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.runs[0].text =
+                "Deterministic micro-increments lock \ntypefaces and containers into \nharmonious"
+                    .into();
+        }
+        clamp_width_autosize(&mut els);
+        let PageElement::TextBox(body) = &els[0] else {
+            panic!("textbox")
+        };
+        assert!(
+            !body.runs[0].text.contains('\n'),
+            "3+ lock wraps collapse"
+        );
+        assert!(
+            !body.runs[0].text.contains("  "),
+            "must squeeze space+newline, got {:?}",
+            body.runs[0].text
+        );
+        assert!(
+            body.runs[0].text.contains("lock typefaces"),
+            "got {:?}",
+            body.runs[0].text
         );
     }
 
@@ -862,5 +1150,138 @@ mod tests {
             seal.runs[0].text
         );
         assert_eq!(seal.rect.width.0, 187_500);
+    }
+
+    #[test]
+    fn isolated_left_tight_lead_grows_right_not_widthonly() {
+        // Tight single-line lead (editorial hero). WidthOnly grows about
+        // ItemTransform and the line walks off the left page margin.
+        let mut els = vec![tb(
+            "hero.lead",
+            26_000,
+            454_000,
+            true,
+            "CenterLeftPoint",
+        )];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.runs[0].text =
+                "A serialized field guide exploring mathematical proportion, deliberate whitespace"
+                    .into();
+            t.runs[0].tracking = 0;
+        }
+        apply(&mut els, 600_000);
+        let PageElement::TextBox(lead) = &els[0] else {
+            panic!("textbox")
+        };
+        assert!(
+            !lead.autosize_width,
+            "isolated left lead must not WidthOnly-reanchor"
+        );
+        assert!(lead.no_break, "lead must stay one glued line");
+        assert_eq!(lead.rect.x.0, 26_000, "left margin stays");
+        assert!(
+            lead.rect.width.0 > 454_000,
+            "must grow into the open page, got {}",
+            lead.rect.width.0
+        );
+        assert!(
+            lead.rect.x.0 + lead.rect.width.0 <= 600_000,
+            "must not grow past the page"
+        );
+        assert!(!lead.autosize_height);
+    }
+
+    #[test]
+    fn stacked_signature_meta_keeps_lock_width() {
+        // End-block stack: name/title/org share one lock column. The longest
+        // line must not grow into the page margin or its right edge walks past
+        // the lines above.
+        let w = 232_259i128;
+        let x = 310_741i128;
+        let mut els = vec![
+            tb("sig.name", x, w, true, "CenterLeftPoint"),
+            tb("sig.title", x, w, true, "CenterLeftPoint"),
+            tb("sig.org", x, w, true, "CenterLeftPoint"),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.rect.y = Pt(657_150);
+            t.rect.height = Pt(17_550);
+            t.runs[0].text = "Arthur C. Pendelton".into();
+        }
+        if let PageElement::TextBox(t) = &mut els[1] {
+            t.rect.y = Pt(678_700);
+            t.rect.height = Pt(14_000);
+            t.runs[0].text = "Executive Creative Director & Founder".into();
+            t.runs[0].tracking = 30;
+        }
+        if let PageElement::TextBox(t) = &mut els[2] {
+            t.rect.y = Pt(696_700);
+            t.rect.height = Pt(13_300);
+            t.runs[0].text =
+                "The Heritage Botanical Studio · September 15, 2026".into();
+            t.runs[0].tracking = 31;
+        }
+        apply(&mut els, 595_000);
+        for (i, id) in ["sig.name", "sig.title", "sig.org"].iter().enumerate() {
+            let PageElement::TextBox(tb) = &els[i] else {
+                panic!("textbox")
+            };
+            assert_eq!(tb.node_id, *id);
+            assert_eq!(tb.rect.x.0, x, "{id} left edge");
+            assert_eq!(tb.rect.width.0, w, "{id} lock width");
+            assert!(tb.autosize_width, "{id} keeps WidthOnly for host slack");
+        }
+    }
+
+    #[test]
+    fn stacked_cta_below_column_body_keeps_nobreak() {
+        // 3-col grid: lock-pinned body beside another card, CTA 4pt below.
+        // Dropping NoBreak + HeightOnly extra-wraps the first lock line and
+        // overprints the CTA.
+        let mut els = vec![
+            tb("col", 0, 140_000, true, "CenterLeftPoint"),
+            tb("body", 300_000, 140_000, true, "CenterLeftPoint"),
+            tb("cta", 300_000, 90_000, true, "CenterLeftPoint"),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.rect.height = Pt(40_000);
+        }
+        if let PageElement::TextBox(t) = &mut els[1] {
+            t.runs[0].text = "Continue to Part 04: Typographic Color\n& Serial Rhythm.".into();
+            t.rect.height = Pt(21_000);
+        }
+        if let PageElement::TextBox(t) = &mut els[2] {
+            t.runs[0].text = "EXPLORE ESSAY 10 >>".into();
+            t.rect.y = Pt(25_000);
+            t.rect.height = Pt(10_000);
+        }
+        apply(&mut els, 500_000);
+        let PageElement::TextBox(body) = &els[1] else {
+            panic!("textbox")
+        };
+        assert!(
+            body.no_break,
+            "body above a CTA must not extra-wrap into it"
+        );
+        assert!(
+            !body.autosize_height,
+            "must not HeightOnly through the CTA, got height autosize"
+        );
+        assert!(!body.autosize_width, "must not WidthOnly through the column");
+        assert_eq!(body.rect.x.0, 300_000, "column left edge stays");
+        assert!(
+            body.rect.width.0 > 140_000,
+            "must grow into the open page, got {}",
+            body.rect.width.0
+        );
+        assert!(
+            body.rect.x.0 + body.rect.width.0 <= 500_000,
+            "must not grow past the page"
+        );
+        assert!(
+            body.runs[0].text.contains('\n'),
+            "lock wrap before the CTA must stay"
+        );
+        assert_eq!(body.rect.y.0 + body.rect.height.0, 21_000, "lock height stays");
     }
 }
