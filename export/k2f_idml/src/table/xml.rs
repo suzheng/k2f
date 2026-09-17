@@ -81,9 +81,9 @@ fn push_edge(s: &mut String, name: &str, stroke: &Option<crate::ir::BorderStroke
 
 fn stroke_type(dash: LineDash) -> &'static str {
     match dash {
-        LineDash::Solid => "$ID/Solid",
-        LineDash::Dash => "$ID/Dashed",
-        LineDash::Dot => "$ID/Dotted",
+        LineDash::Solid => "StrokeStyle/$ID/Solid",
+        LineDash::Dash => "StrokeStyle/$ID/Dashed",
+        LineDash::Dot => "StrokeStyle/$ID/Dotted",
     }
 }
 

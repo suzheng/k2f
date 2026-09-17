@@ -9,28 +9,22 @@ pub(crate) fn write_paras(
     no_break: bool,
     first_line_indent_pt: f64,
 ) -> String {
-    let paras: Vec<Vec<TextRun>> = paragraphs(runs)
-        .into_iter()
-        .filter(|p| !p.is_empty())
-        .collect();
-    let paras = if paras.is_empty() {
-        vec![Vec::new()]
-    } else {
-        paras
-    };
-    let n = paras.len();
+    let paras = paragraphs(runs);
     let fallback = runs.first().cloned().unwrap_or_else(default_run);
+    let paras = fold_blank_paras(paras, &fallback);
+    let n = paras.len();
     let mut body = String::new();
     for (i, para) in paras.iter().enumerate() {
         let indent = if i == 0 { first_line_indent_pt } else { 0.0 };
         body.push_str(&para_xml(
             align,
-            para,
+            &para.runs,
             &fallback,
             hts,
             i + 1 == n,
             no_break,
             indent,
+            para.space_after_pt,
         ));
     }
     body
@@ -88,6 +82,41 @@ fn paragraphs(runs: &[TextRun]) -> Vec<Vec<TextRun>> {
     paras
 }
 
+struct FoldedPara {
+    runs: Vec<TextRun>,
+    space_after_pt: f64,
+}
+
+/// `\n\n` becomes an empty paragraph. Using the first run as fallback would
+/// reprint its text in the gap; fold the blank into SpaceAfter instead.
+fn fold_blank_paras(paras: Vec<Vec<TextRun>>, fallback: &TextRun) -> Vec<FoldedPara> {
+    let gap = fallback
+        .leading_pt
+        .filter(|v| *v > 0.0)
+        .unwrap_or(fallback.size_pt)
+        .max(0.0);
+    let mut out: Vec<FoldedPara> = Vec::new();
+    for para in paras {
+        if para.is_empty() {
+            if let Some(prev) = out.last_mut() {
+                prev.space_after_pt += gap;
+            }
+            continue;
+        }
+        out.push(FoldedPara {
+            runs: para,
+            space_after_pt: 0.0,
+        });
+    }
+    if out.is_empty() {
+        out.push(FoldedPara {
+            runs: Vec::new(),
+            space_after_pt: 0.0,
+        });
+    }
+    out
+}
+
 fn para_xml(
     align: TextAlign,
     runs: &[TextRun],
@@ -96,6 +125,7 @@ fn para_xml(
     last_para: bool,
     no_break: bool,
     first_line_indent_pt: f64,
+    space_after_pt: f64,
 ) -> String {
     let just = align.justification();
     let leading = runs
@@ -112,7 +142,9 @@ fn para_xml(
     };
     let mut inner = String::new();
     if runs.is_empty() {
-        inner.push_str(&char_range(fallback, hts, !last_para, no_break));
+        let mut empty = fallback.clone();
+        empty.text.clear();
+        inner.push_str(&char_range(&empty, hts, !last_para, no_break));
     } else {
         let last = runs.len() - 1;
         for (i, run) in runs.iter().enumerate() {
@@ -120,12 +152,13 @@ fn para_xml(
         }
     }
     format!(
-        r#"    <ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/[No paragraph style]" Justification="{just}" Hyphenation="false" SpaceBefore="0" SpaceAfter="0"{lead_attr}{indent_attr}>
+        r#"    <ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/[No paragraph style]" Justification="{just}" Hyphenation="false" SpaceBefore="0" SpaceAfter="{}"{lead_attr}{indent_attr}>
       <Properties>
         <AppliedComposer>$ID/HL Single</AppliedComposer>
       </Properties>
 {inner}    </ParagraphStyleRange>
-"#
+"#,
+        fmt_pt(space_after_pt),
     )
 }
 
@@ -190,5 +223,35 @@ fn font_style(run: &TextRun) -> &'static str {
         (true, false) => "Bold",
         (false, true) => "Italic",
         (false, false) => "Regular",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn blank_semantic_lines_become_space_after_not_fallback_text() {
+        let mut run = default_run();
+        run.text = "Hello\n\nWorld".into();
+        run.leading_pt = Some(14.0);
+        run.size_pt = 10.0;
+        let mut hts = 0usize;
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0);
+        assert_eq!(
+            xml.matches("<ParagraphStyleRange").count(),
+            2,
+            "blank line must not emit a third paragraph, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"SpaceAfter="14.000""#),
+            "\\n\\n must become SpaceAfter from leading, got {xml}"
+        );
+        assert_eq!(xml.matches("<Content>Hello</Content>").count(), 1);
+        assert_eq!(xml.matches("<Content>World</Content>").count(), 1);
+        assert!(
+            !xml.contains("<Content>Hello\n\nWorld</Content>"),
+            "must not dump the first run into the gap, got {xml}"
+        );
     }
 }

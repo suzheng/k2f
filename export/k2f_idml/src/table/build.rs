@@ -40,9 +40,10 @@ pub(crate) fn table_on_page(
     } else {
         return Ok(None);
     };
-    let Some((col_widths_pt, rows_out)) = built else {
+    let Some((col_widths_pt, mut rows_out)) = built else {
         return Ok(None);
     };
+    inherit_table_chrome(&mut rows_out, paints.get(table_id))?;
     Ok(Some(TableBox {
         node_id: table_id.to_string(),
         rect: Rect {
@@ -55,6 +56,40 @@ pub(crate) fn table_on_page(
         col_widths_pt,
         rows: rows_out,
     }))
+}
+
+/// Table-node DrawBox (fill + outer stroke) is skipped once the native Table is
+/// emitted. Copy that chrome onto cells so the grid is not just inner edges.
+fn inherit_table_chrome(
+    rows: &mut [TableRow],
+    table_paint: Option<&CellPaint>,
+) -> Result<(), IdmlError> {
+    let Some(paint) = table_paint else {
+        return Ok(());
+    };
+    let outer = cell_borders(paint.border.as_ref())?;
+    let n_rows = rows.len();
+    for (r, row) in rows.iter_mut().enumerate() {
+        let n_cols = row.cells.len();
+        for (c, cell) in row.cells.iter_mut().enumerate() {
+            if cell.fill_hex.is_none() {
+                cell.fill_hex = paint.fill_hex.clone();
+            }
+            if r == 0 && cell.borders.top.is_none() {
+                cell.borders.top = outer.top.clone();
+            }
+            if c == 0 && cell.borders.left.is_none() {
+                cell.borders.left = outer.left.clone();
+            }
+            if r + 1 == n_rows && cell.borders.bottom.is_none() {
+                cell.borders.bottom = outer.bottom.clone();
+            }
+            if c + 1 == n_cols && cell.borders.right.is_none() {
+                cell.borders.right = outer.right.clone();
+            }
+        }
+    }
+    Ok(())
 }
 
 fn from_geometry(
