@@ -4,7 +4,7 @@ mod runs;
 mod tracking;
 
 use crate::align::{
-    autosize_reference, infer_text_align, lock_break_char_indices, lock_ink_height,
+    autosize_reference, infer_text_align, line_gaps, lock_break_char_indices, lock_ink_height,
     should_autosize_width, should_autosize_width_for_nobreak, should_pin_lock_breaks,
     source_glyphs, source_lines,
 };
@@ -359,12 +359,27 @@ pub(crate) fn vert_center(
     // Shrink-wrapped pill/badge: equal top/bottom padding around one line.
     // First-glyph y/h ratio stays ~0.2–0.3 (ascent offset), so the old
     // 0.4–0.6 optical-center band misses VIP labels and time pills.
+    // Grid-column date/meta lines fill their column width (zero horizontal
+    // slack) but can match the symmetric-height formula — keep them top-aligned.
     if lines.len() == 1 {
-        let bottom = h.saturating_sub(first_y).saturating_sub(font_size.0.max(0));
-        let slack = first_y.saturating_add(bottom);
-        let delta = first_y - bottom;
-        if slack >= 2_000 && delta.abs() * 5 <= slack && slack * 10 > h {
-            return true;
+        let (h_slack, _, _) = line_gaps(&lines[0], geo.width.0);
+        if h_slack >= 2_000 {
+            let naive_bottom = h.saturating_sub(first_y).saturating_sub(font_size.0.max(0));
+            // Shrink-wrapped pills use equal top/bottom padding; line_height_mult >
+            // 1.0 makes naive_bottom > first_y even when padding is symmetric.
+            let bottom = if naive_bottom > first_y
+                && first_y >= 1_000
+                && h <= first_y * 2 + font_size.0 + 2_000
+            {
+                first_y
+            } else {
+                naive_bottom
+            };
+            let slack = first_y.saturating_add(bottom);
+            let delta = first_y - bottom;
+            if slack >= 2_000 && delta.abs() * 5 <= slack && slack * 10 > h {
+                return true;
+            }
         }
     }
     if rect.height.0 <= font_size.0.saturating_mul(2) {
@@ -372,4 +387,92 @@ pub(crate) fn vert_center(
     }
     let ratio = first_y as f64 / h as f64;
     (0.4..=0.6).contains(&ratio)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use k2f_core::{GlyphPosition, Pt};
+
+    fn glyph(cluster: u32, x_off: i128, x_adv: i128, y: i128) -> GlyphPosition {
+        GlyphPosition {
+            glyph_id: 1,
+            cluster,
+            x_offset: Pt(x_off),
+            y_offset: Pt(y),
+            x_advance: Pt(x_adv),
+            y_advance: Pt(0),
+        }
+    }
+
+    fn pill_geo(height: i128, y: i128) -> GeometryNode {
+        GeometryNode {
+            id: "badge".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(80_000),
+            height: Pt(height),
+            glyphs: vec![glyph(0, 5_000, 50_000, y)],
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        }
+    }
+
+    #[test]
+    fn symmetric_pill_with_line_height_mult_centers() {
+        // badge role: padding 2000 + line_height 8050 (7pt * 1.15) + padding 2000
+        let geo = pill_geo(12_050, 2_000);
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(80_000),
+            height: Pt(12_050),
+        };
+        assert!(
+            vert_center(Some(&geo), &rect, Pt(7_000)),
+            "line_height_mult > 1 must not block pill centering"
+        );
+    }
+
+    #[test]
+    fn tall_single_line_frame_does_not_center() {
+        let geo = pill_geo(30_000, 2_000);
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(80_000),
+            height: Pt(30_000),
+        };
+        assert!(
+            !vert_center(Some(&geo), &rect, Pt(7_000)),
+            "tall frame is not a shrink-wrapped pill"
+        );
+    }
+
+    #[test]
+    fn grid_column_meta_with_symmetric_height_stays_top_aligned() {
+        // entry_meta: ink fills column width, tall grid row, symmetric y padding.
+        let geo = GeometryNode {
+            id: "app_harvard.meta".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(112_358),
+            height: Pt(22_120),
+            glyphs: vec![glyph(0, 0, 112_358, 6_380)],
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        };
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(112_358),
+            height: Pt(22_120),
+        };
+        assert!(
+            !vert_center(Some(&geo), &rect, Pt(7_800)),
+            "full-width grid meta must not vertically center"
+        );
+    }
 }
