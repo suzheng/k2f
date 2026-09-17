@@ -125,10 +125,14 @@ pub(crate) fn textbox_from_draw_ctx(
     let autosize_no_wrap = nlines <= 1;
     // Paint does not clip glyphs whose line origin sits on/past box height.
     // Skip HeightOnly when WidthOnly is on: extra wrap is already prevented.
-    // Justified column body is lock-positioned in a stack: HeightOnly shrinks
-    // when host leading/wrap differs and inflates the gap to the next frame.
-    let mut autosize_height =
-        nlines >= 2 && !autosize_width && !matches!(align, TextAlign::Justify);
+    // Stacked column body is lock-positioned: HeightOnly shrinks when host
+    // wrap uses fewer lines and inflates the gap to the next frame. Author
+    // `\n` stacks (titles, affiliations) still HeightOnly so lines are not
+    // clipped. Justified copy already stays lock-height.
+    let mut autosize_height = nlines >= 2
+        && !autosize_width
+        && !matches!(align, TextAlign::Justify)
+        && (raw.contains('\n') || !host_reflow);
     let mut rect = rect.clone();
     if let Some(ink) = lock_ink_height(geo, font_size) {
         if ink.0 > rect.height.0 {
@@ -163,15 +167,11 @@ pub(crate) fn textbox_from_draw_ctx(
         no_break,
         semantic_newlines: raw.contains('\n'),
         lock_line_count: nlines,
-        first_baseline_leading_offset: nlines >= 2
-            && geo
-                .and_then(|g| {
-                    source_glyphs(g)
-                        .iter()
-                        .map(|gp| gp.y_offset.0)
-                        .min()
-                })
-                .is_some_and(|y| y < 1_000),
+        // K2F paint puts the first baseline at font ascent when y_offset is 0
+        // (`rect.y + ascent`). LeadingOffset would sit at `Leading` instead
+        // and add (leading − ascent) of air at the top of every multi-line
+        // frame. Ascent matches paint.
+        first_baseline_leading_offset: false,
         full_width_lock_line: geo.is_some_and(has_full_width_lock_line),
     })
 }

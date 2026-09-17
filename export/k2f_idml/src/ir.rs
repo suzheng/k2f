@@ -135,8 +135,8 @@ pub struct TextBox {
     /// Glyph line count from lock geometry (`body_lines`). Used when `\n` is
     /// absent but lock paint wrapped, or for wide multi-line body like a one-liner beside a stacked heading.
     pub lock_line_count: usize,
-    /// Lock-pinned lines already encode baseline y in geometry; `Ascent` adds
-    /// extra top slack and oversets the frame bottom in InDesign.
+    /// When true, InDesign first baseline is `Leading` from the frame top.
+    /// K2F paint uses font ascent at y_offset 0, so this stays false.
     pub first_baseline_leading_offset: bool,
     /// Any lock line fills the frame edge-to-edge (wrapped column body).
     pub full_width_lock_line: bool,

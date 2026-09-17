@@ -49,6 +49,25 @@ pub(crate) fn apply(elements: &mut [PageElement], page_w: i128) {
     clamp_width_autosize_on(elements, Some(page_w));
     repair_nobreak_overset(elements);
     drop_tracking_on_nobreak_multiline(elements);
+    pin_lock_height_on_column_body(elements);
+}
+
+/// Column wrap is lock-positioned in a vertical stack. HeightOnly shrinks
+/// when InDesign wraps to fewer lines and inflates the gap to the next
+/// frame (letter body, paper paragraphs). Keep the lock box. Author `\n`
+/// stacks still HeightOnly so affiliation/title lines are not clipped.
+fn pin_lock_height_on_column_body(elements: &mut [PageElement]) {
+    for el in elements {
+        let PageElement::TextBox(tb) = el else {
+            continue;
+        };
+        if tb.semantic_newlines {
+            continue;
+        }
+        if tb.lock_line_count >= 3 || tb.full_width_lock_line {
+            tb.autosize_height = false;
+        }
+    }
 }
 
 /// Host Roboto + positive Tracking on glued lock lines oversets (hides) the
@@ -131,25 +150,27 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                 }
                 continue;
             }
-            // Left column stack: WidthOnly shrinks about ItemTransform and
-            // flush-left card/grid copy looks centered (color-block).
-            if tb.autosize_width && stacked_lock_column_sibling(&rects[i], &rects, i) {
+            let stacked_col = stacked_lock_column_sibling(&rects[i], &rects, i);
+            let side_col = column_sibling(&rects[i], &rects, i);
+            let want_width = tb.autosize_width;
+            let refer = tb.autosize_refer;
+            let no_break = tb.no_break;
+            let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
+            let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
+            // Stacked left column *beside* a divider/card: WidthOnly about
+            // ItemTransform recenters the block (color-block person column).
+            // Isolated stacks (signature name/title) keep WidthOnly.
+            if want_width && stacked_col && side_col {
                 if let PageElement::TextBox(tb) = &mut elements[i] {
                     tb.autosize_width = false;
                     tb.autosize_no_wrap = false;
                 }
             }
-            let PageElement::TextBox(tb) = &elements[i] else {
-                continue;
-            };
-            if tb.autosize_width && !column_sibling(&rects[i], &rects, i) {
-                let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
-                let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
-                if tb.no_break
+            if want_width && !side_col {
+                if no_break
                     && !multi
                     && nbreaks == 0
-                    && small_side_blocker(&rects[i], &rects, i, &tb.autosize_refer)
-                        .is_some_and(is_icon_w)
+                    && small_side_blocker(&rects[i], &rects, i, refer).is_some_and(is_icon_w)
                 {
                     continue;
                 }
@@ -286,8 +307,12 @@ fn repair_left_nobreak(
         }
         return;
     }
-    if stacked_lock_column_sibling(me, rects, my_i) || stacked_right_edge_sibling(me, rects, my_i)
-    {
+    if stacked_lock_column_sibling(me, rects, my_i) {
+        // Same x/width stack: growing one line past the others walks the
+        // right edge (signature name/title/org). Keep the lock box.
+        return;
+    }
+    if stacked_right_edge_sibling(me, rects, my_i) {
         if is_page_centered(me, page_w) && !stacked_lock_column_sibling(me, rects, my_i) {
             apply_page_center_autosize(tb);
             return;
@@ -1847,8 +1872,9 @@ mod tests {
     #[test]
     fn wide_multiline_left_restores_heightonly_when_widthonly_cleared() {
         // Letter body: tight ink triggers WidthOnly, then ensure_nobreak_width
-        // grows into the page margin and drops WidthOnly. HeightOnly must
-        // return or InDesign clips the NoBreak paragraph.
+        // grows into the page margin and drops WidthOnly. Keep the lock
+        // height so a shorter host wrap cannot inflate the gap to the next
+        // stacked paragraph.
         let mut els = vec![tb("letter.p2", 42_000, 510_000, true, "CenterLeftPoint")];
         if let PageElement::TextBox(t) = &mut els[0] {
             t.runs[0].text =
@@ -1867,8 +1893,8 @@ mod tests {
             "wide left body must not WidthOnly-shrink"
         );
         assert!(
-            body.autosize_height,
-            "multi-line left must HeightOnly after WidthOnly cleared"
+            !body.autosize_height,
+            "stacked column body must keep lock height"
         );
         assert!(
             !body.no_break,
