@@ -93,6 +93,14 @@ fn form_fill_invoice_has_no_chrome() {
 }
 
 #[test]
+fn form_fill_committed_contract_has_chrome() {
+    let bytes = std::fs::read(common::repo_root().join("examples/published/contract.K2F")).unwrap();
+    let app = AppState::open(&bytes).unwrap();
+    assert_eq!(app.form_fields().len(), 4);
+    assert!(app.has_form_fields());
+}
+
+#[test]
 fn form_fill_save_relock_writes_value_and_keeps_sibling() {
     let bytes = packed_form();
     let app = AppState::open(&bytes).unwrap();
@@ -123,6 +131,22 @@ fn form_fill_save_relock_writes_value_and_keeps_sibling() {
     assert_ne!(
         OpenedDocument::open(&bytes).unwrap().content_hash(),
         doc.content_hash()
+    );
+}
+
+#[test]
+fn form_fill_empty_save_preserves_package() {
+    let bytes = packed_form();
+    let before = OpenedDocument::open(&bytes).unwrap();
+    let hash_before = before.content_hash();
+    let mut session = Session::new(AppState::open(&bytes).unwrap()).unwrap();
+    session.toggle_fill();
+    let next = session.save_fill().unwrap();
+    let after = OpenedDocument::open(&next).unwrap();
+    assert_eq!(
+        after.content_hash(),
+        hash_before,
+        "Fill → Save with no edits must not relock"
     );
 }
 
