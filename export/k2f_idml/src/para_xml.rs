@@ -9,7 +9,15 @@ pub(crate) fn write_paras(
     no_break: bool,
     first_line_indent_pt: f64,
 ) -> String {
-    let paras = paragraphs(runs);
+    let paras: Vec<Vec<TextRun>> = paragraphs(runs)
+        .into_iter()
+        .filter(|p| !p.is_empty())
+        .collect();
+    let paras = if paras.is_empty() {
+        vec![Vec::new()]
+    } else {
+        paras
+    };
     let n = paras.len();
     let fallback = runs.first().cloned().unwrap_or_else(default_run);
     let mut body = String::new();

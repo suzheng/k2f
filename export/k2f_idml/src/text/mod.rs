@@ -257,7 +257,7 @@ pub(crate) fn cell_runs(
             r.bold = true;
         }
     }
-    let leading = leading_pt(geo);
+    let leading = leading_pt(geo, &node.modifiers);
     for r in &mut runs {
         r.leading_pt = leading;
     }
@@ -337,9 +337,9 @@ pub(crate) fn infer_first_line_indent(geo: Option<&GeometryNode>, align: TextAli
     millipt_to_pt((first - rest).max(0))
 }
 
-pub(crate) fn leading_pt(geo: Option<&GeometryNode>) -> Option<f64> {
+pub(crate) fn leading_pt(geo: Option<&GeometryNode>, modifiers: &[Modifier]) -> Option<f64> {
     let geo = geo?;
-    let lines = source_lines(geo);
+    let lines = body_lines(geo, modifiers);
     if lines.len() < 2 {
         return None;
     }
