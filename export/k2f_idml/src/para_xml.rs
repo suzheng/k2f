@@ -157,9 +157,19 @@ fn para_xml(
         .iter()
         .find_map(|r| r.leading_pt)
         .or(fallback.leading_pt);
+    let size_pt = runs
+        .iter()
+        .find(|r| r.size_pt > 0.0)
+        .map(|r| r.size_pt)
+        .filter(|s| *s > 0.0)
+        .unwrap_or(fallback.size_pt);
     let lead_attr = leading
         .map(|v| format!(r#" Leading="{}""#, fmt_pt(v)))
         .unwrap_or_default();
+    // HL Single ignores attribute Leading and uses AutoLeading % of point
+    // size (default 120). AutoLeading=0 collapses lines. Match lock leading.
+    let auto_lead_attr = auto_leading_attr(leading, size_pt);
+    let lead_prop = leading_unit_xml(leading, "        ");
     let indent_attr = if first_line_indent_pt.abs() > 0.0005 {
         format!(r#" FirstLineIndent="{}""#, fmt_pt(first_line_indent_pt))
     } else {
@@ -185,13 +195,36 @@ fn para_xml(
         inner.push_str(&char_range_br(br_run, no_break));
     }
     format!(
-        r#"    <ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/[No paragraph style]" Justification="{just}" Hyphenation="false" SpaceBefore="0" SpaceAfter="{}"{lead_attr}{left_attr}{indent_attr}>
+        r#"    <ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/[No paragraph style]" Justification="{just}" Hyphenation="false" SpaceBefore="0" SpaceAfter="{}"{lead_attr}{auto_lead_attr}{left_attr}{indent_attr}>
       <Properties>
         <AppliedComposer>$ID/HL Single</AppliedComposer>
-      </Properties>
+{lead_prop}      </Properties>
 {inner}    </ParagraphStyleRange>
 "#,
         fmt_pt(space_after_pt),
+    )
+}
+
+fn auto_leading_attr(leading: Option<f64>, size_pt: f64) -> String {
+    match leading {
+        Some(v) if v > 0.0 && size_pt > 0.0 => {
+            format!(r#" AutoLeading="{}""#, fmt_pt(v / size_pt * 100.0))
+        }
+        _ => String::new(),
+    }
+}
+
+fn leading_unit_xml(leading: Option<f64>, indent: &str) -> String {
+    match leading {
+        Some(v) if v > 0.0 => format!("{indent}<Leading type=\"unit\">{}</Leading>\n", fmt_pt(v)),
+        _ => String::new(),
+    }
+}
+
+fn font_properties_xml(font: &str, leading: Option<f64>) -> String {
+    let lead = leading_unit_xml(leading, "          ");
+    format!(
+        "        <Properties>\n          <AppliedFont type=\"string\">{font}</AppliedFont>\n{lead}        </Properties>\n"
     )
 }
 
@@ -238,6 +271,7 @@ fn char_range(run: &TextRun, hts: &mut usize, no_break: bool, semantic_newlines:
         attrs.push_str(&format!(r#" Tracking="{}""#, run.tracking));
     }
     let font = escape_xml(&run.font_name);
+    let props = font_properties_xml(&font, run.leading_pt);
     let mut kids = String::new();
     if run.auto_page_number {
         kids.push_str("        <AutoPageNumber/>\n");
@@ -257,10 +291,7 @@ fn char_range(run: &TextRun, hts: &mut usize, no_break: bool, semantic_newlines:
     }
     format!(
         r#"      <CharacterStyleRange {attrs}>
-        <Properties>
-          <AppliedFont type="string">{font}</AppliedFont>
-        </Properties>
-{kids}      </CharacterStyleRange>
+{props}{kids}      </CharacterStyleRange>
 "#
     )
 }
@@ -279,12 +310,10 @@ fn char_range_br(run: &TextRun, no_break: bool) -> String {
         attrs.push_str(r#" NoBreak="true""#);
     }
     let font = escape_xml(&run.font_name);
+    let props = font_properties_xml(&font, run.leading_pt);
     format!(
         r#"      <CharacterStyleRange {attrs}>
-        <Properties>
-          <AppliedFont type="string">{font}</AppliedFont>
-        </Properties>
-        <Br/>
+{props}        <Br/>
       </CharacterStyleRange>
 "#
     )
@@ -310,6 +339,29 @@ mod tests {
         assert!(
             xml.contains(r#"Leading="14.000""#),
             "character and paragraph Leading must be numeric, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"<Leading type="unit">14.000</Leading>"#),
+            "IDML Leading must also be a unit property, got {xml}"
+        );
+        // default_run size 12pt → 14/12*100
+        assert!(
+            xml.contains(r#"AutoLeading="116.667""#),
+            "HL Single uses AutoLeading % of point size, got {xml}"
+        );
+    }
+
+    #[test]
+    fn autoleading_percent_matches_lock_leading_over_size() {
+        let mut run = default_run();
+        run.text = "Body copy".into();
+        run.size_pt = 10.5;
+        run.leading_pt = Some(16.8);
+        let mut hts = 0usize;
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0, 0.0, false);
+        assert!(
+            xml.contains(r#"AutoLeading="160.000""#),
+            "16.8pt / 10.5pt = 160% auto leading, got {xml}"
         );
     }
 
