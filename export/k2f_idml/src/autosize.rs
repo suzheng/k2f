@@ -50,6 +50,7 @@ pub(crate) fn apply(elements: &mut [PageElement], page_w: i128) {
     repair_nobreak_overset(elements);
     drop_tracking_on_nobreak_multiline(elements);
     pin_lock_height_on_column_body(elements);
+    disable_widthonly_inside_cards(elements);
 }
 
 /// Column wrap is lock-positioned in a vertical stack. HeightOnly shrinks
@@ -83,6 +84,10 @@ fn drop_tracking_on_nobreak_multiline(elements: &mut [PageElement]) {
             continue;
         };
         if !tb.no_break {
+            continue;
+        }
+        // Padded banners/pills: lock tracking is the designed inset fill, not overset.
+        if tb.vert_center || tb.inset_left > 1.0 {
             continue;
         }
         let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
@@ -161,23 +166,36 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
             let no_break = tb.no_break;
             let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
             let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
+            // Hug title inside a padded card: keep the lock box. open_right
+            // would eat the card inset and WidthOnly would recenter the ink.
+            if want_width && padded_inside_card(&rects[i], &rects, i) {
+                if let PageElement::TextBox(tb) = &mut elements[i] {
+                    tb.autosize_width = false;
+                    tb.autosize_no_wrap = false;
+                }
+                continue;
+            }
             // Stacked left column: WidthOnly about ItemTransform recenters
             // each hug line independently (eyebrow vs title, card labels,
             // checklist rows). Isolated right-edge stacks (signature name)
             // still keep WidthOnly unless they are left-aligned.
-            if want_width && stacked_col {
+            if want_width && stacked_col && side_col {
                 if let PageElement::TextBox(tb) = &mut elements[i] {
                     tb.autosize_width = false;
                     tb.autosize_no_wrap = false;
                 }
             }
             if want_width && side_col && !stacked_col {
-                if let PageElement::TextBox(tb) = &mut elements[i] {
-                    tb.autosize_width = false;
-                    tb.autosize_no_wrap = false;
-                    let extra = open_right(&rects[i], &rects, i, Some(page_w));
-                    if extra >= MIN_OPEN {
-                        tb.rect.width = Pt(tb.rect.width.0 + extra);
+                let beside_icon =
+                    small_side_blocker(&rects[i], &rects, i, refer).is_some_and(is_icon_w);
+                if !beside_icon {
+                    if let PageElement::TextBox(tb) = &mut elements[i] {
+                        tb.autosize_width = false;
+                        tb.autosize_no_wrap = false;
+                        let extra = open_right(&rects[i], &rects, i, Some(page_w));
+                        if extra >= MIN_OPEN {
+                            tb.rect.width = Pt(tb.rect.width.0 + extra);
+                        }
                     }
                 }
             }
@@ -649,32 +667,20 @@ fn should_collapse_lock_newlines(tb: &TextBox, nbreaks: usize) -> bool {
 fn has_midword_newline(runs: &[crate::ir::TextRun]) -> bool {
     let full: String = runs.iter().map(|r| r.text.as_str()).collect();
     let chars: Vec<char> = full.chars().collect();
-    let mut prev = 0usize;
+    let mut line_start = 0usize;
     for (i, &ch) in chars.iter().enumerate() {
         if ch != '\n' {
             continue;
         }
-        if i > 0
+        let mid = i > 0
             && i + 1 < chars.len()
             && !chars[i - 1].is_whitespace()
             && !chars[i + 1].is_whitespace()
-            && !chars[prev..i].iter().any(|c| c.is_whitespace())
-        {
+            && !chars[line_start..i].iter().any(|c| c.is_whitespace());
+        if mid {
             return true;
         }
-        prev = i + 1;
-    }
-    false
-}
-        if i > 0
-            && i + 1 < chars.len()
-            && !chars[i - 1].is_whitespace()
-            && !chars[i + 1].is_whitespace()
-            && !chars[prev..i].iter().any(|c| c.is_whitespace())
-        {
-            return true;
-        }
-        prev = i + 1;
+        line_start = i + 1;
     }
     false
 }
@@ -831,6 +837,46 @@ fn stacked_graphic_caption(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
         }
     }
     false
+}
+
+/// Nested title inside a stroked/filled card: extra width is padding, not a
+/// page sheet. WidthOnly about ItemTransform recenters the title in the card.
+const CARD_PAD_MIN: i128 = 6_000;
+const CARD_PAD_MAX: i128 = 80_000;
+const CARD_PAD_LEFT: i128 = 4_000;
+
+fn padded_inside_card(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
+    for (j, other) in rects.iter().enumerate() {
+        if j == my_i || !covers(other, me) {
+            continue;
+        }
+        let extra_w = other.width.0 - me.width.0;
+        let extra_left = me.x.0 - other.x.0;
+        if extra_w >= CARD_PAD_MIN
+            && extra_w <= CARD_PAD_MAX
+            && extra_left >= CARD_PAD_LEFT
+            && other.height.0 >= me.height.0
+        {
+            return true;
+        }
+    }
+    false
+}
+
+fn disable_widthonly_inside_cards(elements: &mut [PageElement]) {
+    let rects: Vec<Rect> = elements.iter().map(|el| el.rect().clone()).collect();
+    for i in 0..elements.len() {
+        let PageElement::TextBox(tb) = &mut elements[i] else {
+            continue;
+        };
+        if !matches!(tb.align, TextAlign::Left) || !tb.autosize_width {
+            continue;
+        }
+        if padded_inside_card(&rects[i], &rects, i) {
+            tb.autosize_width = false;
+            tb.autosize_no_wrap = false;
+        }
+    }
 }
 
 fn stacked_lock_column_sibling(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
@@ -1993,6 +2039,67 @@ mod tests {
             !body.no_break,
             "full-width lock-pinned body must wrap so InDesign does not hide the story"
         );
+    }
+
+    #[test]
+    fn card_title_keeps_lock_width() {
+        let mut els = vec![
+            shape(0, 0, 595_000, 842_000),
+            shape(405_372, 436_025, 165_628, 109_200),
+            tb("col3.spec_head", 413_372, 149_628, true, "CenterLeftPoint"),
+        ];
+        if let PageElement::TextBox(t) = &mut els[2] {
+            t.rect.y = Pt(444_025);
+            t.rect.height = Pt(13_200);
+            t.runs[0].text = "PUBLICATION METRICS".into();
+            t.runs[0].tracking = 27;
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(title) = &els[2] else {
+            panic!("textbox")
+        };
+        assert!(!title.autosize_width, "card title must not WidthOnly-recenter");
+        assert_eq!(title.rect.x.0, 413_372);
+        assert_eq!(title.rect.width.0, 149_628);
+    }
+
+    #[test]
+    fn tracked_title_beside_left_icon_keeps_lock_left() {
+        let mut els = vec![
+            shape(163_424, 67_800, 26_000, 26_000),
+            tb("doc.header.title", 205_424, 226_152, true, "CenterLeftPoint"),
+        ];
+        if let PageElement::TextBox(t) = &mut els[1] {
+            t.rect.y = Pt(68_000);
+            t.rect.height = Pt(26_400);
+            t.runs[0].text = "DAILY CHECKLIST".into();
+            t.runs[0].tracking = 159;
+            t.runs[0].size_pt = 22.0;
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(title) = &els[1] else {
+            panic!("textbox")
+        };
+        assert_eq!(title.rect.x.0, 205_424, "gap to the plus must stay");
+        assert!(!title.autosize_width, "tracked title must not WidthOnly-recenter");
+    }
+
+    #[test]
+    fn padded_banner_keeps_letter_spacing() {
+        let mut els = vec![tb("notice.banner", 42_000, 511_000, false, "CenterLeftPoint")];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.runs[0].text = "MANDATORY COMPLIANCE\nSCALES IS REQUIRED".into();
+            t.runs[0].tracking = 47;
+            t.no_break = true;
+            t.inset_left = 12.0;
+            t.vert_center = true;
+            t.lock_line_count = 2;
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(banner) = &els[0] else {
+            panic!("textbox")
+        };
+        assert_eq!(banner.runs[0].tracking, 47, "padded banner must keep tracking");
     }
 
     #[test]
