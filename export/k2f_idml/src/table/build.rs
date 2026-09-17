@@ -5,7 +5,7 @@ use crate::align::infer_text_align;
 use crate::coord::millipt_to_pt;
 use crate::geo::find_geo;
 use crate::ir::{TableBox, TableCell, TableRow, TextAlign};
-use crate::text::{cell_runs, insets, vert_center, TextFonts};
+use crate::text::{cell_runs, insets, TextFonts};
 use crate::IdmlError;
 use k2f_core::{
     find_in_trees, node_text, GeometryNode, NodeContent, Page, PaintOp, Rect, RunningBlockNode,
@@ -196,34 +196,15 @@ fn build_cell(
         fonts,
         header && paint_runs.is_empty(),
     );
-    let font_size = paint
-        .and_then(|p| {
-            p.runs
-                .iter()
-                .map(|r| r.style.font_size)
-                .max_by_key(|pt| pt.0.abs())
-        })
-        .or_else(|| {
-            geo.text_runs
-                .iter()
-                .map(|r| r.style.font_size)
-                .max_by_key(|pt| pt.0.abs())
-        })
-        .unwrap_or(k2f_core::Pt(12_000));
-    let cell_rect = Rect {
-        x: geo.x,
-        y: geo.y,
-        width: geo.width,
-        height: geo.height,
-    };
     let (inset_top, inset_left, inset_bottom, inset_right) = insets(Some(geo), align);
+    // Fixed-height rows: CenterAlign lets host metrics bleed into the next row.
     Ok(TableCell {
         node_id: node.map(|n| n.id.clone()).unwrap_or_else(|| geo.id.clone()),
         runs,
         align,
         fill_hex: paint.and_then(|p| p.fill_hex.clone()),
         borders: cell_borders(paint.and_then(|p| p.border.as_ref()))?,
-        vert_center: vert_center(Some(geo), &cell_rect, font_size),
+        vert_center: false,
         inset_top,
         inset_left,
         inset_bottom,
