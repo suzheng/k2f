@@ -24,9 +24,10 @@ pub(crate) fn table_xml(tbl: &TableBox, table_self: &str) -> String {
         ));
     }
     for (r, row) in tbl.rows.iter().enumerate() {
+        let h = fmt_pt(row.height_pt);
+        // SingleRowHeight alone is ignored on open; lock geometry with MinimumHeight.
         inner.push_str(&format!(
-            "      <Row Self=\"{table_self}Row{r}\" Name=\"{r}\" SingleRowHeight=\"{}\"/>\n",
-            fmt_pt(row.height_pt)
+            "      <Row Self=\"{table_self}Row{r}\" Name=\"{r}\" SingleRowHeight=\"{h}\" MinimumHeight=\"{h}\" AutoGrow=\"false\"/>\n",
         ));
     }
     let mut hts = 0usize;

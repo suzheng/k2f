@@ -427,8 +427,13 @@ fn pinned_lock_lines_nobreak_and_nbsp() {
         "pinned lock lines must glue spaces with NBSP, got {xml}"
     );
     assert!(
-        xml.contains("<Br/>"),
-        "lock wrap must still emit a hard break, got {xml}"
+        !xml.contains("<Br/>"),
+        "lock wrap uses ParagraphStyleRange breaks, not Br, got {xml}"
+    );
+    assert_eq!(
+        xml.matches("<ParagraphStyleRange").count(),
+        2,
+        "pinned lock wrap must split into two paragraphs, got {xml}"
     );
 }
 

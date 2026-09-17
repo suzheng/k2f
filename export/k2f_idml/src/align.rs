@@ -149,7 +149,16 @@ pub(crate) fn should_autosize_width_for_nobreak(
     geo: Option<&GeometryNode>,
     align: TextAlign,
 ) -> bool {
-    ink_tighter_than(geo, align, NOBREAK_WIDTH_SLACK)
+    let Some(geo) = geo else {
+        return false;
+    };
+    // Multi-line lock boxes with a full-width first line are wrapped body copy
+    // (bibliography entries, paragraphs), not shrink-wrapped NoBreak labels.
+    // WidthOnly on those frames re-anchors in InDesign and misaligns the block.
+    if source_lines(geo).len() != 1 {
+        return false;
+    }
+    ink_tighter_than(Some(geo), align, NOBREAK_WIDTH_SLACK)
 }
 
 fn ink_tighter_than(geo: Option<&GeometryNode>, align: TextAlign, slack_limit: i128) -> bool {
@@ -175,7 +184,9 @@ fn ink_tighter_than(geo: Option<&GeometryNode>, align: TextAlign, slack_limit: i
     }
     // Full-width column copy (left ink flush, wide right slack) is not a
     // shrink-wrapped NoBreak label — WidthOnly recenters in the card column.
-    if lines.len() == 1 && min_left <= MIN_SLACK && min_right > INK_SLACK {
+    // Use NOBREAK_WIDTH_SLACK (48pt): tighter slack still needs host-metric
+    // headroom (Bold subject lines overset and hide when NoBreak + no grow).
+    if lines.len() == 1 && min_left <= MIN_SLACK && min_right > NOBREAK_WIDTH_SLACK {
         return false;
     }
     min_right < slack_limit || min_slack < slack_limit
@@ -354,6 +365,38 @@ mod tests {
         assert!(
             !should_autosize_width_for_nobreak(Some(&geo), TextAlign::Left),
             "flush-left column copy must not WidthOnly-shrink"
+        );
+    }
+
+    #[test]
+    fn tight_full_width_subject_line_needs_nobreak_grow() {
+        // Letter subject: lock ink ~446pt in a 487pt column (~41pt slack).
+        // Host Bold metrics overset without width grow.
+        let w = 487_000i128;
+        let geo = geo(w, vec![glyph(0, 0, 446_318, 0)]);
+        assert!(
+            should_autosize_width_for_nobreak(Some(&geo), TextAlign::Left),
+            "tight single-line column copy must allow NoBreak width grow"
+        );
+    }
+
+    #[test]
+    fn wrapped_multiline_body_skips_nobreak_widthonly() {
+        // Bibliography-style entry: line 1 fills the column, line 2 is short.
+        // Zero slack on line 1 must not trigger WidthOnly on the whole frame.
+        let w = 483_000i128;
+        let geo = geo(
+            w,
+            vec![
+                glyph(0, 0, 80_000, 0),
+                glyph(50, 0, 80_000, 0),
+                glyph(0, 0, 80_000, 12_600),
+                glyph(20, 0, 50_000, 12_600),
+            ],
+        );
+        assert!(
+            !should_autosize_width_for_nobreak(Some(&geo), TextAlign::Left),
+            "wrapped multi-line body must not WidthOnly-shrink"
         );
     }
 

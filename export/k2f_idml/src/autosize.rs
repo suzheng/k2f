@@ -17,6 +17,9 @@ const HOST_LINE_PAD: i128 = 24_000;
 /// Skip the margin-grow path if the open side is thinner than this — wrapping
 /// is then the only way leftover glyphs stay visible.
 const MIN_OPEN: i128 = 4_000;
+/// Lock box center within this many millipt of page center — shrink-wrapped
+/// invitation/card lines centered on the sheet.
+const PAGE_CENTER_TOL: i128 = 2_000;
 /// Verified-badge / avatar-icon width. A 6pt gap to a 14pt icon is not a
 /// column sibling: WidthOnly only grows the host-metrics delta. Padding that
 /// gap and dropping WidthOnly leaves NoBreak 1pt short, and InDesign hides
@@ -134,6 +137,12 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                 {
                     continue;
                 }
+                if is_page_centered(&rects[i], page_w) {
+                    if let PageElement::TextBox(tb) = &mut elements[i] {
+                        apply_page_center_autosize(tb);
+                    }
+                    continue;
+                }
                 let extra = open_right(&rects[i], &rects, i, Some(page_w));
                 if let PageElement::TextBox(tb) = &mut elements[i] {
                     let nbreaks: usize =
@@ -219,11 +228,17 @@ fn repair_left_nobreak(
     }
     if tb.autosize_height && !tb.autosize_width && tb.lock_line_count >= 2 {
         if (multi || nbreaks >= 1) && !column_sibling(me, rects, my_i) && !tb.semantic_newlines {
-            tb.no_break = false;
-            unglue_nbsp(&mut tb.runs);
-            for run in &mut tb.runs {
-                if run.tracking > 0 {
-                    run.tracking = 0;
+            if should_preserve_lock_pinned_nobreak(tb, nbreaks) {
+                tb.autosize_width = true;
+                tb.autosize_no_wrap = false;
+                tb.autosize_height = false;
+            } else {
+                tb.no_break = false;
+                unglue_nbsp(&mut tb.runs);
+                for run in &mut tb.runs {
+                    if run.tracking > 0 {
+                        run.tracking = 0;
+                    }
                 }
             }
         }
@@ -237,6 +252,10 @@ fn repair_left_nobreak(
     }
     if stacked_lock_column_sibling(me, rects, my_i) || stacked_right_edge_sibling(me, rects, my_i)
     {
+        if is_page_centered(me, page_w) {
+            apply_page_center_autosize(tb);
+            return;
+        }
         let extra = open_right(me, rects, my_i, Some(page_w));
         if extra >= MIN_OPEN {
             tb.rect.width = Pt(tb.rect.width.0 + extra);
@@ -268,6 +287,7 @@ fn repair_nobreak_overset(elements: &mut [PageElement]) {
             && (multi || nbreaks >= 1)
             && !column_sibling(&rects[i], &rects, i)
             && !tb.semantic_newlines
+            && !should_preserve_lock_pinned_nobreak(tb, nbreaks)
         {
             tb.no_break = false;
             unglue_nbsp(&mut tb.runs);
@@ -311,6 +331,10 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
             if stacked {
                 let extra = open_right(me, &rects, i, page_w);
                 if let PageElement::TextBox(tb) = &mut elements[i] {
+                    if is_page_centered(me, page_w.unwrap_or(me.width.0)) {
+                        apply_page_center_autosize(tb);
+                        continue;
+                    }
                     tb.autosize_width = false;
                     tb.autosize_no_wrap = false;
                     tb.autosize_height = false;
@@ -427,7 +451,9 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
                         0
                     };
                     if extra >= MIN_OPEN {
-                        if grow_right && !grow_left {
+                        if page_w.is_some_and(|pw| is_page_centered(&tb.rect, pw)) {
+                            apply_page_center_autosize(tb);
+                        } else if grow_right && !grow_left {
                             tb.rect.width = Pt(tb.rect.width.0 + extra);
                         } else if grow_left && !grow_right {
                             tb.rect.x = Pt(tb.rect.x.0 - extra);
@@ -436,16 +462,22 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
                         continue;
                     }
                 }
-                tb.no_break = false;
-                unglue_nbsp(&mut tb.runs);
-                // 2-line display breaks (title / DEPTHS) stay. 3+ lock wraps
-                // are paragraph reflow — keep them as `\n` and leftover words
-                // wrap *plus* the forced break, overprinting the next card.
-                // Author newlines (seal stacks) must not be flattened.
-                if should_collapse_lock_newlines(tb, nbreaks) {
-                    collapse_lock_newlines(&mut tb.runs);
+                if should_preserve_lock_pinned_nobreak(tb, nbreaks) {
+                    tb.autosize_width = true;
+                    tb.autosize_no_wrap = false;
+                    tb.autosize_height = false;
+                } else {
+                    tb.no_break = false;
+                    unglue_nbsp(&mut tb.runs);
+                    // 2-line display breaks (title / DEPTHS) stay. 3+ lock wraps
+                    // are paragraph reflow — keep them as `\n` and leftover words
+                    // wrap *plus* the forced break, overprinting the next card.
+                    // Author newlines (seal stacks) must not be flattened.
+                    if should_collapse_lock_newlines(tb, nbreaks) {
+                        collapse_lock_newlines(&mut tb.runs);
+                    }
+                    tb.autosize_height = true;
                 }
-                tb.autosize_height = true;
             }
         }
     }
@@ -457,6 +489,30 @@ fn pad_for_gap(gap: i128) -> i128 {
     } else {
         gap - GAP_KEEP
     }
+}
+
+fn is_page_centered(me: &Rect, page_w: i128) -> bool {
+    let cx = me.x.0 + me.width.0 / 2;
+    (cx - page_w / 2).abs() <= PAGE_CENTER_TOL
+}
+
+/// Shrink-wrapped lines centered on the page: ink fills the lock box so
+/// alignment inference says Left, but the box itself is midline. Asymmetric
+/// open_right expansion walks ItemTransform off center in InDesign.
+fn apply_page_center_autosize(tb: &mut TextBox) {
+    tb.align = TextAlign::Center;
+    tb.autosize_refer = "CenterPoint";
+    tb.autosize_width = true;
+    tb.autosize_no_wrap = true;
+    tb.autosize_height = false;
+}
+
+/// Lock-pinned 2-line display titles/subtitles: keep NoBreak and WidthOnly so
+/// host metrics cannot insert an extra wrap between the lock lines.
+fn should_preserve_lock_pinned_nobreak(tb: &TextBox, nbreaks: usize) -> bool {
+    !tb.semantic_newlines
+        && tb.lock_line_count == 2
+        && nbreaks == tb.lock_line_count.saturating_sub(1)
 }
 
 /// Lock-pinned wrap breaks (`nbreaks == lock_line_count - 1`) in left-aligned
@@ -1512,8 +1568,47 @@ mod tests {
         };
         assert_eq!(body.runs[0].tracking, 0);
         assert!(
-            !body.no_break,
-            "HeightOnly lock-pinned body must wrap so InDesign does not hide the story"
+            body.no_break,
+            "2-line lock-pinned display copy must keep NoBreak so host cannot extra-wrap"
+        );
+        assert!(
+            body.autosize_width,
+            "must WidthOnly-grow to the longest lock line"
+        );
+    }
+
+    #[test]
+    fn lock_pinned_article_title_keeps_nobreak_widthonly() {
+        let mut els = vec![tb("doc.title", 0, 499_000, false, "TopLeftPoint")];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.no_break = true;
+            t.autosize_height = true;
+            t.lock_line_count = 2;
+            t.runs[0].text =
+                "The Architecture of Thought: Foundations of Latent\nRepresentation and Human-Centric Reasoning"
+                    .into();
+            t.runs[0].size_pt = 19.0;
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(title) = &els[0] else {
+            panic!("textbox")
+        };
+        assert!(
+            title.no_break,
+            "lock-pinned title must keep NoBreak, got unglued {:?}",
+            title.runs[0].text
+        );
+        assert!(
+            title.autosize_width,
+            "must WidthOnly so host metrics do not insert a third wrap"
+        );
+        assert!(
+            !title.autosize_height,
+            "WidthOnly replaces HeightOnly on 2-line titles"
+        );
+        assert!(
+            title.runs[0].text.contains('\n'),
+            "lock break must stay"
         );
     }
 
@@ -1566,6 +1661,29 @@ mod tests {
         };
         assert!(cap.autosize_width, "caption under graphic keeps WidthOnly");
         assert_eq!(cap.autosize_refer, "CenterPoint");
+    }
+
+    #[test]
+    fn page_centered_label_keeps_centerpoint_widthonly() {
+        // Invitation monogram: tight ink, box centered on A5-width page.
+        let page_w = 360_000i128;
+        let mut els = vec![tb("card.front.header.monogram", 158_087, 43_825, true, "CenterLeftPoint")];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.runs[0].text = "E\u{00A0}·\u{00A0}L".into();
+            t.runs[0].tracking = 0;
+        }
+        apply(&mut els, page_w);
+        let PageElement::TextBox(mono) = &els[0] else {
+            panic!("textbox")
+        };
+        assert_eq!(mono.align, TextAlign::Center);
+        assert_eq!(mono.autosize_refer, "CenterPoint");
+        assert!(
+            mono.autosize_width,
+            "page-centered label must keep WidthOnly, not open_right expand"
+        );
+        assert_eq!(mono.rect.width.0, 43_825, "lock width must stay");
+        assert_eq!(mono.rect.x.0, 158_087, "lock left edge must stay");
     }
 
     #[test]

@@ -310,6 +310,27 @@ fn harvested_cells_skip_drawbox_on_spread() {
 }
 
 #[test]
+fn table_rows_lock_height_in_idml() {
+    let idml = export_opened(&common::invoice()).unwrap();
+    let mut found = false;
+    for xml in story_files(&idml) {
+        if !xml.contains("<Table") {
+            continue;
+        }
+        found = true;
+        assert!(
+            xml.contains("MinimumHeight=") && xml.contains(r#"AutoGrow="false""#),
+            "rows must lock height for InDesign, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"SingleRowHeight=""#) && xml.contains(r#"MinimumHeight=""#),
+            "SingleRowHeight must be duplicated as MinimumHeight, got {xml}"
+        );
+    }
+    assert!(found, "invoice must contain a Table");
+}
+
+#[test]
 fn table_cells_write_text_insets() {
     let idml = export_opened(&common::invoice()).unwrap();
     let mut found = false;

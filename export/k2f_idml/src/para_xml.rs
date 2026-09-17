@@ -21,7 +21,6 @@ pub(crate) fn write_paras(
             &para.runs,
             &fallback,
             hts,
-            i + 1 == n,
             no_break,
             indent,
             para.space_after_pt,
@@ -122,7 +121,6 @@ fn para_xml(
     runs: &[TextRun],
     fallback: &TextRun,
     hts: &mut usize,
-    last_para: bool,
     no_break: bool,
     first_line_indent_pt: f64,
     space_after_pt: f64,
@@ -144,11 +142,10 @@ fn para_xml(
     if runs.is_empty() {
         let mut empty = fallback.clone();
         empty.text.clear();
-        inner.push_str(&char_range(&empty, hts, !last_para, no_break));
+        inner.push_str(&char_range(&empty, hts, no_break));
     } else {
-        let last = runs.len() - 1;
-        for (i, run) in runs.iter().enumerate() {
-            inner.push_str(&char_range(run, hts, i == last && !last_para, no_break));
+        for run in runs {
+            inner.push_str(&char_range(run, hts, no_break));
         }
     }
     format!(
@@ -162,7 +159,7 @@ fn para_xml(
     )
 }
 
-fn char_range(run: &TextRun, hts: &mut usize, with_br: bool, no_break: bool) -> String {
+fn char_range(run: &TextRun, hts: &mut usize, no_break: bool) -> String {
     let size = fmt_pt(run.size_pt);
     let fill = format!("Color/k2f_{}", run.color_hex);
     let style = font_style(run);
@@ -204,9 +201,6 @@ fn char_range(run: &TextRun, hts: &mut usize, with_br: bool, no_break: bool) -> 
             escape_xml(&run.text)
         ));
     }
-    if with_br {
-        kids.push_str("        <Br/>\n");
-    }
     format!(
         r#"      <CharacterStyleRange {attrs}>
         <Properties>
@@ -229,6 +223,20 @@ fn font_style(run: &TextRun) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn semantic_newlines_do_not_emit_redundant_br() {
+        let mut run = default_run();
+        run.text = "Line one\nLine two".into();
+        run.leading_pt = Some(14.0);
+        let mut hts = 0usize;
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0);
+        assert_eq!(xml.matches("<ParagraphStyleRange").count(), 2);
+        assert!(
+            !xml.contains("<Br/>"),
+            "ParagraphStyleRange already ends the paragraph, got {xml}"
+        );
+    }
 
     #[test]
     fn blank_semantic_lines_become_space_after_not_fallback_text() {
