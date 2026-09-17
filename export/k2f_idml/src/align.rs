@@ -194,10 +194,11 @@ fn ink_tighter_than(geo: Option<&GeometryNode>, align: TextAlign, slack_limit: i
             .map(|g| g.x_offset.0 + g.x_advance.0)
             .max()
             .unwrap_or(0);
-        // Nearly full-width column line with very tight right slack (~22pt) is
-        // bibliography-style wrap, not bold subject copy that still needs grow
-        // room (~41pt slack). WidthOnly on the former re-anchors in InDesign.
-        if max_edge * 20 >= box_w * 17 && min_right < 30_000 {
+        // Nearly full-width *column* line with very tight right slack (~22pt)
+        // is bibliography-style wrap. Shrink-wrapped display titles (a hug box
+        // around the ink, often ~300pt) still need WidthOnly or InDesign hides
+        // the NoBreak story. Only skip grow on wide frames.
+        if box_w >= 400_000 && max_edge * 20 >= box_w * 17 && min_right < 30_000 {
             return false;
         }
         if min_right > NOBREAK_WIDTH_SLACK {
@@ -423,6 +424,17 @@ mod tests {
         assert!(
             !should_autosize_width_for_nobreak(Some(&geo), TextAlign::Left),
             "wrapped multi-line body must not WidthOnly-shrink"
+        );
+    }
+
+    #[test]
+    fn hug_display_title_still_needs_nobreak_grow() {
+        // botanical-elegance header title: ink fills a ~319pt hug box.
+        let w = 318_999i128;
+        let geo = geo(w, vec![glyph(0, 0, 318_999, 0)]);
+        assert!(
+            should_autosize_width_for_nobreak(Some(&geo), TextAlign::Left),
+            "shrink-wrapped title must WidthOnly-grow or host italic oversets"
         );
     }
 
