@@ -31,6 +31,31 @@ pub(crate) fn apply(elements: &mut [PageElement], page_w: i128) {
     enable_widthonly_beside_icons(elements);
     ensure_nobreak_width(elements, page_w);
     clamp_width_autosize_on(elements, Some(page_w));
+    drop_tracking_on_nobreak_multiline(elements);
+}
+
+/// Host Roboto + positive Tracking on glued lock lines oversets (hides) the
+/// whole story when slack is tight. Drop tracking on multi-line NoBreak frames
+/// so InDesign keeps every lock line visible.
+fn drop_tracking_on_nobreak_multiline(elements: &mut [PageElement]) {
+    for el in elements {
+        let PageElement::TextBox(tb) = el else {
+            continue;
+        };
+        if !tb.no_break {
+            continue;
+        }
+        let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
+        let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
+        if !multi && nbreaks == 0 {
+            continue;
+        }
+        for run in &mut tb.runs {
+            if run.tracking > 0 {
+                run.tracking = 0;
+            }
+        }
+    }
 }
 
 /// Tight NoBreak display lines beside a verified badge / avatar icon need
@@ -76,6 +101,14 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
         // left margin — expand the lock rect into the open right instead.
         // Column siblings stay WidthOnly so clamp can wrap in the lock column.
         if matches!(tb.align, TextAlign::Left) {
+            if stacked_graphic_caption(&rects[i], &rects, i) {
+                if let PageElement::TextBox(tb) = &mut elements[i] {
+                    tb.autosize_width = true;
+                    tb.autosize_no_wrap = true;
+                    tb.autosize_refer = "CenterPoint";
+                }
+                continue;
+            }
             if tb.autosize_width && !column_sibling(&rects[i], &rects, i) {
                 let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
                 let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
@@ -94,10 +127,19 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                 }
                 let extra = open_right(&rects[i], &rects, i, Some(page_w));
                 if let PageElement::TextBox(tb) = &mut elements[i] {
+                    let nbreaks: usize =
+                        tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
+                    let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
                     tb.autosize_width = false;
                     tb.autosize_no_wrap = false;
                     if extra >= MIN_OPEN {
                         tb.rect.width = Pt(tb.rect.width.0 + extra);
+                    }
+                    // textbox_from_draw sets autosize_height=false whenever
+                    // autosize_width was true. Restoring HeightOnly here keeps
+                    // multi-line NoBreak body from oversetting in InDesign.
+                    if multi || nbreaks >= 1 {
+                        tb.autosize_height = true;
                     }
                 }
             }
@@ -428,6 +470,31 @@ fn stacked_right_edge_sibling(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
 /// Stacked frames that share the same lock column (x/width). Growing one tight
 /// NoBreak line into the page margin would walk its right edge past siblings
 /// (signature name/title/org in one end block).
+/// Short label stacked under a taller graphic with the same horizontal center
+/// (QR caption, image footnotes). WidthOnly + CenterPoint keeps host metrics
+/// centered; expanding the lock rect leaves left-aligned ink off-center.
+fn stacked_graphic_caption(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
+    if me.height.0 > 12_000 {
+        return false;
+    }
+    let my_cx = me.x.0 + me.width.0 / 2;
+    for (j, other) in rects.iter().enumerate() {
+        if j == my_i || other.height.0 < me.height.0 * 3 {
+            continue;
+        }
+        let other_cx = other.x.0 + other.width.0 / 2;
+        if (other_cx - my_cx).abs() > 2_000 {
+            continue;
+        }
+        if other.y.0 + other.height.0 <= me.y.0
+            && vertical_stack_gap(other, me).is_some_and(|g| g < GROW_ROOM)
+        {
+            return true;
+        }
+    }
+    false
+}
+
 fn stacked_lock_column_sibling(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
     for (j, other) in rects.iter().enumerate() {
         if j == my_i || me.x.0 != other.x.0 || me.width.0 != other.width.0 {
@@ -1300,6 +1367,70 @@ mod tests {
             assert_eq!(tb.rect.width.0, w, "{id} lock width");
             assert!(tb.autosize_width, "{id} keeps WidthOnly for host slack");
         }
+    }
+
+    #[test]
+    fn multiline_nobreak_drops_tracking() {
+        let mut els = vec![tb("letter.p2", 42_000, 510_000, false, "CenterLeftPoint")];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.runs[0].text = "line one\nline two".into();
+            t.runs[0].tracking = 13;
+            t.no_break = true;
+            t.autosize_height = true;
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(body) = &els[0] else {
+            panic!("textbox")
+        };
+        assert_eq!(body.runs[0].tracking, 0);
+        assert!(body.no_break);
+    }
+
+    #[test]
+    fn wide_multiline_left_restores_heightonly_when_widthonly_cleared() {
+        // Letter body: tight ink triggers WidthOnly, then ensure_nobreak_width
+        // grows into the page margin and drops WidthOnly. HeightOnly must
+        // return or InDesign clips the NoBreak paragraph.
+        let mut els = vec![tb("letter.p2", 42_000, 510_000, true, "CenterLeftPoint")];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.runs[0].text =
+                "Your thoughtful advice and gentle encouragement arrived\nat the exact moment they were most needed.\nIt is a rare and precious gift to have someone who listens\nwith such sincere empathy and offers wisdom with such grace."
+                    .into();
+            t.autosize_height = false;
+            t.no_break = true;
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(body) = &els[0] else {
+            panic!("textbox")
+        };
+        assert!(
+            !body.autosize_width,
+            "wide left body must not WidthOnly-shrink"
+        );
+        assert!(
+            body.autosize_height,
+            "multi-line left must HeightOnly after WidthOnly cleared"
+        );
+        assert!(body.no_break, "lock-pinned body keeps NoBreak");
+    }
+
+    #[test]
+    fn stacked_graphic_caption_keeps_centerpoint_widthonly() {
+        let mut els = vec![
+            shape(202_000, 53_865, 36_000, 36_000),
+            tb("caption", 202_393, 37_214, true, "CenterLeftPoint"),
+        ];
+        if let PageElement::TextBox(t) = &mut els[1] {
+            t.rect.y = Pt(91_865);
+            t.rect.height = Pt(4_620);
+            t.runs[0].text = "SCAN TO VERIFY".into();
+        }
+        apply(&mut els, 252_000);
+        let PageElement::TextBox(cap) = &els[1] else {
+            panic!("textbox")
+        };
+        assert!(cap.autosize_width, "caption under graphic keeps WidthOnly");
+        assert_eq!(cap.autosize_refer, "CenterPoint");
     }
 
     #[test]

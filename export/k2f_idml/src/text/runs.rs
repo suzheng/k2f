@@ -1,5 +1,5 @@
 use super::font::FontCtx;
-use super::tracking::tracking_em;
+use super::tracking::{ink_fills_box, tracking_em};
 use crate::ir::{ScriptPos, TextRun};
 use k2f_core::{GeometryNode, GlyphPosition, Modifier, Pt, TextGlyphRun, TextPaintStyle};
 use k2f_paint::parse_hex_rgba;
@@ -48,7 +48,11 @@ pub(crate) fn runs_from_paint(
                     0,
                 ));
             }
-            let tracking = tracking_em(&glyphs, style, fonts);
+            let tracking = if ink_fills_box(geo, &glyphs) {
+                0
+            } else {
+                tracking_em(&glyphs, style, fonts)
+            };
             out.extend(split_piece(
                 text, start, be, style, modifiers, fonts, tracking,
             ));

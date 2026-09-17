@@ -84,7 +84,7 @@ pub(crate) fn textbox_from_draw_ctx(
     for run in &mut runs {
         run.leading_pt = leading;
     }
-    let (inset_top, inset_left, inset_bottom, inset_right) = insets(geo, align);
+    let (mut inset_top, inset_left, mut inset_bottom, inset_right) = insets(geo, align);
     let first_line_indent_pt = infer_first_line_indent(geo, align);
     let nlines = geo.map(|g| source_lines(g).len()).unwrap_or(0);
     // WidthOnly on wrapping multi-line frames can collapse to a narrow column.
@@ -115,6 +115,10 @@ pub(crate) fn textbox_from_draw_ctx(
         }
     }
     let vert_center = vert_center(geo, &rect, font_size);
+    if vert_center {
+        inset_top = 0.0;
+        inset_bottom = 0.0;
+    }
     Some(TextBox {
         node_id: node.id.clone(),
         rect,
