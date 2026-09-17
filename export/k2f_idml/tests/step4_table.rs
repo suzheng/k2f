@@ -261,6 +261,26 @@ fn cell_border_follows_edges_not_d0d0d0() {
         !(bottom_w == top_w && bottom_w == left_w && bottom_w == right_w),
         "must not give all four edges the same StrokeWeight, got {xml}"
     );
+    let bottom_p: u32 = attr_val(&xml, "BottomEdgeStrokePriority")
+        .expect("bottom priority")
+        .parse()
+        .unwrap();
+    let top_p: u32 = attr_val(&xml, "TopEdgeStrokePriority")
+        .expect("top priority")
+        .parse()
+        .unwrap();
+    let left_p: u32 = attr_val(&xml, "LeftEdgeStrokePriority")
+        .expect("left priority")
+        .parse()
+        .unwrap();
+    let right_p: u32 = attr_val(&xml, "RightEdgeStrokePriority")
+        .expect("right priority")
+        .parse()
+        .unwrap();
+    assert!(
+        bottom_p > top_p && bottom_p > left_p && bottom_p > right_p,
+        "drawn edge must beat adjacent weight-0 edges, got {xml}"
+    );
 }
 
 fn attr_val<'a>(xml: &'a str, name: &str) -> Option<&'a str> {

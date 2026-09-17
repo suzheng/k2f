@@ -25,12 +25,19 @@ const PAGE_CENTER_TOL: i128 = 2_000;
 /// gap and dropping WidthOnly leaves NoBreak 1pt short, and InDesign hides
 /// the whole line. Pills/cards (50pt+) still clamp — see adjacent_label.
 const SMALL_SIBLING: i128 = 40_000;
+/// Hairline rules / column gutters are not icons. Treating a 0.6pt divider
+/// as SMALL_SIBLING enabled WidthOnly and recentered left card columns.
+const MIN_ICON_W: i128 = 4_000;
 /// Left 2-line display titles wider than this with loose ink keep HeightOnly so
 /// WidthOnly shrink does not re-anchor the block toward center.
 const WIDE_LOOSE_TITLE_W: i128 = 400_000;
 /// Single-line NoBreak without WidthOnly: only auto-enable WidthOnly below
 /// this frame width. Wide loose frames (author lines) must not re-anchor.
 const NARROW_NOBREAK_W: i128 = 300_000;
+/// Side-neighbor Y overlap below this is hairline (shadow-expanded rasters
+/// sitting 0.05pt under a subtitle). Treating that as a column sibling
+/// blocks open_right, and NoBreak oversets (hides) the line in InDesign.
+const Y_TOUCH: i128 = 2_000;
 
 /// NoBreak without WidthOnly oversets (hides) the whole story when host
 /// metrics are even 1pt wider than the lock box — 2-line titles, tracked
@@ -84,9 +91,12 @@ fn enable_widthonly_beside_icons(elements: &mut [PageElement]) {
         if multi || nbreaks > 0 {
             continue;
         }
-        if small_side_blocker(&rects[i], &rects, i, &tb.autosize_refer)
-            .is_some_and(|w| w <= SMALL_SIBLING)
-        {
+        // Same-x column stack (card/grid copy) must keep the lock width.
+        // WidthOnly re-anchors about ItemTransform and left ink looks centered.
+        if stacked_lock_column_sibling(&rects[i], &rects, i) {
+            continue;
+        }
+        if small_side_blocker(&rects[i], &rects, i, &tb.autosize_refer).is_some_and(is_icon_w) {
             tb.autosize_width = true;
             tb.autosize_no_wrap = true;
         }
@@ -128,7 +138,7 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                     && !multi
                     && nbreaks == 0
                     && small_side_blocker(&rects[i], &rects, i, &tb.autosize_refer)
-                        .is_some_and(|w| w <= SMALL_SIBLING)
+                        .is_some_and(is_icon_w)
                 {
                     continue;
                 }
@@ -145,9 +155,6 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                 }
                 let extra = open_right(&rects[i], &rects, i, Some(page_w));
                 if let PageElement::TextBox(tb) = &mut elements[i] {
-                    let nbreaks: usize =
-                        tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
-                    let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
                     tb.autosize_width = false;
                     tb.autosize_no_wrap = false;
                     if extra >= MIN_OPEN {
@@ -253,6 +260,19 @@ fn repair_left_nobreak(
         return;
     }
     if me.width.0 >= NARROW_NOBREAK_W {
+        // Wide hug one-liners (532pt slide subtitles) skip WidthOnly so the
+        // frame does not re-anchor, but still need host-metric room. Grow
+        // into empty space on the right; left-aligned ink stays put.
+        // Stacked same-column / same-right-edge lines must not grow past
+        // the rest of the block.
+        if !stacked_lock_column_sibling(me, rects, my_i)
+            && !stacked_right_edge_sibling(me, rects, my_i)
+        {
+            let extra = open_right(me, rects, my_i, Some(page_w));
+            if extra >= MIN_OPEN {
+                tb.rect.width = Pt(tb.rect.width.0 + extra);
+            }
+        }
         return;
     }
     if stacked_lock_column_sibling(me, rects, my_i) || stacked_right_edge_sibling(me, rects, my_i)
@@ -388,7 +408,7 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
         // — host Roboto then overset and hid "KRONOS // NIGHTFALL".
         if tb.no_break && !multi && nbreaks == 0 {
             if small_side_blocker(me, &rects, i, &tb.autosize_refer)
-                .is_some_and(|w| w <= SMALL_SIBLING)
+                .is_some_and(is_icon_w)
             {
                 continue;
             }
@@ -623,6 +643,10 @@ fn grow_dirs(refer: &str) -> (bool, bool) {
     }
 }
 
+fn is_icon_w(w: i128) -> bool {
+    w > MIN_ICON_W && w <= SMALL_SIBLING
+}
+
 fn covers(outer: &Rect, inner: &Rect) -> bool {
     outer.x.0 <= inner.x.0
         && outer.y.0 <= inner.y.0
@@ -631,11 +655,15 @@ fn covers(outer: &Rect, inner: &Rect) -> bool {
 }
 
 fn y_overlap(a: &Rect, b: &Rect) -> bool {
+    y_overlap_at(a, b, 1)
+}
+
+fn y_overlap_at(a: &Rect, b: &Rect, min: i128) -> bool {
     let a0 = a.y.0;
     let a1 = a.y.0 + a.height.0;
     let b0 = b.y.0;
     let b1 = b.y.0 + b.height.0;
-    a0 < b1 && b0 < a1
+    a1.min(b1) - a0.max(b0) >= min
 }
 
 fn x_overlap(a: &Rect, b: &Rect) -> bool {
@@ -742,7 +770,8 @@ fn column_sibling(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
     let my_left = me.x.0;
     let my_right = me.x.0 + me.width.0;
     for (j, other) in rects.iter().enumerate() {
-        if j == my_i || !y_overlap(me, other) || covers(other, me) || covers(me, other) {
+        if j == my_i || !y_overlap_at(me, other, Y_TOUCH) || covers(other, me) || covers(me, other)
+        {
             continue;
         }
         let o_left = other.x.0;
@@ -844,7 +873,8 @@ fn open_right(me: &Rect, rects: &[Rect], my_i: usize, page_w: Option<i128>) -> i
     let my_right = me.x.0 + me.width.0;
     let mut limit = page_w.unwrap_or(my_right + HOST_LINE_PAD);
     for (j, other) in rects.iter().enumerate() {
-        if j == my_i || !y_overlap(me, other) || covers(other, me) || covers(me, other) {
+        if j == my_i || !y_overlap_at(me, other, Y_TOUCH) || covers(other, me) || covers(me, other)
+        {
             continue;
         }
         if other.x.0 >= my_right {
@@ -859,7 +889,8 @@ fn open_left(me: &Rect, rects: &[Rect], my_i: usize, page_w: Option<i128>) -> i1
     let mut limit = 0i128;
     let _ = page_w;
     for (j, other) in rects.iter().enumerate() {
-        if j == my_i || !y_overlap(me, other) || covers(other, me) || covers(me, other) {
+        if j == my_i || !y_overlap_at(me, other, Y_TOUCH) || covers(other, me) || covers(me, other)
+        {
             continue;
         }
         let other_right = other.x.0 + other.width.0;
@@ -891,6 +922,7 @@ mod tests {
             leading_pt: None,
             auto_page_number: false,
             tracking: 176,
+            face_style: "Regular".into(),
         }
     }
 
@@ -910,6 +942,7 @@ mod tests {
             inset_bottom: 0.0,
             inset_right: 0.0,
             first_line_indent_pt: 0.0,
+            left_indent_pt: 0.0,
             vert_center: false,
             autosize_width: autosize,
             autosize_refer: refer,
@@ -1507,6 +1540,47 @@ mod tests {
     }
 
     #[test]
+    fn wide_hug_subtitle_grows_past_hairline_card_raster() {
+        // aurora-data slide.02.desc: 532pt ink-tight NoBreak one-liner. A
+        // shadow-expanded card raster sits 0.05pt under it, which used to
+        // count as a column sibling and freeze the lock width. Host metrics
+        // then overset and InDesign hides the subtitle.
+        let mut desc = tb("slide.02.desc", 56_000, 532_052, false, "CenterLeftPoint");
+        if let PageElement::TextBox(t) = &mut desc {
+            t.rect.y = Pt(89_600);
+            t.rect.height = Pt(14_950);
+            t.runs[0].text = "Real-time\u{00A0}diffusion\u{00A0}sampling\u{00A0}across\u{00A0}38,000\u{00A0}ligand-target\u{00A0}pairs\u{00A0}with\u{00A0}physical\u{00A0}thermodynamic\u{00A0}constraints.".into();
+            t.runs[0].tracking = 0;
+            t.runs[0].size_pt = 11.5;
+        }
+        let mut els = vec![
+            desc,
+            shape(56_000, 104_500, 268_000, 310_000),
+            shape(342_000, 104_500, 268_000, 310_000),
+            shape(628_000, 104_500, 268_000, 310_000),
+        ];
+        apply(&mut els, 960_000);
+        let PageElement::TextBox(desc) = &els[0] else {
+            panic!("textbox")
+        };
+        assert!(desc.no_break, "subtitle must stay one glued line");
+        assert!(
+            !desc.autosize_width,
+            "wide hug line must not WidthOnly-reanchor"
+        );
+        assert_eq!(desc.rect.x.0, 56_000, "left edge stays");
+        assert!(
+            desc.rect.width.0 > 532_052,
+            "must grow into the open header band, got {}",
+            desc.rect.width.0
+        );
+        assert!(
+            desc.rect.x.0 + desc.rect.width.0 <= 960_000,
+            "must not grow past the page"
+        );
+    }
+
+    #[test]
     fn multiline_column_gutter_does_not_widthonly_through_sibling() {
         // 14.5pt gutter — wider than GROW_ROOM (10pt). WidthOnly +
         // UseNoLineBreaks sized the sidenote as one unwrapped line and ate
@@ -1860,6 +1934,45 @@ mod tests {
             "CenterPoint",
             "column label must not re-anchor about center"
         );
+    }
+
+    #[test]
+    fn stacked_left_column_beside_hairline_stays_lock_width() {
+        // color-block card.back.person_*: 136pt left column, 6pt gap, 0.6pt
+        // divider. WidthOnly about ItemTransform centers the delegate block.
+        let mut els = vec![
+            tb("person_tag", 12_000, 136_000, false, "CenterLeftPoint"),
+            tb("person_name", 12_000, 136_000, true, "CenterLeftPoint"),
+            shape(154_000, 0, 600, 94_200),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.runs[0].text = "DELEGATE SPECIFICATION".into();
+            t.runs[0].tracking = 0;
+        }
+        if let PageElement::TextBox(t) = &mut els[1] {
+            t.rect.y = Pt(17_000);
+            t.runs[0].text = "DR. AVERY CHEN".into();
+            t.runs[0].tracking = 0;
+        }
+        apply(&mut els, 252_000);
+        for el in &els[..2] {
+            let PageElement::TextBox(t) = el else {
+                panic!("textbox")
+            };
+            assert_eq!(t.align, TextAlign::Left);
+            assert!(
+                !t.autosize_width,
+                "{} must keep lock width, not WidthOnly-shrink",
+                t.node_id
+            );
+            assert_eq!(t.rect.x.0, 12_000, "left edge must stay");
+            assert!(
+                t.rect.width.0 >= 136_000 && t.rect.width.0 <= 142_000,
+                "{} width {} should stay in the column (maybe 6pt gutter pad)",
+                t.node_id,
+                t.rect.width.0
+            );
+        }
     }
 
     #[test]

@@ -62,21 +62,29 @@ fn cell_xml(table_self: &str, r: usize, c: usize, cell: &TableCell, hts: &mut us
         fmt_pt(cell.inset_bottom),
         fmt_pt(cell.inset_right),
     );
-    let paras = para_xml::write_paras(cell.align, &cell.runs, hts, false, 0.0, true);
+    let paras = para_xml::write_paras(cell.align, &cell.runs, hts, false, 0.0, 0.0, true);
     format!(
         "      <Cell Self=\"{table_self}_r{r}c{c}\" Name=\"{c}:{r}\" RowSpan=\"1\" ColumnSpan=\"1\" AppliedCellStyle=\"CellStyle/$ID/[None]\" Justification=\"{just}\" VerticalJustification=\"{vert}\" {fill}{edges}{insets}>\n{paras}      </Cell>\n"
     )
 }
 
+// InDesign paints a shared grid line from the cell with the higher
+// *EdgeStrokePriority. Equal priority prefers the lower/right cell, so a
+// weight-0 Top/Left would hide the previous cell's Bottom/Right hairline.
+const DRAWN_EDGE_PRIORITY: u8 = 2;
+const EMPTY_EDGE_PRIORITY: u8 = 1;
+
 fn push_edge(s: &mut String, name: &str, stroke: &Option<crate::ir::BorderStroke>) {
     match stroke {
         Some(st) => s.push_str(&format!(
-            r#" {name}EdgeStrokeWeight="{}" {name}EdgeStrokeColor="Color/k2f_{}" {name}EdgeStrokeType="{}""#,
+            r#" {name}EdgeStrokeWeight="{}" {name}EdgeStrokeColor="Color/k2f_{}" {name}EdgeStrokeType="{}" {name}EdgeStrokePriority="{DRAWN_EDGE_PRIORITY}""#,
             fmt_pt(st.weight_pt),
             st.color_hex,
             stroke_type(st.dash),
         )),
-        None => s.push_str(&format!(r#" {name}EdgeStrokeWeight="0""#)),
+        None => s.push_str(&format!(
+            r#" {name}EdgeStrokeWeight="0" {name}EdgeStrokePriority="{EMPTY_EDGE_PRIORITY}""#
+        )),
     }
 }
 

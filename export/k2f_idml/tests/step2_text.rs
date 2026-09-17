@@ -1,8 +1,8 @@
 mod common;
 
 use k2f_core::{
-    find_in_trees, for_each_node, node_text, GeometryNode, GlyphPosition, Modifier, NodeContent,
-    PaintOp, Pt, Rect, SemanticNode, TextGlyphRun, TextPaintStyle,
+    find_in_trees, for_each_node, node_text, GeometryNode, GlyphPosition, ListMarkerType, Modifier,
+    NodeContent, PaintOp, Pt, Rect, SemanticNode, TextGlyphRun, TextPaintStyle,
 };
 use k2f_idml::{
     escape_xml, export_opened, infer_text_align, story_xml, textbox_from_draw, textframe_xml,
@@ -668,6 +668,90 @@ fn first_line_indent_on_first_para_only() {
         xml.contains("<Br/>"),
         "second lock line must be a hard break, got {xml}"
     );
+}
+
+#[test]
+fn list_item_hangs_marker_column_not_body_inset() {
+    let text = "Item";
+    let mut node = node_with(text, vec![]);
+    node.role = "list_item".into();
+    node.list_id = Some("l1".into());
+    node.marker_type = Some(ListMarkerType::Bullet);
+    let glyphs = vec![
+        GlyphPosition {
+            glyph_id: 1,
+            cluster: GlyphPosition::CLUSTER_NOT_SOURCE,
+            x_offset: Pt(8_000),
+            y_offset: Pt(0),
+            x_advance: Pt(6_000),
+            y_advance: Pt(0),
+        },
+        glyph(0, 26_000, 8_000, 0),
+        glyph(1, 34_000, 8_000, 0),
+        glyph(2, 42_000, 8_000, 0),
+        glyph(3, 50_000, 8_000, 0),
+    ];
+    let g = geo(400_000, glyphs);
+    let rect = Rect {
+        x: Pt(0),
+        y: Pt(0),
+        width: Pt(400_000),
+        height: Pt(40_000),
+    };
+    let tb = textbox_from_draw(
+        &node,
+        &rect,
+        &[TextGlyphRun {
+            glyph_range: [0, 5],
+            style: style("#111111", 10_000),
+        }],
+        Some(&g),
+        &BTreeMap::new(),
+    )
+    .unwrap();
+    assert!(
+        (tb.inset_left - 8.0).abs() < 0.01,
+        "frame inset is marker pad, got {}",
+        tb.inset_left
+    );
+    assert!(
+        (tb.left_indent_pt - 18.0).abs() < 0.01,
+        "LeftIndent is marker column, got {}",
+        tb.left_indent_pt
+    );
+    assert!(
+        (tb.first_line_indent_pt + 18.0).abs() < 0.01,
+        "FirstLineIndent hangs by marker column, got {}",
+        tb.first_line_indent_pt
+    );
+    assert!(
+        tb.runs.first().map(|r| r.text.as_str()) == Some("•\u{00A0}"),
+        "literal bullet in hanging gutter"
+    );
+    assert!(!tb.no_break, "lists must reflow so hanging wrap can apply");
+    let xml = story_xml(&tb, "kSt0");
+    assert!(
+        xml.contains(r#"LeftIndent="18.000""#),
+        "got {xml}"
+    );
+    assert!(
+        xml.contains(r#"FirstLineIndent="-18.000""#),
+        "got {xml}"
+    );
+    let space = SpreadSpace {
+        page_w: 595.0,
+        page_h: 842.0,
+    };
+    let frame = textframe_xml(&tb, &space, "kTf0", "kSt0");
+    let wrapped = format!("<root>{frame}</root>");
+    let parsed = roxmltree::Document::parse(&wrapped).expect("frame xml");
+    let el = parsed
+        .descendants()
+        .find(|n| n.has_tag_name("TextFramePreference"))
+        .expect("TextFramePreference");
+    let inset = el.attribute("InsetSpacing").expect("InsetSpacing");
+    let parts: Vec<&str> = inset.split_whitespace().collect();
+    assert_eq!(parts[1], "8.000", "list outer pad, got {inset}");
 }
 
 #[test]

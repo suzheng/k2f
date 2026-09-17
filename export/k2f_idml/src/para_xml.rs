@@ -8,6 +8,7 @@ pub(crate) fn write_paras(
     hts: &mut usize,
     no_break: bool,
     first_line_indent_pt: f64,
+    left_indent_pt: f64,
     semantic_newlines: bool,
 ) -> String {
     let paras = paragraphs(runs, semantic_newlines);
@@ -34,6 +35,7 @@ pub(crate) fn write_paras(
             hts,
             no_break,
             indent,
+            left_indent_pt,
             para.space_after_pt,
             semantic_newlines,
             end_with_br,
@@ -57,6 +59,7 @@ pub(crate) fn default_run() -> TextRun {
         leading_pt: None,
         auto_page_number: false,
         tracking: 0,
+        face_style: "Regular".into(),
     }
 }
 
@@ -144,6 +147,7 @@ fn para_xml(
     hts: &mut usize,
     no_break: bool,
     first_line_indent_pt: f64,
+    left_indent_pt: f64,
     space_after_pt: f64,
     semantic_newlines: bool,
     end_with_br: bool,
@@ -156,8 +160,13 @@ fn para_xml(
     let lead_attr = leading
         .map(|v| format!(r#" Leading="{}""#, fmt_pt(v)))
         .unwrap_or_default();
-    let indent_attr = if first_line_indent_pt > 0.0 {
+    let indent_attr = if first_line_indent_pt.abs() > 0.0005 {
         format!(r#" FirstLineIndent="{}""#, fmt_pt(first_line_indent_pt))
+    } else {
+        String::new()
+    };
+    let left_attr = if left_indent_pt.abs() > 0.0005 {
+        format!(r#" LeftIndent="{}""#, fmt_pt(left_indent_pt))
     } else {
         String::new()
     };
@@ -176,7 +185,7 @@ fn para_xml(
         inner.push_str(&char_range_br(br_run, no_break));
     }
     format!(
-        r#"    <ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/[No paragraph style]" Justification="{just}" Hyphenation="false" SpaceBefore="0" SpaceAfter="{}"{lead_attr}{indent_attr}>
+        r#"    <ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/[No paragraph style]" Justification="{just}" Hyphenation="false" SpaceBefore="0" SpaceAfter="{}"{lead_attr}{left_attr}{indent_attr}>
       <Properties>
         <AppliedComposer>$ID/HL Single</AppliedComposer>
       </Properties>
@@ -204,7 +213,7 @@ fn char_range(run: &TextRun, hts: &mut usize, no_break: bool, semantic_newlines:
     }
     let size = fmt_pt(run.size_pt);
     let fill = format!("Color/k2f_{}", run.color_hex);
-    let style = font_style(run);
+    let style = escape_xml(&run.idml_font_style());
     let mut attrs = format!(
         r#"AppliedCharacterStyle="CharacterStyle/$ID/[No character style]" PointSize="{size}" FillColor="{fill}" FontStyle="{style}""#
     );
@@ -259,7 +268,7 @@ fn char_range(run: &TextRun, hts: &mut usize, no_break: bool, semantic_newlines:
 fn char_range_br(run: &TextRun, no_break: bool) -> String {
     let size = fmt_pt(run.size_pt);
     let fill = format!("Color/k2f_{}", run.color_hex);
-    let style = font_style(run);
+    let style = escape_xml(&run.idml_font_style());
     let mut attrs = format!(
         r#"AppliedCharacterStyle="CharacterStyle/$ID/[No character style]" PointSize="{size}" FillColor="{fill}" FontStyle="{style}""#
     );
@@ -281,15 +290,6 @@ fn char_range_br(run: &TextRun, no_break: bool) -> String {
     )
 }
 
-fn font_style(run: &TextRun) -> &'static str {
-    match (run.bold, run.italic) {
-        (true, true) => "Bold Italic",
-        (true, false) => "Bold",
-        (false, true) => "Italic",
-        (false, false) => "Regular",
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -300,7 +300,7 @@ mod tests {
         run.text = "Line one\nLine two".into();
         run.leading_pt = Some(14.0);
         let mut hts = 0usize;
-        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0, true);
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0, 0.0, true);
         assert_eq!(xml.matches("<ParagraphStyleRange").count(), 2);
         assert_eq!(
             xml.matches("<Br/>").count(),
@@ -319,7 +319,7 @@ mod tests {
         run.text = "Line one\nLine two".into();
         run.leading_pt = Some(14.0);
         let mut hts = 0usize;
-        let xml = write_paras(TextAlign::Left, &[run], &mut hts, true, 0.0, false);
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, true, 0.0, 0.0, false);
         assert_eq!(
             xml.matches("<ParagraphStyleRange").count(),
             1,
@@ -338,7 +338,7 @@ mod tests {
         run.leading_pt = Some(14.0);
         run.size_pt = 10.0;
         let mut hts = 0usize;
-        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0, true);
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0, 0.0, true);
         assert_eq!(
             xml.matches("<ParagraphStyleRange").count(),
             2,
@@ -358,6 +358,40 @@ mod tests {
         assert!(
             !xml.contains("<Content>Hello\n\nWorld</Content>"),
             "must not dump the first run into the gap, got {xml}"
+        );
+    }
+
+    #[test]
+    fn hanging_list_emits_left_indent_and_negative_first_line() {
+        let mut run = default_run();
+        run.text = "•\u{00A0}Item".into();
+        let mut hts = 0usize;
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, -18.0, 18.0, false);
+        assert!(
+            xml.contains(r#"LeftIndent="18.000""#),
+            "list wrap must hang at body start, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"FirstLineIndent="-18.000""#),
+            "literal marker sits in the hanging gutter, got {xml}"
+        );
+    }
+
+    #[test]
+    fn book_subfamily_is_the_idml_font_style() {
+        let mut run = default_run();
+        run.text = "Body".into();
+        run.font_name = "DejaVu Serif".into();
+        run.face_style = "Book".into();
+        let mut hts = 0usize;
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0, 0.0, false);
+        assert!(
+            xml.contains(r#"FontStyle="Book""#),
+            "Book faces must not be advertised as Regular, got {xml}"
+        );
+        assert!(
+            !xml.contains(r#"FontStyle="Regular""#),
+            "got {xml}"
         );
     }
 }

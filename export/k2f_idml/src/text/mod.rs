@@ -4,7 +4,7 @@ mod runs;
 mod tracking;
 
 use crate::align::{
-    autosize_reference, body_lines, has_full_width_lock_line, infer_text_align, line_gaps,
+    autosize_reference, body_lines, has_full_width_lock_line, infer_text_align_for, line_gaps,
     lock_break_char_indices, lock_ink_height, should_autosize_width,
     should_autosize_width_for_nobreak, should_pin_lock_breaks, source_glyphs, source_lines,
 };
@@ -53,7 +53,7 @@ pub(crate) fn textbox_from_draw_ctx(
         return None;
     }
     let align = geo
-        .map(|g| infer_text_align(g, raw))
+        .map(|g| infer_text_align_for(g, raw, &node.modifiers))
         .unwrap_or(TextAlign::Left);
     let font_size = paint_runs
         .iter()
@@ -63,7 +63,13 @@ pub(crate) fn textbox_from_draw_ctx(
     let nlines = geo
         .map(|g| body_lines(g, &node.modifiers).len())
         .unwrap_or(0);
-    let pin = should_pin_lock_breaks(geo, font_size, Some(raw), align, &node.modifiers);
+    let numbered = node.marker_type == Some(ListMarkerType::Number);
+    let bullet =
+        !numbered && (node.role == "list_item" || node.marker_type == Some(ListMarkerType::Bullet));
+    let is_list = bullet || numbered;
+    // Literal markers change first-line width; lock wrap points and NoBreak
+    // would overset or double-indent. Lists reflow with hanging indent.
+    let pin = !is_list && should_pin_lock_breaks(geo, font_size, Some(raw), align, &node.modifiers);
     if pin {
         if let Some(g) = geo {
             insert_lock_breaks(
@@ -72,9 +78,6 @@ pub(crate) fn textbox_from_draw_ctx(
             );
         }
     }
-    let numbered = node.marker_type == Some(ListMarkerType::Number);
-    let bullet =
-        !numbered && (node.role == "list_item" || node.marker_type == Some(ListMarkerType::Bullet));
     if bullet {
         lists::prepend_literal_bullet(&mut runs);
     } else if numbered {
@@ -84,7 +87,7 @@ pub(crate) fn textbox_from_draw_ctx(
     // Column wrap must reflow in InDesign: pinning those lines as `<Br/>` and
     // gluing spaces double-wraps when the host frame is a different width.
     let host_reflow = nlines >= 3 || (nlines >= 2 && geo.is_some_and(has_full_width_lock_line));
-    let no_break = !matches!(align, TextAlign::Justify) && !host_reflow;
+    let no_break = !is_list && !matches!(align, TextAlign::Justify) && !host_reflow;
     if no_break {
         glue_lock_line_spaces(&mut runs);
     }
@@ -92,8 +95,16 @@ pub(crate) fn textbox_from_draw_ctx(
     for run in &mut runs {
         run.leading_pt = leading;
     }
-    let (mut inset_top, inset_left, mut inset_bottom, inset_right) = insets(geo, align);
-    let first_line_indent_pt = infer_first_line_indent(geo, align);
+    let (mut inset_top, mut inset_left, mut inset_bottom, inset_right) = insets(geo, align);
+    let mut first_line_indent_pt = infer_first_line_indent(geo, align);
+    let mut left_indent_pt = 0.0;
+    if is_list {
+        // Outer pad → frame inset; marker column → LeftIndent hanging.
+        // The literal `•` / `{n}.` already occupies that gutter on line one.
+        inset_left = lists::list_outer_pad_pt(geo);
+        left_indent_pt = lists::list_hanging_pt(geo);
+        first_line_indent_pt = -left_indent_pt;
+    }
     // WidthOnly on wrapping multi-line frames can collapse to a narrow column.
     // NoBreak lines cannot wrap, so WidthOnly grows to the longest lock line
     // instead of oversetting. Still gated on tight ink so wide footers do not
@@ -116,7 +127,7 @@ pub(crate) fn textbox_from_draw_ctx(
     // Skip HeightOnly when WidthOnly is on: extra wrap is already prevented.
     // Justified column body is lock-positioned in a stack: HeightOnly shrinks
     // when host leading/wrap differs and inflates the gap to the next frame.
-    let autosize_height =
+    let mut autosize_height =
         nlines >= 2 && !autosize_width && !matches!(align, TextAlign::Justify);
     let mut rect = rect.clone();
     if let Some(ink) = lock_ink_height(geo, font_size) {
@@ -124,10 +135,14 @@ pub(crate) fn textbox_from_draw_ctx(
             rect.height = ink;
         }
     }
-    let vert_center = vert_center(geo, &rect, font_size);
+    let vert_center = vert_center(geo, &rect, font_size)
+        || symmetric_vertical_padding(inset_top, inset_bottom);
     if vert_center {
         inset_top = 0.0;
         inset_bottom = 0.0;
+        // HeightOnly shrinks the frame to ink height; CenterAlign needs the
+        // full lock rect to vertically center multi-line body in a card.
+        autosize_height = false;
     }
     Some(TextBox {
         node_id: node.id.clone(),
@@ -139,6 +154,7 @@ pub(crate) fn textbox_from_draw_ctx(
         inset_bottom,
         inset_right,
         first_line_indent_pt,
+        left_indent_pt,
         vert_center,
         autosize_width,
         autosize_refer,
@@ -370,6 +386,18 @@ pub(crate) fn leading_pt(geo: Option<&GeometryNode>, modifiers: &[Modifier]) -> 
     Some(millipt_to_pt(gaps[gaps.len() / 2]))
 }
 
+/// Lock geometry with equal top/bottom glyph slack is vertically centered in
+/// K2F even when the first-line y/h ratio is below the optical-center band.
+pub(crate) fn symmetric_vertical_padding(top_pt: f64, bottom_pt: f64) -> bool {
+    const MIN_PT: f64 = 2.0;
+    if top_pt < MIN_PT || bottom_pt < MIN_PT {
+        return false;
+    }
+    let delta = (top_pt - bottom_pt).abs();
+    let slack = top_pt + bottom_pt;
+    delta * 10.0 <= slack.max(MIN_PT * 2.0)
+}
+
 pub(crate) fn vert_center(
     geo: Option<&GeometryNode>,
     rect: &Rect,
@@ -576,6 +604,53 @@ mod tests {
             fill_rects: vec![],
             children: vec![],
         }
+    }
+
+    #[test]
+    fn symmetric_multi_line_body_block_centers() {
+        // doc.body.l.mid lock geometry: 9 lines, ~64pt equal top/bottom slack.
+        let ys = [
+            64_212, 77_987, 91_762, 119_312, 133_087, 146_862, 174_412, 188_187, 201_962,
+        ];
+        let mut geo = line_geo(&ys);
+        geo.height = Pt(279_950);
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(233_000),
+            height: Pt(279_950),
+        };
+        assert!(
+            !vert_center(Some(&geo), &rect, Pt(9_500)),
+            "ratio band alone must not center multi-line body"
+        );
+        let (top, _, bottom, _) = insets(Some(&geo), TextAlign::Left);
+        assert!(
+            symmetric_vertical_padding(top, bottom),
+            "equal top/bottom insets must detect vertical center"
+        );
+    }
+
+    #[test]
+    fn two_line_banner_with_symmetric_padding_centers() {
+        let mut geo = line_geo(&[7_000, 18_050]);
+        geo.height = Pt(36_100);
+        let (top, _, bottom, _) = insets(Some(&geo), TextAlign::Left);
+        assert!(
+            symmetric_vertical_padding(top, bottom),
+            "notice.banner style padded bar must center"
+        );
+    }
+
+    #[test]
+    fn flush_top_body_stays_top_aligned() {
+        let ys: Vec<i128> = (0..5).map(|i| i * 14_000).collect();
+        let geo = line_geo(&ys);
+        let (top, _, bottom, _) = insets(Some(&geo), TextAlign::Left);
+        assert!(
+            !symmetric_vertical_padding(top, bottom),
+            "flush-top column body must not vertically center"
+        );
     }
 
     #[test]

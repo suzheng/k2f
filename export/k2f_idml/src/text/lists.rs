@@ -1,5 +1,7 @@
+use crate::align::source_glyphs;
+use crate::coord::millipt_to_pt;
 use crate::ir::{ScriptPos, TextRun};
-use k2f_core::{ListMarkerType, NodeContent, SemanticNode, TableDataSource};
+use k2f_core::{GeometryNode, ListMarkerType, NodeContent, SemanticNode, TableDataSource};
 use std::collections::BTreeMap;
 
 pub(crate) fn list_start_at(root: &SemanticNode) -> BTreeMap<String, u32> {
@@ -45,6 +47,49 @@ fn scan_list_starts(nodes: &[SemanticNode], out: &mut BTreeMap<String, u32>) {
     }
 }
 
+/// Left pad before the decorative marker (min x of all lock glyphs).
+pub(crate) fn list_outer_pad_pt(geo: Option<&GeometryNode>) -> f64 {
+    millipt_to_pt(ink_left(geo))
+}
+
+/// Marker-column width for hanging indent when the marker is a literal run.
+/// Decorative markers are `CLUSTER_NOT_SOURCE`; body starts after them.
+/// Using body-left as the frame inset would double-count that column once
+/// `{n}.` / `•` is prepended.
+pub(crate) fn list_hanging_pt(geo: Option<&GeometryNode>) -> f64 {
+    let ink = ink_left(geo);
+    let body = body_left(geo).unwrap_or(ink);
+    millipt_to_pt((body - ink).max(0))
+}
+
+fn ink_left(geo: Option<&GeometryNode>) -> i128 {
+    let Some(geo) = geo else {
+        return 0;
+    };
+    geo.glyphs
+        .iter()
+        .map(|g| g.x_offset.0)
+        .min()
+        .unwrap_or(0)
+        .max(0)
+}
+
+fn body_left(geo: Option<&GeometryNode>) -> Option<i128> {
+    let geo = geo?;
+    let glyphs = source_glyphs(geo);
+    if glyphs.is_empty() {
+        return None;
+    }
+    Some(
+        glyphs
+            .iter()
+            .map(|g| g.x_offset.0)
+            .min()
+            .unwrap_or(0)
+            .max(0),
+    )
+}
+
 pub(crate) fn prepend_literal_bullet(runs: &mut Vec<TextRun>) {
     let Some(first) = runs.first() else {
         return;
@@ -76,6 +121,7 @@ fn marker_run(first: &TextRun, text: &str) -> TextRun {
         leading_pt: first.leading_pt,
         auto_page_number: false,
         tracking: first.tracking,
+        face_style: first.face_style.clone(),
     }
 }
 
@@ -165,4 +211,44 @@ fn slice_runs(runs: &[TextRun], start: usize, end: usize) -> Vec<TextRun> {
         }
     }
     out
+}
+
+#[cfg(test)]
+mod hanging_tests {
+    use super::*;
+    use k2f_core::{GlyphPosition, Pt};
+
+    fn gp(cluster: u32, x: i128) -> GlyphPosition {
+        GlyphPosition {
+            glyph_id: 1,
+            cluster,
+            x_offset: Pt(x),
+            y_offset: Pt(0),
+            x_advance: Pt(6_000),
+            y_advance: Pt(0),
+        }
+    }
+
+    #[test]
+    fn hanging_is_marker_column_not_body_left() {
+        let geo = GeometryNode {
+            id: "li".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(400_000),
+            height: Pt(20_000),
+            glyphs: vec![
+                gp(GlyphPosition::CLUSTER_NOT_SOURCE, 8_000),
+                gp(GlyphPosition::CLUSTER_NOT_SOURCE, 14_000),
+                gp(0, 26_000),
+                gp(1, 26_000),
+            ],
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        };
+        assert!((list_outer_pad_pt(Some(&geo)) - 8.0).abs() < 0.01);
+        assert!((list_hanging_pt(Some(&geo)) - 18.0).abs() < 0.01);
+        assert!((list_hanging_pt(None) - 0.0).abs() < 0.01);
+    }
 }

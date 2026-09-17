@@ -214,6 +214,7 @@ fn emit_table(
         inset_bottom: 0.0,
         inset_right: 0.0,
         first_line_indent_pt: 0.0,
+        left_indent_pt: 0.0,
         vert_center: false,
         autosize_width: false,
         autosize_refer: "CenterLeftPoint",

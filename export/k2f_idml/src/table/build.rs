@@ -1,7 +1,7 @@
 use super::geom::{col_widths_from_row, col_widths_from_tracks, row_heights_pt};
 use super::paint::{cell_paints, CellPaint};
 use super::{cell_borders, harvestable_inline_rows, TableIndex};
-use crate::align::infer_text_align;
+use crate::align::infer_text_align_for;
 use crate::coord::millipt_to_pt;
 use crate::geo::find_geo;
 use crate::ir::{TableBox, TableCell, TableRow, TextAlign};
@@ -44,6 +44,9 @@ pub(crate) fn table_on_page(
         return Ok(None);
     };
     inherit_table_chrome(&mut rows_out, paints.get(table_id))?;
+    // InDesign paints a shared grid line from the lower/right cell when
+    // priorities are equal. A weight-0 Top/Left would hide Bottom/Right.
+    promote_shared_edges(&mut rows_out);
     let row_sum_millipt = rows_out
         .iter()
         .map(|r| (r.height_pt * 1000.0).ceil() as i128)
@@ -95,6 +98,37 @@ fn inherit_table_chrome(
         }
     }
     Ok(())
+}
+
+/// Copy Bottom onto the next row's empty Top, and Right onto the next
+/// column's empty Left, so interior rules survive InDesign's conflict rule.
+fn promote_shared_edges(rows: &mut [TableRow]) {
+    let n_rows = rows.len();
+    for r in 0..n_rows {
+        let n_cols = rows[r].cells.len();
+        for c in 0..n_cols {
+            if r + 1 < n_rows {
+                let stroke = rows[r].cells[c].borders.bottom.clone();
+                if stroke.is_some() {
+                    if let Some(next) = rows[r + 1].cells.get_mut(c) {
+                        if next.borders.top.is_none() {
+                            next.borders.top = stroke;
+                        }
+                    }
+                }
+            }
+            if c + 1 < n_cols {
+                let stroke = rows[r].cells[c].borders.right.clone();
+                if stroke.is_some() {
+                    if let Some(next) = rows[r].cells.get_mut(c + 1) {
+                        if next.borders.left.is_none() {
+                            next.borders.left = stroke;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn from_geometry(
@@ -191,7 +225,11 @@ fn build_cell(
     let align = if text.is_empty() {
         TextAlign::Left
     } else {
-        infer_text_align(geo, text)
+        infer_text_align_for(
+            geo,
+            text,
+            node.map(|n| n.modifiers.as_slice()).unwrap_or(&[]),
+        )
     };
     let paint_runs = paint.map(|p| p.runs.as_slice()).unwrap_or(&[]);
     let runs = cell_runs(
@@ -215,4 +253,65 @@ fn build_cell(
         inset_bottom,
         inset_right,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::promote_shared_edges;
+    use crate::ir::{BorderStroke, CellBorders, LineDash, TableCell, TableRow, TextAlign};
+
+    fn hairline() -> BorderStroke {
+        BorderStroke {
+            color_hex: "E2E8F0".into(),
+            weight_pt: 0.75,
+            dash: LineDash::Solid,
+        }
+    }
+
+    fn cell(bottom: bool, right: bool) -> TableCell {
+        TableCell {
+            node_id: "c".into(),
+            runs: Vec::new(),
+            align: TextAlign::Left,
+            fill_hex: None,
+            borders: CellBorders {
+                top: None,
+                left: None,
+                bottom: bottom.then(hairline),
+                right: right.then(hairline),
+            },
+            vert_center: false,
+            inset_top: 0.0,
+            inset_left: 0.0,
+            inset_bottom: 0.0,
+            inset_right: 0.0,
+        }
+    }
+
+    #[test]
+    fn bottom_hairline_is_copied_to_next_row_top() {
+        let mut rows = vec![
+            TableRow {
+                height_pt: 20.0,
+                cells: vec![cell(true, true), cell(true, false)],
+            },
+            TableRow {
+                height_pt: 20.0,
+                cells: vec![cell(true, false), cell(false, false)],
+            },
+        ];
+        promote_shared_edges(&mut rows);
+        assert!(
+            rows[1].cells[0].borders.top.is_some(),
+            "next row must inherit the shared bottom rule"
+        );
+        assert!(
+            rows[0].cells[1].borders.left.is_some(),
+            "right hairline must appear as the next cell's left"
+        );
+        assert!(
+            rows[0].cells[0].borders.left.is_none(),
+            "must not invent a left on a cell that had no right neighbor stroke"
+        );
+    }
 }

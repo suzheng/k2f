@@ -183,6 +183,7 @@ fn run_from_style(text: &str, style: &TextPaintStyle, fonts: &FontCtx, tracking:
         leading_pt: None,
         auto_page_number: false,
         tracking,
+        face_style: fonts.face_style(&style.font_family),
     }
 }
 

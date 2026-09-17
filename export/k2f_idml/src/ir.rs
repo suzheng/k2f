@@ -10,7 +10,8 @@ pub struct DocIR {
     pub page_h_pt: f64,
     pub pages: Vec<PageIR>,
     pub master: Vec<PageElement>,
-    pub fonts: Vec<String>,
+    /// Unique `(family, InDesign FontStyle)` pairs used in the package.
+    pub fonts: Vec<(String, String)>,
 }
 
 #[derive(Clone, Debug)]
@@ -80,6 +81,27 @@ pub struct TextRun {
     pub auto_page_number: bool,
     /// InDesign Tracking in 1/1000 em. 0 means omit (do not fake Tracking="0").
     pub tracking: i32,
+    /// TTF subfamily when not bold/italic (`Book`, `Regular`, `Light`, …).
+    pub face_style: String,
+}
+
+impl TextRun {
+    /// InDesign `FontStyle` / `FontStyleName`. Bold/italic modifiers win.
+    pub fn idml_font_style(&self) -> String {
+        match (self.bold, self.italic) {
+            (true, true) => "Bold Italic".into(),
+            (true, false) => "Bold".into(),
+            (false, true) => "Italic".into(),
+            (false, false) => {
+                let s = self.face_style.trim();
+                if s.is_empty() {
+                    "Regular".into()
+                } else {
+                    s.to_string()
+                }
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -94,6 +116,8 @@ pub struct TextBox {
     pub inset_right: f64,
     /// Extra first-line indent (pt) beyond `inset_left`. 0 = omit.
     pub first_line_indent_pt: f64,
+    /// Paragraph LeftIndent in pt. List wrap lines hang here; 0 = omit.
+    pub left_indent_pt: f64,
     pub vert_center: bool,
     /// Grow the frame horizontally so host metrics do not wrap a lock one-liner.
     pub autosize_width: bool,

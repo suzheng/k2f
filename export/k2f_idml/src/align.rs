@@ -4,7 +4,23 @@ use k2f_core::{GeometryNode, GlyphPosition, Modifier, Pt};
 const MIN_SLACK: i128 = 2_000;
 
 pub fn infer_text_align(geo: &GeometryNode, text: &str) -> TextAlign {
-    let lines = source_lines(geo);
+    infer_text_align_for(geo, text, &[])
+}
+
+/// Infer alignment from lock ink, ignoring superscript/subscript-only rows.
+///
+/// Those rows sit on a separate baseline with huge side slack, so max-slack
+/// inference would flip a centered author line to Right and a centered
+/// affiliation stack to Left.
+pub(crate) fn infer_text_align_for(
+    geo: &GeometryNode,
+    text: &str,
+    modifiers: &[Modifier],
+) -> TextAlign {
+    let mut lines = body_lines(geo, modifiers);
+    if lines.is_empty() {
+        lines = source_lines(geo);
+    }
     if lines.is_empty() {
         return TextAlign::Left;
     }
@@ -377,6 +393,48 @@ mod tests {
             TextAlign::Center
         );
         assert_eq!(infer_text_align(&geo(w, vec![]), "A"), TextAlign::Left);
+    }
+
+    #[test]
+    fn script_only_rows_do_not_flip_centered_body() {
+        // academic-serif-classic authors: superscripts at the end of a centered
+        // line form a max-slack row that would otherwise infer Right.
+        let w = 483_000i128;
+        let authors = geo(
+            w,
+            vec![
+                glyph(21, 193_583, 8_000, -4_950),
+                glyph(0, 71_997, 8_000, 0),
+                glyph(50, 406_105, 8_000, 0),
+            ],
+        );
+        let author_mods = vec![Modifier {
+            range: [21, 24],
+            mod_type: "superscript".into(),
+            intent: "default".into(),
+        }];
+        assert_eq!(
+            infer_text_align_for(&authors, "Alexander H. Sterling1,*", &author_mods),
+            TextAlign::Center
+        );
+        // Leading affiliation marks are a near-full-width slack row on the left.
+        let aff = geo(
+            w,
+            vec![
+                glyph(0, 54_789, 4_008, -4_050),
+                glyph(1, 58_797, 8_000, 0),
+                glyph(70, 420_203, 8_000, 0),
+            ],
+        );
+        let aff_mods = vec![Modifier {
+            range: [0, 1],
+            mod_type: "superscript".into(),
+            intent: "default".into(),
+        }];
+        assert_eq!(
+            infer_text_align_for(&aff, "1Department of Computer Science", &aff_mods),
+            TextAlign::Center
+        );
     }
 
     #[test]

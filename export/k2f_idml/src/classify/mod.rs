@@ -69,7 +69,10 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, IdmlError> {
     let page0 = &pages[0];
     crate::autosize::apply(&mut master_els, page0.width.0);
     let mut used = BTreeSet::new();
-    used.insert(fonts.default_family().to_string());
+    used.insert((
+        fonts.default_family().to_string(),
+        fonts.default_style(),
+    ));
     for page in &ir_pages {
         collect_fonts(&mut used, &page.elements);
     }
@@ -140,7 +143,7 @@ pub(crate) fn keep_node(
     }
 }
 
-fn collect_fonts(out: &mut BTreeSet<String>, els: &[PageElement]) {
+fn collect_fonts(out: &mut BTreeSet<(String, String)>, els: &[PageElement]) {
     for el in els {
         match el {
             PageElement::TextBox(tb) => collect_run_fonts(out, &tb.runs),
@@ -156,10 +159,10 @@ fn collect_fonts(out: &mut BTreeSet<String>, els: &[PageElement]) {
     }
 }
 
-fn collect_run_fonts(out: &mut BTreeSet<String>, runs: &[crate::ir::TextRun]) {
+fn collect_run_fonts(out: &mut BTreeSet<(String, String)>, runs: &[crate::ir::TextRun]) {
     for run in runs {
         if !run.font_name.is_empty() {
-            out.insert(run.font_name.clone());
+            out.insert((run.font_name.clone(), run.idml_font_style()));
         }
     }
 }

@@ -13,6 +13,7 @@ pub fn story_xml(tb: &TextBox, story_self: &str) -> String {
         &mut hts,
         tb.no_break,
         tb.first_line_indent_pt,
+        tb.left_indent_pt,
         tb.semantic_newlines,
     );
     wrap_story(story_self, &body)

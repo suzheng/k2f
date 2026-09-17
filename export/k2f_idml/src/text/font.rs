@@ -22,7 +22,7 @@ impl FontCtx {
 
     pub(crate) fn typeface(&self, family: &str) -> String {
         if let Some(data) = self.bytes_for(family) {
-            if let Some(name) = family_from_bytes(data) {
+            if let Some(name) = names_from_bytes(data).map(|n| n.family) {
                 return name;
             }
         }
@@ -32,8 +32,26 @@ impl FontCtx {
         family.to_string()
     }
 
+    pub(crate) fn face_style(&self, family: &str) -> String {
+        if let Some(data) = self.bytes_for(family) {
+            if let Some(n) = names_from_bytes(data) {
+                return n.style;
+            }
+        }
+        "Regular".into()
+    }
+
     pub(crate) fn default_family(&self) -> &str {
         &self.default_family
+    }
+
+    pub(crate) fn default_style(&self) -> String {
+        self.bytes
+            .get("default")
+            .and_then(|b| names_from_bytes(b))
+            .or_else(|| self.bytes.values().find_map(|b| names_from_bytes(b)))
+            .map(|n| n.style)
+            .unwrap_or_else(|| "Regular".into())
     }
 
     pub(crate) fn bytes_for(&self, family: &str) -> Option<&[u8]> {
@@ -69,18 +87,37 @@ impl FontCtx {
 
 fn embedded_family(bytes: &BTreeMap<String, Vec<u8>>) -> Option<String> {
     if let Some(data) = bytes.get("default") {
-        if let Some(name) = family_from_bytes(data) {
-            return Some(name);
+        if let Some(n) = names_from_bytes(data) {
+            return Some(n.family);
         }
     }
-    bytes.values().find_map(|b| family_from_bytes(b))
+    bytes.values().find_map(|b| names_from_bytes(b).map(|n| n.family))
+}
+
+struct FaceNames {
+    family: String,
+    style: String,
 }
 
 fn family_from_bytes(data: &[u8]) -> Option<String> {
+    names_from_bytes(data).map(|n| n.family)
+}
+
+fn names_from_bytes(data: &[u8]) -> Option<FaceNames> {
     let face = Face::parse(data, 0).ok()?;
+    let family = name_english(&face, name_id::TYPOGRAPHIC_FAMILY)
+        .or_else(|| name_english(&face, name_id::FAMILY))?;
+    let style = name_english(&face, name_id::TYPOGRAPHIC_SUBFAMILY)
+        .or_else(|| name_english(&face, name_id::SUBFAMILY))
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| "Regular".into());
+    Some(FaceNames { family, style })
+}
+
+fn name_english(face: &Face<'_>, id: u16) -> Option<String> {
     let mut fallback = None;
     for name in face.names() {
-        if name.name_id != name_id::FAMILY || !name.is_unicode() {
+        if name.name_id != id || !name.is_unicode() {
             continue;
         }
         let Some(s) = name.to_string() else {
@@ -94,4 +131,23 @@ fn family_from_bytes(data: &[u8]) -> Option<String> {
         }
     }
     fallback
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn roboto_bytes() -> Vec<u8> {
+        let p = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../assets/fonts/Roboto-Regular.ttf");
+        std::fs::read(p).expect("Roboto test fixture")
+    }
+
+    #[test]
+    fn roboto_face_is_regular() {
+        let n = names_from_bytes(&roboto_bytes()).expect("names");
+        assert_eq!(n.family, "Roboto");
+        assert_eq!(n.style, "Regular");
+    }
 }
