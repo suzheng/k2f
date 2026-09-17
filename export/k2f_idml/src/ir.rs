@@ -114,6 +114,8 @@ pub struct TextBox {
     /// Lock-pinned lines already encode baseline y in geometry; `Ascent` adds
     /// extra top slack and oversets the frame bottom in InDesign.
     pub first_baseline_leading_offset: bool,
+    /// Any lock line fills the frame edge-to-edge (wrapped column body).
+    pub full_width_lock_line: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

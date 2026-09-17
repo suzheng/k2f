@@ -8,10 +8,21 @@ pub(crate) fn write_paras(
     hts: &mut usize,
     no_break: bool,
     first_line_indent_pt: f64,
+    semantic_newlines: bool,
 ) -> String {
-    let paras = paragraphs(runs);
+    let paras = paragraphs(runs, semantic_newlines);
     let fallback = runs.first().cloned().unwrap_or_else(default_run);
-    let paras = fold_blank_paras(paras, &fallback);
+    let paras = if semantic_newlines {
+        fold_blank_paras(paras, &fallback)
+    } else {
+        paras
+            .into_iter()
+            .map(|runs| FoldedPara {
+                runs,
+                space_after_pt: 0.0,
+            })
+            .collect()
+    };
     let mut body = String::new();
     for (i, para) in paras.iter().enumerate() {
         let indent = if i == 0 { first_line_indent_pt } else { 0.0 };
@@ -23,6 +34,7 @@ pub(crate) fn write_paras(
             no_break,
             indent,
             para.space_after_pt,
+            semantic_newlines,
         ));
     }
     body
@@ -46,7 +58,15 @@ pub(crate) fn default_run() -> TextRun {
     }
 }
 
-fn paragraphs(runs: &[TextRun]) -> Vec<Vec<TextRun>> {
+fn paragraphs(runs: &[TextRun], semantic_newlines: bool) -> Vec<Vec<TextRun>> {
+    if !semantic_newlines {
+        let para: Vec<TextRun> = runs.iter().cloned().collect();
+        return if para.is_empty() {
+            vec![Vec::new()]
+        } else {
+            vec![para]
+        };
+    }
     let mut paras: Vec<Vec<TextRun>> = Vec::new();
     let mut cur: Vec<TextRun> = Vec::new();
     for run in runs {
@@ -123,6 +143,7 @@ fn para_xml(
     no_break: bool,
     first_line_indent_pt: f64,
     space_after_pt: f64,
+    semantic_newlines: bool,
 ) -> String {
     let just = align.justification();
     let leading = runs
@@ -141,10 +162,10 @@ fn para_xml(
     if runs.is_empty() {
         let mut empty = fallback.clone();
         empty.text.clear();
-        inner.push_str(&char_range(&empty, hts, no_break));
+        inner.push_str(&char_range(&empty, hts, no_break, semantic_newlines));
     } else {
         for run in runs {
-            inner.push_str(&char_range(run, hts, no_break));
+            inner.push_str(&char_range(run, hts, no_break, semantic_newlines));
         }
     }
     format!(
@@ -158,7 +179,22 @@ fn para_xml(
     )
 }
 
-fn char_range(run: &TextRun, hts: &mut usize, no_break: bool) -> String {
+fn char_range(run: &TextRun, hts: &mut usize, no_break: bool, semantic_newlines: bool) -> String {
+    if !semantic_newlines && run.text.contains('\n') && !run.auto_page_number {
+        let mut out = String::new();
+        let parts: Vec<&str> = run.text.split('\n').collect();
+        for (i, part) in parts.iter().enumerate() {
+            if !part.is_empty() {
+                let mut piece = run.clone();
+                piece.text = part.to_string();
+                out.push_str(&char_range(&piece, hts, no_break, true));
+            }
+            if i + 1 < parts.len() {
+                out.push_str(&char_range_br(run, no_break));
+            }
+        }
+        return out;
+    }
     let size = fmt_pt(run.size_pt);
     let fill = format!("Color/k2f_{}", run.color_hex);
     let style = font_style(run);
@@ -210,6 +246,28 @@ fn char_range(run: &TextRun, hts: &mut usize, no_break: bool) -> String {
     )
 }
 
+fn char_range_br(run: &TextRun, no_break: bool) -> String {
+    let size = fmt_pt(run.size_pt);
+    let fill = format!("Color/k2f_{}", run.color_hex);
+    let style = font_style(run);
+    let mut attrs = format!(
+        r#"AppliedCharacterStyle="CharacterStyle/$ID/[No character style]" PointSize="{size}" FillColor="{fill}" FontStyle="{style}""#
+    );
+    if no_break {
+        attrs.push_str(r#" NoBreak="true""#);
+    }
+    let font = escape_xml(&run.font_name);
+    format!(
+        r#"      <CharacterStyleRange {attrs}>
+        <Properties>
+          <AppliedFont type="string">{font}</AppliedFont>
+        </Properties>
+        <Br/>
+      </CharacterStyleRange>
+"#
+    )
+}
+
 fn font_style(run: &TextRun) -> &'static str {
     match (run.bold, run.italic) {
         (true, true) => "Bold Italic",
@@ -229,11 +287,29 @@ mod tests {
         run.text = "Line one\nLine two".into();
         run.leading_pt = Some(14.0);
         let mut hts = 0usize;
-        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0);
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0, true);
         assert_eq!(xml.matches("<ParagraphStyleRange").count(), 2);
         assert!(
             !xml.contains("<Br/>"),
             "ParagraphStyleRange already ends the paragraph, got {xml}"
+        );
+    }
+
+    #[test]
+    fn lock_wrap_newlines_use_br_within_one_paragraph() {
+        let mut run = default_run();
+        run.text = "Line one\nLine two".into();
+        run.leading_pt = Some(14.0);
+        let mut hts = 0usize;
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, true, 0.0, false);
+        assert_eq!(
+            xml.matches("<ParagraphStyleRange").count(),
+            1,
+            "lock wrap must stay one paragraph, got {xml}"
+        );
+        assert!(
+            xml.contains("<Br/>"),
+            "lock wrap must hard-break with Br, got {xml}"
         );
     }
 
@@ -244,7 +320,7 @@ mod tests {
         run.leading_pt = Some(14.0);
         run.size_pt = 10.0;
         let mut hts = 0usize;
-        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0);
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0, true);
         assert_eq!(
             xml.matches("<ParagraphStyleRange").count(),
             2,

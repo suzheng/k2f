@@ -517,6 +517,11 @@ fn should_widthonly_two_line_nobreak(tb: &TextBox, nbreaks: usize) -> bool {
     if tb.lock_line_count != 2 || nbreaks != tb.lock_line_count.saturating_sub(1) {
         return false;
     }
+    // Wrapped bibliography / column body: first lock line fills the frame.
+    // WidthOnly re-anchors and misaligns the entry (academic-serif-classic ref3).
+    if tb.full_width_lock_line {
+        return false;
+    }
     if !tb.semantic_newlines {
         return true;
     }
@@ -900,6 +905,7 @@ mod tests {
             semantic_newlines: false,
             lock_line_count: 1,
             first_baseline_leading_offset: false,
+            full_width_lock_line: false,
         })
     }
 

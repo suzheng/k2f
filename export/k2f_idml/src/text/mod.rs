@@ -4,9 +4,9 @@ mod runs;
 mod tracking;
 
 use crate::align::{
-    autosize_reference, body_lines, infer_text_align, line_gaps, lock_break_char_indices,
-    lock_ink_height, should_autosize_width, should_autosize_width_for_nobreak,
-    should_pin_lock_breaks, source_glyphs, source_lines,
+    autosize_reference, body_lines, has_full_width_lock_line, infer_text_align, line_gaps,
+    lock_break_char_indices, lock_ink_height, should_autosize_width,
+    should_autosize_width_for_nobreak, should_pin_lock_breaks, source_glyphs, source_lines,
 };
 use crate::coord::millipt_to_pt;
 use crate::ir::{TextAlign, TextBox, TextRun};
@@ -150,6 +150,7 @@ pub(crate) fn textbox_from_draw_ctx(
                         .min()
                 })
                 .is_some_and(|y| y < 1_000),
+        full_width_lock_line: geo.is_some_and(has_full_width_lock_line),
     })
 }
 

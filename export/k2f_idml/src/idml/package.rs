@@ -223,6 +223,7 @@ fn emit_table(
         semantic_newlines: false,
         lock_line_count: 0,
         first_baseline_leading_offset: false,
+        full_width_lock_line: false,
     };
     frames.push_str(&spread::textframe_xml_on(&tb, space, &tf, &st, on_master));
 }

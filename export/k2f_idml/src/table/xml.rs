@@ -62,7 +62,7 @@ fn cell_xml(table_self: &str, r: usize, c: usize, cell: &TableCell, hts: &mut us
         fmt_pt(cell.inset_bottom),
         fmt_pt(cell.inset_right),
     );
-    let paras = para_xml::write_paras(cell.align, &cell.runs, hts, false, 0.0);
+    let paras = para_xml::write_paras(cell.align, &cell.runs, hts, false, 0.0, true);
     format!(
         "      <Cell Self=\"{table_self}_r{r}c{c}\" Name=\"{c}:{r}\" RowSpan=\"1\" ColumnSpan=\"1\" AppliedCellStyle=\"CellStyle/$ID/[None]\" Justification=\"{just}\" VerticalJustification=\"{vert}\" {fill}{edges}{insets}>\n{paras}      </Cell>\n"
     )

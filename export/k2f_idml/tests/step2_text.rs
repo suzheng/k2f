@@ -427,13 +427,13 @@ fn pinned_lock_lines_nobreak_and_nbsp() {
         "pinned lock lines must glue spaces with NBSP, got {xml}"
     );
     assert!(
-        !xml.contains("<Br/>"),
-        "lock wrap uses ParagraphStyleRange breaks, not Br, got {xml}"
+        xml.contains("<Br/>"),
+        "lock wrap must hard-break with Br inside one paragraph, got {xml}"
     );
     assert_eq!(
         xml.matches("<ParagraphStyleRange").count(),
-        2,
-        "pinned lock wrap must split into two paragraphs, got {xml}"
+        1,
+        "pinned lock wrap must stay one paragraph, got {xml}"
     );
 }
 
@@ -562,9 +562,10 @@ fn first_line_indent_on_first_para_only() {
         .descendants()
         .filter(|n| n.has_tag_name("ParagraphStyleRange"))
         .collect();
-    assert!(
-        paras.len() >= 2,
-        "lock wrap should split paras, got {}",
+    assert_eq!(
+        paras.len(),
+        1,
+        "lock wrap must stay one paragraph with Br, got {}",
         paras.len()
     );
     assert_eq!(
@@ -572,12 +573,10 @@ fn first_line_indent_on_first_para_only() {
         Some("18.000"),
         "first lock line must keep 18pt indent, got {xml}"
     );
-    for p in &paras[1..] {
-        assert!(
-            p.attribute("FirstLineIndent").is_none(),
-            "later lock lines must not inherit FirstLineIndent, got {xml}"
-        );
-    }
+    assert!(
+        xml.contains("<Br/>"),
+        "second lock line must be a hard break, got {xml}"
+    );
 }
 
 #[test]

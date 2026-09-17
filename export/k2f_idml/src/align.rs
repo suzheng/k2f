@@ -177,8 +177,21 @@ fn ink_tighter_than(geo: Option<&GeometryNode>, align: TextAlign, slack_limit: i
     // shrink-wrapped NoBreak label — WidthOnly recenters in the card column.
     // Use NOBREAK_WIDTH_SLACK (48pt): tighter slack still needs host-metric
     // headroom (Bold subject lines overset and hide when NoBreak + no grow).
-    if lines.len() == 1 && min_left <= MIN_SLACK && min_right > NOBREAK_WIDTH_SLACK {
-        return false;
+    if lines.len() == 1 && min_left <= MIN_SLACK {
+        let max_edge = lines[0]
+            .iter()
+            .map(|g| g.x_offset.0 + g.x_advance.0)
+            .max()
+            .unwrap_or(0);
+        // Nearly full-width column line with very tight right slack (~22pt) is
+        // bibliography-style wrap, not bold subject copy that still needs grow
+        // room (~41pt slack). WidthOnly on the former re-anchors in InDesign.
+        if max_edge * 20 >= box_w * 17 && min_right < 30_000 {
+            return false;
+        }
+        if min_right > NOBREAK_WIDTH_SLACK {
+            return false;
+        }
     }
     // Wrapped paragraph body: any lock line that fills the box edge-to-edge is
     // host wrap, not tight shrink-wrapped ink (bibliography entries, column copy).
@@ -191,6 +204,15 @@ fn ink_tighter_than(geo: Option<&GeometryNode>, align: TextAlign, slack_limit: i
         }
     }
     min_right < slack_limit || min_slack < slack_limit
+}
+
+/// True when any lock line spans the full frame width (host wrap, not tight ink).
+pub(crate) fn has_full_width_lock_line(geo: &GeometryNode) -> bool {
+    let box_w = geo.width.0;
+    source_lines(geo).iter().any(|line| {
+        let (_, left, right) = line_gaps(line, box_w);
+        left <= MIN_SLACK && right <= MIN_SLACK
+    })
 }
 
 pub(crate) fn autosize_reference(geo: Option<&GeometryNode>, align: TextAlign) -> &'static str {
@@ -370,33 +392,39 @@ mod tests {
     }
 
     #[test]
-    fn tight_full_width_subject_line_needs_nobreak_grow() {
-        // Letter subject: lock ink ~446pt in a 487pt column (~41pt slack).
-        // Host Bold metrics overset without width grow.
-        let w = 487_000i128;
-        let geo = geo(w, vec![glyph(0, 0, 446_318, 0)]);
-        assert!(
-            should_autosize_width_for_nobreak(Some(&geo), TextAlign::Left),
-            "tight single-line column copy must allow NoBreak width grow"
-        );
-    }
-
-    #[test]
-    fn wrapped_multiline_body_skips_nobreak_widthonly() {
+    fn nearly_full_width_single_line_skips_nobreak_widthonly() {
         // Bibliography-style entry: line 1 fills the column, line 2 is short.
         let w = 483_000i128;
         let geo = geo(
             w,
             vec![
-                glyph(0, 0, 80_000, 0),
-                glyph(50, 0, 80_000, 0),
-                glyph(100, 0, 303_000, 0),
-                glyph(0, 0, 50_000, 12_600),
+                glyph(0, 0, 483_000, 0),
+                glyph(0, 0, 101_316, 12_600),
             ],
         );
         assert!(
             !should_autosize_width_for_nobreak(Some(&geo), TextAlign::Left),
             "wrapped multi-line body must not WidthOnly-shrink"
+        );
+    }
+
+    #[test]
+    fn nearly_full_width_single_line_skips_nobreak_widthonly() {
+        let w = 483_000i128;
+        let geo = geo(w, vec![glyph(0, 0, 461_264, 0)]);
+        assert!(
+            !should_autosize_width_for_nobreak(Some(&geo), TextAlign::Left),
+            "95% column line with ~22pt slack must not WidthOnly-shrink"
+        );
+    }
+
+    #[test]
+    fn tight_full_width_subject_line_still_needs_nobreak_grow() {
+        let w = 487_000i128;
+        let geo = geo(w, vec![glyph(0, 0, 446_318, 0)]);
+        assert!(
+            should_autosize_width_for_nobreak(Some(&geo), TextAlign::Left),
+            "bold subject with ~41pt slack still needs NoBreak width grow"
         );
     }
 
