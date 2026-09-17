@@ -1,0 +1,121 @@
+{
+  "title": "Form field empty page",
+  "canvas_mode": "paged",
+  "page_config": {
+    "width": 595000,
+    "height": 842000,
+    "margin": [
+      72000,
+      72000,
+      72000,
+      72000
+    ]
+  },
+  "root": {
+    "id": "root",
+    "role": "document",
+    "content": {
+      "type": "container",
+      "value": {
+        "children": [
+          {
+            "id": "title",
+            "role": "body",
+            "content": {
+              "type": "text",
+              "value": "Application"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "name_label",
+            "role": "body",
+            "content": {
+              "type": "text",
+              "value": "Name"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "name",
+            "role": "form_field",
+            "variant": "underline",
+            "content": {
+              "type": "form_field",
+              "value": {
+                "kind": "text",
+                "value": "",
+                "placeholder": "Name"
+              }
+            },
+            "modifiers": [],
+            "layout": null,
+            "break_inside": "avoid"
+          },
+          {
+            "id": "addr_label",
+            "role": "body",
+            "content": {
+              "type": "text",
+              "value": "Address"
+            },
+            "modifiers": [],
+            "layout": null
+          },
+          {
+            "id": "address",
+            "role": "form_field",
+            "variant": "box",
+            "content": {
+              "type": "form_field",
+              "value": {
+                "kind": "multiline",
+                "value": "",
+                "placeholder": "Address",
+                "lines": 3
+              }
+            },
+            "modifiers": [],
+            "layout": null,
+            "break_inside": "avoid"
+          },
+          {
+            "id": "agree",
+            "role": "form_field",
+            "variant": "checkbox",
+            "content": {
+              "type": "form_field",
+              "value": {
+                "kind": "checkbox",
+                "value": ""
+              }
+            },
+            "modifiers": [],
+            "layout": null,
+            "break_inside": "avoid"
+          },
+          {
+            "id": "sign",
+            "role": "body",
+            "content": {
+              "type": "text",
+              "value": "Signature"
+            },
+            "modifiers": [],
+            "layout": null
+          }
+        ]
+      }
+    },
+    "modifiers": [],
+    "layout": {
+      "type": "stack",
+      "direction": "vertical",
+      "gap": 12000,
+      "align_items": "stretch",
+      "justify_content": "start"
+    }
+  }
+}

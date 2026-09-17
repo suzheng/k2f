@@ -146,7 +146,7 @@ Implementation details: [layout-engine.md](layout-engine.md).
 
 SDK agents use a narrower role set from `engine/k2f_sdk/profiles/agent_v0.schema.json`:
 
-`document`, `section`, `h1`–`h4`, `body`, `warning`, `card`, `table`, `table_header_cell`, `table_row_cell`, `list_item`, `code`, `quote`, `rule`, `math`, `running_header`, `running_footer`, `signature_block`.
+`document`, `section`, `h1`–`h4`, `body`, `warning`, `card`, `table`, `table_header_cell`, `table_row_cell`, `list_item`, `code`, `quote`, `rule`, `math`, `form_field`, `running_header`, `running_footer`, `signature_block`.
 
 That profile is an SDK authoring dialect. It is **not** part of the on-disk format schema set embedded in packages.
 
@@ -236,6 +236,8 @@ Keys sorted alphabetically, 2-space indentation. Git diffs show semantic changes
 - Template variables (K2F stores final content, not logic)
 - Arbitrary vector paths in semantic JSON
 - Unbounded paint effects (no arbitrary CSS filter strings or platform-defined blur/shadow in the canonical path)
+
+Viewer chrome (hit-test, text-layer, form-fill overlay on lock boxes) is not package-embedded script and must not reflow. Fill values become canonical only after Save relocks State A.
 
 ## Infinite canvas (design target — not in v0.1)
 

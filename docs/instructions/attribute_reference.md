@@ -125,6 +125,22 @@ Constraints:
 - Modifiers only `"syntax_highlight"`
 - See [semantic_code_blocks.md](./semantic_code_blocks.md)
 
+### Form Field Content
+```json
+{
+  "type": "form_field",
+  "value": {
+    "kind": "text",
+    "value": "",
+    "placeholder": "Full legal name",
+    "width": 220000,
+    "lines": 1
+  }
+}
+```
+
+`kind` is `text` | `multiline` | `checkbox`. Empty `value` still occupies the reserved box; measure ignores the string. `role` must be `"form_field"`. No `layout` or modifiers. See [k2f-v0.1.md](../spec/k2f-v0.1.md).
+
 ### Math Content (display)
 ```json
 {

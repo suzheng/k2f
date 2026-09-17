@@ -3,8 +3,10 @@ use crate::export::ExportFormat;
 use anyhow::Context;
 use k2f_package::pack_bytes;
 use k2f_package::VerifyStatus;
-use k2f_paint::{Banner, OpenedDocument, TextSpan, OFFICIAL_PNG_SCALE};
+use k2f_paint::{Banner, FormFieldLoc, OpenedDocument, TextSpan, OFFICIAL_PNG_SCALE};
 use k2f_pdf::export_opened;
+use k2f_sdk::Editor;
+use std::collections::BTreeMap;
 use std::path::Path;
 
 const MIN_ZOOM: f32 = 0.1;
@@ -248,5 +250,25 @@ impl AppState {
 
     pub fn doc(&self) -> &OpenedDocument {
         &self.doc
+    }
+
+    pub fn form_fields(&self) -> Vec<FormFieldLoc> {
+        self.doc.form_fields()
+    }
+
+    pub fn has_form_fields(&self) -> bool {
+        !self.doc.form_fields().is_empty()
+    }
+
+    /// `replace_text` each dirty id, then relock. Does not compile on open — only on Save.
+    pub fn relock_form_values(
+        &self,
+        dirty: &BTreeMap<String, String>,
+    ) -> anyhow::Result<Vec<u8>> {
+        let mut editor = Editor::open(&self.export_k2f_bytes()?)?;
+        for (id, value) in dirty {
+            editor.replace_text(id, value)?;
+        }
+        Ok(editor.save_bytes()?)
     }
 }

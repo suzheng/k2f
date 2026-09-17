@@ -11,6 +11,7 @@
 - **Native math** — display `$$` nodes and inline `$` modifiers compiled to glyphs + fraction rules (TeX subset including stretchy `\left\right` and `matrix`/`align`/`cases`; unknown commands fail).
 - **Agent skills** — one skill under [`skills/k2f/`](../../skills/k2f/SKILL.md) with workflow references
 - **MCP stdio server** — local `k2f_mcp`; tool contract [`mcp_tools.json`](../../engine/k2f_mcp/mcp_tools.json); run notes [`README`](../../engine/k2f_mcp/README.md). **Remote HTTP MCP not shipped**
+- **Fillable form fields** — `content.type: "form_field"` reserved boxes (measure ignores value). Web and desktop viewers overlay native inputs; Save `replace_text` + relock. Default `export-pdf` writes AcroForm widgets; `--flatten` paints lock glyphs. DOCX/PPTX export lock `DrawBox`/`DrawText` (no Word content controls).
 
 ## In development
 

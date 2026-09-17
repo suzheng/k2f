@@ -49,12 +49,15 @@ enum NodeContent {
     Text(String),
     CodeBlock(CodeBlockValue),
     Math(String),                // TeX subset; display nodes. Inline $...$ is a text modifier.
+    FormField(FormFieldSpec),    // Reserved box; measure uses declared size/lines, never value metrics.
     Image { src: String, width: Pt, height: Pt },
     Container { children: Vec<SemanticNode> },
     Table(TableSpec),
     TableReference { source: String, view_mode: String, width: Pt, height: Pt },
 }
 ```
+
+**Form fields:** `measure_form_field` sizes the reserved box from declared `width` / `height` / `lines` plus role `font_size`, `line_height_mult`, and padding. The field `value` string is never an input to measure, so empty and filled copies keep the same following-node geometry. Glyphs (or viewer overlay / PDF widgets) stay inside that box.
 
 **Shapes:** no explicit Shape node. Basic shapes are containers painted via role + variant box decoration (rect/rounded). Arbitrary paths/polygons are out of scope—use SVG or images in `assets/`.
 
@@ -212,7 +215,7 @@ for child in children {
 
 | Function | File | Pass | Role |
 |----------|------|------|------|
-| `measure_node()` | `measure.rs` | 1 | Size text, images, containers recursively |
+| `measure_node()` | `measure.rs` | 1 | Size text, images, form fields, containers recursively |
 | `paginator.allocate_space()` | `pagination.rs` | — | Page breaks; returns placement point |
 | `align_offset_and_size()` | `alignment.rs` | — | Horizontal alignment within parent |
 | `arrange_node()` | `arrange.rs` | 2 | Position glyphs and children at exact coordinates |

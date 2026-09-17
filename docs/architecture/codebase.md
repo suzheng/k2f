@@ -159,7 +159,7 @@ v0.1 is **paged document** only (`canvas_mode: "paged"`).
 
 ### k2f_paint — lock executor
 
-`OpenedDocument::open`, `render_page`, text-layer spans, hit-test. Used by `<k2f-viewer>` and `desktop/k2f_reader`. Does not call `compile_chunk`.
+`OpenedDocument::open`, `render_page`, text-layer spans, hit-test, `form_fields()` (semantic `FormField` + first `boxes_for` rect). Used by `<k2f-viewer>` and `desktop/k2f_reader`. Does not call `compile_chunk`.
 
 ### k2f_package — container
 

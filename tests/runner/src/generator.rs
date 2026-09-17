@@ -254,6 +254,12 @@ impl Generator {
         )?;
         Self::create_case(
             base_dir,
+            "form_field_empty_page",
+            form_field_empty_page(),
+            form_field_theme(),
+        )?;
+        Self::create_case(
+            base_dir,
             "math_display_sum",
             math_display_sum(),
             math_theme(),

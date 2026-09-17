@@ -34,8 +34,8 @@ fn ctrl_shift_s_maps_to_export() {
     );
     assert_eq!(
         key_action(KeyBind::Char('s'), true, false, false),
-        None,
-        "Ctrl+S is not save — the reader is lock-only"
+        Some(Action::Save),
+        "Ctrl+S saves dirty form fields (relock), not a generic document save"
     );
     assert_eq!(key_action(KeyBind::Char('s'), false, true, false), None);
     assert!(

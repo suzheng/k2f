@@ -123,6 +123,22 @@ See [semantic_code_blocks.md](./semantic_code_blocks.md). `role` and `content.ty
 
 Inline math: put U+FFFC in a text node and add `{ "type": "math", "intent": "<tex>", "range": [i, i+1] }`.
 
+### 5b. Form Field Node
+```json
+{
+  "id": "app.name",
+  "role": "form_field",
+  "variant": "underline",
+  "break_inside": "avoid",
+  "content": {
+    "type": "form_field",
+    "value": { "kind": "text", "value": "", "placeholder": "Full name" }
+  }
+}
+```
+
+Reserved box: filling does not reflow. Do not draw `____` in body text. Write values with `replace_text`.
+
 ### 6. Table Reference Node
 ```json
 {

@@ -50,7 +50,23 @@ Nodes have:
 - **Content** — text, code blocks, display math (TeX subset), native tables (`inline` or `asset` data), table references, containers, images, or fillable form fields (`content.type: "form_field"`: reserved box; `value` does not drive measure); no inline geometry
 - **Pagination hints** — optional `break_inside` (`auto` | `avoid`), `keep_with_next` (boolean), and `break_before` (`auto` | `page`). `auto` splits at line or child boundaries when the remainder of the page is too small; `avoid` refuses to split a node across pages; `keep_with_next` keeps this node with the following sibling when both fit; `break_before: page` starts the node on a new page.
 
-`manifest.json` may include `running_blocks`: an array of `{ "position": "header" | "footer", "node": <SemanticNode> }` repeated on each page. Valid only with `canvas_mode: "paged"`.
+### Form fields (`content.type: "form_field"`)
+
+A form field is a State A leaf like `Image`: the engine reserves a box from declared `width` / `height` / `lines` and role metrics. Filling must not reflow following nodes. Role must be `form_field` (and vice versa). `layout` and `modifiers` are forbidden. Default `break_inside` is `avoid`. Placeholder is metadata and is not painted into the lock.
+
+| JSON field | Meaning |
+|------------|---------|
+| `kind` | `text` \| `multiline` \| `checkbox` (required) |
+| `value` | NFC string. Checkbox allows only `""` or `"true"` |
+| `placeholder` | Viewer-only hint; not in lock ops |
+| `width` / `height` | Optional millipt `> 0`. Omit width in a bounded vertical stack / `{fr:1}` cell; a horizontal stack child must set `width` or compile fails `FORM_FIELD_UNBOUNDED_WIDTH` |
+| `lines` | Optional `>= 1`. Defaults: text 1, multiline 3. Checkbox ignores `lines` (square of role `font_size`) |
+| `max_length` | Optional `>= 1` character cap on `value` |
+| `required` | Optional; empty required fields still compile (blank templates must lock) |
+
+`Editor.replace_text(id, value)` writes the field string. Viewers overlay native controls on `OpenedDocument::form_fields()` rectangles; Save relocks. Default PDF export writes AcroForm widgets (skip field `DrawText`, keep `DrawBox`); `--flatten` paints glyphs and omits widgets. Viewer overlays are not package scripts.
+
+`manifest.json` may include `running_blocks`: an array of `{ "position": "header" | "footer", "node": <SemanticNode> }` repeated on each page. Valid only with `canvas_mode: "paged"`. Form fields are forbidden inside running blocks.
 
 A code block is `role: "code_block"` with `content: { "type": "code_block", "value": <string | string[]> }`. Role and content type must agree; `layout` is forbidden; modifiers are limited to `syntax_highlight`. See [semantic_code_blocks.md](../instructions/semantic_code_blocks.md).
 
@@ -64,7 +80,7 @@ Theme `box_decoration` names primitives (`background`, `border`, `corner_radius`
 
 Named maps under `primitives`: `surfaces`, `gradients`, `shadows`, `blurs`, `corners`, `borders`. Compile inlines them into lock `BoxDecoration`. Official recipes: `corners` none/small/medium/large/full; `borders` subtle/contrast (optional `edges` for single-side strokes and `style` solid/dashed/dotted); `elevation.1`–`3`; `blurs.background`; `card` variants `flat` / `raised` / `glass`. Default published trees must not apply shadow or blur unless PDF stamp export is intended.
 
-Role `default` must set `font_family`, `font_size`, `line_height_mult`, and `color`. Other roles inherit omitted text fields from `default`. Roles may set `letter_spacing_pt` (signed millipt), optional `first_line_indent_pt` (non-negative millipt; first wrapped line only), and `text_align` (`start` | `center` | `end` | `justify`). Justify expands U+0020 gaps on non-final wrapped lines only. Official `h1` is `-500`. Tracking is extra advance on every glyph except the last in a shaped run. Role `box_decoration.padding_pt` applies to text, code, math, containers, tables, and image nodes.
+Role `default` must set `font_family`, `font_size`, `line_height_mult`, and `color`. Other roles inherit omitted text fields from `default`. Roles may set `letter_spacing_pt` (signed millipt), optional `first_line_indent_pt` (non-negative millipt; first wrapped line only), and `text_align` (`start` | `center` | `end` | `justify`). Justify expands U+0020 gaps on non-final wrapped lines only. Official `h1` is `-500`. Tracking is extra advance on every glyph except the last in a shaped run. Role `box_decoration.padding_pt` applies to text, code, math, form fields, containers, tables, and image nodes.
 
 State A must not contain layout coordinates, arbitrary vector paths, inline CSS, or executable content.
 

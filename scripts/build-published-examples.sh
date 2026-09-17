@@ -9,4 +9,6 @@ mkdir -p examples/published
 "$k2f" compile examples/published/invoice.K2F
 "$k2f" pack examples/contract -o examples/published/contract.K2F
 "$k2f" compile examples/published/contract.K2F
+"$k2f" pack examples/form_application -o examples/published/form_application.K2F
+"$k2f" compile examples/published/form_application.K2F
 echo "published examples ok"

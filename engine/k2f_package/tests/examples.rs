@@ -100,6 +100,22 @@ fn load_dir_packs_and_verifies_invoice_source() {
     assert_eq!(verify_package(&pkg).unwrap(), VerifyStatus::Valid);
 }
 
+#[test]
+fn load_dir_packs_and_verifies_form_application_source() {
+    let mut pkg = load_dir(&repo_root().join("examples/form_application"))
+        .expect("load examples/form_application");
+    assert!(pkg.fonts.contains_key("assets/fonts/Roboto-Regular.ttf"));
+    assert_format_schemas_only(&pkg);
+    compile_pkg(&mut pkg);
+    assert_eq!(verify_package(&pkg).unwrap(), VerifyStatus::Valid);
+    let lock: k2f_core::LockFile = serde_json::from_str(pkg.lock_json.as_ref().unwrap()).unwrap();
+    assert_eq!(
+        lock.geometry.pages.len(),
+        1,
+        "application form must stay one page"
+    );
+}
+
 fn assert_format_schemas_only(pkg: &Package) {
     let mut names: Vec<_> = pkg.schemas.keys().cloned().collect();
     names.sort();

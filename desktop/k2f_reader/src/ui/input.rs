@@ -10,6 +10,7 @@ pub enum Action {
     Copy,
     Export,
     Open,
+    Save,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -23,7 +24,11 @@ pub enum KeyBind {
 
 /// Key-repeat pages and zooms; it must not spam clipboard copies or save dialogs.
 pub fn accept_key(repeat: bool, action: Action) -> bool {
-    !repeat || !matches!(action, Action::Copy | Action::Export | Action::Open)
+    !repeat
+        || !matches!(
+            action,
+            Action::Copy | Action::Export | Action::Open | Action::Save
+        )
 }
 
 pub fn key_action(bind: KeyBind, ctrl: bool, shift: bool, super_key: bool) -> Option<Action> {
@@ -34,6 +39,9 @@ pub fn key_action(bind: KeyBind, ctrl: bool, shift: bool, super_key: bool) -> Op
         KeyBind::Minus => Some(Action::ZoomOut),
         KeyBind::Char(c) if c.eq_ignore_ascii_case(&'s') && shift && (ctrl || super_key) => {
             Some(Action::Export)
+        }
+        KeyBind::Char(c) if c.eq_ignore_ascii_case(&'s') && (ctrl || super_key) && !shift => {
+            Some(Action::Save)
         }
         KeyBind::Char(c) if c.eq_ignore_ascii_case(&'c') && (ctrl || super_key) && !shift => {
             Some(Action::Copy)

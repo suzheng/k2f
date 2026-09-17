@@ -6,6 +6,8 @@ use super::display_scale::{
 };
 use super::draw::{fill_rect, Rect};
 use super::empty;
+use super::form_fill::FillState;
+use super::form_overlay::{draw_fields, hit_field};
 use super::hud::{
     chrome_hit_at, dip, draw_hud, draw_scrollbar, in_chrome, ChromeHit, ChromePaint,
     SCROLLBAR_WIDTH, STATUS_HEIGHT,
@@ -53,6 +55,7 @@ pub struct Session {
     scale: f32,
     export_menu_open: bool,
     pdf_dialog: PdfDialogState,
+    fill: FillState,
     /// Last UI zoom change; display LOD waits [`DISPLAY_PAINT_DEBOUNCE`] after this.
     zoom_changed_at: Option<Instant>,
 }
@@ -77,6 +80,7 @@ impl Session {
             scale: 1.0,
             export_menu_open: false,
             pdf_dialog: PdfDialogState::new(),
+            fill: FillState::default(),
             zoom_changed_at: None,
         }
     }
@@ -113,6 +117,7 @@ impl Session {
         self.pressed = None;
         self.export_menu_open = false;
         self.pdf_dialog = PdfDialogState::new();
+        self.fill.reset();
         self.reload_pages()?;
         let (w, h) = self.scaled_size();
         self.win_w = w;
@@ -315,7 +320,7 @@ impl Session {
                 None
             }
             Action::Copy => self.active_copy(),
-            Action::Export | Action::Open => None,
+            Action::Export | Action::Open | Action::Save => None,
         }
     }
 
@@ -353,6 +358,17 @@ impl Session {
         if self.export_menu_open {
             self.export_menu_open = false;
             self.pressed = None;
+            return;
+        }
+        if self.fill.is_filling() {
+            self.pressed = None;
+            let views = self.all_views(self.win_w, self.win_h);
+            let fields = self.app.as_ref().map(|a| a.form_fields()).unwrap_or_default();
+            if let Some(field) = hit_field(&fields, &views, x, y) {
+                self.fill.click(field);
+            } else {
+                self.fill.blur();
+            }
             return;
         }
         self.pressed = None;
@@ -407,6 +423,9 @@ impl Session {
 
     pub fn pointer_up(&mut self, x: f64, y: f64) -> Option<CopyPayload> {
         if self.app.is_none() || self.pdf_dialog.open || self.pressed.is_some() {
+            return None;
+        }
+        if self.fill.is_filling() {
             return None;
         }
         let from = self.drag_from.take()?;
@@ -507,6 +526,98 @@ impl Session {
         Some(pressed)
     }
 
+    pub fn is_filling(&self) -> bool {
+        self.fill.is_filling()
+    }
+
+    pub fn is_fill_dirty(&self) -> bool {
+        self.fill.is_dirty()
+    }
+
+    pub fn fill_editing(&self) -> bool {
+        self.fill.active().is_some()
+    }
+
+    pub fn toggle_fill(&mut self) {
+        if self.app.as_ref().is_some_and(|a| a.has_form_fields()) {
+            self.fill.toggle_filling();
+        }
+    }
+
+    pub fn save_fill(&mut self) -> anyhow::Result<Vec<u8>> {
+        self.fill.commit_active();
+        let dirty = self.fill.dirty().clone();
+        let app = self.app.as_ref().context("no document")?;
+        if dirty.is_empty() {
+            self.fill.reset();
+            return Ok(app.export_k2f_bytes()?);
+        }
+        let bytes = app.relock_form_values(&dirty)?;
+        self.load(&bytes)?;
+        Ok(bytes)
+    }
+
+    pub fn fill_insert(&mut self, text: &str) {
+        self.fill.insert_text(text);
+    }
+
+    pub fn fill_backspace(&mut self) {
+        self.fill.backspace();
+    }
+
+    pub fn fill_newline(&mut self) {
+        self.fill.insert_newline();
+    }
+
+    pub fn fill_escape(&mut self) -> bool {
+        if self.fill.active().is_some() {
+            self.fill.blur();
+            return true;
+        }
+        if self.fill.is_filling() {
+            self.fill.set_filling(false);
+            return true;
+        }
+        false
+    }
+
+    pub fn fill_set_preedit(&mut self, preedit: String) {
+        self.fill.set_preedit(preedit);
+    }
+
+    pub fn fill_commit_ime(&mut self, text: String) {
+        self.fill.commit_ime(text);
+    }
+
+    pub fn fill_cancel_ime(&mut self) {
+        self.fill.cancel_ime();
+    }
+
+    pub fn fill_click_id(&mut self, id: &str) -> bool {
+        if !self.fill.is_filling() {
+            return false;
+        }
+        let Some(app) = self.app.as_ref() else {
+            return false;
+        };
+        let Some(field) = app.form_fields().into_iter().find(|f| f.id == id) else {
+            return false;
+        };
+        self.fill.click(&field);
+        true
+    }
+
+    /// Window-pixel caret box for IME, if a text field is focused.
+    pub fn ime_cursor_area(&self) -> Option<(f64, f64, f64, f64)> {
+        let active = self.fill.active()?;
+        let app = self.app.as_ref()?;
+        let field = app.form_fields().into_iter().find(|f| f.id == active.id)?;
+        let views = self.all_views(self.win_w, self.win_h);
+        let view = views.get(field.page)?;
+        let r = super::form_overlay::field_window_rect(view, &field);
+        Some((r.x as f64, r.y as f64, r.w as f64, r.h as f64))
+    }
+
     pub fn pointer_over_text(&self, x: f64, y: f64) -> bool {
         let Some(app) = self.app.as_ref() else {
             return false;
@@ -534,6 +645,14 @@ impl Session {
         }
         if self.chrome_hot() && !self.is_dragging() {
             PointerCursor::Pointer
+        } else if self.fill.is_filling() {
+            let views = self.all_views(self.win_w, self.win_h);
+            let fields = self.app.as_ref().map(|a| a.form_fields()).unwrap_or_default();
+            match hit_field(&fields, &views, x, y) {
+                Some(f) if f.kind.is_checkbox() => PointerCursor::Pointer,
+                Some(_) => PointerCursor::Text,
+                None => PointerCursor::Default,
+            }
         } else if self.is_dragging() || self.pointer_over_text(x, y) {
             PointerCursor::Text
         } else {
@@ -602,6 +721,24 @@ impl Session {
                 0xE4E4E8,
             );
             blit_raster(&mut buf, win_w, win_h, slot.blit_src(), view);
+            if self.fill.is_filling() {
+                if let Some(app) = self.app.as_ref() {
+                    let fields: Vec<_> = app
+                        .form_fields()
+                        .into_iter()
+                        .filter(|f| f.page == page)
+                        .collect();
+                    draw_fields(
+                        &mut buf,
+                        win_w,
+                        win_h,
+                        &views,
+                        &fields,
+                        &self.fill,
+                        self.scale,
+                    );
+                }
+            }
             for s in self.live_slices(page, view) {
                 let (x0, y0) = view.pt_to_window(s.x_pt, s.y_pt);
                 let (x1, y1) = view.pt_to_window(s.x_pt + s.width_pt, s.y_pt + s.height_pt);
@@ -627,6 +764,9 @@ impl Session {
                 hover: self.hover,
                 pressed: self.pressed,
                 export_menu_open: self.export_menu_open,
+                show_fill: app.has_form_fields(),
+                filling: self.fill.is_filling(),
+                dirty: self.fill.is_dirty(),
             },
             self.scale,
         );

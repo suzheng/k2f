@@ -10,6 +10,8 @@ mod draw;
 mod empty;
 mod event_loop;
 mod font;
+mod form_fill;
+mod form_overlay;
 mod hud;
 mod input;
 #[cfg(target_os = "macos")]

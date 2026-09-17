@@ -58,6 +58,8 @@ const MENU_SHADOW: u32 = 0xD8D8DC;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChromeHit {
     Open,
+    Fill,
+    Save,
     ZoomOut,
     ZoomIn,
     Copy,
@@ -71,10 +73,15 @@ pub struct ChromePaint {
     pub hover: Option<ChromeHit>,
     pub pressed: Option<ChromeHit>,
     pub export_menu_open: bool,
+    pub show_fill: bool,
+    pub filling: bool,
+    pub dirty: bool,
 }
 
 pub struct ToolbarLayout {
     pub open: Rect,
+    pub fill: Option<Rect>,
+    pub save: Option<Rect>,
     pub zoom_out: Rect,
     pub zoom_label: Rect,
     pub zoom_in: Rect,
@@ -88,10 +95,16 @@ pub fn dip(v: u32, scale: f32) -> u32 {
 }
 
 pub fn toolbar_layout(win_w: u32, export_label: &str, zoom: &str) -> ToolbarLayout {
-    toolbar_layout_at(win_w, export_label, zoom, 1.0)
+    toolbar_layout_at(win_w, export_label, zoom, 1.0, false)
 }
 
-pub fn toolbar_layout_at(win_w: u32, export_label: &str, zoom: &str, scale: f32) -> ToolbarLayout {
+pub fn toolbar_layout_at(
+    win_w: u32,
+    export_label: &str,
+    zoom: &str,
+    scale: f32,
+    show_fill: bool,
+) -> ToolbarLayout {
     let pad = dip(PAD_X, scale) as i32;
     let gap = dip(GAP, scale) as i32;
     let btn_h = dip(BTN_H, scale);
@@ -110,6 +123,24 @@ pub fn toolbar_layout_at(win_w: u32, export_label: &str, zoom: &str, scale: f32)
         .saturating_add(dip(24, scale))
         .max(dip(60, scale));
     let open = Rect::new(pad, btn_y, open_w, btn_h);
+    let mut fill = None;
+    let mut save = None;
+    if show_fill {
+        let fill_w = text_width_px("Fill", body)
+            .saturating_add(dip(24, scale))
+            .max(dip(52, scale));
+        let save_w = text_width_px("Save", body)
+            .saturating_add(dip(24, scale))
+            .max(dip(52, scale));
+        let fill_x = open.x + open.w as i32 + gap;
+        fill = Some(Rect::new(fill_x, btn_y, fill_w, btn_h));
+        save = Some(Rect::new(
+            fill_x + fill_w as i32 + gap,
+            btn_y,
+            save_w,
+            btn_h,
+        ));
+    }
 
     let mut x = win_w as i32 - pad;
     x -= caret_w as i32;
@@ -127,6 +158,8 @@ pub fn toolbar_layout_at(win_w: u32, export_label: &str, zoom: &str, scale: f32)
 
     ToolbarLayout {
         open,
+        fill,
+        save,
         zoom_out,
         zoom_label,
         zoom_in,
@@ -142,6 +175,7 @@ fn layout_for(app: &AppState, win_w: u32, scale: f32) -> ToolbarLayout {
         app.export_format().action_label(),
         &zoom_label(app),
         scale,
+        app.has_form_fields(),
     )
 }
 
@@ -198,6 +232,12 @@ pub fn chrome_hit_at(
     if toolbar_hit_y(win_h, y, scale) {
         if layout.open.contains(x, y) {
             return Some(ChromeHit::Open);
+        }
+        if layout.fill.is_some_and(|r| r.contains(x, y)) {
+            return Some(ChromeHit::Fill);
+        }
+        if layout.save.is_some_and(|r| r.contains(x, y)) {
+            return Some(ChromeHit::Save);
         }
         if layout.export.contains(x, y) {
             return Some(ChromeHit::Export);
@@ -494,7 +534,7 @@ pub fn draw_hud(
     let export_label = app.export_format().action_label();
     let format_label = app.export_format().hud_label();
     let zoom = zoom_label(app);
-    let layout = toolbar_layout_at(width, export_label, &zoom, scale);
+    let layout = toolbar_layout_at(width, export_label, &zoom, scale, chrome.show_fill);
     let pad = dip(PAD_X, scale) as i32;
     let tb = dip(TOOLBAR_HEIGHT, scale).min(height);
     let body = BODY_PX * scale;
@@ -515,13 +555,45 @@ pub fn draw_hud(
     fill_round_rect(buf, width, height, layout.open, radius, open_bg);
     draw_text_centered(buf, width, height, layout.open, "Open", PRIMARY_FG, body);
 
+    if chrome.show_fill {
+        if let Some(fill) = layout.fill {
+            let (h, p) = is_hit(hover, pressed, ChromeHit::Fill);
+            let fill_bg = if p || chrome.filling {
+                0x0066D6
+            } else if h {
+                0x1A86FF
+            } else {
+                PRIMARY
+            };
+            fill_round_rect(buf, width, height, fill, radius, fill_bg);
+            draw_text_centered(buf, width, height, fill, "Fill", PRIMARY_FG, body);
+        }
+        if let Some(save) = layout.save {
+            let (h, p) = is_hit(hover, pressed, ChromeHit::Save);
+            let save_bg = if !chrome.dirty {
+                0x5A5A5C
+            } else if p {
+                0x0066D6
+            } else if h {
+                0x1A86FF
+            } else {
+                PRIMARY
+            };
+            fill_round_rect(buf, width, height, save, radius, save_bg);
+            draw_text_centered(buf, width, height, save, "Save", PRIMARY_FG, body);
+        }
+    }
+
     let title_h = em_height(title_px);
     let sub_h = em_height(cap);
     let stack_gap = dip(5, scale);
     let block_h = title_h + stack_gap + sub_h;
     let title_y = ((tb.saturating_sub(block_h)) / 2) as i32;
     let sub_y = title_y + title_h as i32 + stack_gap as i32;
-    let title_x = layout.open.x + layout.open.w as i32 + dip(12, scale) as i32;
+    let title_x = {
+        let last = layout.save.or(layout.fill).unwrap_or(layout.open);
+        last.x + last.w as i32 + dip(12, scale) as i32
+    };
     let title_max = (layout.zoom_out.x - title_x - dip(12, scale) as i32).max(48) as u32;
     let title = ellipsize_to_width(app.title(), title_max, title_px);
     draw_text_px(
@@ -626,13 +698,18 @@ pub fn draw_hud(
     );
     hline(buf, width, height, sy, 0, width, DIVIDER);
     let status_rect = Rect::new(pad, sy, width.saturating_sub(pad as u32 * 2), status_h);
+    let status_left = if chrome.filling {
+        "Fill mode — Save writes values into the package".to_string()
+    } else {
+        page_status_label(app)
+    };
     draw_text_px(
         buf,
         width,
         height,
         pad,
         sy + (status_h as i32 - em_height(cap) as i32).max(0) / 2,
-        &page_status_label(app),
+        &status_left,
         STATUS_FG,
         cap,
     );

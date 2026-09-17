@@ -165,6 +165,60 @@ pub fn math_theme() -> String {
     .to_string()
 }
 
+pub fn form_field_theme() -> String {
+    r##"{
+            "palette": {
+                "black": "#000000",
+                "white": "#FFFFFF",
+                "ink": "#202124"
+            },
+            "primitives": {
+                "corners": { "small": 4000 },
+                "borders": {
+                    "subtle": { "color": "#2021241A", "width_pt": 500 },
+                    "subtle_bottom": { "color": "#2021241A", "width_pt": 500, "edges": ["bottom"] },
+                    "contrast": { "color": "#2021244D", "width_pt": 1000 }
+                }
+            },
+            "roles": {
+                "default": {
+                    "font_family": "default",
+                    "font_size": 12000,
+                    "line_height_mult": 1400,
+                    "color": "black"
+                },
+                "document": {
+                     "font_family": "default",
+                     "font_size": 12000,
+                     "line_height_mult": 1400,
+                     "color": "black"
+                },
+                "body": {
+                     "font_family": "default",
+                     "font_size": 12000,
+                     "line_height_mult": 1400,
+                     "color": "black"
+                },
+                "form_field": {
+                     "font_family": "default",
+                     "font_size": 11000,
+                     "line_height_mult": 1400,
+                     "color": "ink",
+                     "box_decoration": {
+                          "padding_pt": { "top": 2000, "right": 4000, "bottom": 2000, "left": 4000 },
+                          "border": "subtle_bottom"
+                     },
+                     "variants": {
+                          "underline": { "box_decoration": { "border": "subtle_bottom" } },
+                          "box": { "box_decoration": { "border": "subtle", "corner_radius": "small" } },
+                          "checkbox": { "box_decoration": { "border": "contrast", "corner_radius": "small" } }
+                     }
+                }
+            }
+        }"##
+        .to_string()
+}
+
 pub fn line_height_modifier_theme() -> String {
     // Theme that exposes line-height changes as deterministic geometry differences.
     r##"{

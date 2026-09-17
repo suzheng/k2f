@@ -14,6 +14,8 @@ v0.1 edits the semantic tree through:
 
 There is no Tiptap/React writing UI. Agents and developers patch `content/root.json` surgically; the engine recompiles `document.K2F.lock`.
 
+**Form fill is not that editor.** `<k2f-viewer editable>` and the desktop reader overlay native controls on lock rectangles (`form_fields()` + `boxes_for`). Dirty values live in a viewer Map until Save calls `Editor.replace_text` and relocks. That is lock chrome, not a flowing writing surface and not package-embedded script.
+
 This document describes a **future** human-facing editor that separates drafting from publishing.
 
 ## Core philosophy
