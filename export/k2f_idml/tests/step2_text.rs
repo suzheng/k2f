@@ -775,11 +775,6 @@ fn composer_is_single_line() {
         .find(|n| n.has_tag_name("ParagraphStyleRange"))
         .expect("ParagraphStyleRange");
     assert_eq!(para.attribute("Hyphenation"), Some("false"));
-    assert_eq!(
-        para.attribute("AutoLeading"),
-        Some("0"),
-        "AutoLeading must be 0 so numeric Leading applies"
-    );
     let props = para
         .children()
         .find(|n| n.has_tag_name("Properties"))

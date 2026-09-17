@@ -176,7 +176,7 @@ fn para_xml(
         inner.push_str(&char_range_br(br_run, no_break));
     }
     format!(
-        r#"    <ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/[No paragraph style]" Justification="{just}" Hyphenation="false" AutoLeading="0" SpaceBefore="0" SpaceAfter="{}"{lead_attr}{indent_attr}>
+        r#"    <ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/[No paragraph style]" Justification="{just}" Hyphenation="false" SpaceBefore="0" SpaceAfter="{}"{lead_attr}{indent_attr}>
       <Properties>
         <AppliedComposer>$ID/HL Single</AppliedComposer>
       </Properties>
@@ -306,10 +306,6 @@ mod tests {
             xml.matches("<Br/>").count(),
             1,
             "IDML needs a Br between semantic paragraphs, got {xml}"
-        );
-        assert!(
-            xml.contains(r#"AutoLeading="0""#),
-            "AutoLeading must be off so numeric Leading applies, got {xml}"
         );
         assert!(
             xml.contains(r#"Leading="14.000""#),
