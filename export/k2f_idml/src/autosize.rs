@@ -131,6 +131,17 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                 }
                 continue;
             }
+            // Left column stack: WidthOnly shrinks about ItemTransform and
+            // flush-left card/grid copy looks centered (color-block).
+            if tb.autosize_width && stacked_lock_column_sibling(&rects[i], &rects, i) {
+                if let PageElement::TextBox(tb) = &mut elements[i] {
+                    tb.autosize_width = false;
+                    tb.autosize_no_wrap = false;
+                }
+            }
+            let PageElement::TextBox(tb) = &elements[i] else {
+                continue;
+            };
             if tb.autosize_width && !column_sibling(&rects[i], &rects, i) {
                 let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
                 let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
@@ -163,7 +174,7 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                     // textbox_from_draw sets autosize_height=false whenever
                     // autosize_width was true. Restoring HeightOnly here keeps
                     // multi-line NoBreak body from oversetting in InDesign.
-                    if multi || nbreaks >= 1 {
+                    if (multi || nbreaks >= 1) && !tb.vert_center {
                         tb.autosize_height = true;
                     }
                 }
@@ -202,7 +213,7 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
         // Center/Right single-line without HeightOnly: WidthOnly-grow so host
         // metrics do not overset and hide the story.
         let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
-        if !tb.autosize_height && nbreaks == 0 {
+        if !tb.autosize_height && nbreaks == 0 && !tb.vert_center {
             if let PageElement::TextBox(tb) = &mut elements[i] {
                 tb.autosize_width = true;
                 tb.autosize_no_wrap = true;
@@ -261,11 +272,11 @@ fn repair_left_nobreak(
     }
     if me.width.0 >= NARROW_NOBREAK_W {
         // Wide hug one-liners (532pt slide subtitles) skip WidthOnly so the
-        // frame does not re-anchor, but still need host-metric room. Grow
-        // into empty space on the right; left-aligned ink stays put.
-        // Stacked same-column / same-right-edge lines must not grow past
-        // the rest of the block.
-        if !stacked_lock_column_sibling(me, rects, my_i)
+        // frame does not re-anchor, but still need host-metric room when the
+        // lock ink already fills the box. Loose wide headers must stay put.
+        if tb.full_width_lock_line
+            && tb.lock_line_count <= 1
+            && !stacked_lock_column_sibling(me, rects, my_i)
             && !stacked_right_edge_sibling(me, rects, my_i)
         {
             let extra = open_right(me, rects, my_i, Some(page_w));
@@ -1552,6 +1563,8 @@ mod tests {
             t.runs[0].text = "Real-time\u{00A0}diffusion\u{00A0}sampling\u{00A0}across\u{00A0}38,000\u{00A0}ligand-target\u{00A0}pairs\u{00A0}with\u{00A0}physical\u{00A0}thermodynamic\u{00A0}constraints.".into();
             t.runs[0].tracking = 0;
             t.runs[0].size_pt = 11.5;
+            t.full_width_lock_line = true;
+            t.lock_line_count = 1;
         }
         let mut els = vec![
             desc,
