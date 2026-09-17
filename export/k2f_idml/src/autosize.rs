@@ -1,4 +1,4 @@
-use crate::ir::{PageElement, TextAlign};
+use crate::ir::{PageElement, TextAlign, TextBox};
 use k2f_core::{Pt, Rect};
 
 /// Neighbor gap (millipt) that unlimited WidthOnly would eat.
@@ -327,7 +327,7 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
                 if tb.no_break {
                     tb.no_break = false;
                     unglue_nbsp(&mut tb.runs);
-                    if nbreaks >= 2 && !tb.semantic_newlines {
+                    if should_collapse_lock_newlines(tb, nbreaks) {
                         collapse_lock_newlines(&mut tb.runs);
                     }
                 }
@@ -442,7 +442,7 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
                 // are paragraph reflow — keep them as `\n` and leftover words
                 // wrap *plus* the forced break, overprinting the next card.
                 // Author newlines (seal stacks) must not be flattened.
-                if nbreaks >= 2 && !tb.semantic_newlines {
+                if should_collapse_lock_newlines(tb, nbreaks) {
                     collapse_lock_newlines(&mut tb.runs);
                 }
                 tb.autosize_height = true;
@@ -457,6 +457,21 @@ fn pad_for_gap(gap: i128) -> i128 {
     } else {
         gap - GAP_KEEP
     }
+}
+
+/// Lock-pinned wrap breaks (`nbreaks == lock_line_count - 1`) in left-aligned
+/// column bodies must stay as `\n` so InDesign matches lock line starts.
+fn should_collapse_lock_newlines(tb: &TextBox, nbreaks: usize) -> bool {
+    if tb.semantic_newlines || nbreaks < 2 {
+        return false;
+    }
+    if matches!(tb.align, TextAlign::Left)
+        && tb.lock_line_count >= 2
+        && nbreaks == tb.lock_line_count.saturating_sub(1)
+    {
+        return false;
+    }
+    true
 }
 
 fn unglue_nbsp(runs: &mut [crate::ir::TextRun]) {

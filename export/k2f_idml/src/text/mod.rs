@@ -394,6 +394,15 @@ pub(crate) fn vert_center(
             if slack >= 2_000 && delta.abs() * 5 <= slack && slack * 10 > h {
                 return true;
             }
+            // Padded bars/badges: theme top/bottom padding match first_y; line
+            // height is the remainder (line_height_mult > 1 still fits).
+            if first_y >= 1_000 {
+                let line_h = h.saturating_sub(first_y.saturating_mul(2));
+                let max_h = (first_y + font_size.0).saturating_mul(2).saturating_add(2_000);
+                if line_h >= font_size.0.saturating_mul(8) / 10 && h <= max_h {
+                    return true;
+                }
+            }
         }
     }
     if rect.height.0 <= font_size.0.saturating_mul(2) {
@@ -465,8 +474,47 @@ mod tests {
     }
 
     #[test]
+    fn padded_bar_with_symmetric_theme_padding_centers() {
+        let geo = pill_geo(21_500, 4_000);
+        let rect = Rect {
+            x: Pt(36_000),
+            y: Pt(133_850),
+            width: Pt(213_018),
+            height: Pt(21_500),
+        };
+        assert!(
+            vert_center(Some(&geo), &rect, Pt(10_000)),
+            "symmetric padded bar must vertically center"
+        );
+    }
+
+    #[test]
+    fn flush_left_column_line_stays_top_aligned() {
+        let geo = GeometryNode {
+            id: "pd.yrs".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(144_333),
+            height: Pt(10_800),
+            glyphs: vec![glyph(0, 0, 80_000, 0)],
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        };
+        let rect = Rect {
+            x: Pt(225_334),
+            y: Pt(553_304),
+            width: Pt(144_333),
+            height: Pt(10_800),
+        };
+        assert!(
+            !vert_center(Some(&geo), &rect, Pt(8_000)),
+            "flush-top column label must not vertically center"
+        );
+    }
+
+    #[test]
     fn grid_column_meta_with_symmetric_height_stays_top_aligned() {
-        // entry_meta: ink fills column width, tall grid row, symmetric y padding.
         let geo = GeometryNode {
             id: "app_harvard.meta".into(),
             x: Pt(0),

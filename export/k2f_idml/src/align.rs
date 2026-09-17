@@ -164,12 +164,19 @@ fn ink_tighter_than(geo: Option<&GeometryNode>, align: TextAlign, slack_limit: i
         return false;
     }
     let box_w = geo.width.0;
+    let mut min_left = i128::MAX;
     let mut min_right = i128::MAX;
     let mut min_slack = i128::MAX;
     for line in &lines {
-        let (slack, _, right) = line_gaps(line, box_w);
+        let (slack, left, right) = line_gaps(line, box_w);
+        min_left = min_left.min(left);
         min_right = min_right.min(right);
         min_slack = min_slack.min(slack);
+    }
+    // Full-width column copy (left ink flush, wide right slack) is not a
+    // shrink-wrapped NoBreak label — WidthOnly recenters in the card column.
+    if lines.len() == 1 && min_left <= MIN_SLACK && min_right > INK_SLACK {
+        return false;
     }
     min_right < slack_limit || min_slack < slack_limit
 }
@@ -338,6 +345,16 @@ mod tests {
         assert_eq!(lock_ink_height(Some(&g), fs), Some(Pt(67_600)));
         g.height = Pt(80_000);
         assert_eq!(lock_ink_height(Some(&g), fs), None);
+    }
+
+    #[test]
+    fn full_width_column_line_skips_nobreak_widthonly() {
+        let w = 144_333i128;
+        let geo = geo(w, vec![glyph(0, 0, 80_000, 0)]);
+        assert!(
+            !should_autosize_width_for_nobreak(Some(&geo), TextAlign::Left),
+            "flush-left column copy must not WidthOnly-shrink"
+        );
     }
 
     #[test]
