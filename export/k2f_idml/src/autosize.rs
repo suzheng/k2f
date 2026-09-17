@@ -164,7 +164,11 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
             if let PageElement::TextBox(tb) = &mut elements[i] {
                 let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
                 let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
-                repair_left_nobreak(tb, &rects[i], &rects, i, page_w, multi, nbreaks);
+                // Use the live rect: open_right above may have widened the frame;
+                // a stale snapshot still looks "narrow" and wrongly re-enables
+                // WidthOnly (letter recipient / closing lines center in InDesign).
+                let live_rect = tb.rect.clone();
+                repair_left_nobreak(tb, &live_rect, &rects, i, page_w, multi, nbreaks);
             }
             continue;
         }
@@ -228,7 +232,7 @@ fn repair_left_nobreak(
     }
     if tb.autosize_height && !tb.autosize_width && tb.lock_line_count >= 2 {
         if (multi || nbreaks >= 1) && !column_sibling(me, rects, my_i) && !tb.semantic_newlines {
-            if should_preserve_lock_pinned_nobreak(tb, nbreaks) {
+            if should_widthonly_two_line_nobreak(tb, nbreaks) {
                 tb.autosize_width = true;
                 tb.autosize_no_wrap = false;
                 tb.autosize_height = false;
@@ -287,7 +291,7 @@ fn repair_nobreak_overset(elements: &mut [PageElement]) {
             && (multi || nbreaks >= 1)
             && !column_sibling(&rects[i], &rects, i)
             && !tb.semantic_newlines
-            && !should_preserve_lock_pinned_nobreak(tb, nbreaks)
+            && !should_widthonly_two_line_nobreak(tb, nbreaks)
         {
             tb.no_break = false;
             unglue_nbsp(&mut tb.runs);
@@ -462,7 +466,7 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
                         continue;
                     }
                 }
-                if should_preserve_lock_pinned_nobreak(tb, nbreaks) {
+                if should_widthonly_two_line_nobreak(tb, nbreaks) {
                     tb.autosize_width = true;
                     tb.autosize_no_wrap = false;
                     tb.autosize_height = false;
@@ -507,12 +511,17 @@ fn apply_page_center_autosize(tb: &mut TextBox) {
     tb.autosize_height = false;
 }
 
-/// Lock-pinned 2-line display titles/subtitles: keep NoBreak and WidthOnly so
-/// host metrics cannot insert an extra wrap between the lock lines.
-fn should_preserve_lock_pinned_nobreak(tb: &TextBox, nbreaks: usize) -> bool {
-    !tb.semantic_newlines
-        && tb.lock_line_count == 2
-        && nbreaks == tb.lock_line_count.saturating_sub(1)
+/// Two-line NoBreak display copy: keep WidthOnly so host metrics size to the
+/// longest lock line instead of HeightOnly re-wrapping inside a line.
+fn should_widthonly_two_line_nobreak(tb: &TextBox, nbreaks: usize) -> bool {
+    if tb.lock_line_count != 2 || nbreaks != tb.lock_line_count.saturating_sub(1) {
+        return false;
+    }
+    if !tb.semantic_newlines {
+        return true;
+    }
+    // Author `\n` in a wide frame must not WidthOnly-shrink (re-anchors centered).
+    tb.rect.width.0 <= WIDE_LOOSE_TITLE_W
 }
 
 /// Lock-pinned wrap breaks (`nbreaks == lock_line_count - 1`) in left-aligned
@@ -1242,6 +1251,38 @@ mod tests {
             !is_width(&els[0]),
             "wide authors line must not WidthOnly-shrink and re-anchor"
         );
+    }
+
+    #[test]
+    fn tight_letter_recipient_line_grows_not_widthonly() {
+        // blush-floral-letterhead: ink-tight recipient name at the left margin.
+        // open_right widens the frame; WidthOnly on that wide box re-anchors
+        // the line to the page center in InDesign.
+        let mut els = vec![tb(
+            "letter.recipient.name",
+            54_000,
+            102_090,
+            true,
+            "CenterLeftPoint",
+        )];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.runs[0].text = "Dr. Evelyn Montgomery".into();
+            t.runs[0].tracking = 0;
+            t.runs[0].bold = true;
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(name) = &els[0] else {
+            panic!("textbox")
+        };
+        assert!(
+            !name.autosize_width,
+            "margin-grown recipient line must not WidthOnly-shrink"
+        );
+        assert!(
+            name.rect.width.0 > 102_090,
+            "frame grows into the open right margin for host metrics"
+        );
+        assert!(name.no_break, "single-line salutation keeps NoBreak");
     }
 
     #[test]

@@ -12,7 +12,6 @@ pub(crate) fn write_paras(
     let paras = paragraphs(runs);
     let fallback = runs.first().cloned().unwrap_or_else(default_run);
     let paras = fold_blank_paras(paras, &fallback);
-    let n = paras.len();
     let mut body = String::new();
     for (i, para) in paras.iter().enumerate() {
         let indent = if i == 0 { first_line_indent_pt } else { 0.0 };
