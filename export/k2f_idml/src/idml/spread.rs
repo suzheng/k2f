@@ -218,11 +218,20 @@ fn framed_image_xml(
 
 fn stroke_attrs(shape: &ShapeBox) -> String {
     match &shape.line_hex {
-        Some(hex) => format!(
-            " StrokeColor=\"Color/k2f_{hex}\" StrokeWeight=\"{}\" StrokeType=\"{}\"",
-            fmt_pt(shape.line_w_pt),
-            stroke_type(shape.line_dash)
-        ),
+        Some(hex) => {
+            // K2F paints borders inside the box. Default IDML center strokes
+            // split across the path edge and read as a double rim on filled shells.
+            let alignment = if shape.fill_hex.is_some() {
+                " StrokeAlignment=\"InsideAlignment\""
+            } else {
+                ""
+            };
+            format!(
+                " StrokeColor=\"Color/k2f_{hex}\" StrokeWeight=\"{}\" StrokeType=\"{}\"{alignment}",
+                fmt_pt(shape.line_w_pt),
+                stroke_type(shape.line_dash),
+            )
+        }
         None => " StrokeWeight=\"0\"".into(),
     }
 }
@@ -277,6 +286,62 @@ mod tests {
     use super::*;
     use crate::ir::{LineDash, ShapeBox};
     use k2f_core::{Pt, Rect};
+
+    #[test]
+    fn filled_stroke_uses_inside_alignment() {
+        let shape = ShapeBox {
+            node_id: "shell".into(),
+            rect: Rect {
+                x: Pt(20_000),
+                y: Pt(20_000),
+                width: Pt(320_000),
+                height: Pt(464_000),
+            },
+            fill_hex: Some("FAF8F3".into()),
+            fill_alpha: 255,
+            corner_pt: 0.0,
+            line_hex: Some("D2C8B4".into()),
+            line_w_pt: 0.65,
+            line_dash: LineDash::Solid,
+        };
+        let space = SpreadSpace {
+            page_w: 360.0,
+            page_h: 504.0,
+        };
+        let xml = rectangle_xml(&shape, &space, "kRect0");
+        assert!(
+            xml.contains("StrokeAlignment=\"InsideAlignment\""),
+            "filled rim must align inside, got {xml}"
+        );
+    }
+
+    #[test]
+    fn stroke_only_bar_omits_inside_alignment() {
+        let shape = ShapeBox {
+            node_id: "rule".into(),
+            rect: Rect {
+                x: Pt(0),
+                y: Pt(150_000),
+                width: Pt(360_000),
+                height: Pt(1_000),
+            },
+            fill_hex: Some("D5CCBA".into()),
+            fill_alpha: 255,
+            corner_pt: 0.0,
+            line_hex: None,
+            line_w_pt: 0.0,
+            line_dash: LineDash::Solid,
+        };
+        let space = SpreadSpace {
+            page_w: 360.0,
+            page_h: 504.0,
+        };
+        let xml = rectangle_xml(&shape, &space, "kRect0");
+        assert!(
+            !xml.contains("StrokeAlignment"),
+            "fill-only bar must not set stroke alignment, got {xml}"
+        );
+    }
 
     #[test]
     fn rounded_rect_emits_live_corner_attrs() {

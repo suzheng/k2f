@@ -179,7 +179,11 @@ fn infer_from_gaps(left: i128, right: i128, box_w: i128) -> TextAlign {
         return TextAlign::Left;
     }
     let delta = left - right;
-    if delta.abs() * 5 <= slack && left * 10 > box_w {
+    // Balanced side gaps with slack dominating the box width → pill/badge
+    // chrome (VIP label, session pill). `left * 10 > box_w` missed ~7.5%
+    // padding on both sides; total slack catches shrink-wrapped badges while
+    // full-width lines with tiny equal margins stay Left (plan 2.3.1 table).
+    if delta.abs() * 5 <= slack && slack * 10 > box_w {
         TextAlign::Center
     } else if delta > slack / 4 {
         TextAlign::Right
@@ -269,6 +273,15 @@ mod tests {
         assert_eq!(
             infer_text_align(&geo(w, vec![glyph(0, 4_000, 92_000, 0)]), "A"),
             TextAlign::Left
+        );
+        // Shrink-wrapped pill (~7.5% padding each side): balanced slack
+        // dominates box width even when left alone does not.
+        assert_eq!(
+            infer_text_align(
+                &geo(60_104, vec![glyph(0, 4_500, 51_022, 0)]),
+                "VIP PASS"
+            ),
+            TextAlign::Center
         );
         assert_eq!(infer_text_align(&geo(w, vec![]), "A"), TextAlign::Left);
     }

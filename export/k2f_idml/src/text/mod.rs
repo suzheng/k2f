@@ -338,9 +338,6 @@ pub(crate) fn vert_center(
     let Some(geo) = geo else {
         return false;
     };
-    if rect.height.0 <= font_size.0.saturating_mul(2) {
-        return false;
-    }
     let lines = source_lines(geo);
     if lines.is_empty() {
         return false;
@@ -349,7 +346,26 @@ pub(crate) fn vert_center(
     if h <= 0 {
         return false;
     }
-    let first_y = lines[0].iter().map(|g| g.y_offset.0).min().unwrap_or(0);
+    let first_y = lines[0]
+        .iter()
+        .map(|g| g.y_offset.0)
+        .min()
+        .unwrap_or(0)
+        .max(0);
+    // Shrink-wrapped pill/badge: equal top/bottom padding around one line.
+    // First-glyph y/h ratio stays ~0.2–0.3 (ascent offset), so the old
+    // 0.4–0.6 optical-center band misses VIP labels and time pills.
+    if lines.len() == 1 {
+        let bottom = h.saturating_sub(first_y).saturating_sub(font_size.0.max(0));
+        let slack = first_y.saturating_add(bottom);
+        let delta = first_y - bottom;
+        if slack >= 2_000 && delta.abs() * 5 <= slack && slack * 10 > h {
+            return true;
+        }
+    }
+    if rect.height.0 <= font_size.0.saturating_mul(2) {
+        return false;
+    }
     let ratio = first_y as f64 / h as f64;
     (0.4..=0.6).contains(&ratio)
 }
