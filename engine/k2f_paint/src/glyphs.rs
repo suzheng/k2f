@@ -1,6 +1,6 @@
 use k2f_core::{GeometryNode, GlyphPosition, Rect, TextGlyphRun};
 use std::collections::HashMap;
-use ttf_parser::Face;
+use ttf_parser::{name_id, Face, Language};
 
 use crate::error::PaintError;
 
@@ -19,14 +19,55 @@ pub struct PlacedGlyph {
     pub cluster: u32,
 }
 
+/// TTF subfamily (`Bold`, `Italic`, `Regular`, …). Same table IDML reads.
+pub fn face_subfamily(face: &Face<'_>) -> String {
+    name_english(face, name_id::TYPOGRAPHIC_SUBFAMILY)
+        .or_else(|| name_english(face, name_id::SUBFAMILY))
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| "Regular".into())
+}
+
+pub fn face_style_is_italic(style: &str) -> bool {
+    let l = style.to_ascii_lowercase();
+    l.contains("italic") || l.contains("oblique")
+}
+
+pub fn face_style_is_bold(style: &str) -> bool {
+    style.to_ascii_lowercase().contains("bold")
+}
+
+fn name_english(face: &Face<'_>, id: u16) -> Option<String> {
+    let mut fallback = None;
+    for name in face.names() {
+        if name.name_id != id || !name.is_unicode() {
+            continue;
+        }
+        let Some(s) = name.to_string() else {
+            continue;
+        };
+        if name.language() == Language::English_UnitedStates {
+            return Some(s);
+        }
+        if fallback.is_none() {
+            fallback = Some(s);
+        }
+    }
+    fallback
+}
+
 impl PlacedGlyph {
-    /// Stroke width in pt for Regular-only fonts (1/30 em). Zero when not bold.
-    pub fn synthetic_bold_stroke_pt(&self) -> f64 {
-        if self.bold {
+    /// Stroke width in pt when paint asked for bold on a non-bold face (1/30 em).
+    pub fn synthetic_bold_stroke_pt(&self, face: &Face<'_>) -> f64 {
+        if self.bold && !face_style_is_bold(&face_subfamily(face)) {
             self.font_size_pt / 30.0
         } else {
             0.0
         }
+    }
+
+    /// Shear when paint asked for italic on a non-italic face.
+    pub fn synthetic_italic(&self, face: &Face<'_>) -> bool {
+        self.italic && !face_style_is_italic(&face_subfamily(face))
     }
 }
 
@@ -132,4 +173,95 @@ fn place_glyph(
         italic,
         cluster: glyph.cluster,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn subfamily_helpers_match_idml() {
+        assert!(face_style_is_bold("Bold"));
+        assert!(face_style_is_bold("Bold Italic"));
+        assert!(!face_style_is_bold("Regular"));
+        assert!(!face_style_is_bold("Medium"));
+        assert!(face_style_is_italic("Italic"));
+        assert!(face_style_is_italic("Oblique"));
+        assert!(!face_style_is_italic("Regular"));
+    }
+
+    #[test]
+    fn roboto_regular_still_synthesizes_bold() {
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../assets/fonts/Roboto-Regular.ttf");
+        let bytes = std::fs::read(&path).expect("Roboto-Regular.ttf");
+        let face = Face::parse(&bytes, 0).unwrap();
+        assert_eq!(face_subfamily(&face), "Regular");
+        let g = PlacedGlyph {
+            origin_x_pt: 0.0,
+            origin_y_pt: 0.0,
+            font_size_pt: 12.0,
+            units_per_em: 1000.0,
+            glyph_id: 1,
+            rgba: [0, 0, 0, 255],
+            font_family: "Roboto-Regular".into(),
+            bold: true,
+            italic: true,
+            cluster: 0,
+        };
+        assert!((g.synthetic_bold_stroke_pt(&face) - 0.4).abs() < 1e-9);
+        assert!(g.synthetic_italic(&face));
+        let regular = PlacedGlyph {
+            bold: false,
+            italic: false,
+            ..g.clone()
+        };
+        assert_eq!(regular.synthetic_bold_stroke_pt(&face), 0.0);
+        assert!(!regular.synthetic_italic(&face));
+    }
+
+    #[test]
+    fn bold_name_table_skips_synthetic_stroke() {
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../assets/fonts/Roboto-Regular.ttf");
+        let mut bytes = std::fs::read(&path).expect("Roboto-Regular.ttf");
+        let regular: &[u8] = &[
+            0x00, 0x52, 0x00, 0x65, 0x00, 0x67, 0x00, 0x75, 0x00, 0x6c, 0x00, 0x61, 0x00, 0x72,
+        ];
+        let boldxxx: &[u8] = &[
+            0x00, 0x42, 0x00, 0x6f, 0x00, 0x6c, 0x00, 0x64, 0x00, 0x78, 0x00, 0x78, 0x00, 0x78,
+        ];
+        let mut hits = 0usize;
+        let mut i = 0;
+        while i + regular.len() <= bytes.len() {
+            if bytes[i..i + regular.len()] == *regular {
+                bytes[i..i + boldxxx.len()].copy_from_slice(boldxxx);
+                hits += 1;
+                i += regular.len();
+            } else {
+                i += 1;
+            }
+        }
+        assert!(hits > 0, "Roboto name table should contain UTF-16 Regular");
+        let face = Face::parse(&bytes, 0).unwrap();
+        assert!(
+            face_style_is_bold(&face_subfamily(&face)),
+            "patched subfamily {}",
+            face_subfamily(&face)
+        );
+        let g = PlacedGlyph {
+            origin_x_pt: 0.0,
+            origin_y_pt: 0.0,
+            font_size_pt: 12.0,
+            units_per_em: 1000.0,
+            glyph_id: 1,
+            rgba: [0, 0, 0, 255],
+            font_family: "Roboto-Bold".into(),
+            bold: true,
+            italic: false,
+            cluster: 0,
+        };
+        assert_eq!(g.synthetic_bold_stroke_pt(&face), 0.0);
+        assert!(!g.synthetic_italic(&face));
+    }
 }

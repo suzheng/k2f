@@ -1,3 +1,4 @@
+use crate::list_style::ListStyle;
 use crate::resolved_style::resolve_list_style;
 use crate::LayoutContext;
 use k2f_core::{Pt, SemanticNode};
@@ -31,15 +32,24 @@ pub fn list_item_measure_spec(
         )
         })?;
 
-    let marker_box_width = style.marker_box_width_pt.ok_or_else(|| {
-        "list_style.marker_box_width_pt is required for list item measurement".to_string()
-    })?;
-    let marker_gap = style.marker_gap_pt.ok_or_else(|| {
-        "list_style.marker_gap_pt is required for list item measurement".to_string()
-    })?;
-    let depth_indent = style.depth_indent_pt.ok_or_else(|| {
-        "list_style.depth_indent_pt is required for list item measurement".to_string()
-    })?;
+    let marker_box_width = style
+        .marker_box_width_pt
+        .or_else(|| ListStyle::list_item_defaults().marker_box_width_pt)
+        .ok_or_else(|| {
+            "list_style.marker_box_width_pt is required for list item measurement".to_string()
+        })?;
+    let marker_gap = style
+        .marker_gap_pt
+        .or_else(|| ListStyle::list_item_defaults().marker_gap_pt)
+        .ok_or_else(|| {
+            "list_style.marker_gap_pt is required for list item measurement".to_string()
+        })?;
+    let depth_indent = style
+        .depth_indent_pt
+        .or_else(|| ListStyle::list_item_defaults().depth_indent_pt)
+        .ok_or_else(|| {
+            "list_style.depth_indent_pt is required for list item measurement".to_string()
+        })?;
 
     let depth = node.depth.unwrap_or(0) as i128;
     let indent = depth_indent * depth;

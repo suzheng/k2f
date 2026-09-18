@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>k2f form overlay</title></head>
+<body>
+<pre id="out">loading</pre>
+<script type="module">
+  import "/sdk/js/viewer.js";
+
+  const out = document.getElementById("out");
+  const log = [];
+  function step(s) {
+    log.push(s);
+    out.textContent = log.join(" > ");
+  }
+
+  function waitOpen(el, label, ms = 40000) {
+    return new Promise((resolve, reject) => {
+      const t = setTimeout(
+        () => reject(new Error(`${label} timed out; ${log.join(" > ")}`)),
+        ms,
+      );
+      el.addEventListener(
+        "k2f-open",
+        (e) => {
+          clearTimeout(t);
+          resolve(e.detail);
+        },
+        { once: true },
+      );
+    });
+  }
+
+  function fieldValue(viewer, id) {
+    return JSON.parse(viewer.form_fields()).find((f) => f.id === id)?.value ?? null;
+  }
+
+  async function report(result) {
+    out.textContent = JSON.stringify(result);
+    await fetch("/__result", { method: "POST", body: JSON.stringify(result) });
+  }
+
+  try {
+    step("create");
+    const el = document.createElement("k2f-viewer");
+    el.setAttribute("src", "/examples/contract.K2F");
+    el.setAttribute("editable", "");
+    const opened = waitOpen(el, "contract-open");
+    document.body.append(el);
+    let detail = await opened;
+    step(`opened pages=${detail.pageCount}`);
+
+    const browseInputs = el.shadowRoot.querySelectorAll(".k2f-form-layer input, .k2f-form-layer textarea");
+    const fields = JSON.parse(detail.handle.viewer.form_fields());
+    step(`fields=${fields.length}`);
+
+    el.shadowRoot.querySelector(".k2f-edit").click();
+    const fillInputs = el.shadowRoot.querySelectorAll(".k2f-form-control");
+    step(`fill=${fillInputs.length}`);
+
+    const name = el.shadowRoot.querySelector('[data-field-id="contract.signatures.client_name"]');
+    if (!name) throw new Error(`missing name control; ${log.join(" > ")}`);
+    name.value = "张三";
+    name.dispatchEvent(new Event("input", { bubbles: true }));
+    const nodeBefore = detail.handle.editor.getNode("contract.signatures.client_name");
+    const valueBefore = nodeBefore.content.value.value;
+    step(`typed before=${JSON.stringify(valueBefore)}`);
+
+    const saved = waitOpen(el, "save-relock", 40000);
+    const saveBtn = el.shadowRoot.querySelector(".k2f-save");
+    step(`save hidden=${saveBtn.hidden} disabled=${saveBtn.disabled}`);
+    saveBtn.click();
+    detail = await saved;
+    const valueAfter = fieldValue(detail.handle.viewer, "contract.signatures.client_name");
+    const afterInputs = el.shadowRoot.querySelectorAll(".k2f-form-layer input, .k2f-form-layer textarea");
+    step(`saved after=${JSON.stringify(valueAfter)}`);
+
+    const ro = document.createElement("k2f-viewer");
+    ro.setAttribute("src", "/examples/contract.K2F");
+    const roOpened = waitOpen(ro, "readonly-open");
+    document.body.append(ro);
+    await roOpened;
+    const readonlyInputs = ro.shadowRoot.querySelectorAll(".k2f-form-layer input, .k2f-form-layer textarea");
+
+    await report({
+      browseInputs: browseInputs.length,
+      fieldCount: fields.length,
+      fillInputs: fillInputs.length,
+      valueBefore,
+      valueAfter,
+      afterInputs: afterInputs.length,
+      readonlyInputs: readonlyInputs.length,
+      log,
+    });
+  } catch (err) {
+    const msg = String(err && err.stack ? err.stack : err);
+    out.textContent = msg;
+    await fetch("/__result", { method: "POST", body: JSON.stringify({ error: msg, log }) });
+  }
+</script>
+</body>
+</html>

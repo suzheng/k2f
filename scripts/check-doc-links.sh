@@ -17,6 +17,7 @@ files = sorted(
         root / "docs/README.md",
         * (root / "docs/spec").rglob("*.md"),
         * (root / "docs/guide").rglob("*.md"),
+        * (root / "docs/authoring").rglob("*.md"),
         * (root / "docs/architecture").rglob("*.md"),
         * (root / "docs/instructions").rglob("*.md"),
         * (root / "skills").rglob("*.md"),

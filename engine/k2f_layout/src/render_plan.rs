@@ -1,4 +1,4 @@
-use crate::resolved_style::{padding_for_role_variant, resolve_box_decoration};
+use crate::resolved_style::{padding_for_role_variant, resolve_box_decoration, resolve_image_fit};
 use crate::theme::resolve_theme_decoration;
 use crate::Theme;
 use k2f_core::{
@@ -10,6 +10,7 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 enum NodeContentInfo {
     Text,
+    FormField,
     Math,
     Image { src: String },
     TableReference { source: String, view_mode: String },
@@ -108,6 +109,7 @@ fn index_semantic_tree(node: &k2f_core::SemanticNode, out: &mut HashMap<String, 
         NodeContent::Text(_) => NodeContentInfo::Text,
         NodeContent::CodeBlock(_) => NodeContentInfo::Text,
         NodeContent::Math(_) => NodeContentInfo::Math,
+        NodeContent::FormField(_) => NodeContentInfo::FormField,
         NodeContent::Image { src, .. } => NodeContentInfo::Image { src: src.clone() },
         NodeContent::TableReference {
             source, view_mode, ..
@@ -170,10 +172,12 @@ fn append_ops_for_geometry(
         height: geo.height,
     };
 
+    let mut image_corner_radius_pt = None;
     if let Some(mut named) = resolve_box_decoration(&info.role, info.variant.as_deref(), theme) {
         named.padding_pt = None;
         if named.has_paint_refs() {
             let mut decoration = resolve_theme_decoration(&named, theme)?;
+            image_corner_radius_pt = decoration.corner_radius_pt;
             if let Some(blur) = inline_blur(&decoration) {
                 ops.push(PaintOp::BackdropBlur {
                     node_id: geo.id.clone(),
@@ -218,6 +222,15 @@ fn append_ops_for_geometry(
                 runs: geo.text_runs.clone(),
             });
         }
+        NodeContentInfo::FormField => {
+            if !geo.text_runs.is_empty() {
+                ops.push(PaintOp::DrawText {
+                    node_id: geo.id.clone(),
+                    rect,
+                    runs: geo.text_runs.clone(),
+                });
+            }
+        }
         NodeContentInfo::Math => {
             emit_math_rules(geo, info, theme, ops);
             ops.push(PaintOp::DrawText {
@@ -238,6 +251,8 @@ fn append_ops_for_geometry(
                 node_id: geo.id.clone(),
                 rect: image_rect,
                 src: src.clone(),
+                fit: resolve_image_fit(&info.role, info.variant.as_deref(), theme),
+                corner_radius_pt: image_corner_radius_pt,
             });
         }
         NodeContentInfo::TableReference { source, view_mode } => {

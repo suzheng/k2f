@@ -52,7 +52,7 @@ fn compile_rejects_svg_text_element() {
         &assets,
     )
     .unwrap_err();
-    assert!(err.contains("IMAGE_SIZE"), "{err}");
+    assert!(err.contains("SVG_TEXT"), "{err}");
     assert!(err.contains("<text>"), "{err}");
     assert!(err.contains("<path>"), "{err}");
 }
@@ -88,6 +88,6 @@ fn compile_rejects_svg_textpath() {
         &assets,
     )
     .unwrap_err();
-    assert!(err.contains("IMAGE_SIZE"), "{err}");
+    assert!(err.contains("SVG_TEXT"), "{err}");
     assert!(err.contains("<path>"), "{err}");
 }

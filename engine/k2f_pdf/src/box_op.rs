@@ -126,7 +126,7 @@ fn set_stroke(content: &mut pdf_writer::Content, r: u8, g: u8, b: u8, _a: u8) {
     content.set_stroke_rgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0);
 }
 
-fn rounded_rect(content: &mut pdf_writer::Content, page_h: f64, rect: &Rect, radius_pt: f64) {
+pub(crate) fn rounded_rect(content: &mut pdf_writer::Content, page_h: f64, rect: &Rect, radius_pt: f64) {
     let x = rect.x.as_f64_pt() as f32;
     let w = rect.width.as_f64_pt() as f32;
     let h = rect.height.as_f64_pt() as f32;

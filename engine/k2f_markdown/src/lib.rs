@@ -16,3 +16,6 @@ pub use escape::escape_md;
 pub use range::{byte_to_char, char_to_byte};
 pub use select::{selection_to_markdown, NodeCharRange};
 pub use slice::slice_text_node;
+
+#[cfg(test)]
+mod emit_form_field_tests;

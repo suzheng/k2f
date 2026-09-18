@@ -2,8 +2,9 @@ use crate::Theme;
 use crate::{measure_node, Size, SizeConstraint};
 use crate::{LayoutContext, LayoutEngine};
 use k2f_core::{
-    CanvasMode, CellAlign, FixedSizeHint, GridTrack, LayoutHint, Manifest, NodeContent, PageConfig,
-    Pt, RunningBlockNode, RunningBlockPosition, SemanticNode,
+    CanvasMode, CellAlign, FixedSizeHint, GridTrack, JustifyContent, LayoutHint, Manifest,
+    NodeContent, PageConfig, Pt, RunningBlockNode, RunningBlockPosition, SemanticNode,
+    StackDirection,
 };
 
 fn make_text(id: &str, content: &str) -> SemanticNode {
@@ -731,6 +732,7 @@ fn root_grid_layout_is_an_error() {
     let err = LayoutEngine::layout(&paged_manifest(root), &ctx).unwrap_err();
     assert!(err.contains("root layout type grid"), "{err}");
     assert!(err.contains("root.grid"), "{err}");
+    assert!(err.contains("content/root.json"), "{err}");
 }
 
 #[test]
@@ -744,9 +746,29 @@ fn root_overlay_and_columns_layout_are_errors() {
     });
     let err = LayoutEngine::layout(&paged_manifest(overlay), &ctx).unwrap_err();
     assert!(err.contains("root layout type overlay"), "{err}");
+    assert!(err.contains("content/root.json"), "{err}");
 
     let mut columns = make_content(2);
     columns.layout = Some(LayoutHint::Columns { count: 2, gap: 0 });
     let err = LayoutEngine::layout(&paged_manifest(columns), &ctx).unwrap_err();
     assert!(err.contains("root layout type columns"), "{err}");
+    assert!(err.contains("content/root.json"), "{err}");
+}
+
+#[test]
+fn root_horizontal_stack_layout_is_an_error() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let mut root = make_content(2);
+    root.layout = Some(LayoutHint::Stack {
+        direction: StackDirection::Horizontal,
+        gap: 0,
+        align_items: k2f_core::Align::default(),
+        justify_content: JustifyContent::default(),
+        size: FixedSizeHint::default(),
+    });
+    let err = LayoutEngine::layout(&paged_manifest(root), &ctx).unwrap_err();
+    assert!(err.contains("root layout type stack direction horizontal"), "{err}");
+    assert!(err.contains("content/root.json"), "{err}");
 }

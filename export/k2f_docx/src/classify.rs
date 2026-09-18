@@ -151,11 +151,26 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
                         }
                     }
                 }
-                PaintOp::DrawImage { node_id, rect, src } => {
+                PaintOp::DrawImage {
+                    node_id,
+                    rect,
+                    src,
+                    fit,
+                    corner_radius_pt,
+                } => {
                     if crate::geo::image_occluded_by_later_opaque_box(rect, &ops[i + 1..]) {
                         continue;
                     }
-                    let pic = picture_from_draw(node_id, rect, src, assets, media_n, rel)?;
+                    let pic = picture_from_draw(
+                        node_id,
+                        rect,
+                        src,
+                        assets,
+                        media_n,
+                        rel,
+                        *fit,
+                        *corner_radius_pt,
+                    )?;
                     media_n = media_n.saturating_add(1);
                     // Writer paints pic:pic above every wps:wsp. Images that
                     // later lock paint sits on must use the raster shape path.
@@ -434,46 +449,47 @@ fn absorb_self_fill_shapes(elements: &mut Vec<PageElement>) {
 /// In-front fills would cover later labels, so fold the shell into one
 /// wrap=square text box.
 ///
-/// Do **not** fold when the shell contains a picture/raster: merge keeps the
-/// caption's higher `relativeHeight`, which raises the opaque card fill above
-/// the image (blank FIG cards in LibreOffice Writer). Leave card + media +
-/// caption as siblings so lock z-order stays intact. Skip side-by-side labels,
-/// glass, gradients, and shells that still hold child cards.
+/// Writer paints a sibling non-txBox fill/raster above txBox labels, so hero
+/// titles vanish unless they share the shell. `pic:pic` lock images stay
+/// above that folded wps (side-by-side banner photos). Do **not** fold when
+/// the shell contains a wps raster: merge keeps the caption's higher
+/// `relativeHeight`, which raises the opaque card fill above the image
+/// (blank FIG cards). Skip side-by-side labels, glass, and shells that still
+/// hold child cards.
 fn fold_shell_label_stacks(elements: &mut Vec<PageElement>, page_w_emu: i64, page_h_emu: i64) {
     const TOL: i64 = 12_700;
     let mut i = 0;
     while i < elements.len() {
-        let PageElement::Shape(shell) = &elements[i] else {
+        let Some(outer) = foldable_shell_aabb(&elements[i], page_w_emu, page_h_emu, TOL) else {
             i += 1;
             continue;
         };
-        if shell.gradient.is_some()
-            || shell.fill_hex.is_none()
-            || !covering_solid_alpha(shell.fill_alpha)
-            || crate::geo::is_thin_fill_emu(shell.cx_emu, shell.cy_emu)
-            || (shell.cx_emu + TOL >= page_w_emu && shell.cy_emu + TOL >= page_h_emu)
-        {
-            i += 1;
-            continue;
-        }
-        let shell_id = shell.node_id.clone();
-        let outer = (shell.x_emu, shell.y_emu, shell.cx_emu, shell.cy_emu);
+        let shell_id = match &elements[i] {
+            PageElement::Shape(s) => s.node_id.clone(),
+            PageElement::Raster(p) => p.node_id.clone(),
+            _ => {
+                i += 1;
+                continue;
+            }
+        };
         let mut labels = Vec::new();
+        let mut side_pics = Vec::new();
         let mut blocked = false;
         for (j, el) in elements.iter().enumerate().skip(i + 1) {
             let Some(bj) = element_aabb(el) else {
                 continue;
             };
-            if !aabbs_intersect(outer, bj) {
+            if !aabb_contains(outer, bj, TOL) {
                 continue;
             }
             match el {
-                PageElement::TextBox(_) if aabb_contains(outer, bj, TOL) => labels.push(j),
+                PageElement::TextBox(_) => labels.push(j),
                 PageElement::Shape(s) if is_shell_companion(&shell_id, &s.node_id) => {}
-                // Contained media blocks fold — see fn doc above.
-                PageElement::Picture(_) | PageElement::Raster(_)
-                    if aabb_contains(outer, bj, TOL) =>
-                {
+                PageElement::Shape(s) if nested_decor_allows_fold(s) => {}
+                // pic:pic beside labels (hero photo) can stay a sibling.
+                // pic:pic stacked with a caption is a FIG card — skip fold.
+                PageElement::Picture(_) => side_pics.push(j),
+                PageElement::Raster(_) => {
                     blocked = true;
                     break;
                 }
@@ -483,11 +499,26 @@ fn fold_shell_label_stacks(elements: &mut Vec<PageElement>, page_w_emu: i64, pag
                 }
             }
         }
+        let leftover_picture = !side_pics.is_empty()
+            && side_pics.iter().all(|&pj| {
+                labels.iter().all(|&lj| {
+                    let (Some(pb), Some(lb)) = (element_aabb(&elements[pj]), element_aabb(&elements[lj]))
+                    else {
+                        return false;
+                    };
+                    !x_overlap(pb, lb)
+                })
+            });
+        if !side_pics.is_empty() && !leftover_picture {
+            blocked = true;
+        }
         if blocked || labels.is_empty() || !labels_are_vertical_stack(elements, &labels) {
             i += 1;
             continue;
         }
-        let Some(folded) = merge_labels_into_shell(&elements[i], elements, &labels) else {
+        let Some(folded) =
+            merge_labels_into_shell(&elements[i], elements, &labels, leftover_picture)
+        else {
             i += 1;
             continue;
         };
@@ -517,6 +548,49 @@ fn fold_shell_label_stacks(elements: &mut Vec<PageElement>, page_w_emu: i64, pag
 fn is_shell_companion(shell_id: &str, other: &str) -> bool {
     other == format!("{shell_id}::stroke")
         || other.starts_with(&format!("{shell_id}::edge_"))
+}
+
+fn foldable_shell_aabb(
+    el: &PageElement,
+    page_w_emu: i64,
+    page_h_emu: i64,
+    tol: i64,
+) -> Option<(i64, i64, i64, i64)> {
+    let full = |cx: i64, cy: i64| cx + tol >= page_w_emu && cy + tol >= page_h_emu;
+    match el {
+        PageElement::Shape(s) => {
+            if crate::geo::is_thin_fill_emu(s.cx_emu, s.cy_emu) || full(s.cx_emu, s.cy_emu) {
+                return None;
+            }
+            if s.gradient.is_some() {
+                return Some((s.x_emu, s.y_emu, s.cx_emu, s.cy_emu));
+            }
+            if s.fill_hex.is_some() && covering_solid_alpha(s.fill_alpha) {
+                return Some((s.x_emu, s.y_emu, s.cx_emu, s.cy_emu));
+            }
+            None
+        }
+        PageElement::Raster(p) => {
+            if crate::geo::is_thin_fill_emu(p.cx_emu, p.cy_emu) || full(p.cx_emu, p.cy_emu) {
+                return None;
+            }
+            Some((p.x_emu, p.y_emu, p.cx_emu, p.cy_emu))
+        }
+        _ => None,
+    }
+}
+
+/// Hairline rules and stroke-only photo frames sit in a banner without being
+/// child cards. They stay as siblings; they must not block the label fold.
+fn nested_decor_allows_fold(s: &ShapeBox) -> bool {
+    crate::geo::is_thin_fill_emu(s.cx_emu, s.cy_emu)
+        || (s.fill_hex.is_none() && s.gradient.is_none())
+}
+
+fn x_overlap(a: (i64, i64, i64, i64), b: (i64, i64, i64, i64)) -> bool {
+    let (ax, _ay, aw, _ah) = a;
+    let (bx, _by, bw, _bh) = b;
+    ax.max(bx) < (ax + aw).min(bx + bw)
 }
 
 fn aabb_contains(
@@ -556,10 +630,38 @@ fn merge_labels_into_shell(
     shell_el: &PageElement,
     elements: &[PageElement],
     label_idxs: &[usize],
+    leftover_picture: bool,
 ) -> Option<crate::ir::TextBox> {
-    let PageElement::Shape(shell) = shell_el else {
-        return None;
-    };
+    let (shell_id, x, y, cx, cy, fill_hex, fill_alpha, gradient, fill_blip, corner_emu, line_shell) =
+        match shell_el {
+            PageElement::Shape(shell) => (
+                shell.node_id.clone(),
+                shell.x_emu,
+                shell.y_emu,
+                shell.cx_emu,
+                shell.cy_emu,
+                shell.fill_hex.clone(),
+                shell.fill_alpha,
+                shell.gradient.clone(),
+                None,
+                shell.corner_emu,
+                Some(shell),
+            ),
+            PageElement::Raster(pic) => (
+                pic.node_id.clone(),
+                pic.x_emu,
+                pic.y_emu,
+                pic.cx_emu,
+                pic.cy_emu,
+                None,
+                255,
+                None,
+                Some(pic.clone()),
+                0,
+                None,
+            ),
+            _ => return None,
+        };
     let mut tbs: Vec<&crate::ir::TextBox> = label_idxs
         .iter()
         .filter_map(|&j| match &elements[j] {
@@ -570,54 +672,58 @@ fn merge_labels_into_shell(
     tbs.sort_by_key(|t| t.y_emu);
     let first = tbs.first()?;
     let mut folded = (*first).clone();
-    folded.node_id = shell.node_id.clone();
-    folded.x_emu = shell.x_emu;
-    folded.y_emu = shell.y_emu;
-    folded.cx_emu = shell.cx_emu;
-    folded.cy_emu = shell.cy_emu;
+    folded.node_id = shell_id.clone();
+    folded.x_emu = x;
+    folded.y_emu = y;
+    folded.cx_emu = cx;
+    folded.cy_emu = cy;
     // Use the tightest insets that still fit every label. Sizing only to the
     // first (often a narrow kicker) left a wrap column too narrow for later
     // display figures, so host-bold "SOUNDSTAGE" / "23:00 CST" mid-wrapped.
     folded.l_ins_emu = tbs
         .iter()
-        .map(|tb| (tb.x_emu - shell.x_emu + tb.l_ins_emu).max(0))
+        .map(|tb| (tb.x_emu - x + tb.l_ins_emu).max(0))
         .min()
         .unwrap_or(0);
-    folded.t_ins_emu = (first.y_emu - shell.y_emu + first.t_ins_emu).max(0);
+    folded.t_ins_emu = (first.y_emu - y + first.t_ins_emu).max(0);
     // Widen to the shell: a kicker-narrow column mid-wraps host-bold tracked
     // labels. Keep the lock left pad and mirror it on the right so the wrap
     // column is the card interior (still inset, not edge-flush).
+    // Side-by-side photos: keep the labels' right remainder so wrap does not
+    // flow under the pic:pic column.
     let widest_r = tbs
         .iter()
-        .map(|tb| {
-            (shell.x_emu + shell.cx_emu - tb.x_emu - tb.cx_emu + tb.r_ins_emu).max(0)
-        })
+        .map(|tb| (x + cx - tb.x_emu - tb.cx_emu + tb.r_ins_emu).max(0))
         .min()
         .unwrap_or(0);
-    folded.r_ins_emu = folded.l_ins_emu.min(widest_r);
+    folded.r_ins_emu = if leftover_picture {
+        widest_r
+    } else {
+        folded.l_ins_emu.min(widest_r)
+    };
     folded.b_ins_emu = tbs
         .last()
-        .map(|last| {
-            (shell.y_emu + shell.cy_emu - last.y_emu - last.cy_emu + last.b_ins_emu).max(0)
-        })
+        .map(|last| (y + cy - last.y_emu - last.cy_emu + last.b_ins_emu).max(0))
         .unwrap_or(0);
-    folded.fill_hex = shell.fill_hex.clone();
-    folded.fill_alpha = shell.fill_alpha;
-    folded.corner_emu = shell.corner_emu;
+    folded.fill_hex = fill_hex;
+    folded.fill_alpha = fill_alpha;
+    folded.gradient = gradient;
+    folded.fill_blip = fill_blip;
+    folded.corner_emu = corner_emu;
     // Line may live on the shell or on `{id}::stroke` after fill/stroke split.
-    let line_src = elements
-        .iter()
-        .find_map(|el| match el {
-            PageElement::Shape(s) if s.node_id == format!("{}::stroke", shell.node_id) => Some(s),
-            _ => None,
-        })
+    let stroke = elements.iter().find_map(|el| match el {
+        PageElement::Shape(s) if s.node_id == format!("{shell_id}::stroke") => Some(s),
+        _ => None,
+    });
+    let line_src = stroke
         .filter(|s| s.line_hex.is_some())
-        .unwrap_or(shell);
-    if line_src.line_hex.is_some() {
-        folded.line_hex = line_src.line_hex.clone();
-        folded.line_alpha = line_src.line_alpha;
-        folded.line_w_emu = line_src.line_w_emu;
-        folded.line_dash = line_src.line_dash;
+        .or(line_shell)
+        .filter(|s| s.line_hex.is_some());
+    if let Some(src) = line_src {
+        folded.line_hex = src.line_hex.clone();
+        folded.line_alpha = src.line_alpha;
+        folded.line_w_emu = src.line_w_emu;
+        folded.line_dash = src.line_dash;
     }
     // Square wrap pins the filled shell extent (wrap=none let Writer clip
     // glyphs inside roundRect pills). One-liner mid-wrap is avoided by the
@@ -1030,6 +1136,11 @@ mod tests {
             bytes: vec![],
             relative_height: rel,
             pin_empty_txbox: false,
+            src_l: 0,
+            src_t: 0,
+            src_r: 0,
+            src_b: 0,
+            corner_emu: 0,
         }
     }
 
@@ -1060,6 +1171,8 @@ mod tests {
             relative_height: rel,
             fill_hex: None,
             fill_alpha: 255,
+            fill_blip: None,
+            gradient: None,
             wrap: false,
             corner_emu: 0,
             line_hex: None,
@@ -1660,6 +1773,239 @@ mod tests {
         assert!(matches!(elements[1], PageElement::Raster(_)));
         assert!(matches!(elements[2], PageElement::TextBox(_)));
         assert!(matches!(elements[3], PageElement::TextBox(_)));
+    }
+
+    #[test]
+    fn fold_raster_banner_absorbs_nested_labels() {
+        let mut hero = glow(10);
+        hero.node_id = "doc.hero".into();
+        hero.x_emu = 1_000_000;
+        hero.y_emu = 1_000_000;
+        hero.cx_emu = 8_000_000;
+        hero.cy_emu = 1_200_000;
+        hero.media_name = "raster1.png".into();
+        let mut title = title_box(20);
+        title.node_id = "doc.hero.title".into();
+        title.x_emu = 2_500_000;
+        title.y_emu = 1_200_000;
+        title.cx_emu = 5_000_000;
+        title.cy_emu = 400_000;
+        title.runs = vec![TextRun {
+            text: "WEEKLY SCHEDULE".into(),
+            font_name: "Roboto".into(),
+            sz_half_points: 52,
+            bold: true,
+            italic: false,
+            underline: false,
+            strike: false,
+            color_hex: "64748B".into(),
+            hyperlink: None,
+            script: crate::ir::ScriptPos::Baseline,
+            tracking_twips: 0,
+            field: None,
+        }];
+        let mut sub = title_box(30);
+        sub.node_id = "doc.hero.subtitle".into();
+        sub.x_emu = 2_500_000;
+        sub.y_emu = 1_650_000;
+        sub.cx_emu = 5_000_000;
+        sub.cy_emu = 300_000;
+        sub.runs = vec![TextRun {
+            text: "Studio".into(),
+            font_name: "Georgia".into(),
+            sz_half_points: 26,
+            bold: false,
+            italic: true,
+            underline: false,
+            strike: false,
+            color_hex: "8E9AA8".into(),
+            hyperlink: None,
+            script: crate::ir::ScriptPos::Baseline,
+            tracking_twips: 0,
+            field: None,
+        }];
+        let mut elements = vec![
+            PageElement::Raster(hero),
+            PageElement::TextBox(title),
+            PageElement::TextBox(sub),
+        ];
+        fold_shell_label_stacks(&mut elements, 12_240_000, 15_840_000);
+        assert_eq!(elements.len(), 1, "blur raster + labels must be one text box");
+        let got = elements[0].textbox().expect("folded");
+        assert_eq!(got.node_id, "doc.hero");
+        assert_eq!(
+            got.fill_blip.as_ref().map(|p| p.media_name.as_str()),
+            Some("raster1.png")
+        );
+        let blob: String = got.runs.iter().map(|r| r.text.as_str()).collect();
+        assert!(blob.contains("WEEKLY"), "{blob}");
+        assert!(blob.contains("SCHEDULE"), "{blob}");
+        assert!(blob.contains("Studio"), "{blob}");
+    }
+
+    #[test]
+    fn fold_banner_keeps_side_picture_and_text_column() {
+        let mut banner = paper_shape(10);
+        banner.node_id = "doc.header".into();
+        banner.behind_doc = false;
+        banner.x_emu = 1_000_000;
+        banner.y_emu = 1_000_000;
+        banner.cx_emu = 8_000_000;
+        banner.cy_emu = 2_000_000;
+        banner.fill_hex = Some("281B15".into());
+        let mut title = title_box(20);
+        title.node_id = "doc.header.title".into();
+        title.x_emu = 1_200_000;
+        title.y_emu = 1_200_000;
+        title.cx_emu = 4_000_000;
+        title.cy_emu = 400_000;
+        title.runs = vec![TextRun {
+            text: "MINDFUL".into(),
+            font_name: "Roboto".into(),
+            sz_half_points: 36,
+            bold: true,
+            italic: false,
+            underline: false,
+            strike: false,
+            color_hex: "FAF6F0".into(),
+            hyperlink: None,
+            script: crate::ir::ScriptPos::Baseline,
+            tracking_twips: 0,
+            field: None,
+        }];
+        let mut rule = paper_shape(25);
+        rule.node_id = "doc.header.rule".into();
+        rule.behind_doc = false;
+        rule.x_emu = 1_200_000;
+        rule.y_emu = 1_650_000;
+        rule.cx_emu = 4_000_000;
+        rule.cy_emu = 12_700;
+        rule.fill_hex = Some("D7C2B2".into());
+        let mut pic = glow(40);
+        pic.node_id = "doc.header.photo".into();
+        pic.x_emu = 6_000_000;
+        pic.y_emu = 1_200_000;
+        pic.cx_emu = 2_800_000;
+        pic.cy_emu = 1_500_000;
+        let mut elements = vec![
+            PageElement::Shape(banner),
+            PageElement::TextBox(title),
+            PageElement::Shape(rule),
+            PageElement::Picture(pic),
+        ];
+        fold_shell_label_stacks(&mut elements, 12_240_000, 15_840_000);
+        assert_eq!(elements.len(), 3, "fold keeps rule + pic:pic, got {elements:?}");
+        let got = elements
+            .iter()
+            .find_map(PageElement::textbox)
+            .expect("folded banner");
+        assert_eq!(got.fill_hex.as_deref(), Some("281B15"));
+        assert!(
+            got.r_ins_emu > 3_000_000,
+            "wrap column must stay left of the photo, r_ins={}",
+            got.r_ins_emu
+        );
+        assert!(elements.iter().any(|el| matches!(el, PageElement::Picture(_))));
+        assert!(elements.iter().any(|el| matches!(el, PageElement::Shape(s) if s.node_id.ends_with(".rule"))));
+    }
+
+    #[test]
+    fn fold_skipped_when_caption_stacked_on_picture() {
+        let mut card = paper_shape(10);
+        card.node_id = "tile".into();
+        card.behind_doc = false;
+        card.x_emu = 1_000_000;
+        card.y_emu = 1_000_000;
+        card.cx_emu = 3_000_000;
+        card.cy_emu = 3_000_000;
+        card.fill_hex = Some("FFFDF9".into());
+        let mut pic = glow(20);
+        pic.node_id = "tile.img".into();
+        pic.x_emu = 1_100_000;
+        pic.y_emu = 1_100_000;
+        pic.cx_emu = 2_800_000;
+        pic.cy_emu = 2_000_000;
+        let mut cap = title_box(30);
+        cap.node_id = "tile.cap".into();
+        cap.x_emu = 1_100_000;
+        cap.y_emu = 3_200_000;
+        cap.cx_emu = 2_800_000;
+        cap.cy_emu = 400_000;
+        cap.runs = vec![TextRun {
+            text: "01 / MORNING".into(),
+            font_name: "Roboto".into(),
+            sz_half_points: 16,
+            bold: false,
+            italic: false,
+            underline: false,
+            strike: false,
+            color_hex: "725F54".into(),
+            hyperlink: None,
+            script: crate::ir::ScriptPos::Baseline,
+            tracking_twips: 0,
+            field: None,
+        }];
+        let mut elements = vec![
+            PageElement::Shape(card),
+            PageElement::Picture(pic),
+            PageElement::TextBox(cap),
+        ];
+        fold_shell_label_stacks(&mut elements, 12_240_000, 15_840_000);
+        assert_eq!(
+            elements.len(),
+            3,
+            "stacked photo+caption must not fold (FIG), got {elements:?}"
+        );
+    }
+
+    #[test]
+    fn fold_raster_ignores_later_sibling_in_shadow_halo() {
+        let mut hero = glow(10);
+        hero.node_id = "doc.hero".into();
+        hero.x_emu = 1_000_000;
+        hero.y_emu = 1_000_000;
+        hero.cx_emu = 8_000_000;
+        hero.cy_emu = 1_400_000;
+        hero.media_name = "raster1.png".into();
+        let mut title = title_box(20);
+        title.node_id = "doc.hero.title".into();
+        title.x_emu = 2_500_000;
+        title.y_emu = 1_200_000;
+        title.cx_emu = 5_000_000;
+        title.cy_emu = 400_000;
+        title.runs = vec![TextRun {
+            text: "TITLE".into(),
+            font_name: "Roboto".into(),
+            sz_half_points: 52,
+            bold: true,
+            italic: false,
+            underline: false,
+            strike: false,
+            color_hex: "64748B".into(),
+            hyperlink: None,
+            script: crate::ir::ScriptPos::Baseline,
+            tracking_twips: 0,
+            field: None,
+        }];
+        let mut date = paper_shape(40);
+        date.node_id = "doc.date_box".into();
+        date.behind_doc = false;
+        date.x_emu = 1_000_000;
+        date.y_emu = 2_200_000;
+        date.cx_emu = 8_000_000;
+        date.cy_emu = 500_000;
+        date.fill_hex = Some("FFFFFF".into());
+        let mut elements = vec![
+            PageElement::Raster(hero),
+            PageElement::TextBox(title),
+            PageElement::Shape(date),
+        ];
+        fold_shell_label_stacks(&mut elements, 12_240_000, 15_840_000);
+        assert!(
+            elements.iter().any(|el| el.textbox().is_some_and(|t| t.fill_blip.is_some())),
+            "halo overlap with a later card must not block the title fold, got {elements:?}"
+        );
+        assert!(elements.iter().any(|el| matches!(el, PageElement::Shape(s) if s.node_id == "doc.date_box")));
     }
 
     #[test]

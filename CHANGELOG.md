@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- Pack/compile/raster reject SVG live text with `SVG_TEXT` (not `IMAGE_SIZE`). Still fail-closed; put labels in a K2F text node or convert to `<path>`.
+- List markers and code blocks use the same package-font coverage fallback as body text.
+- Skill catalog: OFL `NotoSerif-Regular.ttf` for serif headings or body (`--add-font catalog/assets/fonts/NotoSerif-Regular.ttf`, then retarget role `font_family`). Starter stays Roboto-only; no cross-family fallback.
+- `k2f export-idml <package> -o <out-dir>` — InDesign package (`{stem}.idml` + `Document Fonts/`). `-o file.zip` writes the same tree zipped; `--idml-only` writes a lone `.idml`. The IDML ZIP still does not contain TTF bytes. IDML is not a K2F source (`IDML_IS_NOT_A_SOURCE`).
+- Role/variant `image_fit` (`contain` default, or `cover` center-crop). An image node's own `corner_radius` clips that bitmap. PPTX/DOCX emit `a:srcRect` + `roundRect`; IDML uses FillProportionally + frame corners.
+
+### Changed
+
+- Root `layout` of `grid` / `overlay` / `columns` / horizontal `stack` is a compile error (was a silent vertical-flow fallback for horizontal). Nest under a child. Catalog `ex_*.json` are children — do not replace `content/root.json`.
+
+### Fixed
+
+- `export-docx` / `export-pptx`: lock paint already applied theme `emphasis` (including `emphasis` → italic) is not remapped to bold. Overlaying every non-`italic` intent as bold made true-italic runs export as bold-italic. Empty-paint fallback still bolds default emphasis.
+- `list_item` with a partial `list_style` (for example only `bullet_glyph`) compiles by merging starter defaults. Explicit `0` still wins; schema fields stay optional.
+
 ## [0.2.4] - 2026-09-11
 
 ### Added
@@ -13,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- `export-docx`: fold hero titles into the parent banner. Writer paints a sibling non-txBox fill/raster above txBox labels, so titles on a blur raster or a photo banner vanished. Blur chrome folds as `blipFill` + text; `pic:pic` side photos stay siblings (wrap keeps the text column). FIG cards with a wps raster still skip fold. Invoice/text/corpus tests still pass.
 - `export-docx`: multi-label card folds restore per-paragraph line pitch and inter-label `after` from the lock (host auto had crushed body leading in callouts/metric stacks). Align follows the widest label so a leading centered pill/kicker no longer centers the whole card. Drop `bIns`, use `exact` pitch, and only treat short single-para boxes as one-line (a 2-line PASSBAND cy was mistaken for one line and doubled pitch, clipping the last glyphs). Iceberg: any folded shell with stacked labels—not only these two gallery hits. Invoice/text/corpus tests still pass.
 - `export-docx`: axis-aligned solid four-sided rims emit four thin `::edge_*` bars instead of one full-AABB `{id}::stroke`; rounded solid rims keep `a:ln` on the fill (no sibling). Hosts still hit-tested closed noFill frames over nested labels even after z-order demote (full-page / plaque business-card shells). Dashed outlines keep closed `a:ln`. Invoice/text/corpus tests still pass.
 - `export-docx` / `export-pptx`: multi-line text that starts with a superscript/subscript no longer crushes line spacing (affiliations stacked on one baseline). Line clustering and spacing use the largest face in the box, not `text_runs[0]`; sub-face baseline gaps are ignored. Iceberg for any multi-line box with a leading super/sub run—not only academic header blocks.

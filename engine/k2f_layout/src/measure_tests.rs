@@ -61,6 +61,7 @@ fn test_measure_list_item_is_marker_independent() {
             italic: false,
             letter_spacing_pt: Pt::ZERO,
             first_line_indent_pt: Pt::ZERO,
+            image_fit: None,
             variants: HashMap::new(),
         },
     );
@@ -71,6 +72,7 @@ fn test_measure_list_item_is_marker_independent() {
         roles,
         modifiers: crate::ModifierTheme::default(),
         font_aliases: HashMap::new(),
+        font_faces: HashMap::new(),
     };
 
     let ctx = LayoutContext::new(&fonts, &theme);
@@ -130,6 +132,7 @@ fn test_measure_list_item_depth_narrows_wrap_width() {
             italic: false,
             letter_spacing_pt: Pt::ZERO,
             first_line_indent_pt: Pt::ZERO,
+            image_fit: None,
             variants: HashMap::new(),
         },
     );
@@ -140,6 +143,7 @@ fn test_measure_list_item_depth_narrows_wrap_width() {
         roles,
         modifiers: crate::ModifierTheme::default(),
         font_aliases: HashMap::new(),
+        font_faces: HashMap::new(),
     };
 
     let ctx = LayoutContext::new(&fonts, &theme);
@@ -262,6 +266,7 @@ fn test_measure_container_padding_affects_size() {
             italic: false,
             letter_spacing_pt: Pt::ZERO,
             first_line_indent_pt: Pt::ZERO,
+            image_fit: None,
             variants: HashMap::new(),
         },
     );
@@ -272,6 +277,7 @@ fn test_measure_container_padding_affects_size() {
         roles,
         modifiers: crate::ModifierTheme::default(),
         font_aliases: HashMap::new(),
+        font_faces: HashMap::new(),
     };
 
     let ctx = LayoutContext::new(&fonts, &theme);
@@ -486,6 +492,7 @@ fn test_measure_fixed_size_overlay_min_outer_size_even_when_empty() {
             italic: false,
             letter_spacing_pt: Pt::ZERO,
             first_line_indent_pt: Pt::ZERO,
+            image_fit: None,
             variants: HashMap::new(),
         },
     );
@@ -495,6 +502,7 @@ fn test_measure_fixed_size_overlay_min_outer_size_even_when_empty() {
         roles,
         modifiers: crate::ModifierTheme::default(),
         font_aliases: HashMap::new(),
+        font_faces: HashMap::new(),
     };
     let ctx = LayoutContext::new(&fonts, &theme);
 
@@ -618,6 +626,7 @@ fn test_measure_style_integration() {
             italic: false,
             letter_spacing_pt: Pt::ZERO,
             first_line_indent_pt: Pt::ZERO,
+            image_fit: None,
             variants: HashMap::new(),
         },
     );
@@ -636,6 +645,7 @@ fn test_measure_style_integration() {
             italic: false,
             letter_spacing_pt: Pt::ZERO,
             first_line_indent_pt: Pt::ZERO,
+            image_fit: None,
             variants: HashMap::new(),
         },
     );
@@ -645,6 +655,7 @@ fn test_measure_style_integration() {
         roles,
         modifiers: crate::ModifierTheme::default(),
         font_aliases: HashMap::new(),
+        font_faces: HashMap::new(),
     };
 
     let ctx_custom = LayoutContext::new(&fonts, &theme);

@@ -156,7 +156,21 @@ fn execute_op(
             rect,
             runs,
         } => draw_text(pixmap, faces, geo_by_id, node_id, rect, runs, scale),
-        PaintOp::DrawImage { rect, src, .. } => draw_image(pixmap, rect, src, images, scale),
+        PaintOp::DrawImage {
+            rect,
+            src,
+            fit,
+            corner_radius_pt,
+            ..
+        } => draw_image(
+            pixmap,
+            rect,
+            src,
+            images,
+            scale,
+            *fit,
+            *corner_radius_pt,
+        ),
         PaintOp::DrawTableReference { rect, .. } => {
             draw_table_placeholder(pixmap, rect, scale);
             Ok(())

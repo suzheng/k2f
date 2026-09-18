@@ -1,4 +1,4 @@
-use crate::catalog::assert_catalog_matches_handlers;
+use crate::catalog::{assert_catalog_matches_handlers, load_catalog};
 use crate::error::ToolError;
 use crate::ops::{default_publish_origin, K2fState};
 use crate::resources::{list_session_resources, read_resource, resource_templates};
@@ -117,6 +117,9 @@ struct ExportPdfArgs {
     #[serde(default)]
     #[schemars(description = "Raster stamp scale for paint ops: 2, 3, or 4 (default 4)")]
     scale: Option<f32>,
+    #[serde(default)]
+    #[schemars(description = "If true, paint field glyphs and omit AcroForm widgets")]
+    flatten: bool,
 }
 
 #[derive(Debug, Clone, schemars::JsonSchema, Deserialize)]
@@ -417,7 +420,7 @@ impl K2fServer {
         Parameters(args): Parameters<ExportPdfArgs>,
     ) -> Result<Json<Value>, String> {
         let state = self.state.lock().unwrap();
-        map_ok(state.export_pdf(&args.session_id, &args.path, args.scale))
+        map_ok(state.export_pdf(&args.session_id, &args.path, args.scale, args.flatten))
     }
 
     #[tool(
@@ -493,8 +496,6 @@ impl K2fServer {
     }
 }
 
-const SERVER_INSTRUCTIONS: &str = "K2F MCP: copy an author directory (create) or open/markdown_to_k2f → Editor. insert_node/replace_text/set_role on Editor. save writes .K2F (relock); save_dir writes author source. export_pdf requires path. sign is not a tool.";
-
 #[tool_handler(router = self.tool_router)]
 impl ServerHandler for K2fServer {
     fn get_info(&self) -> ServerInfo {
@@ -504,7 +505,7 @@ impl ServerHandler for K2fServer {
                 .enable_resources()
                 .build(),
         )
-        .with_instructions(SERVER_INSTRUCTIONS)
+        .with_instructions(load_catalog().instructions.as_deref().unwrap_or(""))
     }
 
     fn list_resources(

@@ -17,7 +17,11 @@ Release builds of `k2f_core` panic if `engine_commit_sha` would be `UNKNOWN` (se
 
 ## Spec version
 
-Format spec **0.1** tracks crate version **0.1.0**. Breaking schema or lock-format changes bump the spec version and engine version together in the same release.
+Format spec **0.3** is the current on-disk contract, aligned with the **0.3.x** SDK release line (see [k2f-v0.3.md](docs/spec/k2f-v0.3.md)). Patch SDK releases do not rename this file unless embedded schemas or the lock format break compatibility.
+
+`engine_version` on the lock is always the **full semver** of the compiler that produced it (`appearance_hash` binds that identity). It is not a duplicate of the spec filename — readers use `ENGINE_MISMATCH` for provenance, not as a broken package.
+
+Breaking schema or lock-format changes bump the spec version and ship in the same release as the SDK.
 
 ## What readers should do on mismatch
 

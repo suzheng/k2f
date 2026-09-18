@@ -72,6 +72,9 @@ export function exportDocument({
     case "docx":
       out = withViewer(Viewer, bytes, (v) => v.export_docx());
       break;
+    case "idml":
+      out = withViewer(Viewer, bytes, (v) => v.export_idml());
+      break;
     case "markdown":
       out = withViewer(Viewer, bytes, (v) => {
         if (typeof v.document_markdown === "function") {

@@ -27,3 +27,5 @@ ttf-parser = "0.21"
 
 [dev-dependencies]
 roxmltree = "0.20"
+k2f_sdk = { path = "../../engine/k2f_sdk", version = "0.2.4" }
+serde_json = { workspace = true }

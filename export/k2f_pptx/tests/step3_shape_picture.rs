@@ -124,7 +124,7 @@ fn images_are_separate_media_if_present() {
         .ops
         .iter()
         .find_map(|op| match op {
-            PaintOp::DrawImage { node_id, rect, src } => {
+            PaintOp::DrawImage { node_id, rect, src, .. } => {
                 Some((node_id.clone(), rect.clone(), src.clone()))
             }
             _ => None,

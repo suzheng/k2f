@@ -7,6 +7,7 @@ pub const INVALID_ID: &str = "INVALID_ID";
 pub const UNKNOWN_ID: &str = "UNKNOWN_ID";
 pub const TABLE_ROW_MISMATCH: &str = "TABLE_ROW_MISMATCH";
 pub const IMAGE_SIZE: &str = "IMAGE_SIZE";
+pub const SVG_TEXT: &str = "SVG_TEXT";
 pub const FONT_MISSING: &str = "FONT_MISSING";
 pub const INVALID_MODIFIER: &str = "INVALID_MODIFIER";
 pub const SCHEMA_INVALID: &str = "SCHEMA_INVALID";
@@ -15,6 +16,7 @@ pub const WRONG_CONTENT: &str = "WRONG_CONTENT";
 pub const PDF_IS_NOT_A_SOURCE: &str = "PDF_IS_NOT_A_SOURCE";
 pub const PPTX_IS_NOT_A_SOURCE: &str = "PPTX_IS_NOT_A_SOURCE";
 pub const DOCX_IS_NOT_A_SOURCE: &str = "DOCX_IS_NOT_A_SOURCE";
+pub const IDML_IS_NOT_A_SOURCE: &str = "IDML_IS_NOT_A_SOURCE";
 pub const INVALID_ARGUMENT: &str = "INVALID_ARGUMENT";
 pub const CONTENT_HASH_MISMATCH: &str = "CONTENT_HASH_MISMATCH";
 
@@ -54,6 +56,14 @@ impl From<NodeEditError> for AgentError {
             NodeEditError::DuplicateId(id) => {
                 Self::new(DUPLICATE_ID, format!("duplicate node id '{id}'"))
             }
+            NodeEditError::MaxLengthExceeded { id, max, got } => Self::new(
+                INVALID_ARGUMENT,
+                format!("value for '{id}' exceeds max_length {max} (got {got} characters)"),
+            ),
+            NodeEditError::InvalidCheckboxValue(id) => Self::new(
+                INVALID_ARGUMENT,
+                format!("checkbox '{id}' value must be \"\" or \"true\""),
+            ),
         }
     }
 }
@@ -73,7 +83,8 @@ impl From<K2FError> for AgentError {
             | K2FError::ModifierRangeNotOnCharBoundary { .. } => INVALID_MODIFIER,
             K2FError::ColumnsInvalid { .. }
             | K2FError::ColumnsNested { .. }
-            | K2FError::ColumnSpanOutsideColumns { .. } => SCHEMA_INVALID,
+            | K2FError::ColumnSpanOutsideColumns { .. }
+            | K2FError::ColspanOutsideTable { .. } => SCHEMA_INVALID,
             _ => INVALID_ARGUMENT,
         };
         Self::new(code, e.to_string())
@@ -86,6 +97,7 @@ impl From<PackageError> for AgentError {
             PackageError::FontMissing(m) => Self::new(FONT_MISSING, m),
             PackageError::SchemaInvalid(m) => Self::new(SCHEMA_INVALID, m),
             PackageError::ImageSize(m) => Self::new(IMAGE_SIZE, m),
+            PackageError::SvgText(m) => Self::new(SVG_TEXT, m),
             PackageError::PdfIsNotASource => Self::new(
                 PDF_IS_NOT_A_SOURCE,
                 "PDF is a drawing of a lock, not a K2F source",
@@ -113,10 +125,10 @@ pub(crate) fn map_compile_message(msg: &str) -> AgentError {
         AgentError::new(INVALID_ID, msg)
     } else if msg.contains("row") && msg.contains("cells") {
         AgentError::new(TABLE_ROW_MISMATCH, msg)
-    } else if msg.contains("image") && msg.contains("positive size")
-        || msg.contains("SVG contains <text>")
-    {
+    } else if msg.contains("image") && msg.contains("positive size") {
         AgentError::new(IMAGE_SIZE, msg)
+    } else if msg.contains("SVG_TEXT") || msg.contains("SVG contains <text>") {
+        AgentError::new(SVG_TEXT, msg)
     } else if msg.contains("modifier") {
         AgentError::new(INVALID_MODIFIER, msg)
     } else {
@@ -134,6 +146,13 @@ mod tests {
             "FONT_MISSING: role 'body' font 'Missing' (key 'Missing') is not embedded",
         );
         assert_eq!(err.code, FONT_MISSING);
+    }
+
+    #[test]
+    fn svg_text_compile_message_keeps_code() {
+        let err =
+            map_compile_message("SVG_TEXT: assets/images/fig.svg: SVG contains <text> / <tspan>");
+        assert_eq!(err.code, SVG_TEXT);
     }
 
     #[test]

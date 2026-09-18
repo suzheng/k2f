@@ -274,3 +274,56 @@ fn table_row_gap_overrides_gap_for_rows_but_columns_keep_gap() {
     assert_eq!(geo.children[2].y, Pt(20_000 + row_gap as i128));
     assert_eq!(geo.children[3].y, Pt(20_000 + row_gap as i128));
 }
+
+#[test]
+fn table_colspan_cell_width_includes_tracks_and_gaps() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+
+    let gap = 1_000_i64;
+    let mut wide = make_image("span2", 10_000, 20_000);
+    wide.colspan = 2;
+    let rest = make_image("span1", 10_000, 20_000);
+
+    let table = SemanticNode {
+        id: "tbl".to_string(),
+        role: "table".to_string(),
+        variant: None,
+        preserve_whitespace: None,
+        list_id: None,
+        depth: None,
+        marker_type: None,
+        content: NodeContent::Table(TableSpec {
+            column_widths: vec![
+                GridTrack::Pt { pt: 50_000 },
+                GridTrack::Pt { pt: 40_000 },
+                GridTrack::Pt { pt: 30_000 },
+            ],
+            header_rows: 0,
+            gap,
+            row_gap: None,
+            column_gap: None,
+            data: TableDataSource::Inline {
+                rows: vec![vec![wide, rest]],
+            },
+        }),
+        modifiers: vec![],
+        layout: None,
+        ..Default::default()
+    };
+
+    let gap_pt = Pt(gap as i128);
+    let total_w = Pt(50_000 + 40_000 + 30_000 + 2 * gap_pt.0);
+    let constraint = SizeConstraint::new(Size::ZERO, Size::new(total_w, Pt(i128::MAX)));
+    let measured = measure_node(&table, constraint, &ctx).unwrap();
+    assert_eq!(measured.width, total_w);
+    assert_eq!(measured.height, Pt(20_000));
+
+    let geo = arrange_node(&table, Point::ZERO, measured, &ctx).unwrap();
+    assert_eq!(geo.children.len(), 2);
+    assert_eq!(geo.children[0].x, Pt(0));
+    assert_eq!(geo.children[0].width, Pt(50_000 + gap_pt.0 + 40_000));
+    assert_eq!(geo.children[1].x, Pt(50_000 + gap_pt.0 + 40_000 + gap_pt.0));
+    assert_eq!(geo.children[1].width, Pt(30_000));
+}

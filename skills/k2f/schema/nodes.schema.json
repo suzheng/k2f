@@ -27,7 +27,7 @@
     "grid_layout_track": {
       "oneOf": [
         { "type": "object", "additionalProperties": false, "properties": { "pt": { "type": "integer" } }, "required": ["pt"] },
-        { "type": "object", "additionalProperties": false, "properties": { "fr": { "type": "integer", "minimum": 0 } }, "required": ["fr"] },
+        { "type": "object", "additionalProperties": false, "properties": { "fr": { "type": "integer", "minimum": 0, "description": "Integer weight of leftover space (not CSS 1.2fr)." } }, "required": ["fr"] },
         { "type": "object", "additionalProperties": false, "properties": { "auto": { "const": true } }, "required": ["auto"] }
       ]
     },
@@ -80,6 +80,12 @@
       "enum": ["none", "all"],
       "default": "none",
       "description": "When all, this node spans the full width of an enclosing columns container. Must not be set on a columns container itself."
+    },
+    "colspan": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Table-cell occupancy along column_widths (same row only). Omit or 1 = one column. Illegal outside a table cell. Not rowspan; not columns-layout column_span."
     },
     "role": {
       "type": "string",
@@ -136,6 +142,28 @@
               "type": "string",
               "minLength": 1,
               "description": "TeX-subset math source for display formulas."
+            }
+          },
+          "required": ["type", "value"]
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "form_field" },
+            "value": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": { "enum": ["text", "multiline", "checkbox"] },
+                "value": { "type": "string" },
+                "placeholder": { "type": "string" },
+                "width": { "type": "integer", "minimum": 1 },
+                "height": { "type": "integer", "minimum": 1 },
+                "lines": { "type": "integer", "minimum": 1 },
+                "max_length": { "type": "integer", "minimum": 1 },
+                "required": { "type": "boolean" }
+              },
+              "required": ["kind", "value"]
             }
           },
           "required": ["type", "value"]
@@ -200,11 +228,16 @@
                   "items": {
                     "oneOf": [
                       { "type": "object", "additionalProperties": false, "properties": { "pt": { "type": "integer" } }, "required": ["pt"] },
-                      { "type": "object", "additionalProperties": false, "properties": { "fr": { "type": "integer", "minimum": 0 } }, "required": ["fr"] }
+                      { "type": "object", "additionalProperties": false, "properties": { "fr": { "type": "integer", "minimum": 0, "description": "Integer weight of leftover space (not CSS 1.2fr)." } }, "required": ["fr"] }
                     ]
                   }
                 },
-                "header_rows": { "type": "integer", "minimum": 0, "default": 0 },
+                "header_rows": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 0,
+                  "description": "Number of leading header rows to repeat at page breaks. Integer count, not a row of cells."
+                },
                 "gap": {
                   "type": "integer",
                   "default": 0,
@@ -316,7 +349,7 @@
       "default": []
     },
     "layout": {
-      "description": "Optional deterministic layout hint for containers.",
+      "description": "Optional deterministic layout hint for containers. On content/root.json, omit layout or use vertical stack only — nest grid, overlay, columns, and horizontal stacks under a child.",
       "oneOf": [
         {
           "type": "null"

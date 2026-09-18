@@ -12,6 +12,7 @@
         { "include": "content/ex_end_block.json" },
         { "include": "content/ex_grid.json" },
         { "include": "content/ex_poster_shell.json" },
+        { "include": "content/ex_banner_header.json" },
         { "include": "content/ex_poster_growers.json" },
         { "include": "content/ex_card_bands.json" },
         { "include": "content/ex_filled_page.json" },
@@ -22,6 +23,8 @@
         { "include": "content/ex_table.json" },
         { "include": "content/ex_table_dense.json" },
         { "include": "content/ex_table_edges.json" },
+        { "include": "content/ex_table_colspan.json" },
+        { "include": "content/ex_table_composite.json" },
         { "include": "content/ex_on_dark.json" },
         { "include": "content/ex_badge.json" },
         { "include": "content/ex_rule.json" },
@@ -30,7 +33,8 @@
         { "include": "content/ex_code.json" },
         { "include": "content/ex_math.json" },
         { "include": "content/ex_math_numbered.json" },
-        { "include": "content/ex_image.json" }
+        { "include": "content/ex_image.json" },
+        { "include": "content/ex_form.json" }
       ]
     }
   },

@@ -18,10 +18,11 @@ See [COMPATIBILITY.md](COMPATIBILITY.md) for engine version matching and release
 
 1. `bash scripts/publish-preflight.sh`
 2. `bash scripts/trigger-publish-dry-run.sh` (wheels only, no registry upload)
-3. `git tag vX.Y.Z && git push origin vX.Y.Z` — publishes crates.io, npm, and PyPI
-4. Optionally `gh release create vX.Y.Z` for release notes on GitHub
+3. Optional: Modal Linux SDK smoke — `../k2f-private/scripts/pypi-linux-smoke.sh` (see `../k2f-private/scripts/modal-smoke-tests.md`). Terminate any long-lived Modal **Sandbox** you opened for manual testing when done (dashboard → Sandboxes → Terminate), or it keeps billing.
+4. `git tag vX.Y.Z && git push origin vX.Y.Z` — publishes crates.io, npm, and PyPI
+5. Optionally `gh release create vX.Y.Z` for release notes on GitHub
 
-Details: [scripts/archive/local-publish/README.md](scripts/archive/local-publish/README.md)
+Details: [scripts/archive/local-publish/README.md](scripts/archive/local-publish/README.md) · `bash scripts/publish-all.sh` (cheat sheet)
 
 ## Reporting issues
 
@@ -36,8 +37,8 @@ Do **not** use public issues for security vulnerabilities — see [SECURITY.md](
 
 Edit the **source** files:
 
-- `docs/` — specification, guides, architecture, instructions
-- `skills/` — agent skill playbooks
+- `docs/` — specification, authoring guides, architecture, SDK agent dialect (`docs/instructions/agent_v0.md`)
+- `skills/` — agent skill playbooks (catalog, schemas, writing loop)
 
 Do not edit copies under `sdk/js/public/` by hand. In a git checkout those paths are symlinks to the sources above; npm pack materializes them into the tarball.
 
@@ -48,6 +49,21 @@ bash scripts/check-doc-links.sh
 ```
 
 ## Build and test
+
+### Published toolchain from a clone
+
+For contributors, golden tests, and the smoke script — a local Python/CLI/WASM toolchain without installing from PyPI first:
+
+```bash
+git clone https://github.com/suzheng/k2f.git
+cd k2f
+bash scripts/dev-install.sh
+bash scripts/test-getting-started.sh
+```
+
+`dev-install.sh` creates a Python venv under `sdk/python/.venv`, builds the `k2f` Python package with maturin, and compiles the JS WASM bindings. The smoke script writes a package, exports PDF, confirms `PDF_IS_NOT_A_SOURCE`, and runs `k2f verify`.
+
+On Windows, run the bash scripts in Git Bash or WSL. Rust is required for this path.
 
 ```bash
 cargo build
@@ -112,7 +128,7 @@ Never use browser `fillText` or CSS flow for document body text. The web viewer 
 When changing format `schema/*.json`:
 
 1. Update Rust validators in the same PR
-2. Update `docs/spec/k2f-v0.1.md`
+2. Update `docs/spec/k2f-v0.3.md`
 3. Regenerate committed examples if needed (`bash scripts/build-published-examples.sh`)
 
 ## Pull request checklist

@@ -45,6 +45,25 @@ fn export_docx_magic() {
 }
 
 #[test]
+fn export_idml_magic() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let idml = app.export_idml_bytes().unwrap();
+    assert!(idml.starts_with(b"PK"));
+}
+
+#[test]
+fn idml_is_not_a_source() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let idml = app.export_idml_bytes().unwrap();
+    let err = AppState::open(&idml).unwrap_err();
+    let msg = format!("{err}");
+    assert!(
+        msg.contains("IDML_IS_NOT_A_SOURCE") || msg.contains("UNEXPECTED_PATH"),
+        "exported IDML must not open as K2F, got {msg}"
+    );
+}
+
+#[test]
 fn docx_is_not_a_source() {
     let app = AppState::open(&invoice_bytes()).unwrap();
     let docx = app.export_docx_bytes().unwrap();

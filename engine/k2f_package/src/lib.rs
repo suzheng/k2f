@@ -21,7 +21,8 @@ pub use error::{
     PackageError, VerifyStatus, CODE_APPEARANCE_CHANGED, CODE_CONTENT_CHANGED,
     CODE_ENGINE_MISMATCH, CODE_FONT_MISSING, CODE_IMAGE_SIZE, CODE_NODE_ID,
     CODE_PDF_IS_NOT_A_SOURCE, CODE_SCHEMA_INVALID, CODE_SIGNED, CODE_SIGNED_BUT_BROKEN,
-    CODE_UNEXPECTED_PATH, CODE_UNKNOWN_PAINT_OP, CODE_UNLOCKED, CODE_UNSIGNED, CODE_VALID,
+    CODE_SVG_TEXT, CODE_UNEXPECTED_PATH, CODE_UNKNOWN_PAINT_OP, CODE_UNLOCKED, CODE_UNSIGNED,
+    CODE_VALID,
 };
 pub use fonts::apply_coverage_subset;
 pub use integrity::{inspect_package, IntegrityReport, IntegrityStatus};
@@ -29,7 +30,7 @@ pub use load_dir::{load_dir, load_from_file_map};
 pub use manifest::PackageManifest;
 pub use pack::{pack_bytes, validate_package_schema};
 pub use package::Package;
-pub use schema::{bundled_schema_files, validate_theme_json};
+pub use schema::{bundled_schema_files, validate_content_json, validate_theme_json};
 pub use sign::{generate_secret_key, sign_package, utc_unix_seconds, SecretKey};
 pub use unpack::unpack_bytes;
 pub use verify::{appearance_hash_for_lock, verify_package};

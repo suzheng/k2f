@@ -132,6 +132,7 @@ fn test_container_padding_offsets_children() {
             italic: false,
             letter_spacing_pt: Pt::ZERO,
             first_line_indent_pt: Pt::ZERO,
+            image_fit: None,
             variants: HashMap::new(),
         },
     );
@@ -142,6 +143,7 @@ fn test_container_padding_offsets_children() {
         roles,
         modifiers: crate::ModifierTheme::default(),
         font_aliases: HashMap::new(),
+        font_faces: HashMap::new(),
     };
 
     let ctx = LayoutContext::new(&fonts, &theme);
@@ -320,6 +322,7 @@ fn test_arrange_list_item_emits_marker_before_body_glyphs() {
             italic: false,
             letter_spacing_pt: Pt::ZERO,
             first_line_indent_pt: Pt::ZERO,
+            image_fit: None,
             variants: HashMap::new(),
         },
     );
@@ -330,6 +333,7 @@ fn test_arrange_list_item_emits_marker_before_body_glyphs() {
         roles,
         modifiers: crate::ModifierTheme::default(),
         font_aliases: HashMap::new(),
+        font_faces: HashMap::new(),
     };
 
     let item = make_list_item("li.1", "L", k2f_core::ListMarkerType::Bullet, "Hello");
@@ -395,6 +399,7 @@ fn test_arrange_list_item_errors_when_marker_missing() {
             italic: false,
             letter_spacing_pt: Pt::ZERO,
             first_line_indent_pt: Pt::ZERO,
+            image_fit: None,
             variants: HashMap::new(),
         },
     );
@@ -405,6 +410,7 @@ fn test_arrange_list_item_errors_when_marker_missing() {
         roles,
         modifiers: crate::ModifierTheme::default(),
         font_aliases: HashMap::new(),
+        font_faces: HashMap::new(),
     };
 
     let item = make_list_item("li.1", "L", k2f_core::ListMarkerType::Bullet, "Hello");
@@ -414,6 +420,73 @@ fn test_arrange_list_item_errors_when_marker_missing() {
     let measured = measure_node(&item, constraint, &ctx).unwrap();
     let err = arrange_node(&item, Point::ZERO, measured, &ctx).unwrap_err();
     assert!(err.contains("Missing derived marker label"));
+}
+
+fn roboto_and_dejavu() -> k2f_text::FontLibrary {
+    let dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts");
+    let mut fonts = std::collections::BTreeMap::new();
+    fonts.insert(
+        "assets/fonts/Roboto-Regular.ttf".into(),
+        std::fs::read(dir.join("Roboto-Regular.ttf")).unwrap(),
+    );
+    fonts.insert(
+        "assets/fonts/DejaVuSans.ttf".into(),
+        std::fs::read(dir.join("DejaVuSans.ttf")).unwrap(),
+    );
+    crate::fonts::load_font_library(&fonts).unwrap()
+}
+
+#[test]
+fn list_marker_dingbat_falls_back_to_embedded_face() {
+    use crate::list_style::ListStyle;
+    use std::collections::HashMap;
+
+    let fonts = roboto_and_dejavu();
+    let mut roles = HashMap::new();
+    roles.insert(
+        "list_item".to_string(),
+        crate::RoleStyle {
+            font_family: "Roboto-Regular".to_string(),
+            font_size: Pt(12_000),
+            line_height_mult: 1_200,
+            color: "black".to_string(),
+            text_align: crate::style::TextAlign::Start,
+            self_align: None,
+            box_decoration: Some(ThemeDecoration::default()),
+            list_style: Some(ListStyle {
+                marker_box_width_pt: Some(Pt(18_000)),
+                marker_gap_pt: Some(Pt(4_000)),
+                depth_indent_pt: Some(Pt(12_000)),
+                bullet_glyph: Some("□".to_string()),
+                ..ListStyle::default()
+            }),
+            bold: false,
+            italic: false,
+            letter_spacing_pt: Pt::ZERO,
+            first_line_indent_pt: Pt::ZERO,
+            image_fit: None,
+            variants: HashMap::new(),
+        },
+    );
+    let theme = Theme {
+        palette: HashMap::new(),
+        primitives: Default::default(),
+        roles,
+        modifiers: crate::ModifierTheme::default(),
+        font_aliases: HashMap::new(),
+        font_faces: HashMap::new(),
+    };
+
+    let item = make_list_item("li.1", "L", k2f_core::ListMarkerType::Bullet, "Hello");
+    let root = make_container("root", vec![item.clone()]);
+    let mut ctx = LayoutContext::new(&fonts, &theme);
+    ctx.list_markers = crate::list_markers::derive_list_marker_map(&root, &theme).unwrap();
+
+    let constraint = SizeConstraint::new(Size::ZERO, Size::new(Pt(200_000), Pt(i128::MAX)));
+    let measured = measure_node(&item, constraint, &ctx).unwrap();
+    let geo = arrange_node(&item, Point::ZERO, measured, &ctx).unwrap();
+    assert!(geo.text_runs.len() >= 2);
+    assert_eq!(geo.text_runs[0].style.font_family, "DejaVuSans");
 }
 
 #[test]

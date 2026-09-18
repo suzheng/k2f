@@ -1,4 +1,4 @@
-//! Binary entry: GUI unless `--export-pdf` / `--export-pptx` / `--export-docx` / `--verify` (no window).
+//! Binary entry: GUI unless `--export-pdf` / `--export-pptx` / `--export-docx` / `--export-idml` / `--verify` (no window).
 
 mod headless;
 
@@ -22,7 +22,7 @@ struct Cli {
         long,
         value_name = "OUT_PDF",
         requires = "file",
-        conflicts_with_all = ["export_pptx", "export_docx"]
+        conflicts_with_all = ["export_pptx", "export_docx", "export_idml"]
     )]
     export_pdf: Option<PathBuf>,
     /// Write PowerPoint .pptx from lock to PATH (no window)
@@ -30,7 +30,7 @@ struct Cli {
         long,
         value_name = "OUT_PPTX",
         requires = "file",
-        conflicts_with_all = ["export_pdf", "export_docx"]
+        conflicts_with_all = ["export_pdf", "export_docx", "export_idml"]
     )]
     export_pptx: Option<PathBuf>,
     /// Write Word .docx from lock to PATH (no window)
@@ -38,9 +38,17 @@ struct Cli {
         long,
         value_name = "OUT_DOCX",
         requires = "file",
-        conflicts_with_all = ["export_pdf", "export_pptx"]
+        conflicts_with_all = ["export_pdf", "export_pptx", "export_idml"]
     )]
     export_docx: Option<PathBuf>,
+    /// Write an InDesign package folder (IDML + Document Fonts) from lock to PATH (no window)
+    #[arg(
+        long,
+        value_name = "OUT_DIR",
+        requires = "file",
+        conflicts_with_all = ["export_pdf", "export_pptx", "export_docx"]
+    )]
+    export_idml: Option<PathBuf>,
     /// Print banner; exit non-zero if integrity is broken
     #[arg(long, requires = "file")]
     verify: bool,
@@ -104,13 +112,14 @@ pub fn run() -> anyhow::Result<()> {
         && cli.export_pdf.is_none()
         && cli.export_pptx.is_none()
         && cli.export_docx.is_none()
+        && cli.export_idml.is_none()
         && !cli.verify
     {
         if should_open_window() {
             return ui::run(None, None);
         }
         eprintln!(
-            "usage: k2f-reader <file.K2F> | --verify <file.K2F> | --export-pdf out.pdf <file.K2F> | --export-pptx out.pptx <file.K2F> | --export-docx out.docx <file.K2F>"
+            "usage: k2f-reader <file.K2F> | --verify <file.K2F> | --export-pdf out.pdf <file.K2F> | --export-pptx out.pptx <file.K2F> | --export-docx out.docx <file.K2F> | --export-idml out-dir <file.K2F>"
         );
         std::process::exit(2);
     }
@@ -125,10 +134,17 @@ pub fn run() -> anyhow::Result<()> {
     if let Some(out) = cli.export_docx.as_deref() {
         headless::export_docx(&app, out)?;
     }
+    if let Some(out) = cli.export_idml.as_deref() {
+        headless::export_idml(&app, out)?;
+    }
     if cli.verify {
         return headless::verify(&app);
     }
-    if cli.export_pdf.is_some() || cli.export_pptx.is_some() || cli.export_docx.is_some() {
+    if cli.export_pdf.is_some()
+        || cli.export_pptx.is_some()
+        || cli.export_docx.is_some()
+        || cli.export_idml.is_some()
+    {
         return Ok(());
     }
     ui::run(Some(app), Some(path.to_path_buf()))

@@ -28,6 +28,7 @@ import { exportDocument } from "./export-actions.js";
 import { bindPdfQualityDialog } from "./pdf-quality-dialog.js";
 import { bindFullscreen } from "./fullscreen.js";
 import { bindEditMode } from "./edit-mode.js";
+import { bindFormFill } from "./form-fill.js";
 import { ZOOM_STEPS, fitZoom, stageInnerWidth } from "./zoom-fit.js";
 import { DISPLAY_PAINT_DEBOUNCE_MS } from "./display-scale.js";
 import { bindTheme } from "./theme.js";
@@ -64,6 +65,20 @@ export async function mountK2fViewer(host, bytes, options = {}) {
   let displayPaintTimer = null;
 
   const menus = createMenuController({ root: els.root, signal });
+
+  const mobileActions = document.createElement("div");
+  mobileActions.className = "k2f-menu-mobile-actions";
+  const themeMenuItem = menuItem({ label: "Switch to dark mode", value: "theme" });
+  themeMenuItem.dataset.act = "theme";
+  const editMenuItem = menuItem({ label: "Edit", value: "edit" });
+  editMenuItem.dataset.act = "edit";
+  editMenuItem.hidden = true;
+  const saveMenuItem = menuItem({ label: "Save", value: "save" });
+  saveMenuItem.dataset.act = "save";
+  saveMenuItem.hidden = true;
+  saveMenuItem.disabled = true;
+  mobileActions.append(themeMenuItem, editMenuItem, saveMenuItem, menuSep());
+
   const pdfQuality = bindPdfQualityDialog(els.root, signal);
   const chromeScroll = bindChromeScroll({
     root: els.root,
@@ -107,12 +122,15 @@ export async function mountK2fViewer(host, bytes, options = {}) {
   });
 
   const highlight = bindHighlight();
+  let formFill = null;
   const editMode = bindEditMode({
     button: els.editBtn,
+    menuButton: editMenuItem,
     canEdit: editable,
     signal,
     onChange: (editing) => {
       if (!editing) edit.clear();
+      formFill?.sync();
     },
   });
   const edit = bindPopover({
@@ -125,9 +143,27 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     highlight,
     onRelock: async (nextBytes, id) => {
       await open(nextBytes);
+      if (!id || !viewer) return;
       const boxes = JSON.parse(viewer.boxes_for(id));
       if (boxes.length) nav.go(boxes[0].page);
       selectId(id);
+    },
+    onError: (err) => {
+      if (bannerMode !== "off") paintOpenError(els.banner, errorMessage(err), bannerMode);
+      chromeScroll.syncPin();
+    },
+  });
+  formFill = bindFormFill({
+    wrapsOf: () => stack.wraps(),
+    viewerOf: () => viewer,
+    editorOf: () => editor,
+    zoomOf: () => zoom,
+    editingOf: () => editMode.editing(),
+    saveButton: els.saveBtn,
+    menuSaveButton: saveMenuItem,
+    signal,
+    onRelock: async (nextBytes) => {
+      await open(nextBytes);
     },
     onError: (err) => {
       if (bannerMode !== "off") paintOpenError(els.banner, errorMessage(err), bannerMode);
@@ -163,7 +199,38 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     item.dataset.kind = "export";
     mobileExport.append(item);
   }
-  els.moreMenu.append(copyMarkdown, copyPlain, fullscreenSep, fullscreenItem, mobileExport);
+  els.moreMenu.append(
+    mobileActions,
+    copyMarkdown,
+    copyPlain,
+    fullscreenSep,
+    fullscreenItem,
+    mobileExport,
+  );
+  themeMenuItem.addEventListener(
+    "click",
+    () => {
+      els.themeBtn.click();
+      menus.closeAll();
+    },
+    { signal },
+  );
+  editMenuItem.addEventListener(
+    "click",
+    () => {
+      els.editBtn.click();
+      menus.closeAll();
+    },
+    { signal },
+  );
+  saveMenuItem.addEventListener(
+    "click",
+    () => {
+      els.saveBtn.click();
+      menus.closeAll();
+    },
+    { signal },
+  );
   bindFullscreen({ button: fullscreenItem, target: host, signal });
   fullscreenItem.addEventListener("click", () => menus.closeAll(), { signal });
   if (fullscreenItem.hidden) fullscreenSep.hidden = true;
@@ -220,6 +287,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     const label = theme === "light" ? "Switch to dark mode" : "Switch to light mode";
     els.themeBtn.setAttribute("aria-label", label);
     els.themeBtn.title = label;
+    themeMenuItem.textContent = label;
   }
 
   function setCopyFormat(next) {
@@ -322,6 +390,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
         item.dataset.value !== "fit" && Number(item.dataset.value) === zoom ? "true" : "false";
     }
     stack.layout(viewer, zoom);
+    if (editMode.editing()) formFill?.sync();
     scheduleDisplayPaint();
     updateStatus();
     const id = edit.id();
@@ -335,7 +404,12 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     const sel = JSON.parse(raw);
     const url = linkUrlFromSelection(sel);
     if (url) openLink(url);
-    if (editMode.editing()) edit.show(sel);
+    if (editMode.editing() && formFill?.isField(id)) {
+      edit.clear();
+      formFill.focus(id);
+    } else if (editMode.editing()) {
+      edit.show(sel);
+    }
     emit(host, "k2f-select", sel);
   }
 
@@ -343,6 +417,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     packageBytes = nextBytes;
     stack.clear();
     edit.clear();
+    formFill?.clear();
     editMode.setEditing(false);
     highlight.hide();
     if (viewer) {
@@ -513,6 +588,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     (e) => {
       if (!viewer || viewer.page_count() === 0) return;
       if (e.target.closest(".k2f-popover")) return;
+      if (e.target.closest(".k2f-form-layer")) return;
       if (dragged()) return;
       const sel = window.getSelection();
       if (sel && !sel.isCollapsed && sel.toString()) return;
@@ -533,7 +609,13 @@ export async function mountK2fViewer(host, bytes, options = {}) {
       const next = JSON.parse(raw);
       const url = linkUrlFromSelection(next);
       if (url) openLink(url);
-      if (editMode.editing()) edit.show(next);
+      if (editMode.editing() && formFill?.isField(next.id)) {
+        edit.clear();
+        highlight.hide();
+        formFill.focus(next.id);
+      } else if (editMode.editing()) {
+        edit.show(next);
+      }
       emit(host, "k2f-select", next);
     },
     { signal },

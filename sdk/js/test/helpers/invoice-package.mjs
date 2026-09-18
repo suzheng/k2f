@@ -44,3 +44,14 @@ export function packAuthorDir(rel) {
   rmSync(dir, { recursive: true, force: true });
   return bytes;
 }
+
+/** Pack an author directory and relock it through the WASM Editor. */
+export function compileAuthorDir(k2f, rel) {
+  const unlocked = packAuthorDir(rel);
+  const ed = k2f.Editor.open(unlocked);
+  try {
+    return ed.save();
+  } finally {
+    ed.free();
+  }
+}

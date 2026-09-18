@@ -387,6 +387,87 @@ mod tests {
     }
 
     #[test]
+    fn malformed_table_header_rows_does_not_report_table_reference() {
+        let node = json!({
+            "id": "root",
+            "role": "document",
+            "content": {
+                "type": "container",
+                "value": {
+                    "children": [{
+                        "id": "root.t",
+                        "role": "table",
+                        "content": {
+                            "type": "table",
+                            "value": {
+                                "column_widths": [{ "fr": 1 }],
+                                "header_rows": [[{
+                                    "id": "root.t.h0",
+                                    "role": "table_header_cell",
+                                    "content": { "type": "text", "value": "A" }
+                                }]],
+                                "data": {
+                                    "type": "inline",
+                                    "rows": [[{
+                                        "id": "root.t.r0c0",
+                                        "role": "table_row_cell",
+                                        "content": { "type": "text", "value": "x" }
+                                    }]]
+                                }
+                            }
+                        }
+                    }]
+                }
+            }
+        });
+        let err = validate_root_json(&node).unwrap_err().to_string();
+        assert!(err.contains(crate::CODE_SCHEMA_INVALID), "got {err}");
+        assert!(
+            err.contains("header_rows"),
+            "should name the bad field, got {err}"
+        );
+        assert!(
+            !err.contains("table_reference"),
+            "must not pick the sibling content tag, got {err}"
+        );
+    }
+
+    #[test]
+    fn malformed_grid_track_does_not_report_stack_or_overlay() {
+        let node = json!({
+            "id": "root",
+            "role": "document",
+            "content": {
+                "type": "container",
+                "value": {
+                    "children": [{
+                        "id": "root.grid",
+                        "role": "body",
+                        "content": {
+                            "type": "container",
+                            "value": { "children": [] }
+                        },
+                        "layout": {
+                            "type": "grid",
+                            "columns": [{ "fr": 1.5 }]
+                        }
+                    }]
+                }
+            }
+        });
+        let err = validate_root_json(&node).unwrap_err().to_string();
+        assert!(err.contains(crate::CODE_SCHEMA_INVALID), "got {err}");
+        assert!(
+            !err.to_lowercase().contains("stack"),
+            "must not pick a sibling layout tag, got {err}"
+        );
+        assert!(
+            !err.contains("overlay"),
+            "must not pick a sibling layout tag, got {err}"
+        );
+    }
+
+    #[test]
     fn padding_pt_accepts_trbl_array() {
         let theme = json!({
             "palette": { "ink": "#111111" },
@@ -400,6 +481,51 @@ mod tests {
                 }
             }
         });
+        validate_theme_json(&theme).unwrap();
+    }
+
+    #[test]
+    fn form_field_node_is_schema_valid() {
+        let node = json!({
+            "id": "app.applicant.full_name",
+            "role": "form_field",
+            "variant": "underline",
+            "break_inside": "avoid",
+            "content": {
+                "type": "form_field",
+                "value": {
+                    "kind": "text",
+                    "value": "",
+                    "placeholder": "Full legal name",
+                    "width": 220000,
+                    "lines": 1
+                }
+            }
+        });
+        validate_root_json(&node).unwrap();
+    }
+
+    #[test]
+    fn form_field_unknown_kind_is_schema_invalid() {
+        let node = json!({
+            "id": "app.name",
+            "role": "form_field",
+            "content": {
+                "type": "form_field",
+                "value": { "kind": "dropdown", "value": "" }
+            }
+        });
+        let err = validate_root_json(&node).unwrap_err().to_string();
+        assert!(err.contains(crate::CODE_SCHEMA_INVALID), "got {err}");
+    }
+
+    #[test]
+    fn official_starter_theme_accepts_form_field_role() {
+        let theme: Value = serde_json::from_str(include_str!(
+            "../../../skills/k2f/starter/styles/theme.json"
+        ))
+        .unwrap();
+        assert!(theme["roles"]["form_field"]["variants"]["underline"].is_object());
         validate_theme_json(&theme).unwrap();
     }
 }

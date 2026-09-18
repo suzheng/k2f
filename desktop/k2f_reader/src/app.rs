@@ -3,8 +3,10 @@ use crate::export::ExportFormat;
 use anyhow::Context;
 use k2f_package::pack_bytes;
 use k2f_package::VerifyStatus;
-use k2f_paint::{Banner, OpenedDocument, TextSpan, OFFICIAL_PNG_SCALE};
+use k2f_paint::{Banner, FormFieldLoc, OpenedDocument, TextSpan, OFFICIAL_PNG_SCALE};
 use k2f_pdf::export_opened;
+use k2f_sdk::Editor;
+use std::collections::BTreeMap;
 use std::path::Path;
 
 const MIN_ZOOM: f32 = 0.1;
@@ -165,12 +167,17 @@ impl AppState {
         Ok(k2f_docx::export_opened(&self.doc)?)
     }
 
+    pub fn export_idml_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        Ok(k2f_idml::export_handoff(&self.doc)?.to_zip_bytes()?)
+    }
+
     pub fn export_bytes(&self, format: ExportFormat) -> anyhow::Result<Vec<u8>> {
         match format {
             ExportFormat::K2f => self.export_k2f_bytes(),
             ExportFormat::Pdf => self.export_pdf_bytes(),
             ExportFormat::Pptx => self.export_pptx_bytes(),
             ExportFormat::Docx => self.export_docx_bytes(),
+            ExportFormat::Idml => self.export_idml_bytes(),
             ExportFormat::Markdown => self.export_markdown().map(|s| s.into_bytes()),
             ExportFormat::Png => self.export_pages_png_bytes(),
             ExportFormat::Jpg => self.export_pages_jpeg_bytes(),
@@ -178,8 +185,27 @@ impl AppState {
     }
 
     pub fn export_to(&self, format: ExportFormat, path: &Path) -> anyhow::Result<()> {
+        if format == ExportFormat::Idml {
+            return self.export_idml_to(path);
+        }
         let bytes = self.export_bytes(format)?;
         std::fs::write(path, &bytes).with_context(|| format!("write {}", path.display()))?;
+        Ok(())
+    }
+
+    fn export_idml_to(&self, path: &Path) -> anyhow::Result<()> {
+        let pkg = k2f_idml::export_handoff(&self.doc)?;
+        let ext = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("");
+        if ext.eq_ignore_ascii_case("idml") {
+            k2f_idml::write_handoff_output(&pkg, path, true)?;
+        } else if ext.eq_ignore_ascii_case("zip") {
+            k2f_idml::write_handoff_output(&pkg, path, false)?;
+        } else {
+            pkg.write_dir(path)?;
+        }
         Ok(())
     }
 
@@ -243,5 +269,25 @@ impl AppState {
 
     pub fn doc(&self) -> &OpenedDocument {
         &self.doc
+    }
+
+    pub fn form_fields(&self) -> Vec<FormFieldLoc> {
+        self.doc.form_fields()
+    }
+
+    pub fn has_form_fields(&self) -> bool {
+        !self.doc.form_fields().is_empty()
+    }
+
+    /// `replace_text` each dirty id, then relock. Does not compile on open — only on Save.
+    pub fn relock_form_values(
+        &self,
+        dirty: &BTreeMap<String, String>,
+    ) -> anyhow::Result<Vec<u8>> {
+        let mut editor = Editor::open(&self.export_k2f_bytes()?)?;
+        for (id, value) in dirty {
+            editor.replace_text(id, value)?;
+        }
+        Ok(editor.save_bytes()?)
     }
 }

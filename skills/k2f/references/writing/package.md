@@ -33,16 +33,18 @@ Pattern: [`catalog/content/root.json`](../../catalog/content/root.json) (include
 
 All lengths are **millipt** integers (1/1000 pt).
 
-| Page | `--page` | width × height |
-|------|----------|----------------|
-| A4 | `a4` | `595000` × `842000` |
-| Letter | `letter` | `612000` × `792000` |
-| A4 landscape | `a4-landscape` | `842000` × `595000` |
-| 16:9 (PPT-like) | `widescreen` | `960000` × `540000` |
-| 4:3 | `widescreen-43` | `720000` × `540000` |
-| 1:1 (social) | `square` | `600000` × `600000` (margin 0) |
-| 4:5 (social) | `portrait-45` | `600000` × `750000` (margin 0) |
-| US card 3.5×2" | `card` | `252000` × `144000` (margin 0) |
+| Page | `--page` | width × height | shell (default margin) | shell (`--margin 0`) |
+|------|----------|----------------|------------------------|----------------------|
+| A4 | `a4` | `595000` × `842000` | `730000` (56pt) | `842000` |
+| Letter | `letter` | `612000` × `792000` | `680000` (56pt) | `792000` |
+| A4 landscape | `a4-landscape` | `842000` × `595000` | `483000` (56pt) | `595000` |
+| 16:9 (PPT-like) | `widescreen` | `960000` × `540000` | `468000` (36pt) | `540000` |
+| 4:3 | `widescreen-43` | `720000` × `540000` | `468000` (36pt) | `540000` |
+| 1:1 (social) | `square` | `600000` × `600000` | `600000` | `600000` |
+| 4:5 (social) | `portrait-45` | `600000` × `750000` | `750000` | `750000` |
+| US card 3.5×2" | `card` | `252000` × `144000` | `144000` | `144000` |
+
+Shell `layout.height` is page height − `margin_top` − `margin_bottom`. Catalog demo shells ship `240000` — copy, then set `height` to the matching shell column.
 
 v0.1 is still `canvas_mode: "paged"` — widescreen is a page size, not a slide mode. Social and `card` presets default to `--margin 0`. Same full-bleed shell as slides: copy `ex_poster_shell.json`, set `layout.height` to the page height. `margin` is `[top, right, bottom, left]`. `init_package.py --margin 36000` (or four millipt values) overrides the preset. Custom canvas: `--width` / `--height` millipt together (override the `--page` preset). mm → millipt: `round(mm * 72000 / 254)` (e.g. 700×1000mm → `1984252×2834646`). Images must declare width/height in millipt (engine does not probe binary size for layout).
 
@@ -63,8 +65,8 @@ Two-column body: nested grid `{fr:1},{fr:1}` **inside** the grower row (already 
 1. Pick a canvas: `--page a4` (or letter / a4-landscape), or `--page a4 --width W --height H` for non-standard sizes; full-bleed `--margin 0`. Use the millipt table above (`595000×842000`), not ISO `595280×841890`.
 2. Under `root`, **one** child: copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json) (role `page_shell`). Set `layout.height` = content box (A4 / margin 0 → `842000`). Same grid as slides: `{auto:true}` + `{fr:1}` + `{auto:true}`.
 3. Header/footer are measured; leftover height goes to `{fr:1}`. Do **not** pre-assign millipt to every band — that fights `auto`+`fr`. Do not use a vertical stack as the page shell; no empty spacer containers.
-4. Full-bleed background: wrap the shell in `overlay` with the background child first (`ex_overlay.json`). The shell still carries the inset; the image child sets `layout.height` to the page.
-5. Verify with `python scripts/pack_verify.py <source> -o <workspace>/<name>.K2F --expect-pages 1 --render preview.png`. `PAGE_UNDERFILL` is a warning — for posters/invoices treat it as must-fix. Leftover must sit on a figure, table, or dense `{fr:1}` siblings, not a hollow card. A page-height `break_inside: avoid` **stack** with large `padding_pt` is the usual `UNSPLITTABLE_OVERFLOW` path — use the grid shell first.
+4. Full-bleed **image**: wrap the shell in `overlay` with the background child first (`ex_overlay.json`). The shell still carries the inset; the image child sets `layout.height` to the page. A **color bar** that must hit the trim (letterhead / CV header): copy [`ex_banner_header.json`](../../catalog/content/ex_banner_header.json) instead of a padded `page_shell` — do not pull the bar with a negative margin.
+5. Verify with `python scripts/pack_verify.py <source> -o <workspace>/<name>.K2F --expect-pages 1 --render preview.png`. `PAGE_UNDERFILL` is a warning — for composed sheets treat it as must-fix. Leftover must sit on a figure, table, or dense `{fr:1}` siblings, not a hollow card. A page-height `break_inside: avoid` **stack** with large `padding_pt` is the usual `UNSPLITTABLE_OVERFLOW` path — use the grid shell first.
 
 ### Duplex / mini canvas (cards)
 
@@ -92,7 +94,8 @@ Allowed layout types and fields: `schema/nodes.schema.json` → `layout`. Copy f
 | Continuous article columns | `columns` — `ex_columns.json` |
 | Fixed side-by-side (sidebar, header bar) | horizontal `stack` or 2-col `grid` |
 | Poster / slide page shell | `ex_poster_shell.json` — role `page_shell` (safe inset), pinned height + `{auto:true}` header/footer + `{fr:1}` grower |
-| Filled page (invoice/CV/letter) | `ex_filled_page.json` — same shell; table/notes in the `{fr:1}` grower, totals in `{auto:true}` footer or `ex_split_bar` |
+| Bleed header + inset body | `ex_banner_header.json` — `--margin 0`; outer `page_shell` `flush` + `section` `banner` + nested `page_shell`. Side/footer band: same nest, grid columns. Do not pad the outer shell; no negative margin |
+| Filled page (invoice/CV/letter / one-page infographic) | `ex_filled_page.json` — same shell; table/notes in the `{fr:1}` grower, totals in `{auto:true}` footer (`ex_split_bar` + `body` `end`) |
 | Grower vertical fill (stacked `{fr:1}` rows) | `ex_poster_growers.json` — leftover on a **figure** / dense card rows, not a short quote. `{fr:1}` stretches the box, not type |
 | Poster / dashboard / N-col matrix | `grid` with `pt` tracks, or `fr` **after** a finite outer height — `ex_grid.json`. N equal columns: N `{fr:1}`; omit `rows` to wrap children |
 | Full-page background + content | `overlay` (background child first) — `ex_overlay.json` |
@@ -104,11 +107,11 @@ Allowed layout types and fields: `schema/nodes.schema.json` → `layout`. Copy f
 | Thesis / report cover | `ex_cover.json` — page-height grid as `ex_poster_shell`; header nests stacks with different `gap` |
 
 - Grid tracks: `{ "pt": N }`, `{ "fr": N }`, or `{ "auto": true }` — never bare integers. `{auto:true}` is layout-grid only (not table `column_widths`). **`rows` is optional** — omit for uniform content-auto wrapping (including a **one-row** split): engine fills `ceil(n_children / n_columns)` `{auto:true}` tracks. Declared `rows` do **not** grow (extra children → error). Write `rows` when you need `fr`/`pt` or a fixed list. Grower / poster shells still copy [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json) with explicit `{auto,fr,auto}`. Magazine figure+copy: [`ex_media_row.json`](../../catalog/content/ex_media_row.json) (`{pt}`+`{fr:1}`; `rows` omitted).
-- Root `layout` is omitted or `stack` only. `grid` / `overlay` / `columns` on root **fail compile** — nest under a child, e.g. `root` → `root.grid`.
+- Root `layout` is omitted or **vertical** `stack` only. `grid` / `overlay` / `columns` / horizontal `stack` on root **fail compile** — nest under a child, e.g. `root` → `root.grid`.
 - **`fr` rows need a finite outer height.** In a vertical flow with unbounded height, `rows: [{fr:1}]` fails with `Cannot resolve fr tracks with infinite available size`. `fr` divides a **known** outer size — it is **not** content-auto height (`{auto:true}` is). Fix: set the grid's own `height`, use `pt`/`auto` rows, nest under a fixed-height stack/overlay, or prefer `stack` / native `table`.
 - **Pin content to column bottom** (footnotes / correspondence): fixed-height 2-row grid — `height` + `rows: [{"fr": 1}, {"pt": N}]` with body in row 0 and footer text in row 1. No footnote node and no `space-between`. Stretched equal-height **cards**: same idea inside the card — copy [`ex_card_bands.json`](../../catalog/content/ex_card_bands.json) (`{auto,fr,auto}`); sparse KPI may use stack `justify_content: center`.
 - Titles for multi-column flow: keep outside a `columns` container; use `column_span: "all"` for full-width figures **inside the same** unpadded columns node (`ex_columns.json`). Do not `break_before: page` on the figure and do not split the article into several columns containers. **Padded columns are atomic** (same as padded/grid/overlay). Flowing paper body uses `columns`, not a 2-col grid.
-- **Overlay is in-flow stacking**, not absolute positioning: children share one origin; height = max(children); later children paint on top (no `z-index`). The block is unsplittable across pages. Optional `width`/`height` pin the **overlay box**; children still measure **independently** and shrink to their content unless that child sets its own `layout.width`/`height` (or is a grid/`fr` filling a pinned overlay). A nested stack without `width` is only as wide as its text — `align_items: "end"` then cannot pin to the page/overlay right edge. Overlay has **no** `align_items` / `justify_content` — to center a layer, nest a stack whose `width`/`height` match the overlay, with `justify_content: "center"` and `align_items: "center"`. Sheet color/gradient: root `document` `box_decoration.background` (full page, including margins) — not `page_config`. Dark invoice/social: retarget `paper` / that background; do **not** zero `margin` just to hide a white ring. Full-bleed (paint to the trim) still `--margin 0` + `page_shell`. Full-page **image**: pin overlay to content-box size (page minus margins); image child first (`ex_overlay.json`).
+- **Overlay is in-flow stacking**, not absolute positioning: children share one origin; height = max(children); later children paint on top (no `z-index`). The block is unsplittable across pages. Optional `width`/`height` pin the **overlay box**; children still measure **independently** and shrink to their content unless that child sets its own `layout.width`/`height` (or is a grid/`fr` filling a pinned overlay). A nested stack without `width` is only as wide as its text — `align_items: "end"` then cannot pin to the page/overlay right edge. Overlay has **no** `align_items` / `justify_content` — to center a layer, nest a stack whose `width`/`height` match the overlay, with `justify_content: "center"` and `align_items: "center"`. Sheet color/gradient: root `document` `box_decoration.background` (full page, including margins) — not `page_config`. Dark invoice/social: retarget `paper` / that background; do **not** zero `margin` just to hide a white ring. Uniform-inset full-bleed (whole sheet inset, no trim-edge bar) still `--margin 0` + default `page_shell`. A color bar that must hit the trim: [`ex_banner_header.json`](../../catalog/content/ex_banner_header.json) (`page_shell` `flush` + nested `page_shell`) — do not keep outer `page_shell` padding and do not invent a negative margin. Full-page **image**: pin overlay to content-box size (page minus margins); image child first (`ex_overlay.json`).
 - **No `justify_content: space-between`.** Left/right split (title + logo, header logos): copy [`ex_split_bar.json`](../../catalog/content/ex_split_bar.json) — `columns: [{fr:1},{auto:true}]`. The `{fr:1}` track consumes leftover width, so the `{auto:true}` column sits on the trailing edge. Grid has no per-column `align_items`; do **not** switch to overlay + `align_items: start/end` for this. Right cell may be text or an image node. **Block on the trailing edge, lines still left-aligned** (letter sender, right-flush image in an equal-width cell): copy [`ex_end_block.json`](../../catalog/content/ex_end_block.json) — outer horizontal stack `justify_content: "end"` wrapping a content-width vertical stack. Nest that shape **inside** the right grid cell; do not `text_align: end` on each line (that ragged-left the block). Cover / slide vertical fill: [`ex_poster_shell.json`](../../catalog/content/ex_poster_shell.json) or [`ex_cover.json`](../../catalog/content/ex_cover.json) (`{auto:true}` + `{fr:1}` + `{auto:true}`), not padding guesses. Pin a footer to the page bottom: same 2-row/3-row grid (`{fr:1}` grower + `{auto:true}` or `{pt:N}` footer). Hollow grower: leftover on a figure or dense `{fr:1}` siblings ([`ex_poster_growers.json`](../../catalog/content/ex_poster_growers.json)) — `{fr:1}` stretches the box, not type; not an auto-height stack.
 - **Grid `cell_align` defaults to stretch/stretch** (omit/`null` same). `{auto:true}` sizes the **track** from the widest cell — it does not hug the child; stretch still fills that track. Whole-grid hug (pills, logos): `cell_align.x: "start"`. One cell different from the rest: nest a stack in that cell (`ex_end_block.json` / `ex_badge.json`) and set the child's role `self_align` — grid does **not** read `self_align` on a direct child. Do not add per-cell fields on the node. No first-line **baseline** align — use `y: "start"` (or keep both cells single-line).
 - **`text_align: center` is the content box**, not the physical page. `page_config.margin` `[top,right,bottom,left]` already does binding gutters. A title optically centered on the sheet with a wider inner margin needs overlay at content width or equal left/right padding on that title role — not a second centering origin.
@@ -122,7 +125,7 @@ Allowed layout types and fields: `schema/nodes.schema.json` → `layout`. Copy f
 
 ## Theme
 
-**Theme-only styling.** Style fields live in `styles/theme.json` roles/variants only — never on nodes in `root.json`. Nodes may set `role`, `variant`, `layout`, `modifiers`, `break_inside`, `break_before`, `keep_with_next`, `column_span`. Allowed role/theme keys: `schema/styles.schema.json` + `schema/visual_primitives.schema.json`.
+**Theme-only styling.** Style fields live in `styles/theme.json` roles/variants only — never on nodes in `root.json`. Nodes may set `role`, `variant`, `layout`, `modifiers`, `break_inside`, `break_before`, `keep_with_next`, `column_span`, `colspan`. Allowed role/theme keys: `schema/styles.schema.json` + `schema/visual_primitives.schema.json`.
 
 Typography, spacing, and layout intent for slides, posters, and styled reports belong in the **design spec** ([writing.md](../writing.md)); implement them as roles and variants in `styles/theme.json`. Layout recipes (box model, poster shell, `ex_poster_shell.json`) stay in this file — do not copy a pre-made skin unchanged.
 
@@ -134,43 +137,54 @@ Typography, spacing, and layout intent for slides, posters, and styled reports b
 - **Display math:** `role` must be `"math"` with `content.type = "math"`. Custom roles cannot wrap math content; use `variant` for visual skins. Any formula (display, inline modifier, or math glyphs in body) needs **NotoSansMath** in `assets/fonts/` plus `font_aliases` and the `math` role `font_family` — starter ships Roboto only; copy from [`catalog/assets/fonts/`](../../catalog/assets/fonts/). TeX is a **whitelist** ([errors.md](errors.md)); unknown commands → `MATH_UNSUPPORTED` — rewrite to the subset, do not expand the engine. No `\color` / `\textcolor` (the `math` role color applies to the whole formula). Numbered equations: copy [`ex_math_numbered.json`](../../catalog/content/ex_math_numbered.json), not `\\tag`.
 - **Inline math in author JSON:** U+FFFC in the text value plus a node modifier `{ "type": "math", "intent": "<tex>", "range": [byte_start, byte_end] }`. `$...$` in JSON is **not** parsed — that syntax is Markdown only. See `ex_modifiers.json`. Modifier types and `range` rules: `schema/nodes.schema.json`.
 - **Modifiers:** required `range`, `type`, **`intent`**. Visual patches come from `theme.modifiers.styles[type][intent]` — missing `intent` → `SCHEMA_INVALID`. Run `modifier_range.py` for byte offsets (max 50). Example node + theme patch: `ex_modifiers.json`.
-- **Full-bleed bars:** set `page_config.margin` to `[0,0,0,0]`, keep root padding 0, then wrap content in an inner container with padding. There is no separate bleed primitive.
+- **Full-bleed bars:** copy [`ex_banner_header.json`](../../catalog/content/ex_banner_header.json). `--margin 0`, root padding 0, outer `page_shell` `variant: "flush"` (pad 0), `section` `variant: "banner"` for the fill (square; not `card`), nested default `page_shell` for inset body. Side/footer band: same nest with grid columns. There is no bleed primitive and no negative margin.
 - **Dividers:** copy [`ex_rule.json`](../../catalog/content/ex_rule.json) into a **vertical** stack/grid `children` list — `role: "rule"`, empty container, small `layout.height`, surface fill from the `rule` role. Stack `align_items` **defaults to `stretch`** (not `start`) — that is what gives an empty rule its width. Collapse to a dot/`0` when the parent is `align_items: start|center|end`, a horizontal stack, an overlay child without `width`, or a grid `{auto:true}` column whose only content is the empty rule. Fix: leave the parent at default stretch, or nest the rule as a sibling of a hugging group — do not put it inside the hugging stack. Alternatively a content box whose border uses `edges: ["bottom"]` / dashed style (named primitive, same as table cells below).
 - **Fills / glass:** `primitives.gradients` support **linear** fills only (no radial; `angle_degrees` 0=right, 90=down — not CSS). Named `box_decoration.blur` + `primitives.blurs` give backdrop blur / glass on boxes — copy [`ex_glass.json`](../../catalog/content/ex_glass.json) (catalog theme `glass_light` / `blurs.background`, not starter). Radial glow, noise, or vignettes → SVG under `assets/images/`. `box_decoration.shadow` is **box** elevation only — there is no text-shadow on glyphs.
 - **Rounded full-bleed children:** `corner_radius` clips **this** box's fill/shadow/blur, not descendants. Give the overflowing child the same corner name, or pad the parent. No `overflow` / clip field.
 - **Rounded + border:** a four-edge `border` follows `corner_radius` (same path as fill/shadow). Combining them on `card` / `glass` is correct — do not wrap a second square box. Named `edges` (`["bottom"]`, `["top","bottom"]`) stay straight (table rules).
-- **Native table (inline):** each cell is a full semantic node. Minimal shape: `catalog/content/ex_table.json` (Qty uses cell `variant: "end"` → theme `text_overrides.text_align`). Dense / dashboard: [`ex_table_dense.json`](../../catalog/content/ex_table_dense.json) — weighted `{fr}` columns + cell `variant: "compact"` (starter). Optional `row_gap` / `column_gap` (omit → `gap`). No `colspan`/`rowspan` — extra columns and hide the middle stroke with a named border `edges` (starter: cell `variant: "hbar"` = top+bottom, `"bottom"` = underline only). Three-line: table `variant: "ruled"` (top+bottom on the table role) + header `bottom`. Copy [`ex_table_edges.json`](../../catalog/content/ex_table_edges.json). **Vertical middle** in a tall row: cell `variant: "center"` (starter maps that to role `self_align: "center"`). Do not invent `vertical_align` or `colspan` on the node. A word wider than its column is force-split — widen that `{fr}` / `{pt}` track, lower the cell role `font_size`, or insert U+00AD; no hyphenation dictionary.
+- **Native table (inline):** each cell is a full semantic node. Minimal shape: `catalog/content/ex_table.json` (Qty uses cell `variant: "end"` → theme `text_overrides.text_align`). Dense / dashboard: [`ex_table_dense.json`](../../catalog/content/ex_table_dense.json) — weighted `{fr}` columns + cell `variant: "compact"` (starter). Optional `row_gap` / `column_gap` (omit → `gap`). Same-row cell `colspan` (default 1) occupies that many `column_widths` tracks ([`ex_table_colspan.json`](../../catalog/content/ex_table_colspan.json)); no `rowspan`. Hide a middle stroke with a named border `edges` (starter: cell `variant: "hbar"` = top+bottom, `"bottom"` = underline only). Three-line: table `variant: "ruled"` (top+bottom on the table role) + header `bottom`. Copy [`ex_table_edges.json`](../../catalog/content/ex_table_edges.json). Full-width title or date: sibling above the table, not a merged row (`column_span` is columns-layout only). Totals that must sit on the same column tracks: cell `colspan`. Other header/totals bars: [`ex_split_bar.json`](../../catalog/content/ex_split_bar.json) / [`ex_filled_page.json`](../../catalog/content/ex_filled_page.json). **Vertical middle** in a tall row: cell `variant: "center"` (starter maps that to role `self_align: "center"`). Do not invent `vertical_align` or `rowspan` on the node. A word wider than its column is force-split — widen that `{fr}` / `{pt}` track, lower the cell role `font_size`, or insert U+00AD; no hyphenation dictionary.
 - **Badge / pill:** copy [`ex_badge.json`](../../catalog/content/ex_badge.json) — a **stack wrapper** around a text node whose role has `box_decoration` + `self_align: "start"`. Grid `cell_align.x` defaults to stretch and **does not** read `self_align` on a direct child; dropping the inner text node into `ex_split_bar.json` stretches the pill. Do not add another box just for fill; do not put `box_decoration` on the node; do not invent a modifier pill.
-- **Composite table cells:** a cell may be a `container` + `stack` holding text / `list_item` children. `list_item` must be **text** content with a non-empty `list_id` (not a nested list container). `list_style` on `list_item` is optional — omit for starter defaults; set only to override marker width/gap/indent.
-- **`font_aliases`:** maps role `font_family` names to embedded font **keys** (filename stems under `assets/fonts/`). Lives in **`styles/theme.json`**, never `manifest.json`. One font file also registers as `"default"`. **Two or more fonts:** no auto-`default` (file order must not pick a silent fallback) — every file stem must appear in `font_aliases`, and each role's `font_family` must be one of those stems. CSS generic families fail compile. `--add-font` copies the file and adds the alias; it does **not** retarget roles — point `math` (or headings / body) at the new stem yourself. Catalog already does this for Roboto + NotoSansMath (`catalog/styles/theme.json`):
+- **Composite table cells:** a cell may be a `container` + `stack` holding text / `list_item` children. `list_item` must be **text** content with a non-empty `list_id` (not a nested list container). `list_style` on `list_item` is optional — omit for starter defaults; set only to override marker width/gap/indent. Copy [`ex_table_composite.json`](../../catalog/content/ex_table_composite.json).
+- **`font_aliases`:** maps role `font_family` names to embedded font **keys** (filename stems under `assets/fonts/`). Lives in **`styles/theme.json`**, never `manifest.json`. One font file also registers as `"default"`. **Two or more fonts:** no auto-`default` (file order must not pick a silent fallback) — every file stem must appear in `font_aliases`, and each role's `font_family` must be one of those stems. CSS generic families fail compile. `--add-font` copies the file and adds the alias; it does **not** retarget roles — point `math` (or headings / body) at the new stem yourself. Catalog already does this for Roboto + NotoSansMath + NotoSerif (`catalog/styles/theme.json`):
 
   ```json
   "font_aliases": {
     "Roboto-Regular": "Roboto-Regular",
-    "NotoSansMath-Regular": "NotoSansMath-Regular"
+    "NotoSansMath-Regular": "NotoSansMath-Regular",
+    "NotoSerif-Regular": "NotoSerif-Regular"
   }
   ```
 
   Copy `catalog/assets/fonts/NotoSansMath-Regular.ttf` (or `--add-font` that file), set the `math` role `font_family` to `NotoSansMath-Regular`. Body text with math glyphs still needs that face embedded (package fonts fall back to each other).
 
-  Academic serif body + sans headings (after `--add-font /path/to/SourceSerif4-Regular.ttf`, which keeps Roboto):
+  Serif headings + sans body (or the reverse) after `--add-font catalog/assets/fonts/NotoSerif-Regular.ttf` (keeps Roboto):
 
   ```json
   "font_aliases": {
     "Roboto-Regular": "Roboto-Regular",
-    "SourceSerif4-Regular": "SourceSerif4-Regular"
+    "NotoSerif-Regular": "NotoSerif-Regular"
   }
   ```
 
-  Then set `body` (and `default`) `font_family` to `SourceSerif4-Regular`; keep `h1`–`h4` on `Roboto-Regular` (or the reverse). Do not leave leftover `"default": "default"` from an old theme.
+  Then set `h1`–`h4` `font_family` to `NotoSerif-Regular`; keep `body` (and `default`) on `Roboto-Regular` (or the reverse). Do not leave leftover `"default": "default"` from an old theme.
+- **`font_faces`:** optional map from a family name to `{regular,bold,italic,bold_italic}` stems. Role `font_family` stays that family (or the Regular stem); `bold` / `italic` then select those files. Omitted slots stay synthetic (stroke / shear). `--add-font` does not fill this map. Do not point a heading at `*-Bold` and also set `bold: true`.
+
+  ```json
+  "font_faces": {
+    "LiberationSans": {
+      "regular": "LiberationSans-Regular",
+      "bold": "LiberationSans-Bold"
+    }
+  }
+  ```
 - **Mixed dark cover / light interior:** keep the same semantic roles (`h1`, `body`, `card`, `table_row_cell`). Skin the dark band with `variant: "on_dark"` (starter + catalog). Copy [`ex_on_dark.json`](../../catalog/content/ex_on_dark.json). Do **not** clone `th_light_h1` / `th_dark_body` role trees — that leaks presentation into the semantic layer. Cover-only chrome can still be dedicated roles (`ex_cover.json`) if those nodes never appear in the interior.
 - Format `role` is an open string but **must exist** in `theme.roles`. Custom roles are expected.
 
 Default published trees should avoid shadow/blur unless PDF export with stamp is intended. Linear gradients, shadows, and backdrop blur on a page trigger the PDF stamp path (`k2f_paint` at scale 2/3/4, default 4).
 
-**Bundled font:** starter ships `Roboto-Regular.ttf` only. Latin + common punctuation. **Not** a serif face, arrows (`→` `↗` `↑`), stars/dingbats (★ ◆), math (`∈`), or **CJK/kana**. Missing glyphs → `FONT_MISSING_GLYPH` (hard fail; no OS fallback). Embedded package fonts **do** fall back to each other. Pack/compile/save of a `.K2F` coverage-subsets large CJK faces to GB2312 ∪ Big5 level 1 ∪ JIS X 0208 Han plus all non-Han glyphs (author directories are not rewritten). Han outside that union still fails closed.
+**Bundled font:** starter ships `Roboto-Regular.ttf` only. Latin + common punctuation. **Not** arrows (`→` `↗` `↑`), stars/dingbats (★ ◆), math (`∈`), or **CJK/kana**. Missing glyphs → `FONT_MISSING_GLYPH` (hard fail; no OS fallback). Embedded package fonts **do** fall back to each other. Pack/compile/save of a `.K2F` coverage-subsets large CJK faces to GB2312 ∪ Big5 level 1 ∪ JIS X 0208 Han plus all non-Han glyphs (author directories are not rewritten). Han outside that union still fails closed.
 
-- Academic / book serif: `init_package.py --add-font /path/to/Serif.ttf` (keeps Roboto) and point heading roles at that stem via `font_aliases`. Do not expect a bundled Libertine/DejaVu Serif.
+- Academic / book serif: `init_package.py --add-font catalog/assets/fonts/NotoSerif-Regular.ttf` (keeps Roboto) and point heading or body roles at that stem via `font_aliases`.
 
 - Japanese / Korean / full CJK: `init_package.py --add-font /path/to/NotoSansJP.otf` (keeps Roboto; kana uses the extra face). `--font` **replaces** Roboto and retargets theme roles — use a covering face that includes Latin. **NotoSansSC is Simplified Chinese**, not Japanese kana.
 - Math symbols in body text also need a math/CJK face, or put them in `role: "math"` with NotoSansMath.
@@ -180,7 +194,7 @@ Default published trees should avoid shadow/blur unless PDF export with stamp is
 
 Embed **PNG, JPEG, WebP, or SVG** under `assets/images/` only (not `assets/` root, **not GIF**). SVG is rasterized **without system fonts**: `<text>` / `<tspan>` / `<textPath>` / `<foreignObject>` **fail at pack** (no silent drop) — convert labels to `<path>` (or a K2F text node beside the image). XML comments and CDATA that merely mention those tags are ignored. Declare width/height in millipt on the image node.
 
-Default stack `align_items` is `stretch`: the image **box** fills the cross axis and paint letterboxes (contain, centered) inside it. Left/right: set the image role's `self_align` to `start`/`end` in `theme.json` (never on the node). See `catalog/content/ex_image.json`.
+Default stack `align_items` is `stretch`: the image **box** fills the cross axis and paint letterboxes (contain, centered) inside it. Role/variant `image_fit: cover` center-crops into the box (omit = contain). Do not put `image_fit` on the node. Left/right: set the image role's `self_align` to `start`/`end` in `theme.json` (never on the node). See `catalog/content/ex_image.json`.
 
 ## Workflow
 
@@ -197,7 +211,7 @@ python scripts/init_package.py --workspace <workspace> --title "..." --page a4|l
 # duplex card: --page card; two shells; back break_before=page; --expect-pages 2
 # custom size: --width 1984252 --height 2834646  (with --page for margin defaults)
 # optional: --margin 36000   or   --margin 56000,56000,56000,56000
-# edit source/content/root.json and source/styles/theme.json (copy from catalog/content/ex_*.json)
+# edit source/content/root.json and source/styles/theme.json (copy from catalog/content/ex_*.json into root children)
 python scripts/pack_verify.py <workspace>/source -o <workspace>/<name>.K2F
 # preview + single-page gate (compile stderr includes pages=N)
 # bare --render preview.png → <workspace>/tmp/preview.png

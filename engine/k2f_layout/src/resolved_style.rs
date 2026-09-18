@@ -2,7 +2,7 @@ use crate::list_style::ListStyle;
 use crate::style::{apply_patch, resolve_base_style, Style};
 use crate::theme::{Theme, ThemeDecoration};
 use crate::visual_primitives::EdgeInsetsPt;
-use k2f_core::{Align, Pt};
+use k2f_core::{Align, NodeContent, Pt, SemanticNode};
 
 /// Insets in fixed-point pt units (1/1000 pt).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -75,6 +75,17 @@ pub fn resolve_self_align(role: &str, variant: Option<&str>, theme: &Theme) -> O
     role_style.self_align
 }
 
+/// Parent align, then role `self_align`. Form fields never stretch: the reserved box is locked.
+pub(crate) fn align_for_child(node: &SemanticNode, parent_align: Align, theme: &Theme) -> Align {
+    let resolved =
+        resolve_self_align(&node.role, node.variant.as_deref(), theme).unwrap_or(parent_align);
+    if matches!(node.content, NodeContent::FormField(_)) && resolved == Align::Stretch {
+        Align::Start
+    } else {
+        resolved
+    }
+}
+
 /// Resolve the box decoration for a role, then apply any role-variant overrides.
 ///
 /// The output is representation-level (it preserves primitive references). Consumers decide
@@ -109,6 +120,26 @@ pub fn resolve_box_decoration(
     decoration
 }
 
+/// How an image role maps its bitmap into the laid-out box. Omit = contain.
+pub fn resolve_image_fit(role: &str, variant: Option<&str>, theme: &Theme) -> k2f_core::ImageFit {
+    use k2f_core::ImageFit;
+    let Some(role_style) = theme
+        .roles
+        .get(role)
+        .or_else(|| theme.roles.get("default"))
+    else {
+        return ImageFit::Contain;
+    };
+    if let Some(variant_name) = variant {
+        if let Some(variant_def) = role_style.variants.get(variant_name) {
+            if let Some(fit) = variant_def.image_fit {
+                return fit;
+            }
+        }
+    }
+    role_style.image_fit.unwrap_or(ImageFit::Contain)
+}
+
 /// Resolve list layout tokens for a role, then deterministically apply any role-variant overrides.
 pub fn resolve_list_style(role: &str, variant: Option<&str>, theme: &Theme) -> Option<ListStyle> {
     let role_style = theme
@@ -117,26 +148,19 @@ pub fn resolve_list_style(role: &str, variant: Option<&str>, theme: &Theme) -> O
         .or_else(|| theme.roles.get("default"))?;
 
     let base = role_style.list_style.as_ref();
-    let default_for_role = role == "list_item" && base.is_none();
+    let variant_overlay = variant.and_then(|name| {
+        role_style
+            .variants
+            .get(name)
+            .and_then(|v| v.list_style.as_ref())
+    });
+    let merged = ListStyle::merged(base, variant_overlay);
 
-    let Some(variant_name) = variant else {
-        if default_for_role {
-            return Some(ListStyle::list_item_defaults());
-        }
-        return base.cloned();
-    };
-    let Some(variant_def) = role_style.variants.get(variant_name) else {
-        if default_for_role {
-            return Some(ListStyle::list_item_defaults());
-        }
-        return base.cloned();
-    };
-
-    let merged = ListStyle::merged(base, variant_def.list_style.as_ref());
-    if merged.is_none() && role == "list_item" {
-        return Some(ListStyle::list_item_defaults());
+    if role == "list_item" {
+        ListStyle::merged(Some(&ListStyle::list_item_defaults()), merged.as_ref())
+    } else {
+        merged
     }
-    merged
 }
 
 /// Extract padding insets for a node-like (role, variant) pair.
@@ -206,6 +230,7 @@ mod tests {
                     ..ThemeDecoration::default()
                 }),
                 list_style: None,
+                image_fit: None,
                 bold: false,
                 italic: false,
                 letter_spacing_pt: Pt::ZERO,
@@ -220,6 +245,7 @@ mod tests {
                         self_align: None,
                         text_overrides: None,
                         list_style: None,
+                        image_fit: None,
                     },
                 )]),
             },
@@ -231,6 +257,7 @@ mod tests {
             roles,
             modifiers: Default::default(),
             font_aliases: HashMap::new(),
+            font_faces: HashMap::new(),
         };
 
         let decoration = resolve_box_decoration("card", Some("spacious"), &theme).unwrap();
@@ -265,6 +292,7 @@ mod tests {
                     marker_gap_pt: Some(Pt(4_000)),
                     ..ListStyle::default()
                 }),
+                image_fit: None,
                 bold: false,
                 italic: false,
                 letter_spacing_pt: Pt::ZERO,
@@ -280,6 +308,7 @@ mod tests {
                             bullet_glyph: Some("*".to_string()),
                             ..ListStyle::default()
                         }),
+                        image_fit: None,
                     },
                 )]),
             },
@@ -291,11 +320,97 @@ mod tests {
             roles,
             modifiers: Default::default(),
             font_aliases: HashMap::new(),
+            font_faces: HashMap::new(),
         };
 
         let resolved = resolve_list_style("list_item", Some("compact"), &theme).unwrap();
         assert_eq!(resolved.marker_box_width_pt, Some(Pt(18_000)));
         assert_eq!(resolved.marker_gap_pt, Some(Pt(2_000)));
         assert_eq!(resolved.bullet_glyph.as_deref(), Some("*"));
+        assert_eq!(
+            resolved.depth_indent_pt,
+            ListStyle::list_item_defaults().depth_indent_pt
+        );
+    }
+
+    #[test]
+    fn list_item_partial_list_style_merges_defaults() {
+        use crate::list_style::ListStyle;
+
+        let mut roles = HashMap::new();
+        roles.insert(
+            "list_item".to_string(),
+            RoleStyle {
+                font_family: "default".to_string(),
+                font_size: Pt(12_000),
+                line_height_mult: 1_200,
+                color: "black".to_string(),
+                text_align: crate::style::TextAlign::Start,
+                self_align: None,
+                box_decoration: None,
+                list_style: Some(ListStyle {
+                    bullet_glyph: Some("•".to_string()),
+                    ..ListStyle::default()
+                }),
+                image_fit: None,
+                bold: false,
+                italic: false,
+                letter_spacing_pt: Pt::ZERO,
+                first_line_indent_pt: Pt::ZERO,
+                variants: HashMap::new(),
+            },
+        );
+        let theme = Theme {
+            palette: HashMap::new(),
+            primitives: Default::default(),
+            roles,
+            modifiers: Default::default(),
+            font_aliases: HashMap::new(),
+            font_faces: HashMap::new(),
+        };
+        let resolved = resolve_list_style("list_item", None, &theme).unwrap();
+        let defaults = ListStyle::list_item_defaults();
+        assert_eq!(resolved.bullet_glyph.as_deref(), Some("•"));
+        assert_eq!(resolved.marker_box_width_pt, defaults.marker_box_width_pt);
+        assert_eq!(resolved.marker_gap_pt, defaults.marker_gap_pt);
+        assert_eq!(resolved.depth_indent_pt, defaults.depth_indent_pt);
+    }
+
+    #[test]
+    fn image_fit_variant_cover_overrides_role() {
+        use k2f_core::ImageFit;
+
+        let mut roles = HashMap::new();
+        roles.insert(
+            "image".to_string(),
+            RoleStyle {
+                font_family: "default".to_string(),
+                font_size: Pt(12_000),
+                line_height_mult: 1_200,
+                color: "black".to_string(),
+                image_fit: Some(ImageFit::Contain),
+                variants: HashMap::from([(
+                    "cover".to_string(),
+                    RoleVariant {
+                        image_fit: Some(ImageFit::Cover),
+                        ..Default::default()
+                    },
+                )]),
+                ..Default::default()
+            },
+        );
+        let theme = Theme {
+            roles,
+            ..Default::default()
+        };
+        assert_eq!(resolve_image_fit("image", None, &theme), ImageFit::Contain);
+        assert_eq!(
+            resolve_image_fit("image", Some("cover"), &theme),
+            ImageFit::Cover
+        );
+        assert_eq!(
+            resolve_image_fit("image", Some("missing"), &theme),
+            ImageFit::Contain
+        );
     }
 }

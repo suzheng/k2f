@@ -6,9 +6,15 @@ export function initWasm(wasmSource?: InitWasmSource): Promise<WasmModule>;
 export function initViewerWasm(wasmSource?: InitWasmSource): Promise<ViewerWasmModule>;
 export function createK2f(): Promise<K2fApi>;
 export function createViewer(): Promise<ViewerOnlyApi>;
-export function exportPdf(packageBytes: Uint8Array): Promise<Uint8Array>;
+export function exportPdf(
+  packageBytes: Uint8Array,
+  scale?: number,
+  flatten?: boolean,
+): Promise<Uint8Array>;
 export function exportPptx(packageBytes: Uint8Array): Promise<Uint8Array>;
 export function exportDocx(packageBytes: Uint8Array): Promise<Uint8Array>;
+export function exportIdml(packageBytes: Uint8Array): Promise<Uint8Array>;
+export function exportIdmlOnly(packageBytes: Uint8Array): Promise<Uint8Array>;
 export function markdownToK2f(
   md: string,
   opts: { title?: string; templateBytes: Uint8Array },
@@ -95,6 +101,10 @@ export class Editor {
   export_pptx(): Uint8Array;
   exportDocx(): Uint8Array;
   export_docx(): Uint8Array;
+  exportIdml(): Uint8Array;
+  export_idml(): Uint8Array;
+  exportIdmlOnly(): Uint8Array;
+  export_idml_only(): Uint8Array;
   free(): void;
 }
 
@@ -133,12 +143,19 @@ export class Viewer {
   page_height_pt(page: number): number;
   render_page(page: number, scale: number): Uint8Array;
   export_pdf(): Uint8Array;
+  export_pdf_at(scale: number): Uint8Array;
+  /** `flatten` paints field glyphs and omits AcroForm widgets. */
+  export_pdf_with(scale: number, flatten: boolean): Uint8Array;
   export_pptx(): Uint8Array;
   export_docx(): Uint8Array;
+  export_idml(): Uint8Array;
+  export_idml_only(): Uint8Array;
   search(query: string): string;
   hit_test(page: number, x_pt: number, y_pt: number): string | undefined;
   hit_selection(page: number, x_pt: number, y_pt: number): string | undefined;
   boxes_for(id: string): string;
+  /** JSON array of FormFieldLocJson. Empty when the document has no form fields. */
+  form_fields(): string;
   clipboard(id: string): string | undefined;
   selection(id: string): string | undefined;
   text_layer(page: number): string;
@@ -156,6 +173,20 @@ export interface SelectionJson {
   text?: string | null;
   char_range?: [number, number] | null;
   node?: unknown;
+}
+
+export interface FormFieldLocJson {
+  id: string;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  kind: "text" | "multiline" | "checkbox";
+  value: string;
+  placeholder?: string;
+  required: boolean;
+  max_length?: number;
 }
 
 export interface TextSpanJson {
@@ -177,7 +208,7 @@ export interface ViewerMountOptions {
   /** Explicit WASM flavor. `editable: true` always uses sdk. Default is viewer when available. */
   runtime?: "sdk" | "viewer";
   copyFormat?: "markdown" | "plain";
-  exportFormat?: "k2f" | "pdf" | "pptx" | "docx" | "markdown" | "png" | "jpg";
+  exportFormat?: "k2f" | "pdf" | "pptx" | "docx" | "idml" | "markdown" | "png" | "jpg";
   title?: string;
 }
 
@@ -188,7 +219,7 @@ export interface ViewerHandle {
   editing: boolean;
   destroy(): void;
   goPage(page: number): void;
-  export(format?: "k2f" | "pdf" | "pptx" | "docx" | "markdown" | "png" | "jpg"): {
+  export(format?: "k2f" | "pdf" | "pptx" | "docx" | "idml" | "markdown" | "png" | "jpg"): {
     bytes: Uint8Array;
     filename: string;
     mime: string;

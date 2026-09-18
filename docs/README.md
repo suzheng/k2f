@@ -1,50 +1,78 @@
-# K2F documentation
+# Introduction
 
-Public documentation for the K2F format and SDK.
+K2F is a document format for **pixel-identical, semantically editable** documents. You author **meaning** as JSON; one reference engine compiles it, and every viewer paints the same output.
 
-**How to read this tree:**
+## Package model
 
-- **[Specification](spec/k2f-v0.1.md)** — normative format contract (paths, fields, verify codes).
-- **[Architecture](architecture/README.md)** — design rationale and engine internals for contributors.
-- **[Instructions](instructions/)** — authoring operations for agents and hand-edited JSON.
-- **[Agent skills](../skills/README.md)** — task-oriented playbooks that call the SDK/CLI.
+A `.K2F` file is a ZIP. You edit two layers; `k2f pack` / `compile` writes the third:
 
-## Specification
+| Layer | Path | What it is |
+| --- | --- | --- |
+| **Content** | `content/root.json` | Semantic tree: stable `id`, `role`, and `content`. No coordinates, colors, or font sizes. |
+| **Theme** | `styles/theme.json` | Appearance keyed by role (and optional variant). Fonts live here and under `assets/fonts/`. |
+| **Lock** | `document.K2F.lock` | Compiled geometry and paint operations. Viewers and exports paint **this**. Do not hand-edit. |
 
-- [K2F format v0.1](spec/k2f-v0.1.md)
+`manifest.json` sets page size and margins; `assets/` holds fonts and images. Change content or theme, then relock.
 
-## Architecture
+## Quick install
 
-- [Overview](architecture/README.md)
-- [Design goals and principles](architecture/design.md)
-- [Codebase overview](architecture/codebase.md)
-- [Layout engine](architecture/layout-engine.md)
-- [Human editor (design proposal)](architecture/editor.md)
+```bash
+pip install k2f
+```
+
+Python 3.9+. Optional: `npm i @openk2f/k2f` for the [web viewer](guide/web-viewer.md); `cargo install k2f` for a CLI without Python. For the full author loop (skill folder, `init_package.py`, `pack_verify.py`), see [Getting started](guide/getting-started.md).
+
+## Get started
+
+- [Getting started](guide/getting-started.md) — agent skill or CLI, first `.K2F`
+- [Format spec](spec/k2f-v0.3.md) — normative contract (container, processing, integrity)
+
+## Authoring
+
+1. Copy golden nodes from the [catalog](reference/catalog.md) into `content/root.json` `children` (keep `id: "root"`; do not replace the file with a catalog fragment).
+2. Look up allowed keys in [Allowed keys](reference/keys.md), then the matching file under [`schema/`](../skills/k2f/schema/).
+
+Topic guides:
+
+- [Text](authoring/text.md) — paragraphs, headings, lists, inline marks
+- [Images](authoring/images.md) — embedded bitmaps and SVG
+- [Tables](authoring/tables.md) — inline tables
+- [Layout](authoring/layout.md) — stack and grid
+- [Theme and fonts](authoring/theme.md) — roles, variants, embedded fonts
+
+## Reference
+
+- [Catalog](reference/catalog.md) — packable `ex_*.json` examples
+- [Allowed keys](reference/keys.md) — node, theme, and manifest fields
+- [Format spec](spec/k2f-v0.3.md)
+
+## Export
+
+Markdown or JSON → packed `.K2F` → PDF, PowerPoint, Word, or InDesign. The lock is the source; each file is a drawing of it.
+
+- [Export](guide/exporting.md) — pipeline and format comparison
+- [PDF](guide/exporting-pdf.md) — fillable AcroForm by default
+- [PowerPoint](guide/exporting-pptx.md)
+- [Word](guide/exporting-docx.md)
+- [InDesign](guide/exporting-idml.md)
 
 ## Guides
 
-- [Getting Started](guide/getting-started.md)
-- [SDK themes](guide/themes.md)
-- [Web viewer](guide/web-viewer.md)
-- [Status & roadmap](guide/status.md)
-- [Guide images](guide/images/README.md)
-- [Desktop reader (in development)](../desktop/k2f_reader/README.md)
+- [Markdown conversion](guide/markdown.md) — Markdown ↔ K2F
+- [Web viewer](guide/web-viewer.md) — embed `<k2f-viewer>` (serve packages over HTTP, not `file://`)
 
-## Instructions (authoring)
+Permanent publish links (`/v/{appearance_hash}`) are documented in the [K2F Skill](../skills/k2f/SKILL.md) (`references/publishing.md`).
 
-- [Attribute reference](instructions/attribute_reference.md)
-- [File operations](instructions/k2f_file_operations.md)
-- [Content operations](instructions/content_operations.md)
-- [Style operations](instructions/style_operations.md)
-- [Semantic code blocks](instructions/semantic_code_blocks.md)
-- [Agent profile v0](instructions/agent_v0.md) — SDK system-prompt dialect (not the format spec)
+## Agents and tools
 
-## Related
+- [K2F Skill](../skills/k2f/SKILL.md) — install once; workflows for create, convert, export, and embed
+- [Playground](https://k2f.dev/playground) — compile and preview in the browser
+- [Verify](https://k2f.dev/verify) — check a `.K2F` file for integrity banners
 
-- [Agent skills](../skills/README.md)
-- [Security policy](../SECURITY.md)
-- [Contributing](../CONTRIBUTING.md)
+## Project
 
----
+- [Status and roadmap](guide/status.md)
+- [Desktop reader (in development)](../desktop/k2f_reader/README.md) — native lock executor (same rules as the web viewer)
+- [Contributing](../CONTRIBUTING.md) · [Security](../SECURITY.md) · [Compatibility](../COMPATIBILITY.md)
 
-*Internal implementation plans live outside this public repository (private brain), not under `docs/`.*
+Contributor internals (engine design, crate map): [`architecture/`](architecture/README.md). Not part of the authoring path.

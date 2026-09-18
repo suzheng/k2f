@@ -1,7 +1,8 @@
 mod common;
 
 use k2f_core::{
-    GeometryNode, LayoutResult, LockFile, Page, PageRenderPlan, PaintOp, Pt, Rect, RenderPlan,
+    GeometryNode, ImageFit, LayoutResult, LockFile, Page, PageRenderPlan, PaintOp, Pt, Rect,
+    RenderPlan,
 };
 use k2f_paint::{letterbox_dest, render_lockfile_page_to_png, single_font_map, OFFICIAL_PNG_SCALE};
 use std::collections::BTreeMap;
@@ -64,6 +65,8 @@ fn paints_real_png_not_gray_placeholder() {
                         height: Pt(100000),
                     },
                     src: "assets/images/logo.png".into(),
+                    fit: Default::default(),
+                    corner_radius_pt: None,
                 }],
             }],
         },
@@ -147,6 +150,8 @@ fn paints_real_jpeg_not_gray_placeholder() {
                         height: Pt(100000),
                     },
                     src: "assets/images/logo.jpg".into(),
+                    fit: Default::default(),
+                    corner_radius_pt: None,
                 }],
             }],
         },
@@ -223,6 +228,8 @@ fn paints_real_webp_not_gray_placeholder() {
                         height: Pt(100000),
                     },
                     src: "assets/images/mark.webp".into(),
+                    fit: Default::default(),
+                    corner_radius_pt: None,
                 }],
             }],
         },
@@ -240,5 +247,143 @@ fn paints_real_webp_not_gray_placeholder() {
     assert!(
         p[1] > 120 && p[0] < 80,
         "center should be the green mark, got {p:?}"
+    );
+}
+
+#[test]
+fn paints_cover_fills_box_without_letterbox_bars() {
+    let png = solid_png(20, 10, 200, 30, 30);
+    let mut images = BTreeMap::new();
+    images.insert("assets/images/logo.png".to_string(), png);
+    let lock = LockFile {
+        engine_version: "0".into(),
+        engine_commit_sha: "0".into(),
+        content_hash: "0".into(),
+        appearance_hash: "0".into(),
+        geometry: LayoutResult {
+            pages: vec![Page {
+                index: 0,
+                width: Pt(100000),
+                height: Pt(100000),
+                root: GeometryNode {
+                    id: "img".into(),
+                    x: Pt(0),
+                    y: Pt(0),
+                    width: Pt(100000),
+                    height: Pt(100000),
+                    glyphs: vec![],
+                    text_runs: vec![],
+                    fill_rects: vec![],
+                    children: vec![],
+                },
+            }],
+        },
+        render_plan: RenderPlan {
+            compositing: Default::default(),
+            pages: vec![PageRenderPlan {
+                index: 0,
+                ops: vec![PaintOp::DrawImage {
+                    node_id: "img".into(),
+                    rect: Rect {
+                        x: Pt(0),
+                        y: Pt(0),
+                        width: Pt(100000),
+                        height: Pt(100000),
+                    },
+                    src: "assets/images/logo.png".into(),
+                    fit: ImageFit::Cover,
+                    corner_radius_pt: None,
+                }],
+            }],
+        },
+    };
+    let out = render_lockfile_page_to_png(
+        &lock,
+        0,
+        OFFICIAL_PNG_SCALE,
+        &single_font_map(&common::font_bytes()),
+        &images,
+    )
+    .unwrap();
+    let decoded = image::load_from_memory(&out).unwrap().to_rgba8();
+    let p = decoded.get_pixel(decoded.width() / 2, decoded.height() / 2);
+    assert!(
+        p[0] > 150 && p[1] < 80,
+        "cover center should be the red image, got {p:?}"
+    );
+    let corner = decoded.get_pixel(2, 2);
+    assert!(
+        corner[0] > 150 && corner[1] < 80,
+        "cover must fill the box (no letterbox bars), got {corner:?}"
+    );
+}
+
+#[test]
+fn paints_image_corner_radius_clips_bitmap() {
+    let png = solid_png(20, 20, 200, 30, 30);
+    let mut images = BTreeMap::new();
+    images.insert("assets/images/logo.png".to_string(), png);
+    let lock = LockFile {
+        engine_version: "0".into(),
+        engine_commit_sha: "0".into(),
+        content_hash: "0".into(),
+        appearance_hash: "0".into(),
+        geometry: LayoutResult {
+            pages: vec![Page {
+                index: 0,
+                width: Pt(100000),
+                height: Pt(100000),
+                root: GeometryNode {
+                    id: "img".into(),
+                    x: Pt(0),
+                    y: Pt(0),
+                    width: Pt(100000),
+                    height: Pt(100000),
+                    glyphs: vec![],
+                    text_runs: vec![],
+                    fill_rects: vec![],
+                    children: vec![],
+                },
+            }],
+        },
+        render_plan: RenderPlan {
+            compositing: Default::default(),
+            pages: vec![PageRenderPlan {
+                index: 0,
+                ops: vec![PaintOp::DrawImage {
+                    node_id: "img".into(),
+                    rect: Rect {
+                        x: Pt(0),
+                        y: Pt(0),
+                        width: Pt(100000),
+                        height: Pt(100000),
+                    },
+                    src: "assets/images/logo.png".into(),
+                    fit: ImageFit::Cover,
+                    corner_radius_pt: Some(50_000),
+                }],
+            }],
+        },
+    };
+    let out = render_lockfile_page_to_png(
+        &lock,
+        0,
+        OFFICIAL_PNG_SCALE,
+        &single_font_map(&common::font_bytes()),
+        &images,
+    )
+    .unwrap();
+    let decoded = image::load_from_memory(&out).unwrap().to_rgba8();
+    let cx = decoded.width() / 2;
+    let cy = decoded.height() / 2;
+    let p = decoded.get_pixel(cx, cy);
+    assert!(
+        p[0] > 150 && p[1] < 80,
+        "circle center should stay red, got {p:?}"
+    );
+    let corner = decoded.get_pixel(2, 2);
+    assert!(
+        corner[0] > 200 && corner[1] > 200 && corner[2] > 200,
+        "rounded clip must drop the square corner, got {corner:?}"
     );
 }

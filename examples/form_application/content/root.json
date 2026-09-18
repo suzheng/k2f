@@ -1,0 +1,145 @@
+{
+  "id": "root",
+  "role": "document",
+  "layout": { "type": "stack", "direction": "vertical", "gap": 12000 },
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "app.title",
+          "role": "h1",
+          "keep_with_next": true,
+          "content": { "type": "text", "value": "Application" }
+        },
+        {
+          "id": "app.name_row",
+          "role": "section",
+          "layout": {
+            "type": "grid",
+            "columns": [{ "auto": true }, { "fr": 1 }],
+            "column_gap": 12000,
+            "cell_align": { "x": "stretch", "y": "center" }
+          },
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "app.name_label",
+                  "role": "body",
+                  "content": { "type": "text", "value": "Full name" }
+                },
+                {
+                  "id": "app.name",
+                  "role": "form_field",
+                  "variant": "underline",
+                  "break_inside": "avoid",
+                  "content": {
+                    "type": "form_field",
+                    "value": {
+                      "kind": "text",
+                      "value": "",
+                      "placeholder": "Full legal name"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "app.date_row",
+          "role": "section",
+          "layout": {
+            "type": "grid",
+            "columns": [{ "auto": true }, { "fr": 1 }],
+            "column_gap": 12000,
+            "cell_align": { "x": "stretch", "y": "center" }
+          },
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "app.date_label",
+                  "role": "body",
+                  "content": { "type": "text", "value": "Date" }
+                },
+                {
+                  "id": "app.date",
+                  "role": "form_field",
+                  "variant": "underline",
+                  "break_inside": "avoid",
+                  "content": {
+                    "type": "form_field",
+                    "value": {
+                      "kind": "text",
+                      "value": "",
+                      "placeholder": "YYYY-MM-DD"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "app.address_label",
+          "role": "body",
+          "content": { "type": "text", "value": "Street address" }
+        },
+        {
+          "id": "app.address",
+          "role": "form_field",
+          "variant": "box",
+          "break_inside": "avoid",
+          "content": {
+            "type": "form_field",
+            "value": {
+              "kind": "multiline",
+              "value": "",
+              "placeholder": "Street address",
+              "lines": 4
+            }
+          }
+        },
+        {
+          "id": "app.agree_row",
+          "role": "section",
+          "layout": {
+            "type": "stack",
+            "direction": "horizontal",
+            "gap": 8000,
+            "align_items": "center"
+          },
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "app.agree",
+                  "role": "form_field",
+                  "variant": "checkbox",
+                  "break_inside": "avoid",
+                  "content": {
+                    "type": "form_field",
+                    "value": { "kind": "checkbox", "value": "" }
+                  }
+                },
+                {
+                  "id": "app.agree_label",
+                  "role": "body",
+                  "content": {
+                    "type": "text",
+                    "value": "I have read and agree to the terms."
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -17,6 +17,9 @@ pub fn measure_node(
         NodeContent::Text(text) => measure_text(text, node, constraint, ctx),
         NodeContent::CodeBlock(code) => measure_code_block(code, node, constraint, ctx),
         NodeContent::Math(tex) => crate::math::measure_math(tex, node, ctx),
+        NodeContent::FormField(spec) => {
+            crate::form_field::measure_form_field(spec, node, constraint, ctx)
+        }
         NodeContent::Image { width, height, .. } => {
             measure_image(*width, *height, node, constraint, ctx)
         }

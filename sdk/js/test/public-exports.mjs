@@ -15,7 +15,7 @@ function assert(cond, msg) {
   if (!cond) throw new Error(msg);
 }
 
-const spec = readFileSync(resolvePublic("spec/k2f-v0.1.md"), "utf8");
+const spec = readFileSync(resolvePublic("spec/k2f-v0.3.md"), "utf8");
 assert(spec.includes("#"), "spec must have a heading");
 
 const design = readFileSync(resolvePublic("architecture/design.md"), "utf8");
@@ -30,8 +30,8 @@ assert(invoice[0] === 0x50 && invoice[1] === 0x4b, "invoice.K2F must be a ZIP");
 // Also prove package exports map resolves when required as k2f from site-style install
 try {
   const url = import.meta.resolve
-    ? import.meta.resolve("./public/spec/k2f-v0.1.md")
-    : pathToFileURL(resolvePublic("spec/k2f-v0.1.md")).href;
+    ? import.meta.resolve("./public/spec/k2f-v0.3.md")
+    : pathToFileURL(resolvePublic("spec/k2f-v0.3.md")).href;
   assert(typeof url === "string" && url.length > 0, "resolve public path");
 } catch (e) {
   throw new Error(`public export resolve failed: ${e}`);

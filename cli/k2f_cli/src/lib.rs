@@ -90,6 +90,9 @@ enum Commands {
         /// Append per-page source captions and a final integrity verification page.
         #[arg(long)]
         trust_pack: bool,
+        /// Paint field glyphs into page content and omit AcroForm widgets.
+        #[arg(long)]
+        flatten: bool,
     },
     /// Draw the published lock into a PowerPoint .pptx. Not a second layout engine.
     ExportPptx {
@@ -102,6 +105,15 @@ enum Commands {
         package: PathBuf,
         #[arg(short, long)]
         output: PathBuf,
+    },
+    /// Draw the published lock into an InDesign package (IDML + Document Fonts).
+    ExportIdml {
+        package: PathBuf,
+        #[arg(short, long)]
+        output: PathBuf,
+        /// Write a lone .idml (no Document Fonts folder). InDesign will missing-font.
+        #[arg(long)]
+        idml_only: bool,
     },
     /// Compile Markdown to a .K2F package. `--template` is an author directory.
     Markdown {
@@ -303,12 +315,16 @@ fn dispatch(command: Commands) -> anyhow::Result<()> {
             output,
             scale,
             trust_pack,
+            flatten,
         } => {
             let scale = PdfScale::from_f32(scale).map_err(|e| anyhow::anyhow!(e))?;
             let doc = OpenedDocument::open(&fs::read(&package)?)?;
             let mut options = PdfExportOptions::new(scale);
             if trust_pack {
                 options = options.with_trust_pack();
+            }
+            if flatten {
+                options = options.with_flatten();
             }
             let pdf = export_opened(&doc, options)?;
             fs::write(&output, pdf)?;
@@ -323,6 +339,15 @@ fn dispatch(command: Commands) -> anyhow::Result<()> {
             let bytes = k2f_docx::export_bytes(&fs::read(&package)?)?;
             fs::write(&output, bytes)?;
             eprintln!("wrote {}", output.display());
+        }
+        Commands::ExportIdml {
+            package,
+            output,
+            idml_only,
+        } => {
+            let pkg = k2f_idml::export_handoff_bytes(&fs::read(&package)?)?;
+            let written = k2f_idml::write_handoff_output(&pkg, &output, idml_only)?;
+            eprintln!("wrote {}", written.display());
         }
         Commands::Markdown {
             source,

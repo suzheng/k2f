@@ -1,0 +1,978 @@
+mod common;
+
+use k2f_core::{
+    find_in_trees, for_each_node, node_text, GeometryNode, GlyphPosition, ListMarkerType, Modifier,
+    NodeContent, PaintOp, Pt, Rect, SemanticNode, TextGlyphRun, TextPaintStyle,
+};
+use k2f_idml::{
+    escape_xml, export_opened, infer_text_align, story_xml, textbox_from_draw, textframe_xml,
+    SpreadSpace, TextAlign,
+};
+use std::collections::{BTreeMap, HashSet};
+use std::path::PathBuf;
+
+fn running_ids(doc: &k2f_paint::OpenedDocument) -> HashSet<String> {
+    let mut ids = HashSet::new();
+    for rb in doc.running_blocks() {
+        for_each_node(&rb.node, &mut |n| {
+            ids.insert(n.id.clone());
+        });
+    }
+    ids
+}
+
+fn sample_body_strings(doc: &k2f_paint::OpenedDocument) -> Vec<String> {
+    let skip = running_ids(doc);
+    let mut ids = Vec::new();
+    for_each_node(doc.semantic_root(), &mut |n| {
+        if skip.contains(&n.id) || n.role == "math" || matches!(n.content, NodeContent::Math(_)) {
+            return;
+        }
+        if let Some(t) = node_text(n) {
+            if !t.is_empty() && !t.contains('\n') {
+                ids.push(n.id.clone());
+            }
+        }
+    });
+    assert!(ids.len() >= 3, "need 3 body strings, got {}", ids.len());
+    ids.into_iter()
+        .take(3)
+        .map(|id| {
+            node_text(find_in_trees(doc.semantic_root(), doc.running_blocks(), &id).unwrap())
+                .unwrap()
+                .to_string()
+        })
+        .collect()
+}
+
+fn stories_blob(idml: &[u8]) -> String {
+    let mut blob = String::new();
+    for name in common::unzip_names(idml) {
+        if !name.starts_with("Stories/") {
+            continue;
+        }
+        let xml = common::xml_in(idml, &name);
+        let doc = roxmltree::Document::parse(&xml).unwrap();
+        for n in doc.descendants() {
+            if n.has_tag_name("Content") {
+                if let Some(t) = n.text() {
+                    blob.push_str(&t.replace('\u{00A0}', " "));
+                }
+            }
+        }
+    }
+    blob
+}
+
+fn inset_list(doc: &roxmltree::Document<'_>) -> Vec<String> {
+    doc.descendants()
+        .find(|n| n.has_tag_name("InsetSpacing"))
+        .expect("InsetSpacing list")
+        .children()
+        .filter(|n| n.has_tag_name("ListItem"))
+        .filter_map(|n| n.text().map(str::to_string))
+        .collect()
+}
+
+fn glyph(cluster: u32, x_off: i128, x_adv: i128, y: i128) -> GlyphPosition {
+    GlyphPosition {
+        glyph_id: 1,
+        cluster,
+        x_offset: Pt(x_off),
+        y_offset: Pt(y),
+        x_advance: Pt(x_adv),
+        y_advance: Pt(0),
+    }
+}
+
+fn geo(width: i128, glyphs: Vec<GlyphPosition>) -> GeometryNode {
+    GeometryNode {
+        id: "g".into(),
+        x: Pt(0),
+        y: Pt(0),
+        width: Pt(width),
+        height: Pt(40_000),
+        glyphs,
+        text_runs: vec![],
+        fill_rects: vec![],
+        children: vec![],
+    }
+}
+
+fn style(color: &str, size: i128) -> TextPaintStyle {
+    TextPaintStyle {
+        font_family: "default".into(),
+        font_size: Pt(size),
+        color: color.into(),
+        bold: false,
+        italic: false,
+        strikethrough: false,
+        underline: false,
+    }
+}
+
+fn node_with(text: &str, modifiers: Vec<Modifier>) -> SemanticNode {
+    SemanticNode {
+        id: "n".into(),
+        role: "body".into(),
+        content: NodeContent::Text(text.into()),
+        modifiers,
+        ..Default::default()
+    }
+}
+
+fn glyphs_for(text: &str, x0: i128, adv: i128) -> Vec<GlyphPosition> {
+    text.chars()
+        .enumerate()
+        .map(|(i, _)| glyph(i as u32, x0 + i as i128 * adv, adv, 12_000))
+        .collect()
+}
+
+fn story_from(
+    text: &str,
+    modifiers: Vec<Modifier>,
+    runs: Vec<TextGlyphRun>,
+    glyphs: Vec<GlyphPosition>,
+    width: i128,
+) -> String {
+    let node = node_with(text, modifiers);
+    let g = geo(width, glyphs);
+    let rect = Rect {
+        x: Pt(0),
+        y: Pt(0),
+        width: Pt(width),
+        height: Pt(40_000),
+    };
+    let tb = textbox_from_draw(&node, &rect, &runs, Some(&g), &BTreeMap::new()).unwrap();
+    story_xml(&tb, "kSt0")
+}
+
+fn frame_from(
+    text: &str,
+    modifiers: Vec<Modifier>,
+    runs: Vec<TextGlyphRun>,
+    glyphs: Vec<GlyphPosition>,
+    width: i128,
+) -> String {
+    let node = node_with(text, modifiers);
+    let g = geo(width, glyphs);
+    let rect = Rect {
+        x: Pt(0),
+        y: Pt(0),
+        width: Pt(width),
+        height: Pt(40_000),
+    };
+    let tb = textbox_from_draw(&node, &rect, &runs, Some(&g), &BTreeMap::new()).unwrap();
+    let space = SpreadSpace {
+        page_w: 595.0,
+        page_h: 842.0,
+    };
+    textframe_xml(&tb, &space, "kTf0", "kSt0")
+}
+
+#[test]
+fn invoice_stories_contain_semantic_strings() {
+    let doc = common::invoice();
+    let samples = sample_body_strings(&doc);
+    let blob = stories_blob(&export_opened(&doc).unwrap());
+    for s in &samples {
+        assert!(blob.contains(s), "missing {s:?} in Stories Content");
+    }
+}
+
+#[test]
+fn textframe_and_parent_story_match() {
+    let idml = export_opened(&common::invoice()).unwrap();
+    let names = common::unzip_names(&idml);
+    let mut frames = 0usize;
+    for name in &names {
+        if !name.starts_with("Spreads/Spread_") {
+            continue;
+        }
+        let xml = common::xml_in(&idml, name);
+        let parsed = roxmltree::Document::parse(&xml).unwrap();
+        for tf in parsed.descendants().filter(|n| n.has_tag_name("TextFrame")) {
+            frames += 1;
+            let parent = tf.attribute("ParentStory").expect("ParentStory");
+            let story_name = format!("Stories/Story_{parent}.xml");
+            assert!(
+                names.iter().any(|n| n == &story_name),
+                "missing {story_name}"
+            );
+            let story = common::xml_in(&idml, &story_name);
+            let sdoc = roxmltree::Document::parse(&story).unwrap();
+            let self_id = sdoc
+                .descendants()
+                .find(|n| n.has_tag_name("Story") && n.attribute("Self").is_some())
+                .and_then(|n| n.attribute("Self"));
+            assert_eq!(self_id, Some(parent), "{story_name} Self");
+        }
+    }
+    assert!(frames > 0, "expected at least one TextFrame");
+}
+
+#[test]
+fn textbox_center_near_lock_rect() {
+    let doc = common::invoice();
+    let skip = running_ids(&doc);
+    let lock = doc.lock().unwrap();
+    let plan = lock.render_plan.pages.iter().find(|p| p.index == 0).unwrap();
+    let page = &lock.geometry.pages[0];
+    let (node_id, rect) = plan
+        .ops
+        .iter()
+        .find_map(|op| match op {
+            PaintOp::DrawText { node_id, rect, .. } if !skip.contains(node_id) => {
+                let n = find_in_trees(doc.semantic_root(), doc.running_blocks(), node_id)?;
+                if n.role == "math" || matches!(n.content, NodeContent::Math(_)) {
+                    return None;
+                }
+                node_text(n)?;
+                Some((node_id.clone(), rect.clone()))
+            }
+            _ => None,
+        })
+        .expect("page 0 DrawText");
+    let space = SpreadSpace::new(page.width, page.height);
+    let (want_tx, want_ty) = space.box_center(&rect);
+    let xml = common::xml_in(&export_opened(&doc).unwrap(), "Spreads/Spread_k0.xml");
+    let parsed = roxmltree::Document::parse(&xml).unwrap();
+    let tf = parsed
+        .descendants()
+        .find(|n| n.has_tag_name("TextFrame") && n.attribute("Name") == Some(node_id.as_str()))
+        .expect("TextFrame Name=node_id");
+    let tfm = tf.attribute("ItemTransform").expect("ItemTransform");
+    let parts: Vec<&str> = tfm.split_whitespace().collect();
+    assert!(parts.len() >= 6, "{tfm}");
+    let tx: f64 = parts[4].parse().unwrap();
+    let ty: f64 = parts[5].parse().unwrap();
+    assert!((tx - want_tx).abs() <= 0.02, "tx {tx} vs {want_tx}");
+    assert!((ty - want_ty).abs() <= 0.02, "ty {ty} vs {want_ty}");
+}
+
+#[test]
+fn infer_text_align_unit() {
+    let w = 100_000i128;
+    assert_eq!(
+        infer_text_align(&geo(w, vec![glyph(0, 0, 40_000, 0)]), "A"),
+        TextAlign::Left
+    );
+    assert_eq!(
+        infer_text_align(&geo(w, vec![glyph(0, 30_000, 40_000, 0)]), "A"),
+        TextAlign::Center
+    );
+    assert_eq!(
+        infer_text_align(&geo(w, vec![glyph(0, 60_000, 40_000, 0)]), "A"),
+        TextAlign::Right
+    );
+    assert_eq!(
+        infer_text_align(&geo(w, vec![glyph(0, 4_000, 92_000, 0)]), "A"),
+        TextAlign::Left
+    );
+    assert_eq!(infer_text_align(&geo(w, vec![]), "A"), TextAlign::Left);
+    let just = geo(
+        w,
+        vec![
+            glyph(0, 0, 20_000, 0),
+            glyph(1, 20_000, 40_000, 0),
+            glyph(2, 60_000, 20_000, 0),
+            glyph(4, 0, 20_000, 14_000),
+            glyph(5, 20_000, 10_000, 14_000),
+            glyph(6, 30_000, 20_000, 14_000),
+        ],
+    );
+    assert_eq!(infer_text_align(&just, "A B\nA B"), TextAlign::Justify);
+}
+
+#[test]
+fn align_modes_fixture_writes_justification() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/align_modes.K2F");
+    if !path.exists() {
+        return;
+    }
+    let idml = export_opened(
+        &k2f_paint::OpenedDocument::open(&std::fs::read(&path).unwrap()).unwrap(),
+    )
+    .unwrap();
+    let names = common::unzip_names(&idml);
+    for (id, want) in [
+        ("txt_start", "LeftAlign"),
+        ("txt_center", "CenterAlign"),
+        ("txt_end", "RightAlign"),
+    ] {
+        let mut parent = None;
+        for name in &names {
+            if !name.starts_with("Spreads/") {
+                continue;
+            }
+            let xml = common::xml_in(&idml, name);
+            let parsed = roxmltree::Document::parse(&xml).unwrap();
+            if let Some(tf) = parsed
+                .descendants()
+                .find(|n| n.has_tag_name("TextFrame") && n.attribute("Name") == Some(id))
+            {
+                parent = tf.attribute("ParentStory").map(str::to_string);
+                break;
+            }
+        }
+        let parent = parent.unwrap_or_else(|| panic!("no TextFrame {id}"));
+        let story = common::xml_in(&idml, &format!("Stories/Story_{parent}.xml"));
+        let parsed = roxmltree::Document::parse(&story).unwrap();
+        let got = parsed
+            .descendants()
+            .find(|n| n.has_tag_name("ParagraphStyleRange"))
+            .and_then(|n| n.attribute("Justification"));
+        assert_eq!(got, Some(want), "{id} Justification");
+    }
+}
+
+#[test]
+fn paint_runs_keep_per_run_color_and_size() {
+    let text = "HelloWorld";
+    let xml = story_from(
+        text,
+        vec![],
+        vec![
+            TextGlyphRun {
+                glyph_range: [0, 5],
+                style: style("#FF0000", 12_000),
+            },
+            TextGlyphRun {
+                glyph_range: [5, 10],
+                style: style("#0000FF", 8_000),
+            },
+        ],
+        glyphs_for(text, 0, 8_000),
+        100_000,
+    );
+    let doc = roxmltree::Document::parse(&xml).unwrap();
+    let ranges: Vec<_> = doc
+        .descendants()
+        .filter(|n| n.has_tag_name("CharacterStyleRange"))
+        .collect();
+    let colors: Vec<_> = ranges
+        .iter()
+        .filter_map(|n| n.attribute("FillColor"))
+        .collect();
+    let sizes: Vec<_> = ranges
+        .iter()
+        .filter_map(|n| n.attribute("PointSize"))
+        .collect();
+    assert!(colors.iter().any(|c| c.contains("FF0000")), "{colors:?}");
+    assert!(colors.iter().any(|c| c.contains("0000FF")), "{colors:?}");
+    assert!(sizes.iter().any(|s| *s == "12.000"), "{sizes:?}");
+    assert!(sizes.iter().any(|s| *s == "8.000"), "{sizes:?}");
+}
+
+#[test]
+fn subscript_is_position_not_italic() {
+    let text = "H2O";
+    let xml = story_from(
+        text,
+        vec![Modifier {
+            range: [1, 2],
+            mod_type: "subscript".into(),
+            intent: String::new(),
+        }],
+        vec![
+            TextGlyphRun {
+                glyph_range: [0, 1],
+                style: style("#000000", 12_000),
+            },
+            TextGlyphRun {
+                glyph_range: [1, 2],
+                style: style("#000000", 8_400),
+            },
+            TextGlyphRun {
+                glyph_range: [2, 3],
+                style: style("#000000", 12_000),
+            },
+        ],
+        glyphs_for(text, 0, 8_000),
+        80_000,
+    );
+    let doc = roxmltree::Document::parse(&xml).unwrap();
+    let sub = doc
+        .descendants()
+        .find(|n| {
+            n.has_tag_name("CharacterStyleRange") && n.attribute("Position") == Some("Subscript")
+        })
+        .expect("Position=Subscript");
+    let fs = sub.attribute("FontStyle").unwrap_or("");
+    assert_ne!(fs, "Italic", "subscript must not fake italic: {xml}");
+}
+
+#[test]
+fn pinned_lock_lines_nobreak_and_nbsp() {
+    // One semantic paragraph, two lock lines; second line splits color at a space
+    // (hero titles). Host wrap at that boundary overprints the next frame.
+    let text = "Editorial Grid. Narrative System.";
+    let mut glyphs = Vec::new();
+    for (i, _) in text.chars().enumerate() {
+        let y = if i < 16 { 12_000 } else { 60_000 };
+        glyphs.push(glyph(i as u32, (i as i128) * 8_000, 8_000, y));
+    }
+    let xml = story_from(
+        text,
+        vec![],
+        vec![
+            TextGlyphRun {
+                glyph_range: [0, 26],
+                style: style("#0F172A", 44_000),
+            },
+            TextGlyphRun {
+                glyph_range: [26, text.chars().count()],
+                style: style("#DC2626", 44_000),
+            },
+        ],
+        glyphs,
+        200_000,
+    );
+    assert!(
+        xml.contains(r#"NoBreak="true""#),
+        "pinned lock lines must set NoBreak, got {xml}"
+    );
+    assert!(
+        xml.contains('\u{00A0}'),
+        "pinned lock lines must glue spaces with NBSP, got {xml}"
+    );
+    assert!(
+        xml.contains("<Br/>"),
+        "lock wrap must hard-break with Br inside one paragraph, got {xml}"
+    );
+    assert_eq!(
+        xml.matches("<ParagraphStyleRange").count(),
+        1,
+        "pinned lock wrap must stay one paragraph, got {xml}"
+    );
+}
+
+#[test]
+fn full_width_column_body_does_not_pin_or_nobreak() {
+    // Lock wrapped because the column was full — IDML must reflow, not keep
+    // those wrap points as <Br/> when the host frame width differs.
+    let text = "Founded upon the timeless tenets of architectural restraint and tactile warmth Atelier crafts holistic brand atmospheres curated editorial expressions and bespoke spatial narratives for discerning houses across the globe.";
+    let w = 200_000i128;
+    let mut glyphs = Vec::new();
+    let n = text.chars().count();
+    let per = (n / 3).max(1);
+    for (i, _) in text.chars().enumerate() {
+        let line = i / per;
+        let col = i % per;
+        let y = line as i128 * 15_000;
+        let x = if line == 0 {
+            col as i128 * (w / per as i128)
+        } else {
+            col as i128 * 8_000
+        };
+        let adv = if line == 0 { w / per as i128 } else { 8_000 };
+        glyphs.push(glyph(i as u32, x, adv, y));
+    }
+    let xml = story_from(
+        text,
+        vec![],
+        vec![TextGlyphRun {
+            glyph_range: [0, n],
+            style: style("#3D3229", 10_000),
+        }],
+        glyphs,
+        w,
+    );
+    assert!(
+        !xml.contains("<Br/>"),
+        "column wrap must not hard-break, got {xml}"
+    );
+    assert!(
+        !xml.contains(r#"NoBreak="true""#),
+        "column wrap must reflow, got {xml}"
+    );
+    assert_eq!(
+        xml.matches("<ParagraphStyleRange").count(),
+        1,
+        "must stay one paragraph, got {xml}"
+    );
+}
+
+#[test]
+fn semantic_newline_lock_lines_still_nobreak() {
+    // Title source already has `\n`; pin is false but the second line still
+    // must not wrap at a color-split space.
+    let text = "Editorial Grid.\nNarrative System.";
+    let mut glyphs = Vec::new();
+    for (i, ch) in text.chars().enumerate() {
+        if ch == '\n' {
+            continue;
+        }
+        let y = if i < 16 { 12_000 } else { 60_000 };
+        let cluster = i as u32;
+        glyphs.push(glyph(cluster, (i as i128) * 8_000, 8_000, y));
+    }
+    let xml = story_from(
+        text,
+        vec![],
+        vec![
+            TextGlyphRun {
+                glyph_range: [0, 16],
+                style: style("#0F172A", 44_000),
+            },
+            TextGlyphRun {
+                glyph_range: [16, glyphs.len()],
+                style: style("#DC2626", 44_000),
+            },
+        ],
+        glyphs,
+        200_000,
+    );
+    assert!(
+        xml.contains(r#"NoBreak="true""#),
+        "pre-broken lock lines must still set NoBreak, got {xml}"
+    );
+    assert!(
+        xml.contains('\u{00A0}'),
+        "pre-broken lock lines must still glue spaces, got {xml}"
+    );
+}
+
+#[test]
+fn tight_nobreak_multiline_autosizes_width() {
+    let text = "Editorial Grid.\nNarrative System.";
+    let mut glyphs = Vec::new();
+    for (i, ch) in text.chars().enumerate() {
+        if ch == '\n' {
+            continue;
+        }
+        let y = if i < 16 { 12_000 } else { 60_000 };
+        glyphs.push(glyph(i as u32, (i as i128) * 10_000, 10_000, y));
+    }
+    let xml = frame_from(
+        text,
+        vec![],
+        vec![TextGlyphRun {
+            glyph_range: [0, glyphs.len()],
+            style: style("#0F172A", 44_000),
+        }],
+        glyphs,
+        180_000,
+    );
+    assert!(
+        xml.contains(r#"AutoSizingType="WidthOnly""#),
+        "tight NoBreak lines must WidthOnly-grow, got {xml}"
+    );
+    assert!(
+        !xml.contains(r#"UseNoLineBreaksForAutoSizing="true""#),
+        "multi-line WidthOnly must size to the longest lock line, not the unwrapped paragraph, got {xml}"
+    );
+}
+
+#[test]
+fn two_line_letter_body_stays_in_lock_frame() {
+    let text = "I will send a small swatch book by courier on Thursday, along with a note on lead times for the hand-stitched editions. Please let me know if you would like a second set.";
+    let w = 504_000i128;
+    let mut glyphs = Vec::new();
+    let chars: Vec<char> = text.chars().collect();
+    let split = 90usize;
+    for (i, _) in chars.iter().enumerate() {
+        let (x, y, adv) = if i < split {
+            (i as i128 * 5_307, 0, 5_307)
+        } else {
+            ((i - split) as i128 * 6_144, 12_600, 6_144)
+        };
+        glyphs.push(glyph(i as u32, x, adv, y));
+    }
+    let xml = frame_from(
+        text,
+        vec![],
+        vec![TextGlyphRun {
+            glyph_range: [0, glyphs.len()],
+            style: style("#1A1A1A", 11_000),
+        }],
+        glyphs.clone(),
+        w,
+    );
+    assert!(
+        !xml.contains(r#"AutoSizingType="WidthOnly""#),
+        "wrapping letter body must keep the lock width, got {xml}"
+    );
+    let story = story_from(
+        text,
+        vec![],
+        vec![TextGlyphRun {
+            glyph_range: [0, glyphs.len()],
+            style: style("#1A1A1A", 11_000),
+        }],
+        glyphs,
+        w,
+    );
+    assert!(
+        !story.contains(r#"NoBreak="true""#),
+        "wrapping letter body must reflow in the lock frame, got {story}"
+    );
+}
+
+#[test]
+fn left_align_left_inset_not_zero_when_glyphs_inset() {
+    let xml = frame_from(
+        "A",
+        vec![],
+        vec![TextGlyphRun {
+            glyph_range: [0, 1],
+            style: style("#111111", 12_000),
+        }],
+        vec![glyph(0, 8_000, 10_000, 12_000)],
+        100_000,
+    );
+    assert!(
+        xml.contains("8.000"),
+        "left inset should be 8.000 pt, got {xml}"
+    );
+    let wrapped = format!("<root>{xml}</root>");
+    let parsed = roxmltree::Document::parse(&wrapped).expect("frame xml");
+    let parts = inset_list(&parsed);
+    assert_eq!(parts.len(), 4, "{xml}");
+    assert_eq!(parts[1], "8.000", "left inset {xml}");
+}
+
+#[test]
+fn first_line_indent_on_first_para_only() {
+    // Classical body: first lock line inset 18pt, later lines at 0.
+    let text = "ABCDEFGHIJ";
+    let mut glyphs = Vec::new();
+    for i in 0..5 {
+        glyphs.push(glyph(i as u32, 18_000 + i as i128 * 8_000, 8_000, 0));
+    }
+    for i in 5..10 {
+        glyphs.push(glyph(i as u32, (i as i128 - 5) * 8_000, 8_000, 15_510));
+    }
+    let xml = story_from(
+        text,
+        vec![],
+        vec![TextGlyphRun {
+            glyph_range: [0, 10],
+            style: style("#231F1D", 9_400),
+        }],
+        glyphs,
+        491_000,
+    );
+    let parsed = roxmltree::Document::parse(&xml).expect("story xml");
+    let paras: Vec<_> = parsed
+        .descendants()
+        .filter(|n| n.has_tag_name("ParagraphStyleRange"))
+        .collect();
+    assert_eq!(
+        paras.len(),
+        1,
+        "lock wrap must stay one paragraph with Br, got {}",
+        paras.len()
+    );
+    assert_eq!(
+        paras[0].attribute("FirstLineIndent"),
+        Some("18.000"),
+        "first lock line must keep 18pt indent, got {xml}"
+    );
+    assert!(
+        xml.contains("<Br/>"),
+        "second lock line must be a hard break, got {xml}"
+    );
+}
+
+#[test]
+fn list_item_hangs_marker_column_not_body_inset() {
+    let text = "Item";
+    let mut node = node_with(text, vec![]);
+    node.role = "list_item".into();
+    node.list_id = Some("l1".into());
+    node.marker_type = Some(ListMarkerType::Bullet);
+    let glyphs = vec![
+        GlyphPosition {
+            glyph_id: 1,
+            cluster: GlyphPosition::CLUSTER_NOT_SOURCE,
+            x_offset: Pt(8_000),
+            y_offset: Pt(0),
+            x_advance: Pt(6_000),
+            y_advance: Pt(0),
+        },
+        glyph(0, 26_000, 8_000, 0),
+        glyph(1, 34_000, 8_000, 0),
+        glyph(2, 42_000, 8_000, 0),
+        glyph(3, 50_000, 8_000, 0),
+    ];
+    let g = geo(400_000, glyphs);
+    let rect = Rect {
+        x: Pt(0),
+        y: Pt(0),
+        width: Pt(400_000),
+        height: Pt(40_000),
+    };
+    let tb = textbox_from_draw(
+        &node,
+        &rect,
+        &[TextGlyphRun {
+            glyph_range: [0, 5],
+            style: style("#111111", 10_000),
+        }],
+        Some(&g),
+        &BTreeMap::new(),
+    )
+    .unwrap();
+    // Hang by literal `•\u{00A0}` (~0.35em×2 with empty FontCtx), not the 18pt
+    // lock gutter. Extra inset (gutter − hang) keeps wrap on lock body-left.
+    let marker_w = 10.0 * 0.35 * 2.0;
+    assert!(
+        (tb.inset_left - (8.0 + (18.0 - marker_w))).abs() < 0.01,
+        "inset + (gutter − literal marker) so wrap meets body, got {}",
+        tb.inset_left
+    );
+    assert!(
+        (tb.left_indent_pt - marker_w).abs() < 0.01,
+        "LeftIndent is literal marker width, got {}",
+        tb.left_indent_pt
+    );
+    assert!(
+        (tb.first_line_indent_pt + marker_w).abs() < 0.01,
+        "FirstLineIndent hangs by literal marker, got {}",
+        tb.first_line_indent_pt
+    );
+    assert!(
+        tb.runs.first().map(|r| r.text.as_str()) == Some("•\u{00A0}"),
+        "literal bullet in hanging gutter"
+    );
+    assert!(!tb.no_break, "lists must reflow so hanging wrap can apply");
+    let xml = story_xml(&tb, "kSt0");
+    assert!(
+        xml.contains(r#"LeftIndent="7.000""#),
+        "got {xml}"
+    );
+    assert!(
+        xml.contains("FirstLineIndent="),
+        "got {xml}"
+    );
+    let space = SpreadSpace {
+        page_w: 595.0,
+        page_h: 842.0,
+    };
+    let frame = textframe_xml(&tb, &space, "kTf0", "kSt0");
+    let wrapped = format!("<root>{frame}</root>");
+    let parsed = roxmltree::Document::parse(&wrapped).expect("frame xml");
+    let parts = inset_list(&parsed);
+    assert_eq!(
+        parts[1], "19.000",
+        "outer pad + (gutter − hang), got {frame}"
+    );
+}
+
+#[test]
+fn running_footer_not_duplicated_on_body_spreads() {
+    let doc = common::invoice();
+    if doc.running_blocks().is_empty() {
+        return;
+    }
+    let mut footer = None;
+    let mut footer_ids = HashSet::new();
+    for rb in doc.running_blocks() {
+        for_each_node(&rb.node, &mut |n| {
+            footer_ids.insert(n.id.clone());
+            if footer.is_none() {
+                if let Some(t) = node_text(n) {
+                    if !t.is_empty() {
+                        footer = Some(t.to_string());
+                    }
+                }
+            }
+        });
+    }
+    let Some(footer) = footer else {
+        return;
+    };
+    let idml = export_opened(&doc).unwrap();
+    let names = common::unzip_names(&idml);
+    let mut body_hits = 0usize;
+    for name in &names {
+        if !name.starts_with("Spreads/Spread_") {
+            continue;
+        }
+        let xml = common::xml_in(&idml, name);
+        let parsed = roxmltree::Document::parse(&xml).unwrap();
+        let page_ids: HashSet<_> = parsed
+            .descendants()
+            .filter(|n| n.has_tag_name("TextFrame"))
+            .filter_map(|n| n.attribute("Name").map(|s| s.to_string()))
+            .filter(|nm| footer_ids.contains(nm.as_str()))
+            .collect();
+        assert!(
+            !page_ids.is_empty(),
+            "running node must be a body TextFrame (MasterSpread Y is not reliable): {name}"
+        );
+        body_hits += 1;
+    }
+    assert!(body_hits > 0, "running footer must appear on body spreads");
+    let master = common::xml_in(&idml, "MasterSpreads/MasterSpread_kMaster.xml");
+    assert!(
+        !master.contains(&footer),
+        "running text must not also live on the master spread"
+    );
+}
+
+#[test]
+fn auto_page_number_in_master_if_page_current() {
+    let doc = common::invoice();
+    let mut has_token = false;
+    for rb in doc.running_blocks() {
+        for_each_node(&rb.node, &mut |n| {
+            if node_text(n).is_some_and(|t| t.contains("{{page_current}}")) {
+                has_token = true;
+            }
+        });
+    }
+    if !has_token {
+        return;
+    }
+    let idml = export_opened(&doc).unwrap();
+    let mut found = false;
+    for name in common::unzip_names(&idml) {
+        if !name.starts_with("Stories/") {
+            continue;
+        }
+        let story = common::xml_in(&idml, &name);
+        if story.contains("{{page_current}}") {
+            panic!("must not leave {{{{page_current}}}} in {name}");
+        }
+        // Body-placed running items bake the page index; AutoPageNumber only
+        // expands reliably on MasterSpread.
+        if story.contains("Page") && story.chars().any(|c| c.is_ascii_digit()) {
+            found = true;
+        }
+    }
+    assert!(
+        found,
+        "a story must contain a baked page number from {{{{page_current}}}}"
+    );
+}
+
+#[test]
+fn composer_is_single_line() {
+    let idml = export_opened(&common::invoice()).unwrap();
+    let xml = common::xml_in(&idml, "Spreads/Spread_k0.xml");
+    let parsed = roxmltree::Document::parse(&xml).unwrap();
+    let parent = parsed
+        .descendants()
+        .find(|n| n.has_tag_name("TextFrame"))
+        .and_then(|n| n.attribute("ParentStory"))
+        .expect("body TextFrame");
+    let story = common::xml_in(&idml, &format!("Stories/Story_{parent}.xml"));
+    let sdoc = roxmltree::Document::parse(&story).unwrap();
+    let para = sdoc
+        .descendants()
+        .find(|n| n.has_tag_name("ParagraphStyleRange"))
+        .expect("ParagraphStyleRange");
+    assert_eq!(para.attribute("Hyphenation"), Some("false"));
+    let props = para
+        .children()
+        .find(|n| n.has_tag_name("Properties"))
+        .map(|n| n.document().input_text()[n.range()].to_string())
+        .unwrap_or_default();
+    assert!(
+        props.contains("$ID/HL Single"),
+        "composer must be HL Single, got {story}"
+    );
+}
+
+#[test]
+fn midword_overflow_title_gets_hard_break() {
+    let text = "RECONSTRUCTION";
+    let w = 437_000i128;
+    let mut glyphs = Vec::new();
+    for i in 0..13 {
+        glyphs.push(glyph(i as u32, i as i128 * 33_500, 33_500, 0));
+    }
+    glyphs.push(glyph(13, 0, 41_375, 52_200));
+    let xml = story_from(
+        text,
+        vec![],
+        vec![TextGlyphRun {
+            glyph_range: [0, glyphs.len()],
+            style: style("#0C0C0D", 58_000),
+        }],
+        glyphs,
+        w,
+    );
+    assert!(
+        xml.contains("<Br/>"),
+        "mid-word lock wrap must emit Br or InDesign oversets, got {xml}"
+    );
+    assert!(
+        xml.contains(">RECONSTRUCTIO<"),
+        "first lock line must stay RECONSTRUCTIO, got {xml}"
+    );
+}
+
+#[test]
+fn overflowing_last_line_expands_frame_height() {
+    let text = "one two three four";
+    let mut glyphs = Vec::new();
+    let lines = ["one", "two", "three", "four"];
+    let mut cluster = 0u32;
+    for (li, word) in lines.iter().enumerate() {
+        let y = (li as i128) * 18_200;
+        for (i, _) in word.chars().enumerate() {
+            glyphs.push(glyph(cluster, i as i128 * 8_000, 8_000, y));
+            cluster += 1;
+        }
+        if li + 1 < lines.len() {
+            cluster += 1; // space
+        }
+    }
+    let node = node_with(text, vec![]);
+    let g = GeometryNode {
+        id: "g".into(),
+        x: Pt(0),
+        y: Pt(0),
+        width: Pt(80_000),
+        height: Pt(54_600),
+        glyphs,
+        text_runs: vec![],
+        fill_rects: vec![],
+        children: vec![],
+    };
+    let rect = Rect {
+        x: Pt(0),
+        y: Pt(0),
+        width: Pt(80_000),
+        height: Pt(54_600),
+    };
+    let runs = vec![TextGlyphRun {
+        glyph_range: [0, g.glyphs.len()],
+        style: style("#111111", 13_000),
+    }];
+    let tb = textbox_from_draw(&node, &rect, &runs, Some(&g), &BTreeMap::new()).unwrap();
+    assert_eq!(
+        tb.rect.height.0, 67_600,
+        "last-line ink must expand the IDML frame, got {}",
+        tb.rect.height.0
+    );
+}
+
+#[test]
+fn xml_escape_unit() {
+    assert_eq!(escape_xml("a&b<c>"), "a&amp;b&lt;c&gt;");
+}
+
+#[test]
+fn export_still_byte_identical() {
+    let doc = common::invoice();
+    assert_eq!(export_opened(&doc).unwrap(), export_opened(&doc).unwrap());
+}
+
+#[test]
+fn no_k2f_raster_yet() {
+    let idml = export_opened(&common::invoice()).unwrap();
+    for name in common::unzip_names(&idml) {
+        if !name.ends_with(".xml") {
+            continue;
+        }
+        let xml = common::xml_in(&idml, &name);
+        assert!(
+            !xml.contains("k2f-raster:"),
+            "step 2 must not emit rasters in {name}"
+        );
+    }
+}

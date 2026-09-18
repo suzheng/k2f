@@ -34,8 +34,8 @@ fn ctrl_shift_s_maps_to_export() {
     );
     assert_eq!(
         key_action(KeyBind::Char('s'), true, false, false),
-        None,
-        "Ctrl+S is not save — the reader is lock-only"
+        Some(Action::Save),
+        "Ctrl+S saves dirty form fields (relock), not a generic document save"
     );
     assert_eq!(key_action(KeyBind::Char('s'), false, true, false), None);
     assert!(
@@ -293,8 +293,8 @@ fn export_format_cycle_includes_pptx() {
     );
     assert_eq!(
         ExportFormat::Docx.toggle(),
-        ExportFormat::Markdown,
-        "HUD format cycle must continue after DOCX"
+        ExportFormat::Idml,
+        "HUD format cycle must reach IDML after DOCX"
     );
 }
 
@@ -327,6 +327,75 @@ fn export_format_cycle_includes_docx() {
 }
 
 #[test]
+fn export_idml_to_writes_package_dir() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let out = scratch("gui-export-idml").join("pkg");
+    app.export_to(ExportFormat::Idml, &out).unwrap();
+    assert!(
+        out.join("Document Fonts").join("Roboto-Regular.ttf").is_file(),
+        "Document Fonts face"
+    );
+    let idml = std::fs::read_dir(&out)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .find(|p| p.extension().and_then(|e| e.to_str()) == Some("idml"))
+        .expect("package idml");
+    assert!(std::fs::read(&idml).unwrap().starts_with(b"PK"));
+    let zip = app.export_idml_bytes().unwrap();
+    assert!(zip.starts_with(b"PK"));
+}
+
+#[test]
+fn export_idml_to_zip_contains_document_fonts() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let out = scratch("gui-export-idml-zip").join("invoice.zip");
+    app.export_to(ExportFormat::Idml, &out).unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    assert!(bytes.starts_with(b"PK"), "zip magic");
+    let hay = String::from_utf8_lossy(&bytes);
+    assert!(
+        hay.contains("Document Fonts") && hay.contains("Roboto-Regular.ttf"),
+        "zip must list Document Fonts"
+    );
+}
+
+#[test]
+fn export_idml_to_idml_is_lone_file() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let dir = scratch("gui-export-idml-file");
+    let out = dir.join("invoice.idml");
+    app.export_to(ExportFormat::Idml, &out).unwrap();
+    assert!(out.is_file(), "lone idml");
+    assert!(
+        !dir.join("Document Fonts").exists(),
+        "--idml-only path must not write Document Fonts"
+    );
+    assert_eq!(
+        std::fs::read(&out).unwrap(),
+        k2f_idml::export_bytes(&invoice_bytes()).unwrap()
+    );
+}
+
+#[test]
+fn export_idml_to_unlocked_writes_nothing() {
+    let app = AppState::open(&unlocked_bytes(&invoice_bytes())).unwrap();
+    let out = scratch("gui-export-idml-unlocked").join("out.idml");
+    let err = format!("{}", app.export_to(ExportFormat::Idml, &out).unwrap_err());
+    assert!(err.contains("UNLOCKED"), "got {err}");
+    assert!(!out.exists(), "must not write an IDML without a lock");
+}
+
+#[test]
+fn export_format_cycle_includes_idml() {
+    assert!(ExportFormat::ALL.contains(&ExportFormat::Idml));
+    assert_eq!(ExportFormat::Idml.extension(), "idml");
+    assert_eq!(ExportFormat::Idml.hud_label(), "IDML");
+    assert_eq!(ExportFormat::Docx.toggle(), ExportFormat::Idml);
+    assert_eq!(ExportFormat::Idml.toggle(), ExportFormat::Markdown);
+}
+
+#[test]
 fn export_action_labels_match_web_menu() {
     let labels: Vec<&str> = ExportFormat::ALL.iter().map(|f| f.action_label()).collect();
     assert_eq!(
@@ -336,6 +405,7 @@ fn export_action_labels_match_web_menu() {
             "Export as PDF",
             "Export as PowerPoint",
             "Export as Word",
+            "Export as InDesign",
             "Export as Markdown",
             "Export as PNG",
             "Export as JPG",

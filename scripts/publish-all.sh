@@ -20,7 +20,14 @@ K2F release (GitHub Actions — do not publish from a laptop)
 
   Optional: gh release create vX.Y.Z --notes-file ...
 
-  Linux wheel smoke (Modal): k2f-private/scripts/pypi-linux-smoke.sh
+  4. Modal — Linux SDK/CLI smoke (before/after tag; k2f-private, source .env):
+       ../k2f-private/scripts/pypi-linux-smoke.sh --build-wheel
+     Docs: ../k2f-private/scripts/modal-smoke-tests.md
+
+  *** Modal billing ***
+  pypi-linux-smoke.sh uses `modal run` and stops when the script exits.
+  If you started a long-lived Modal Sandbox for manual testing, Terminate it
+  in the Modal dashboard (Sandboxes) when finished — or it keeps billing.
 
 Legacy local upload scripts: scripts/archive/local-publish/ (retired)
 EOF

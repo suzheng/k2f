@@ -4,15 +4,15 @@ use super::pdf_dialog::PdfDialogHit;
 use super::scroll::{line_delta_px, wheel_y_to_scroll};
 use super::session::{PointerCursor, Session};
 use super::zoom::{zoom_after_ctrl_wheel, zoom_after_pinch};
-use crate::export::{ensure_extension, pick_open_path, pick_save_path, ExportFormat};
+use crate::export::{ensure_extension, pick_folder_path, pick_open_path, pick_save_path, ExportFormat};
 use crate::AppState;
 use softbuffer::{Context, Surface};
 use std::num::NonZeroU32;
 use std::path::PathBuf;
 use std::sync::Arc;
 use winit::application::ApplicationHandler;
-use winit::dpi::LogicalSize;
-use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
+use winit::dpi::{LogicalPosition, LogicalSize};
+use winit::event::{ElementState, Ime, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::keyboard::{Key, NamedKey};
 use winit::window::{CursorIcon, Window, WindowId};
@@ -42,6 +42,7 @@ pub fn run(app: Option<AppState>, source: Option<PathBuf>) -> anyhow::Result<()>
         modifiers: winit::keyboard::ModifiersState::empty(),
         cursor: (0.0, 0.0),
         clipboard: None,
+        ime_on: false,
     };
     event_loop.run_app(&mut gui)?;
     Ok(())
@@ -56,6 +57,7 @@ struct Gui {
     modifiers: winit::keyboard::ModifiersState,
     cursor: (f64, f64),
     clipboard: Option<arboard::Clipboard>,
+    ime_on: bool,
 }
 
 impl Gui {
@@ -141,15 +143,19 @@ impl Gui {
             return;
         };
         let format = app.export_format();
-        let Some(path) = pick_save_path(
-            format,
-            app.title(),
-            app.page_count(),
-            self.source.as_deref(),
-        ) else {
+        let Some(path) = (if format == ExportFormat::Idml {
+            pick_folder_path(self.source.as_deref())
+        } else {
+            pick_save_path(
+                format,
+                app.title(),
+                app.page_count(),
+                self.source.as_deref(),
+            )
+            .map(|p| ensure_extension(p, format))
+        }) else {
             return;
         };
-        let path = ensure_extension(path, format);
         let result = if format == ExportFormat::Pdf {
             let scale = pdf_scale.unwrap_or(k2f_pdf::PdfScale::DEFAULT);
             app.export_pdf_bytes_at(scale)
@@ -160,6 +166,43 @@ impl Gui {
         match result {
             Ok(()) => eprintln!("wrote {}", path.display()),
             Err(e) => eprintln!("export {:?}: {e:#}", format),
+        }
+    }
+
+    fn save_fill(&mut self) {
+        match self.session.save_fill() {
+            Ok(bytes) => {
+                if let Some(path) = &self.source {
+                    if let Err(e) = std::fs::write(path, &bytes) {
+                        eprintln!("save {}: {e:#}", path.display());
+                        self.session
+                            .set_open_error(format!("save failed: {e:#}"));
+                    }
+                }
+                if let Some(window) = &self.window {
+                    window.set_title(&self.session.window_title());
+                }
+            }
+            Err(e) => {
+                eprintln!("save fill: {e:#}");
+                self.session.set_open_error(format!("save failed: {e:#}"));
+            }
+        }
+        self.sync_ime();
+    }
+
+    fn sync_ime(&self) {
+        let Some(window) = &self.window else {
+            return;
+        };
+        if let Some((x, y, w, h)) = self.session.ime_cursor_area() {
+            window.set_ime_allowed(true);
+            window.set_ime_cursor_area(
+                LogicalPosition::new(x, y),
+                LogicalSize::new(w.max(1.0), h.max(1.0)),
+            );
+        } else {
+            window.set_ime_allowed(false);
         }
     }
 
@@ -290,6 +333,15 @@ impl ApplicationHandler<Wake> for Gui {
                                 self.session.close_export_menu();
                                 self.begin_open();
                             }
+                            ChromeHit::Fill => {
+                                self.session.close_export_menu();
+                                self.session.toggle_fill();
+                                self.sync_ime();
+                            }
+                            ChromeHit::Save => {
+                                self.session.close_export_menu();
+                                self.save_fill();
+                            }
                             ChromeHit::Export => {
                                 self.session.close_export_menu();
                                 self.begin_export();
@@ -327,17 +379,73 @@ impl ApplicationHandler<Wake> for Gui {
                     if let Some(payload) = self.session.pointer_up(self.cursor.0, self.cursor.1) {
                         self.copy_to_clipboard(payload.plain);
                     }
+                    self.sync_ime();
                     self.redraw();
                 }
             },
+            WindowEvent::Ime(ime) => {
+                match ime {
+                    Ime::Enabled => self.ime_on = true,
+                    Ime::Disabled => {
+                        self.ime_on = false;
+                        self.session.fill_cancel_ime();
+                    }
+                    Ime::Preedit(text, _) => self.session.fill_set_preedit(text),
+                    Ime::Commit(text) => self.session.fill_commit_ime(text),
+                }
+                self.sync_ime();
+                self.redraw();
+            }
             WindowEvent::KeyboardInput { event, .. } => {
                 if !event.state.is_pressed() {
                     return;
                 }
                 if matches!(event.logical_key, Key::Named(NamedKey::Escape)) {
-                    if self.session.close_pdf_dialog() || self.session.close_export_menu() {
+                    if self.session.fill_escape()
+                        || self.session.close_pdf_dialog()
+                        || self.session.close_export_menu()
+                    {
+                        self.sync_ime();
                         self.redraw();
                     }
+                    return;
+                }
+                if self.session.fill_editing() {
+                    let ctrl = self.modifiers.control_key();
+                    let super_key = self.modifiers.super_key();
+                    if let Some(bind) = bind_key(&event.logical_key) {
+                        if let Some(Action::Save) = key_action(
+                            bind,
+                            ctrl,
+                            self.modifiers.shift_key(),
+                            super_key,
+                        ) {
+                            if accept_key(event.repeat, Action::Save) {
+                                self.save_fill();
+                                self.redraw();
+                            }
+                            return;
+                        }
+                    }
+                    if !self.ime_on {
+                        match &event.logical_key {
+                            Key::Named(NamedKey::Backspace) => self.session.fill_backspace(),
+                            Key::Named(NamedKey::Enter) => self.session.fill_newline(),
+                            _ => {
+                                if let Some(text) = event.text.as_ref() {
+                                    if !text.is_empty()
+                                        && !ctrl
+                                        && !super_key
+                                        && !text.chars().all(|c| c.is_control())
+                                    {
+                                        self.session.fill_insert(text);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    self.sync_ime();
+                    self.redraw();
                     return;
                 }
                 let Some(bind) = bind_key(&event.logical_key) else {
@@ -369,6 +477,11 @@ impl ApplicationHandler<Wake> for Gui {
                 if action == Action::Export {
                     self.session.close_export_menu();
                     self.begin_export();
+                    return;
+                }
+                if action == Action::Save {
+                    self.save_fill();
+                    self.redraw();
                     return;
                 }
                 let copied = self.session.apply(action);

@@ -333,6 +333,27 @@ mod tests {
     }
 
     #[test]
+    fn bold_run_emits_b_and_family_name() {
+        let mut r = run("Hello");
+        r.font_name = "Roboto".into();
+        r.bold = true;
+        let xml = paragraph_xml(
+            &[r],
+            TextAlign::Left,
+            false,
+            false,
+            false,
+            None,
+            0,
+            1,
+            &BTreeMap::new(),
+            "",
+        );
+        assert!(xml.contains(r#"b="1""#), "{xml}");
+        assert!(xml.contains(r#"typeface="Roboto""#), "{xml}");
+    }
+
+    #[test]
     fn last_pinned_paragraph_uses_face_spacing() {
         let mut r1 = run("line one");
         r1.text = "line one\nline two".into();

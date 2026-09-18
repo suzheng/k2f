@@ -113,6 +113,11 @@ impl K2fViewer {
         serde_json::to_string(&self.doc.boxes_for(id)).unwrap_or_else(|_| "[]".into())
     }
 
+    /// JSON array of `FormFieldLoc` (id, page, rect, kind, value). Empty document → `[]`.
+    pub fn form_fields(&self) -> String {
+        serde_json::to_string(&self.doc.form_fields()).unwrap_or_else(|_| "[]".into())
+    }
+
     pub fn text_layer(&self, page: u32) -> String {
         serde_json::to_string(&self.doc.text_layer(page as usize)).unwrap_or_else(|_| "[]".into())
     }
@@ -151,9 +156,18 @@ impl K2fViewer {
     }
 
     pub fn export_pdf_at(&self, scale: f32) -> Result<Vec<u8>, JsValue> {
+        self.export_pdf_with(scale, false)
+    }
+
+    /// `flatten` paints field glyphs and omits AcroForm widgets.
+    pub fn export_pdf_with(&self, scale: f32, flatten: bool) -> Result<Vec<u8>, JsValue> {
         let scale =
             k2f_pdf::PdfScale::from_f32(scale).map_err(|e| JsValue::from_str(&e.to_string()))?;
-        k2f_pdf::export_opened(&self.doc, scale).map_err(|e| JsValue::from_str(&e.to_string()))
+        let mut options = k2f_pdf::PdfExportOptions::new(scale);
+        if flatten {
+            options = options.with_flatten();
+        }
+        k2f_pdf::export_opened(&self.doc, options).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     /// Draw the published lock into a PowerPoint deck. Not a second layout engine.
@@ -164,6 +178,18 @@ impl K2fViewer {
     /// Draw the published lock into a Word document. Not a second layout engine.
     pub fn export_docx(&self) -> Result<Vec<u8>, JsValue> {
         k2f_docx::export_opened(&self.doc).map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    /// Draw the published lock into an InDesign package (IDML + Document Fonts zip).
+    pub fn export_idml(&self) -> Result<Vec<u8>, JsValue> {
+        k2f_idml::export_handoff(&self.doc)
+            .and_then(|h| h.to_zip_bytes())
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    /// Lone .idml with no Document Fonts. InDesign will missing-font without the faces.
+    pub fn export_idml_only(&self) -> Result<Vec<u8>, JsValue> {
+        k2f_idml::export_opened(&self.doc).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 }
 

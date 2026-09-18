@@ -15,6 +15,7 @@ use crate::error::{
 use crate::lock::relock;
 use crate::nodes::text_node;
 use crate::vocab::ensure_role;
+use crate::PdfExportOptions;
 use crate::PdfScale;
 use k2f_core::{
     apply_role, clipboard_of, find_in_trees, find_in_trees_mut, hash_manifest_semantic,
@@ -269,7 +270,14 @@ impl Editor {
     }
 
     pub fn export_pdf_bytes_at(&self, scale: PdfScale) -> Result<Vec<u8>, AgentError> {
-        crate::export_pdf_at(&pack_bytes(&self.package).map_err(AgentError::from)?, scale)
+        self.export_pdf_bytes_with(PdfExportOptions::new(scale))
+    }
+
+    pub fn export_pdf_bytes_with(&self, options: PdfExportOptions) -> Result<Vec<u8>, AgentError> {
+        crate::export_pdf_with(
+            &pack_bytes(&self.package).map_err(AgentError::from)?,
+            options,
+        )
     }
 
     pub fn export_pptx_bytes(&self) -> Result<Vec<u8>, AgentError> {
@@ -278,6 +286,14 @@ impl Editor {
 
     pub fn export_docx_bytes(&self) -> Result<Vec<u8>, AgentError> {
         crate::export_docx(&pack_bytes(&self.package).map_err(AgentError::from)?)
+    }
+
+    pub fn export_idml_bytes(&self) -> Result<Vec<u8>, AgentError> {
+        crate::export_idml(&pack_bytes(&self.package).map_err(AgentError::from)?)
+    }
+
+    pub fn export_idml_only_bytes(&self) -> Result<Vec<u8>, AgentError> {
+        crate::export_idml_only(&pack_bytes(&self.package).map_err(AgentError::from)?)
     }
 
     pub fn save_with(

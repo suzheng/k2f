@@ -5,7 +5,7 @@ mod map;
 
 use k2f_core::{find_in_trees, node_text, PaintOp};
 use k2f_paint::{placed_glyphs, OpenedDocument, PlacedGlyph};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use ttf_parser::Face;
 
 use crate::draw::PageDraw;
@@ -23,6 +23,7 @@ pub fn collect_page(
     doc: &OpenedDocument,
     page_idx: usize,
     faces: &HashMap<String, Face<'_>>,
+    skip_text: &HashSet<String>,
 ) -> Result<Vec<(PlacedGlyph, String)>, PdfError> {
     let lock = doc.lock().ok_or(PdfError::Unlocked)?;
     let page = lock
@@ -48,6 +49,9 @@ pub fn collect_page(
         else {
             continue;
         };
+        if skip_text.contains(node_id) {
+            continue;
+        }
         let Some(geo) = k2f_paint::geo_for_op_str(&geo_by_id, node_id, rect) else {
             continue;
         };

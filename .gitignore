@@ -35,6 +35,10 @@ golden.json
 !export/k2f_docx/tests/fixtures/**
 !export/k2f_docx/tests/fixtures/*.K2F
 !export/k2f_docx/tests/fixtures/*.k2f
+!export/k2f_idml/tests/fixtures/
+!export/k2f_idml/tests/fixtures/**
+!export/k2f_idml/tests/fixtures/*.K2F
+!export/k2f_idml/tests/fixtures/*.k2f
 
 # ==========================================
 # Lock Files

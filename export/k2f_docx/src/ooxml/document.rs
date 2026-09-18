@@ -160,7 +160,7 @@ fn element_anchor(
     picture_rids: &BTreeMap<String, String>,
 ) -> String {
     match el {
-        PageElement::TextBox(tb) => textbox_anchor(tb, doc_pr_id, hyperlink_rids),
+        PageElement::TextBox(tb) => textbox_anchor(tb, doc_pr_id, hyperlink_rids, picture_rids),
         PageElement::Shape(s) => shape_anchor(s, doc_pr_id),
         PageElement::Picture(p) => {
             let rid = picture_rids

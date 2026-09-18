@@ -1,7 +1,7 @@
 {
   "version": 1,
   "forbidden": ["sign"],
-  "instructions": "K2F MCP: copy an author directory (create) or open/markdown_to_k2f → Editor. insert_node/replace_text/set_role on Editor. save writes .K2F (relock); save_dir writes author source. export_pdf requires path. sign is not a tool.",
+  "instructions": "K2F MCP: copy an author directory (create) or open/markdown_to_k2f → Editor. insert_node/replace_text/set_role on Editor. Fill blanks with form_field nodes + replace_text; never draw ____ in body text. save writes .K2F (relock); save_dir writes author source. export_pdf requires path. sign is not a tool.",
   "rules": [
     {
       "id": "no_lock_json",
@@ -364,6 +364,10 @@
           "scale": {
             "type": "number",
             "description": "Raster stamp scale for gradient/shadow/blur pages: 2, 3, or 4 (default 2)"
+          },
+          "flatten": {
+            "type": "boolean",
+            "description": "If true, paint field glyphs into page content and omit AcroForm widgets"
           }
         },
         "required": ["session_id", "path"]

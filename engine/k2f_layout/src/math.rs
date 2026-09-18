@@ -1,7 +1,7 @@
 //! Display-math measure/arrange: TeX in → glyphs + fill_rects out.
 
 use crate::resolved_style::{padding_for_role_variant, resolve_text_style};
-use crate::style::resolve_font_family_key;
+use crate::style::resolve_face_key;
 use crate::text_align::line_start_offset;
 use crate::{LayoutContext, Point, Size};
 use k2f_core::{FillRect, GlyphPosition, Pt, SemanticNode, TextGlyphRun, TextPaintStyle};
@@ -14,7 +14,7 @@ pub(crate) fn layout_math_tex(
     ctx: &LayoutContext,
 ) -> Result<(MathLayout, MathPaintCtx), String> {
     let style = resolve_text_style(&node.role, node.variant.as_deref(), ctx.theme);
-    let font_name = resolve_font_family_key(&style.font_family, ctx.theme);
+    let font_name = style.face_key(ctx.theme);
     let font = ctx.fonts.get_font(&font_name).ok_or_else(|| {
         format!(
             "FONT_MISSING: math font '{font_name}' (from '{}') is not embedded",
@@ -124,7 +124,13 @@ fn math_font<'a>(ctx: &'a LayoutContext) -> Result<(String, &'a Font), String> {
         .get("math")
         .map(|r| r.font_family.as_str())
         .unwrap_or("NotoSansMath-Regular");
-    let key = crate::style::resolve_font_family_key(family, ctx.theme);
+    let (bold, italic) = ctx
+        .theme
+        .roles
+        .get("math")
+        .map(|r| (r.bold, r.italic))
+        .unwrap_or((false, false));
+    let key = resolve_face_key(family, bold, italic, ctx.theme);
     let font = ctx
         .fonts
         .get_font(&key)

@@ -68,6 +68,11 @@ pub struct TextBox {
     pub fill_hex: Option<String>,
     /// 255 = opaque. Translucent pill fills are copied from the matching DrawBox.
     pub fill_alpha: u8,
+    /// Blur/gradient chrome folded into this box so Writer cannot paint a
+    /// sibling raster over the labels.
+    pub fill_blip: Option<PictureBox>,
+    /// Native linear gradient when folding a gradient shell (no raster).
+    pub gradient: Option<GradientFill>,
     /// Copied from the matching DrawBox when the node is a decorated chip/pill.
     pub corner_emu: i64,
     /// Outline copied from the matching DrawBox (outlined badges). `None` = noFill.
@@ -186,6 +191,12 @@ pub struct PictureBox {
     /// Slices (and lock images) under later paint must not: Writer paints that
     /// empty frame over later labels.
     pub pin_empty_txbox: bool,
+    /// DrawingML `a:srcRect` l/t/r/b (1/1000 percent). All zero = no crop.
+    pub src_l: i64,
+    pub src_t: i64,
+    pub src_r: i64,
+    pub src_b: i64,
+    pub corner_emu: i64,
 }
 
 #[derive(Clone, Debug)]
@@ -221,6 +232,10 @@ pub struct TableCell {
     pub borders: CellBorders,
     /// Lock glyphs vertically centered in the cell box (`w:vAlign`).
     pub vert_center: bool,
+    /// Same-row occupancy; 1 means one `w:gridCol`.
+    pub colspan: u32,
+    /// Visual start column (0-based).
+    pub start_col: usize,
     pub line_twips: Option<i64>,
 }
 
@@ -247,6 +262,7 @@ impl PageElement {
         }
     }
 
+    #[allow(dead_code)]
     pub fn picture(&self) -> Option<&PictureBox> {
         match self {
             Self::Picture(p) | Self::Raster(p) => Some(p),
@@ -265,7 +281,19 @@ impl PageElement {
 }
 
 pub fn collect_pictures(elements: &[PageElement]) -> Vec<&PictureBox> {
-    elements.iter().filter_map(PageElement::picture).collect()
+    let mut out = Vec::new();
+    for e in elements {
+        match e {
+            PageElement::Picture(p) | PageElement::Raster(p) => out.push(p),
+            PageElement::TextBox(tb) => {
+                if let Some(p) = &tb.fill_blip {
+                    out.push(p);
+                }
+            }
+            PageElement::Shape(_) | PageElement::Table(_) => {}
+        }
+    }
+    out
 }
 
 pub fn has_lists(elements: &[PageElement]) -> bool {

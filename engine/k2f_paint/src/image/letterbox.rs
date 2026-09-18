@@ -60,6 +60,48 @@ pub fn letterbox_rect(img_w: u32, img_h: u32, rect: &Rect) -> Option<Rect> {
     }
 }
 
+/// Centered cover crop in source pixels: (sx, sy, sw, sh).
+/// The cropped region scaled to the box fills it without letterbox bars.
+pub fn cover_src(
+    img_w: u32,
+    img_h: u32,
+    box_w: u32,
+    box_h: u32,
+) -> Option<(u32, u32, u32, u32)> {
+    if img_w == 0 || img_h == 0 || box_w == 0 || box_h == 0 {
+        return None;
+    }
+    let img_w = img_w as u64;
+    let img_h = img_h as u64;
+    let box_w = box_w as u64;
+    let box_h = box_h as u64;
+    // Image relatively wider than the box → crop left/right.
+    if img_w.saturating_mul(box_h) > img_h.saturating_mul(box_w) {
+        let crop_w = (img_h.saturating_mul(box_w) / box_h).max(1).min(img_w);
+        let sx = (img_w - crop_w) / 2;
+        Some((sx as u32, 0, crop_w as u32, img_h as u32))
+    } else {
+        let crop_h = (img_w.saturating_mul(box_h) / box_w).max(1).min(img_h);
+        let sy = (img_h - crop_h) / 2;
+        Some((0, sy as u32, img_w as u32, crop_h as u32))
+    }
+}
+
+/// DrawingML `a:srcRect` l/t/r/b in 1/1000 percent (0..=100000) for a cover crop.
+pub fn cover_src_rect_100000(
+    img_w: u32,
+    img_h: u32,
+    box_w: u32,
+    box_h: u32,
+) -> Option<(i64, i64, i64, i64)> {
+    let (sx, sy, sw, sh) = cover_src(img_w, img_h, box_w, box_h)?;
+    let l = i64::from(sx) * 100_000 / i64::from(img_w);
+    let t = i64::from(sy) * 100_000 / i64::from(img_h);
+    let r = i64::from(img_w.saturating_sub(sx).saturating_sub(sw)) * 100_000 / i64::from(img_w);
+    let b = i64::from(img_h.saturating_sub(sy).saturating_sub(sh)) * 100_000 / i64::from(img_h);
+    Some((l, t, r, b))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -110,5 +152,29 @@ mod tests {
             height: Pt(50),
         };
         assert_eq!(letterbox_rect(20, 10, &rect).unwrap(), rect);
+    }
+
+    #[test]
+    fn cover_wide_image_in_square_crops_sides() {
+        assert_eq!(cover_src(20, 10, 100, 100), Some((5, 0, 10, 10)));
+    }
+
+    #[test]
+    fn cover_tall_image_in_square_crops_top_bottom() {
+        assert_eq!(cover_src(10, 20, 100, 100), Some((0, 5, 10, 10)));
+    }
+
+    #[test]
+    fn cover_matching_ratio_keeps_full_source() {
+        assert_eq!(cover_src(20, 10, 200, 100), Some((0, 0, 20, 10)));
+        assert_eq!(cover_src_rect_100000(20, 10, 200, 100), Some((0, 0, 0, 0)));
+    }
+
+    #[test]
+    fn cover_src_rect_is_thousandths_of_percent() {
+        assert_eq!(
+            cover_src_rect_100000(20, 10, 100, 100),
+            Some((25_000, 0, 25_000, 0))
+        );
     }
 }

@@ -25,16 +25,20 @@ mod running_blocks_validation;
 mod search;
 mod selection;
 mod semantic_code_blocks;
+mod semantic_form_fields;
 mod semantic_lists;
 mod semantic_math;
 mod sha256_hex;
 mod svg_text;
 mod table_assets;
+mod table_span;
 mod theme_vocab;
 pub mod visual_primitives;
 
 #[cfg(test)]
 mod semantic_code_blocks_tests;
+#[cfg(test)]
+mod semantic_form_fields_tests;
 #[cfg(test)]
 mod semantic_math_tests;
 
@@ -79,6 +83,10 @@ pub use running_blocks_validation::validate_manifest_running_blocks;
 pub use search::{search_tree, search_trees};
 pub use selection::{clipboard_of, selection_of, selection_with_ids, Clipboard, Selection};
 pub use semantic_code_blocks::CodeBlockValue;
+pub use semantic_form_fields::{
+    for_each_form_field, for_each_form_field_in_trees, FormFieldKind, FormFieldSpec,
+    CHECKBOX_CHECKED, CHECKBOX_UNCHECKED, ROLE_FORM_FIELD,
+};
 pub use semantic_lists::ListMarkerType;
 pub use semantic_math::ROLE_MATH;
 pub use sha256_hex::sha256_hex;
@@ -89,6 +97,9 @@ pub use svg_text::{
 pub use table_assets::{
     collapse_tables_to_assets, expand_manifest_tables_with_assets, semantic_tree_needs_assets,
     table_asset_sources, AssetsMap,
+};
+pub use table_span::{
+    table_cell_colspan, table_row_cover, table_row_slots, table_rows_on_page, TableCellSlot,
 };
 pub use theme_vocab::ThemeVocab;
 pub use visual_primitives::*;
@@ -234,6 +245,21 @@ pub struct SemanticNode {
     /// When `all`, this node spans the full width of an enclosing columns container.
     #[serde(default, skip_serializing_if = "ColumnSpan::is_none")]
     pub column_span: ColumnSpan,
+    /// Table-cell column occupancy (same row only). Omit or `1` = one track.
+    /// Illegal outside a table cell (`COLSPAN_OUTSIDE_TABLE`).
+    #[serde(
+        default = "default_colspan",
+        skip_serializing_if = "is_default_colspan"
+    )]
+    pub colspan: u32,
+}
+
+fn default_colspan() -> u32 {
+    1
+}
+
+fn is_default_colspan(v: &u32) -> bool {
+    *v == 1
 }
 
 impl Default for SemanticNode {
@@ -253,6 +279,7 @@ impl Default for SemanticNode {
             keep_with_next: false,
             break_before: BreakBefore::Auto,
             column_span: ColumnSpan::None,
+            colspan: 1,
         }
     }
 }
@@ -408,6 +435,8 @@ pub enum NodeContent {
     CodeBlock(CodeBlockValue),
     /// TeX-subset math source (NFC-normalized). Display formulas use role `"math"`.
     Math(String),
+    /// Fillable field. Declared box size; `value` does not drive measure.
+    FormField(FormFieldSpec),
     /// Deterministic image sizing (in Pt). The engine does not inspect binary image assets.
     /// Callers must provide a stable size hint to eliminate placeholders.
     Image {
@@ -429,6 +458,22 @@ pub enum NodeContent {
         width: Pt,
         height: Pt,
     },
+}
+
+impl NodeContent {
+    /// JSON `content.type` tag for this variant.
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            NodeContent::Text(_) => "text",
+            NodeContent::CodeBlock(_) => "code_block",
+            NodeContent::Math(_) => "math",
+            NodeContent::FormField(_) => "form_field",
+            NodeContent::Image { .. } => "image",
+            NodeContent::Container { .. } => "container",
+            NodeContent::Table(_) => "table",
+            NodeContent::TableReference { .. } => "table_reference",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -639,6 +684,11 @@ mod tests {
                 ..
             }
         ));
+        let msg = err.to_string();
+        assert!(
+            msg.contains("omit rows to wrap"),
+            "error should tell authors to omit rows: {msg}"
+        );
     }
 
     #[test]
@@ -973,9 +1023,71 @@ mod tests {
 
         let err = validate_semantic_tree(&node).unwrap_err();
         match err {
-            K2FError::TableRowLengthMismatch { .. } => {}
-            other => panic!("expected TableRowLengthMismatch, got {:?}", other),
+            K2FError::TableRowLengthMismatch {
+                expected: 2,
+                got: 1,
+                ..
+            } => {}
+            other => panic!(
+                "expected TableRowLengthMismatch cover 1 vs 2, got {:?}",
+                other
+            ),
         }
+    }
+
+    #[test]
+    fn test_validate_semantic_tree_accepts_row_colspan_cover() {
+        let mut left = make_cell_text("c0");
+        left.colspan = 2;
+        let node = SemanticNode {
+            id: "t".to_string(),
+            role: "table".to_string(),
+            variant: None,
+            preserve_whitespace: None,
+            list_id: None,
+            depth: None,
+            marker_type: None,
+            content: NodeContent::Table(TableSpec {
+                column_widths: vec![
+                    GridTrack::Pt { pt: 1000 },
+                    GridTrack::Pt { pt: 1000 },
+                    GridTrack::Pt { pt: 1000 },
+                ],
+                header_rows: 0,
+                gap: 0,
+                row_gap: None,
+                column_gap: None,
+                data: TableDataSource::Inline {
+                    rows: vec![vec![left, make_cell_text("c2")]],
+                },
+            }),
+            modifiers: vec![],
+            layout: None,
+            ..Default::default()
+        };
+        validate_semantic_tree(&node).unwrap();
+    }
+
+    #[test]
+    fn test_validate_semantic_tree_rejects_colspan_outside_table() {
+        let mut node = make_cell_text("n");
+        node.colspan = 2;
+        let err = validate_semantic_tree(&node).unwrap_err();
+        match err {
+            K2FError::ColspanOutsideTable { .. } => {}
+            other => panic!("expected ColspanOutsideTable, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_colspan_omits_one_in_json() {
+        let n = make_cell_text("c");
+        let v: serde_json::Value = serde_json::to_value(&n).unwrap();
+        assert!(v.get("colspan").is_none());
+        let mut spanned = make_cell_text("c");
+        spanned.colspan = 2;
+        let v: serde_json::Value = serde_json::to_value(&spanned).unwrap();
+        assert_eq!(v["colspan"], 2);
     }
 
     #[test]
@@ -1163,7 +1275,7 @@ pub enum K2FError {
     ModifierRangeNotOnCharBoundary { node_id: String, range: [usize; 2] },
     #[error("grid layout requires at least 1 column and 1 row on node '{node_id}'")]
     GridRequiresTracks { node_id: String },
-    #[error("grid layout has more children ({children}) than cells ({cells}) on node '{node_id}'")]
+    #[error("grid layout has more children ({children}) than cells ({cells}) on node '{node_id}'; omit rows to wrap, or add row tracks (declared rows do not grow)")]
     GridTooManyChildren {
         node_id: String,
         children: usize,
@@ -1195,13 +1307,15 @@ pub enum K2FError {
         header_rows: usize,
         rows: usize,
     },
-    #[error("table node '{node_id}' row {row} has {got} cells but expected {expected}")]
+    #[error("table node '{node_id}' row {row} covers {got} columns but expected {expected}")]
     TableRowLengthMismatch {
         node_id: String,
         row: usize,
         expected: usize,
         got: usize,
     },
+    #[error("COLSPAN_OUTSIDE_TABLE: node '{node_id}' has colspan outside a table cell")]
+    ColspanOutsideTable { node_id: String },
     #[error("table node '{node_id}' uses asset-backed data source '{asset_source}', but assets were not provided")]
     TableAssetDataRequiresAssets {
         node_id: String,
@@ -1247,6 +1361,30 @@ pub enum K2FError {
     MathModifiersNotAllowed { node_id: String },
     #[error("math node '{node_id}' has empty TeX source")]
     MathEmpty { node_id: String },
+    #[error(
+        "FORM_FIELD_ROLE: node '{node_id}' requires content.type = \"form_field\" (got {got})"
+    )]
+    FormFieldRoleRequiresFormFieldContent { node_id: String, got: String },
+    #[error("FORM_FIELD_CONTENT: node '{node_id}' has content.type = \"form_field\" but role is '{role}' (expected role \"form_field\")")]
+    FormFieldContentRequiresFormFieldRole { node_id: String, role: String },
+    #[error("FORM_FIELD_LAYOUT: form field node '{node_id}' cannot specify layout (must be omitted/null)")]
+    FormFieldLayoutNotAllowed { node_id: String },
+    #[error("FORM_FIELD_MODIFIERS: form field node '{node_id}' cannot have modifiers")]
+    FormFieldModifiersNotAllowed { node_id: String },
+    #[error("FORM_FIELD_CHECKBOX_VALUE: form field node '{node_id}' checkbox value must be \"\" or \"true\" (got {got})")]
+    FormFieldCheckboxValue { node_id: String, got: String },
+    #[error("FORM_FIELD_LINES: form field node '{node_id}' lines must be >= 1 (got {got})")]
+    FormFieldLines { node_id: String, got: u32 },
+    #[error("FORM_FIELD_SIZE: form field node '{node_id}' width/height must be > 0")]
+    FormFieldSize { node_id: String },
+    #[error("FORM_FIELD_MAX_LENGTH: form field node '{node_id}' value length {got} exceeds max_length {max}")]
+    FormFieldMaxLength {
+        node_id: String,
+        max: u32,
+        got: usize,
+    },
+    #[error("FORM_FIELD_IN_RUNNING: form field node '{node_id}' cannot appear in a running block")]
+    FormFieldInRunning { node_id: String },
     #[error("running blocks are only supported when canvas_mode is 'paged'")]
     RunningBlocksRequirePagedMode,
     #[error("running block node '{node_id}' uses unknown placeholder '{{{{{token}}}}}'")]
@@ -1277,6 +1415,16 @@ pub fn validate_semantic_tree(root: &SemanticNode) -> Result<(), K2FError> {
 }
 
 fn validate_node(node: &SemanticNode) -> Result<(), K2FError> {
+    validate_node_ctx(node, false)
+}
+
+fn validate_node_ctx(node: &SemanticNode, is_table_cell: bool) -> Result<(), K2FError> {
+    if node.colspan != 1 && !is_table_cell {
+        return Err(K2FError::ColspanOutsideTable {
+            node_id: node.id.clone(),
+        });
+    }
+
     const MAX_MODIFIERS: usize = 50;
     if node.modifiers.len() > MAX_MODIFIERS {
         return Err(K2FError::ModifierLimitExceeded {
@@ -1289,6 +1437,7 @@ fn validate_node(node: &SemanticNode) -> Result<(), K2FError> {
     semantic_lists::validate_list_item_invariants(node)?;
     semantic_code_blocks::validate_code_block_invariants(node)?;
     semantic_math::validate_math_invariants(node)?;
+    semantic_form_fields::validate_form_field_invariants(node)?;
 
     match &node.content {
         NodeContent::Text(text) => {
@@ -1359,7 +1508,7 @@ fn validate_node(node: &SemanticNode) -> Result<(), K2FError> {
             }
 
             for c in children {
-                validate_node(c)?;
+                validate_node_ctx(c, false)?;
             }
         }
         NodeContent::Table(spec) => {
@@ -1409,16 +1558,27 @@ fn validate_node(node: &SemanticNode) -> Result<(), K2FError> {
 
             let expected_cols = spec.column_widths.len();
             for (r, row) in rows.iter().enumerate() {
-                if row.len() != expected_cols {
+                for cell in row {
+                    if cell.colspan < 1 {
+                        return Err(K2FError::TableRowLengthMismatch {
+                            node_id: node.id.clone(),
+                            row: r,
+                            expected: expected_cols,
+                            got: 0,
+                        });
+                    }
+                }
+                let covered = crate::table_row_cover(row);
+                if covered != expected_cols {
                     return Err(K2FError::TableRowLengthMismatch {
                         node_id: node.id.clone(),
                         row: r,
                         expected: expected_cols,
-                        got: row.len(),
+                        got: covered,
                     });
                 }
                 for cell in row {
-                    validate_node(cell)?;
+                    validate_node_ctx(cell, true)?;
                 }
             }
         }

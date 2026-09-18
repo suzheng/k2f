@@ -3,17 +3,18 @@ use crate::fixed_size::{cap_inner_size_by_fixed, fixed_size_hint, subtract_if_bo
 use crate::grid::{resolve_tracks, sum_prefix};
 use crate::list_item_measure::list_item_measure_spec;
 use crate::resolved_style::resolve_list_style;
-use crate::resolved_style::{padding_for_role_variant, resolve_self_align};
+use crate::resolved_style::{align_for_child, padding_for_role_variant};
 use crate::text_align::{
     count_justify_spaces, justify_space_extras, line_start_offset, JustifyBudget,
 };
 use crate::text_layout::layout_code_block;
 use crate::text_layout::layout_text;
+use crate::text_layout::measure_text_run_width;
 use crate::{measure_node, LayoutContext, Point, Size, SizeConstraint};
 use k2f_core::{
     GeometryNode, LayoutHint, ListMarkerType, NodeContent, Pt, SemanticNode, StackDirection,
 };
-use k2f_text::{byte_to_char_index, TextShaper};
+use k2f_text::byte_to_char_index;
 
 pub fn arrange_node(
     node: &SemanticNode,
@@ -29,6 +30,9 @@ pub fn arrange_node(
         NodeContent::Text(_) => arrange_text(node, position, size, ctx),
         NodeContent::CodeBlock(code) => arrange_code_block(node, code, position, size, ctx),
         NodeContent::Math(tex) => arrange_math(node, tex, position, size, ctx),
+        NodeContent::FormField(spec) => {
+            crate::form_field::arrange_form_field(spec, node, position, size, ctx)
+        }
         NodeContent::Image { .. } => Ok(arrange_leaf(node, position, size)),
         NodeContent::Container { children } => {
             arrange_container(node, children, position, size, ctx)
@@ -416,92 +420,11 @@ fn marker_label_offset(
     style: &crate::style::Style,
     ctx: &LayoutContext,
 ) -> Result<Pt, String> {
-    let font_name = crate::style::resolve_font_family_key(&style.font_family, ctx.theme);
-    let font = ctx.fonts.get_font(&font_name).ok_or_else(|| {
-        format!(
-            "Font '{}' not loaded (resolved from '{}')",
-            font_name, style.font_family
-        )
-    })?;
-    let mut glyphs = TextShaper::shape_text(label, font, style.font_size)?;
-    crate::text_layout::apply_tracking(&mut glyphs, style.letter_spacing);
-    let mut width = Pt::ZERO;
-    for g in &glyphs {
-        width += g.x_advance;
-    }
+    let width = measure_text_run_width(label, style, ctx)?;
     Ok(line_start_offset(align, marker_box_width, width))
 }
 
-pub(crate) fn push_shaped_run(
-    glyphs: &mut Vec<k2f_core::GlyphPosition>,
-    text_runs: &mut Vec<k2f_core::TextGlyphRun>,
-    text: &str,
-    style: &crate::style::Style,
-    x_cursor: Pt,
-    y_cursor: Pt,
-    ctx: &LayoutContext,
-    char_origin: u32,
-    from_source: bool,
-    mut justify: Option<&mut crate::text_align::JustifyBudget>,
-) -> Result<Pt, String> {
-    if text.is_empty() {
-        return Ok(Pt::ZERO);
-    }
-
-    let font_name = crate::style::resolve_font_family_key(&style.font_family, ctx.theme);
-    let font = ctx.fonts.get_font(&font_name).ok_or_else(|| {
-        format!(
-            "Font '{}' not loaded (resolved from '{}')",
-            font_name, style.font_family
-        )
-    })?;
-
-    let mut run_glyphs = TextShaper::shape_text(text, font, style.font_size)?;
-    crate::text_layout::apply_tracking(&mut run_glyphs, style.letter_spacing);
-    let chars: Vec<char> = text.chars().collect();
-    let glyph_start = glyphs.len();
-    let mut run_advance = Pt::ZERO;
-    let mut shift = Pt::ZERO;
-    for g in &mut run_glyphs {
-        let ch = chars.get(g.cluster as usize).copied();
-        let extra = if ch == Some(' ') {
-            justify
-                .as_mut()
-                .map(|b| b.take_space_extra())
-                .unwrap_or(Pt::ZERO)
-        } else {
-            Pt::ZERO
-        };
-        run_advance += g.x_advance + extra;
-        g.x_advance = g.x_advance + extra;
-        g.x_offset = g.x_offset + x_cursor + shift;
-        // baseline_shift > 0 raises (y grows downward).
-        g.y_offset = g.y_offset + y_cursor - style.baseline_shift;
-        shift += extra;
-        g.cluster = if from_source {
-            char_origin + g.cluster
-        } else {
-            k2f_core::GlyphPosition::CLUSTER_NOT_SOURCE
-        };
-    }
-    glyphs.extend(run_glyphs);
-    let glyph_end = glyphs.len();
-
-    text_runs.push(k2f_core::TextGlyphRun {
-        glyph_range: [glyph_start, glyph_end],
-        style: k2f_core::TextPaintStyle {
-            font_family: font_name,
-            font_size: style.font_size,
-            color: crate::render_plan::resolve_color_ref_for_plan(&style.color, ctx.theme),
-            bold: style.bold,
-            italic: style.italic,
-            strikethrough: style.strikethrough,
-            underline: style.underline,
-        },
-    });
-
-    Ok(run_advance)
-}
+pub(crate) use crate::shape_run::push_shaped_run;
 
 fn arrange_leaf(node: &SemanticNode, position: Point, size: Size) -> GeometryNode {
     GeometryNode {
@@ -595,10 +518,16 @@ fn arrange_container(
             let measured_child = measure_node(child, child_constraint, ctx)?;
 
             let cell_align = cell_align.unwrap_or_default();
-            let (dx, child_w) =
-                align_offset_and_size(cell_align.x, cell_size.width, measured_child.width);
-            let (dy, child_h) =
-                align_offset_and_size(cell_align.y, cell_size.height, measured_child.height);
+            let (dx, child_w) = align_offset_and_size(
+                crate::form_field::lock_stretch(child, cell_align.x),
+                cell_size.width,
+                measured_child.width,
+            );
+            let (dy, child_h) = align_offset_and_size(
+                crate::form_field::lock_stretch(child, cell_align.y),
+                cell_size.height,
+                measured_child.height,
+            );
 
             let child_pos = Point::new(cell_x + dx, cell_y + dy);
             let child_size = Size::new(child_w, child_h);
@@ -716,9 +645,7 @@ fn arrange_container(
 
             for (i, child) in children.iter().enumerate() {
                 let measured = measured_sizes[i];
-                let self_align =
-                    resolve_self_align(&child.role, child.variant.as_deref(), ctx.theme);
-                let align_mode = self_align.unwrap_or(align_items);
+                let align_mode = align_for_child(child, align_items, ctx.theme);
                 let (dx, child_w) = align_offset_and_size(
                     align_mode,
                     inner_size_for_children.width,
@@ -766,9 +693,7 @@ fn arrange_container(
 
             for (i, child) in children.iter().enumerate() {
                 let measured = measured_sizes[i];
-                let self_align =
-                    resolve_self_align(&child.role, child.variant.as_deref(), ctx.theme);
-                let align_mode = self_align.unwrap_or(align_items);
+                let align_mode = align_for_child(child, align_items, ctx.theme);
                 let (dy, child_h) = align_offset_and_size(
                     align_mode,
                     inner_size_for_children.height,

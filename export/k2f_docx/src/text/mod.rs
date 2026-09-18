@@ -170,6 +170,8 @@ pub(crate) fn textbox_from_draw_ctx(
         relative_height,
         fill_hex: None,
         fill_alpha: 255,
+        fill_blip: None,
+        gradient: None,
         wrap,
         corner_emu: 0,
         line_hex: None,
@@ -183,7 +185,7 @@ pub fn textbox_wml(tb: &TextBox) -> String {
     format!(
         r#"<root xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml">
 {}</root>"#,
-        ooxml::textbox_wsp_xml(tb, &BTreeMap::new())
+        ooxml::textbox_wsp_xml(tb, &BTreeMap::new(), &BTreeMap::new())
     )
 }
 

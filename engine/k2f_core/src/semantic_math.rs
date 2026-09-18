@@ -48,13 +48,5 @@ pub fn validate_math_invariants(node: &SemanticNode) -> Result<(), K2FError> {
 }
 
 fn content_kind(content: &NodeContent) -> &'static str {
-    match content {
-        NodeContent::Text(_) => "text",
-        NodeContent::CodeBlock(_) => "code_block",
-        NodeContent::Math(_) => "math",
-        NodeContent::Image { .. } => "image",
-        NodeContent::Container { .. } => "container",
-        NodeContent::Table(_) => "table",
-        NodeContent::TableReference { .. } => "table_reference",
-    }
+    content.type_name()
 }

@@ -22,10 +22,15 @@ def check(path: Path) -> int:
         return fail(f"looks like a ZIP/.K2F, not a PDF: {path}")
     if not data.startswith(b"%PDF-"):
         return fail(f"missing %PDF- magic: {path}")
-    if b"appearance_hash=" not in data and b"Official source is K2F" not in data:
+    official = (
+        b"K2F PDF bridge" in data
+        or b"appearance_hash=" in data
+        or b"Official source is K2F" in data
+    )
+    if not official:
         return fail(
-            "missing K2F source marker (appearance_hash= or Official source is K2F); "
-            "export with k2f export-pdf, not html2pdf/jsPDF"
+            "missing K2F Producer (K2F PDF bridge); use k2f export-pdf, not html2pdf/jsPDF. "
+            "Default export is a clean PDF — do not pass --trust-pack just to satisfy this check"
         )
     if b"/Count " not in data:
         return fail("missing /Count (page dictionary); export may be truncated")

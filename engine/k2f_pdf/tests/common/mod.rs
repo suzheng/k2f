@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+pub mod acroform;
 pub mod extract;
 
 use k2f_core::GeometryNode;

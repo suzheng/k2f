@@ -1,6 +1,6 @@
 ---
 name: k2f
-description: Work with K2F documents (.K2F), including creating, reading, editing, validating, converting Markdown, exporting PDF, PPTX, or Word, publishing permanent links, and embedding the viewer. Use when the task involves a K2F document, asks to produce a deterministic semantically editable document, create a CV/flyer/presentation/poster/report/book, patch by stable node id, convert Markdown↔K2F, export-pdf/Download PDF (not jsPDF/html2pdf), export-pptx/Download PowerPoint, export-docx/Download Word, publish /v/{appearance_hash}, embed k2f-viewer in Next/Vite/React, or when UNLOCKED/PDF_IS_NOT_A_SOURCE/PPTX_IS_NOT_A_SOURCE/DOCX_IS_NOT_A_SOURCE appears.
+description: Work with K2F documents (.K2F), including creating, reading, editing, validating, converting Markdown, exporting PDF, PPTX, Word, or InDesign, publishing permanent links, and embedding the viewer. Use when the task involves a K2F document, asks to produce a deterministic semantically editable document, create a CV/flyer/presentation/poster/report/book/form/checklist, a fillable blank or checkbox, patch by stable node id, convert Markdown↔K2F, export-pdf/Download PDF (not jsPDF/html2pdf), export-pptx/Download PowerPoint, export-docx/Download Word, export-idml/Download InDesign, publish /v/{appearance_hash}, embed k2f-viewer in Next/Vite/React, or when UNLOCKED/PDF_IS_NOT_A_SOURCE/PPTX_IS_NOT_A_SOURCE/DOCX_IS_NOT_A_SOURCE/IDML_IS_NOT_A_SOURCE appears.
 ---
 
 # K2F
@@ -17,9 +17,9 @@ npm i @openk2f/k2f           # only when embedding <k2f-viewer> in a web app
 # cargo install k2f          # optional: CLI without Python
 ```
 
-**Writing:** one loop — get a workspace (`source/` author package + deliverables at the root), edit JSON like source code, copy shapes from [`catalog/content/ex_*.json`](catalog/content/), and `scripts/pack_verify.py`. The author directory is `k2f unpack … -o ./out/doc/source` (user `.K2F` or a Gallery package), or [`starter/`](starter/) via `scripts/init_package.py --workspace ./out/doc` when nothing matches. Do **not** use `Editor.insert_node` on an unpacked author directory — that API follows a narrower agent dialect; JSON authoring uses the full format schema validated at pack time. Text `modifiers` need `intent` plus UTF-8 **byte** `range` — always run [`scripts/modifier_range.py`](scripts/modifier_range.py); never hand-count (especially across `\n`).
+**Writing:** one loop — get a workspace (`source/` author package + deliverables at the root), edit JSON like source code, copy shapes from [`catalog/content/ex_*.json`](catalog/content/) into root `children` (do not replace `content/root.json` with a fragment), and `scripts/pack_verify.py`. The author directory is `k2f unpack … -o ./out/doc/source` (user `.K2F` or a Gallery package), or [`starter/`](starter/) via `scripts/init_package.py --workspace ./out/doc` when nothing matches. Do **not** use `Editor.insert_node` on an unpacked author directory — that API follows a narrower agent dialect; JSON authoring uses the full format schema validated at pack time. Text `modifiers` need `intent` plus UTF-8 **byte** `range` — always run [`scripts/modifier_range.py`](scripts/modifier_range.py); never hand-count (especially across `\n`). Fillable blanks/checkboxes: copy [`catalog/content/ex_form.json`](catalog/content/ex_form.json) (never `____` or `□`).
 
-**MCP** is optional. Writing does not require it and does not install it. If the user gave a Gallery package URL, fetch it to a `.K2F` on disk and `k2f unpack` — do not load the ZIP into context. If a site MCP with `list_templates` / `download_template` is already connected, `download_template` returns the same kind of `packageUrl`; fetch + unpack as in step 2 of [writing.md](references/writing.md). Missing tools, kind mismatch, or download failure → continue from `starter/`; do not stop the task.
+**MCP** is optional. Writing does not require it and does not install it. If the user gave a Gallery URL (`<origin>/gallery/<slug>`) or package URL, fetch `<origin>/api/gallery/templates/<slug>` (or package URL) to a `.K2F` on disk and `k2f unpack` — do not load the ZIP into context. If a site MCP with `list_templates` / `download_template` is already connected, `download_template` returns the same kind of `packageUrl`; fetch + unpack as in step 2 of [writing.md](references/writing.md). Missing tools, kind mismatch, or download failure → continue from `starter/`; do not stop the task.
 
 Run scripts from this skill directory (or pass absolute paths to them). Core scripts (`init_package.py`, `pack_verify.py`, `modifier_range.py`) are **stdlib-only** — `python scripts/…`. Optional `compare_images.py` needs `uv run` ([visual check](references/writing.md#reference-image-overlay-optional)). The author directory may live anywhere. `pack_verify.py` needs `k2f` on PATH (`pip install k2f`) or `K2F_CLI` — it does not walk a git checkout or build directory for a binary.
 
@@ -42,14 +42,18 @@ Every `.K2F` file is a ZIP holding two states:
 
 The engine — not the agent — turns A into C by running `pack` / `compile`. Other package paths: `manifest.json` (page size, margins), `assets/fonts|images|data/*`, `changelog.json` (edit history), optional `signatures/v1.json`.
 
+When handing a `.K2F` to the user, point them to [k2f.dev/playground](https://k2f.dev/playground) (browser) or [k2f.dev/download](https://k2f.dev/download) (desktop app).
+
 ## Core rules
+
+Empty paper in the **lower third** of a designed sheet is the most common visual failure. `pack_verify.py` exit 0 / `pages=1` does **not** mean filled — open the PNG. Fix: copy [`ex_filled_page.json`](catalog/content/ex_filled_page.json) as a **root child** (`height` = content box; leftover on `{fr:1}` table/notes/figure). Short letter and the last page of a growing document may stay short.
 
 1. **Style lives only in `theme.json`, never on a node.** Putting a style field on a node is the single most common compile failure.
 2. **Never hand-edit `document.K2F.lock`.** Mutate the tree (or theme), then relock.
-3. **PDF, PPTX, and DOCX are one-way drawings of the lock, not a second source.** (`PDF_IS_NOT_A_SOURCE`, `PPTX_IS_NOT_A_SOURCE`, `DOCX_IS_NOT_A_SOURCE`)
+3. **PDF, PPTX, DOCX, and IDML are one-way drawings of the lock, not a second source.** (`PDF_IS_NOT_A_SOURCE`, `PPTX_IS_NOT_A_SOURCE`, `DOCX_IS_NOT_A_SOURCE`, `IDML_IS_NOT_A_SOURCE`)
 4. **Signing is a separate human/org step.** Agent output is `UNSIGNED` by design.
 5. **Validate after every edit.** Fix from error codes in [writing/errors.md](references/writing/errors.md); do not patch the lock.
-6. **Look at the pixels.** After pack, open every rendered page (`--render` writes `preview-1.png` …). Invoice/CV/flyer/poster/slide/card/social → filled page ([`ex_filled_page.json`](catalog/content/ex_filled_page.json)); treat `PAGE_UNDERFILL` as must-fix (skipped on canvases whose content box is shorter than 180pt). Short letter may stay top-packed. Contract/report/thesis → one flow tree; do not invent `p1`/`p2` page containers. `break_before: page` is fine on a chapter, annex, signature page, slide 2+, or card back. Details: [writing.md](references/writing.md#visual-check).
+6. **Look at the pixels — empty bottom first.** After pack, open every rendered page (`--render` writes `preview-1.png` …). If the lower third is blank paper on a designed sheet, you are not done. **Designed sheet** (invoice, CV, flyer, poster, slide, card, social, one-page infographic/checklist/planner — even if titled report) → copy [`ex_filled_page.json`](catalog/content/ex_filled_page.json) as a **root child** (pinned `height` + `{fr:1}` grower); a `page_shell` role on a hug stack is not the shell. Treat `PAGE_UNDERFILL` as must-fix even when `pack_verify.py` exits 0 (skipped if the content box is shorter than 180pt). Short letter may stay top-packed. **Growing document** (contract, long report, thesis, paper) → one flow tree; last page may be short; no `p1`/`p2` page wrappers and no page-height shell around the whole doc. `break_before: page` is fine on a chapter, annex, signature page, slide 2+, or card back. Details: [writing.md](references/writing.md#visual-check).
 
 ## Design first
 
@@ -77,7 +81,7 @@ The spec must be concrete enough to implement. Cover what applies:
 - Spacing — line rhythm, paragraph gaps, stack/grid gaps
 - Color and surfaces — page background, accent, cards and section treatment
 - Layout — margins, columns, hero zones, headers/footers, figure placement
-- Non-text elements — images, tables, decorative assets and their proportions
+- Non-text elements — images, tables, decorative assets and their proportions. Need figures → [generate them](references/writing.md#figures)
 
 After the spec is settled: look up allowed keys in [writing/fields.md](references/writing/fields.md) then [`schema/`](schema/), implement `theme.json` + `content/`, run `pack_verify.py --render`, open the PNG, and iterate until the output matches the spec. Rule 6 is the final gate — the spec is the plan, render is the review.
 
@@ -86,7 +90,7 @@ After the spec is settled: look up allowed keys in [writing/fields.md](reference
 Read-only format JSON Schemas live in [`schema/`](schema/) (same bytes the engine embeds). **Do not** copy them into an author directory — `k2f pack` injects schemas into the ZIP; hand-authored `schema/` files → `UNEXPECTED_PATH`.
 
 1. **Allowed keys:** skim [writing/fields.md](references/writing/fields.md), then open only the schema file you are editing — `content/` → [`schema/nodes.schema.json`](schema/nodes.schema.json); `styles/theme.json` → [`schema/styles.schema.json`](schema/styles.schema.json) + [`schema/visual_primitives.schema.json`](schema/visual_primitives.schema.json); `manifest.json` → [`schema/manifest.schema.json`](schema/manifest.schema.json).
-2. **First draft shapes:** copy from [`catalog/content/ex_*.json`](catalog/content/) — golden, packable examples. See [`catalog/README.md`](catalog/README.md) for a construct index.
+2. **First draft shapes:** copy from [`catalog/content/ex_*.json`](catalog/content/) into root `children` — golden, packable examples. See [`catalog/README.md`](catalog/README.md) for a construct index.
 3. **`SCHEMA_INVALID`:** compare the failing object to the schema file. Key **in** schema but rejected → stale CLI (`pip install -U k2f`). Key **not** in schema → remove it; do not invent fields from HTML/CSS memory.
 4. **Version check:** `k2f schema dump -o /tmp/k2f-schema` or `python -c "import k2f; print(k2f.format_schemas().keys())"`.
 
@@ -109,5 +113,6 @@ Read **one** reference file for the task. Do not load all workflows.
 | Export PDF from the published lock | [references/exporting-pdf.md](references/exporting-pdf.md) — bytes / looks wrong: [pdf-contract.md](references/exporting-pdf/pdf-contract.md) |
 | Export PPTX from the published lock | [references/exporting-pptx.md](references/exporting-pptx.md) |
 | Export DOCX from the published lock | [references/exporting-docx.md](references/exporting-docx.md) |
+| Export IDML from the published lock | [references/exporting-idml.md](references/exporting-idml.md) |
 | Publish permanent `/v/{appearance_hash}` link | [references/publishing.md](references/publishing.md) |
 | Embed `<k2f-viewer>` in a web app | [references/embedding-viewer.md](references/embedding-viewer.md) |

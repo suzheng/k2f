@@ -33,6 +33,7 @@ for (const [format, check] of [
   ["jpg", (b) => b[0] === 0x50 && b[1] === 0x4b],
   ["pptx", (b) => b[0] === 0x50 && b[1] === 0x4b],
   ["docx", (b) => b[0] === 0x50 && b[1] === 0x4b],
+  ["idml", (b) => b[0] === 0x50 && b[1] === 0x4b],
 ]) {
   const v = new viewerOnly.Viewer(published);
   let out;
@@ -48,6 +49,8 @@ for (const [format, check] of [
     out = v.export_pptx();
   } else if (format === "docx") {
     out = v.export_docx();
+  } else if (format === "idml") {
+    out = v.export_idml();
   } else {
     out = v.export_pages_jpeg_zip(scale);
   }

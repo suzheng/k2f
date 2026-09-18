@@ -8,6 +8,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
+from io import BytesIO
 from pathlib import Path
 
 import pytest
@@ -75,6 +77,7 @@ def test_k2f_on_path_and_help_lists_core_commands() -> None:
         "export-pdf",
         "export-pptx",
         "export-docx",
+        "export-idml",
         "markdown",
     ):
         assert cmd in help_text, f"missing {cmd} in k2f --help"
@@ -126,6 +129,26 @@ def test_export_docx_on_invoice() -> None:
         )
         assert export_docx.returncode == 0, export_docx.stderr
         assert docx.read_bytes().startswith(b"PK"), "export-docx did not write ZIP"
+
+
+@pytest.mark.skipif(not INVOICE.is_file(), reason="invoice.K2F fixture missing")
+def test_export_idml_on_invoice() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / "invoice"
+        export_idml = k2f_cmd(
+            "export-idml",
+            str(INVOICE),
+            "-o",
+            str(out),
+        )
+        assert export_idml.returncode == 0, export_idml.stderr
+        idml = out / "invoice.idml"
+        assert idml.read_bytes().startswith(b"PK"), "export-idml did not write IDML"
+        assert (out / "Document Fonts" / "Roboto-Regular.ttf").is_file()
+        with zipfile.ZipFile(BytesIO(idml.read_bytes())) as archive:
+            first = archive.infolist()[0]
+            assert first.filename == "mimetype"
+            assert first.compress_type == zipfile.ZIP_STORED
 
 
 @pytest.mark.skipif(not CATALOG.is_dir(), reason="skill catalog missing")
@@ -222,6 +245,42 @@ def test_init_package_pack_verify() -> None:
                 sys.executable,
                 str(PACK_VERIFY),
                 str(doc),
+                "-o",
+                str(out),
+                "--expect-pages",
+                "1",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            env=pack_verify_env(),
+        )
+        assert pack_proc.returncode == 0, pack_proc.stdout + pack_proc.stderr
+        assert out.is_file() and out.stat().st_size > 0
+
+
+SERIF_TTF = CATALOG / "assets" / "fonts" / "NotoSerif-Regular.ttf"
+
+
+@pytest.mark.skipif(not SERIF_TTF.is_file(), reason="catalog NotoSerif-Regular.ttf missing")
+def test_init_package_add_font_serif_retargets_h1() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        dest = Path(tmp) / "doc"
+        out = Path(tmp) / "doc.K2F"
+        init_proc = _run_init(dest, ["--add-font", str(SERIF_TTF)])
+        assert init_proc.returncode == 0, init_proc.stderr
+        assert (dest / "assets" / "fonts" / "NotoSerif-Regular.ttf").is_file()
+        theme_path = dest / "styles" / "theme.json"
+        theme = json.loads(theme_path.read_text(encoding="utf-8"))
+        assert theme["font_aliases"]["NotoSerif-Regular"] == "NotoSerif-Regular"
+        assert theme["font_aliases"]["Roboto-Regular"] == "Roboto-Regular"
+        theme["roles"]["h1"]["font_family"] = "NotoSerif-Regular"
+        theme_path.write_text(json.dumps(theme, indent=2) + "\n", encoding="utf-8")
+        pack_proc = subprocess.run(
+            [
+                sys.executable,
+                str(PACK_VERIFY),
+                str(dest),
                 "-o",
                 str(out),
                 "--expect-pages",

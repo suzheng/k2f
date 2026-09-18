@@ -18,6 +18,7 @@ mod wrap_fit;
 mod wrap_tokenize;
 
 pub use layout::layout_text;
+pub(crate) use metrics::line_height_for_style;
 pub use metrics::measure_text_run_width;
 pub use preformatted::layout_code_block;
 pub(crate) use tracking::apply_tracking;
@@ -74,6 +75,7 @@ mod tests {
                 italic: false,
                 letter_spacing_pt: Pt::ZERO,
                 first_line_indent_pt: Pt::ZERO,
+                image_fit: None,
                 variants: HashMap::from([(
                     "muted".to_string(),
                     RoleVariant {
@@ -84,6 +86,7 @@ mod tests {
                             ..StylePatch::default()
                         }),
                         list_style: None,
+                        image_fit: None,
                     },
                 )]),
             },
@@ -95,6 +98,7 @@ mod tests {
             roles,
             modifiers: crate::ModifierTheme::default(),
             font_aliases: HashMap::new(),
+            font_faces: HashMap::new(),
         };
 
         let ctx = LayoutContext::new(&fonts, &theme);
@@ -106,6 +110,88 @@ mod tests {
         assert_eq!(layout.lines.len(), 1);
         assert_eq!(layout.lines[0].runs.len(), 1);
         assert_eq!(layout.lines[0].runs[0].style.color, "red");
+    }
+
+    fn roboto_and_sc() -> crate::LayoutContext<'static> {
+        use std::collections::BTreeMap;
+        use std::path::PathBuf;
+        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts");
+        let mut fonts_map = BTreeMap::new();
+        fonts_map.insert(
+            "assets/fonts/Roboto-Regular.ttf".into(),
+            std::fs::read(dir.join("Roboto-Regular.ttf")).unwrap(),
+        );
+        fonts_map.insert(
+            "assets/fonts/NotoSansSC-Regular.otf".into(),
+            std::fs::read(dir.join("NotoSansSC-Regular.otf")).unwrap(),
+        );
+        let lib = crate::fonts::load_font_library(&fonts_map).unwrap();
+        let theme: Theme = serde_json::from_str(
+            r#"{"palette":{},"roles":{"code_block":{"font_family":"Roboto-Regular","font_size":12000,"line_height_mult":1400,"color":"ink"}}}"#,
+        )
+        .unwrap();
+        let fonts = Box::leak(Box::new(lib));
+        let theme = Box::leak(Box::new(theme));
+        LayoutContext::new(fonts, theme)
+    }
+
+    #[test]
+    fn layout_code_block_falls_back_for_cjk() {
+        let ctx = roboto_and_sc();
+        let layout = layout_code_block(
+            "let x = 合;",
+            "code_block",
+            None,
+            &[],
+            SizeConstraint::infinite(),
+            &ctx,
+        )
+        .unwrap();
+        let families: Vec<&str> = layout.lines[0]
+            .runs
+            .iter()
+            .map(|r| r.style.font_family.as_str())
+            .collect();
+        assert!(
+            families.iter().any(|f| *f == "NotoSansSC-Regular"),
+            "expected CJK run on NotoSansSC, got {families:?}"
+        );
+        assert!(
+            families.iter().any(|f| *f == "Roboto-Regular"),
+            "expected ASCII run on Roboto, got {families:?}"
+        );
+    }
+
+    #[test]
+    fn measure_dingbat_falls_back_to_embedded_face() {
+        use crate::style::Style;
+        use std::collections::BTreeMap;
+        use std::path::PathBuf;
+        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts");
+        let mut fonts_map = BTreeMap::new();
+        fonts_map.insert(
+            "assets/fonts/Roboto-Regular.ttf".into(),
+            std::fs::read(dir.join("Roboto-Regular.ttf")).unwrap(),
+        );
+        fonts_map.insert(
+            "assets/fonts/DejaVuSans.ttf".into(),
+            std::fs::read(dir.join("DejaVuSans.ttf")).unwrap(),
+        );
+        let lib = crate::fonts::load_font_library(&fonts_map).unwrap();
+        let theme: Theme = serde_json::from_str(
+            r#"{"palette":{},"roles":{"body":{"font_family":"Roboto-Regular","font_size":12000,"line_height_mult":1200,"color":"ink"}}}"#,
+        )
+        .unwrap();
+        let ctx = LayoutContext::new(&lib, &theme);
+        let style = Style {
+            font_family: "Roboto-Regular".into(),
+            font_size: Pt(12000),
+            line_height_mult: 1200,
+            color: "ink".into(),
+            ..Style::default()
+        };
+        let w = measure_text_run_width("□", &style, &ctx).unwrap();
+        assert!(w > Pt::ZERO);
     }
 }
 

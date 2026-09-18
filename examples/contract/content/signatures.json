@@ -10,25 +10,131 @@
         {
           "id": "contract.signatures.label",
           "role": "body",
-          "content": { "type": "text", "value": "签署栏" },
-          "modifiers": []
+          "content": { "type": "text", "value": "签署栏" }
         },
         {
-          "id": "contract.signatures.client",
+          "id": "contract.signatures.client_row",
           "role": "body",
-          "content": { "type": "text", "value": "客户：____________________    日期：________" },
-          "modifiers": []
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "contract.signatures.client_label",
+                  "role": "body",
+                  "content": { "type": "text", "value": "客户：" }
+                },
+                {
+                  "id": "contract.signatures.client_name",
+                  "role": "form_field",
+                  "variant": "underline",
+                  "break_inside": "avoid",
+                  "content": {
+                    "type": "form_field",
+                    "value": {
+                      "kind": "text",
+                      "value": "",
+                      "placeholder": "客户姓名"
+                    }
+                  }
+                },
+                {
+                  "id": "contract.signatures.client_date_label",
+                  "role": "body",
+                  "content": { "type": "text", "value": "日期：" }
+                },
+                {
+                  "id": "contract.signatures.client_date",
+                  "role": "form_field",
+                  "variant": "underline",
+                  "break_inside": "avoid",
+                  "content": {
+                    "type": "form_field",
+                    "value": {
+                      "kind": "text",
+                      "value": "",
+                      "placeholder": "YYYY-MM-DD"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "layout": {
+            "type": "grid",
+            "columns": [
+              { "auto": true },
+              { "fr": 2 },
+              { "auto": true },
+              { "fr": 1 }
+            ],
+            "column_gap": 8000,
+            "cell_align": { "x": "stretch", "y": "center" }
+          }
         },
         {
-          "id": "contract.signatures.contractor",
+          "id": "contract.signatures.contractor_row",
           "role": "body",
-          "content": { "type": "text", "value": "承包方：____________________    日期：________" },
-          "modifiers": []
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "contract.signatures.contractor_label",
+                  "role": "body",
+                  "content": { "type": "text", "value": "承包方：" }
+                },
+                {
+                  "id": "contract.signatures.contractor_name",
+                  "role": "form_field",
+                  "variant": "underline",
+                  "break_inside": "avoid",
+                  "content": {
+                    "type": "form_field",
+                    "value": {
+                      "kind": "text",
+                      "value": "",
+                      "placeholder": "承包方姓名"
+                    }
+                  }
+                },
+                {
+                  "id": "contract.signatures.contractor_date_label",
+                  "role": "body",
+                  "content": { "type": "text", "value": "日期：" }
+                },
+                {
+                  "id": "contract.signatures.contractor_date",
+                  "role": "form_field",
+                  "variant": "underline",
+                  "break_inside": "avoid",
+                  "content": {
+                    "type": "form_field",
+                    "value": {
+                      "kind": "text",
+                      "value": "",
+                      "placeholder": "YYYY-MM-DD"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "layout": {
+            "type": "grid",
+            "columns": [
+              { "auto": true },
+              { "fr": 2 },
+              { "auto": true },
+              { "fr": 1 }
+            ],
+            "column_gap": 8000,
+            "cell_align": { "x": "stretch", "y": "center" }
+          }
         }
       ]
     }
   },
-  "modifiers": [],
   "layout": {
     "type": "stack",
     "direction": "vertical",

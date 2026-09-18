@@ -2,6 +2,7 @@ use crate::layout_context::SizeConstraint;
 use crate::LayoutContext;
 use k2f_core::{Modifier, Pt};
 
+use super::font_runs;
 use super::metrics::line_height_for_style;
 use super::run_split::split_runs;
 use super::types::{merge_join_tracking, push_or_merge_run, TextLayout, TextLine, TextRun};
@@ -21,8 +22,9 @@ pub fn layout_code_block(
     _constraint: SizeConstraint,
     ctx: &LayoutContext,
 ) -> Result<TextLayout, String> {
-    // Split runs by modifiers (range-based styling).
-    let runs: Vec<TextRun> = split_runs(text, role, variant, modifiers, ctx.theme)?;
+    // Split runs by modifiers, then by embedded-font coverage (same as `layout_text`).
+    let styled = split_runs(text, role, variant, modifiers, ctx.theme)?;
+    let runs = font_runs::split_font_runs(styled, ctx)?;
 
     let base_style = crate::resolved_style::resolve_text_style(role, variant, ctx.theme);
     let base_line_height = line_height_for_style(&base_style);

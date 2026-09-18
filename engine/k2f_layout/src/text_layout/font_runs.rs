@@ -11,7 +11,7 @@ pub fn split_font_runs(runs: Vec<TextRun>, ctx: &LayoutContext) -> Result<Vec<Te
             push_or_merge_run(&mut out, run);
             continue;
         }
-        let primary = crate::style::resolve_font_family_key(&run.style.font_family, ctx.theme);
+        let primary = run.style.face_key(ctx.theme);
         let segments = split_by_coverage(&run.text, &primary, ctx.fonts)?;
         let mut byte = run.start;
         for segment in segments {

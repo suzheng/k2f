@@ -53,7 +53,6 @@
   "layout": {
     "type": "grid",
     "columns": [{ "pt": 160000 }, { "fr": 1 }],
-    "rows": [{ "auto": true }],
     "column_gap": 16000,
     "cell_align": { "x": "stretch", "y": "start" }
   }

@@ -13,6 +13,8 @@ fn help_lists_headless_flags() {
     assert!(stdout.contains("OUT_PPTX"), "{stdout}");
     assert!(stdout.contains("--export-docx"), "{stdout}");
     assert!(stdout.contains("OUT_DOCX"), "{stdout}");
+    assert!(stdout.contains("--export-idml"), "{stdout}");
+    assert!(stdout.contains("OUT_DIR"), "{stdout}");
     assert!(stdout.contains("--verify"), "{stdout}");
     assert!(stdout.contains("[FILE]"), "{stdout}");
 }
@@ -27,6 +29,7 @@ fn no_args_prints_usage_and_exits_2() {
     assert!(stderr.contains("--export-pdf"), "{stderr}");
     assert!(stderr.contains("--export-pptx"), "{stderr}");
     assert!(stderr.contains("--export-docx"), "{stderr}");
+    assert!(stderr.contains("--export-idml"), "{stderr}");
 }
 
 #[test]

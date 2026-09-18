@@ -1,9 +1,9 @@
-use crate::coord::pt_to_emu;
+use crate::coord::{millipt_to_emu, pt_to_emu};
 use crate::ir::PictureBox;
 use crate::xml::escape_xml;
 use crate::DocxError;
-use k2f_core::Rect;
-use k2f_paint::{decode_raster, letterbox_rect, lookup_image};
+use k2f_core::{ImageFit, Rect};
+use k2f_paint::{cover_src_rect_100000, decode_raster, letterbox_rect, lookup_image};
 use std::collections::BTreeMap;
 use std::io::Cursor;
 
@@ -14,10 +14,12 @@ pub(crate) fn picture_from_draw(
     assets: &BTreeMap<String, Vec<u8>>,
     media_index: u32,
     relative_height: u32,
+    fit: ImageFit,
+    corner_radius_pt: Option<i64>,
 ) -> Result<PictureBox, DocxError> {
     let bytes = lookup_image(assets, src)
         .ok_or_else(|| DocxError::Write(format!("missing image '{src}'")))?;
-    let dest = dest_rect_for_image(rect, bytes);
+    let (dest, src_crop) = dest_and_crop(rect, bytes, fit);
     let (ext, payload) = encode_media(bytes)?;
     Ok(PictureBox {
         node_id: node_id.to_string(),
@@ -29,14 +31,31 @@ pub(crate) fn picture_from_draw(
         bytes: payload,
         relative_height,
         pin_empty_txbox: false,
+        src_l: src_crop.0,
+        src_t: src_crop.1,
+        src_r: src_crop.2,
+        src_b: src_crop.3,
+        corner_emu: millipt_to_emu(corner_radius_pt.unwrap_or(0).max(0)),
     })
 }
 
-fn dest_rect_for_image(rect: &Rect, bytes: &[u8]) -> Rect {
-    decode_raster(bytes)
-        .ok()
-        .and_then(|img| letterbox_rect(img.width(), img.height(), rect))
-        .unwrap_or_else(|| rect.clone())
+fn dest_and_crop(rect: &Rect, bytes: &[u8], fit: ImageFit) -> (Rect, (i64, i64, i64, i64)) {
+    let Some(img) = decode_raster(bytes).ok() else {
+        return (rect.clone(), (0, 0, 0, 0));
+    };
+    match fit {
+        ImageFit::Cover => {
+            let bw = rect.width.0.max(1) as u32;
+            let bh = rect.height.0.max(1) as u32;
+            let crop =
+                cover_src_rect_100000(img.width(), img.height(), bw, bh).unwrap_or((0, 0, 0, 0));
+            (rect.clone(), crop)
+        }
+        ImageFit::Contain => (
+            letterbox_rect(img.width(), img.height(), rect).unwrap_or_else(|| rect.clone()),
+            (0, 0, 0, 0),
+        ),
+    }
 }
 
 pub(crate) fn encode_media(bytes: &[u8]) -> Result<(&'static str, Vec<u8>), DocxError> {
@@ -111,6 +130,8 @@ pub(crate) fn raster_wsp_xml(pic: &PictureBox, embed_rid: &str) -> String {
             "                  <wps:bodyPr/>\n",
         )
     };
+    let geom = pic_geom_xml(pic);
+    let src_rect = pic_src_rect_xml(pic);
     format!(
         r#"                <wps:wsp>
 {cnv}                  <wps:spPr>
@@ -118,12 +139,9 @@ pub(crate) fn raster_wsp_xml(pic: &PictureBox, embed_rid: &str) -> String {
                       <a:off x="0" y="0"/>
                       <a:ext cx="{cx}" cy="{cy}"/>
                     </a:xfrm>
-                    <a:prstGeom prst="rect">
-                      <a:avLst/>
-                    </a:prstGeom>
-                    <a:blipFill>
+{geom}                    <a:blipFill>
                       <a:blip r:embed="{rid}"/>
-                      <a:stretch>
+{src_rect}                      <a:stretch>
                         <a:fillRect/>
                       </a:stretch>
                     </a:blipFill>
@@ -141,6 +159,8 @@ pub(crate) fn raster_wsp_xml(pic: &PictureBox, embed_rid: &str) -> String {
 
 fn pic_xml_named(pic: &PictureBox, embed_rid: &str, name: &str, cnv_id: u32) -> String {
     let name = escape_xml(name);
+    let geom = pic_geom_xml(pic);
+    let src_rect = pic_src_rect_xml(pic);
     format!(
         r#"                <pic:pic>
                   <pic:nvPicPr>
@@ -151,7 +171,7 @@ fn pic_xml_named(pic: &PictureBox, embed_rid: &str, name: &str, cnv_id: u32) -> 
                   </pic:nvPicPr>
                   <pic:blipFill>
                     <a:blip r:embed="{rid}"/>
-                    <a:stretch>
+{src_rect}                    <a:stretch>
                       <a:fillRect/>
                     </a:stretch>
                   </pic:blipFill>
@@ -160,15 +180,33 @@ fn pic_xml_named(pic: &PictureBox, embed_rid: &str, name: &str, cnv_id: u32) -> 
                       <a:off x="0" y="0"/>
                       <a:ext cx="{cx}" cy="{cy}"/>
                     </a:xfrm>
-                    <a:prstGeom prst="rect">
-                      <a:avLst/>
-                    </a:prstGeom>
-                  </pic:spPr>
+{geom}                  </pic:spPr>
                 </pic:pic>
 "#,
         rid = embed_rid,
         cx = pic.cx_emu,
         cy = pic.cy_emu,
+    )
+}
+
+fn pic_src_rect_xml(pic: &PictureBox) -> String {
+    if pic.src_l == 0 && pic.src_t == 0 && pic.src_r == 0 && pic.src_b == 0 {
+        String::new()
+    } else {
+        format!(
+            "                    <a:srcRect l=\"{}\" t=\"{}\" r=\"{}\" b=\"{}\"/>\n",
+            pic.src_l, pic.src_t, pic.src_r, pic.src_b
+        )
+    }
+}
+
+fn pic_geom_xml(pic: &PictureBox) -> String {
+    if pic.corner_emu <= 0 {
+        return "                    <a:prstGeom prst=\"rect\">\n                      <a:avLst/>\n                    </a:prstGeom>\n".into();
+    }
+    let adj = crate::shape::round_rect_adj(pic.corner_emu, pic.cx_emu, pic.cy_emu);
+    format!(
+        "                    <a:prstGeom prst=\"roundRect\">\n                      <a:avLst>\n                        <a:gd name=\"adj\" fmla=\"val {adj}\"/>\n                      </a:avLst>\n                    </a:prstGeom>\n"
     )
 }
 
@@ -185,7 +223,17 @@ mod tests {
             width: Pt(10_000),
             height: Pt(10_000),
         };
-        let err = picture_from_draw("pic", &rect, "nope.png", &BTreeMap::new(), 1, 0).unwrap_err();
+        let err = picture_from_draw(
+            "pic",
+            &rect,
+            "nope.png",
+            &BTreeMap::new(),
+            1,
+            0,
+            ImageFit::Contain,
+            None,
+        )
+        .unwrap_err();
         match err {
             DocxError::Write(msg) => assert!(msg.contains("missing image")),
             other => panic!("expected Write, got {other:?}"),
@@ -240,8 +288,29 @@ mod tests {
             width: Pt(200_000),
             height: Pt(100_000),
         };
-        let dest = dest_rect_for_image(&rect, &bytes);
+        let dest = dest_and_crop(&rect, &bytes, ImageFit::Contain).0;
         assert_eq!(dest.width, Pt(50_000));
         assert_eq!(dest.x, Pt(75_000));
+    }
+
+    #[test]
+    fn dest_and_crop_cover_keeps_box_and_crops_source() {
+        use image::codecs::png::PngEncoder;
+        use image::{ExtendedColorType, ImageEncoder};
+        let pixels = vec![0u8; 20 * 10 * 3];
+        let mut out = Cursor::new(Vec::new());
+        PngEncoder::new(&mut out)
+            .write_image(&pixels, 20, 10, ExtendedColorType::Rgb8)
+            .unwrap();
+        let bytes = out.into_inner();
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(100_000),
+            height: Pt(100_000),
+        };
+        let (dest, crop) = dest_and_crop(&rect, &bytes, ImageFit::Cover);
+        assert_eq!(dest, rect);
+        assert_eq!(crop, (25_000, 0, 25_000, 0));
     }
 }

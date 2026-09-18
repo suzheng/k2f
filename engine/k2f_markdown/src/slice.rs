@@ -22,6 +22,7 @@ fn text_of(node: &SemanticNode) -> Option<&str> {
     match &node.content {
         NodeContent::Text(s) => Some(s.as_str()),
         NodeContent::Math(s) => Some(s.as_str()),
+        NodeContent::FormField(spec) => Some(spec.value.as_str()),
         _ => None,
     }
 }
@@ -30,6 +31,7 @@ fn set_text(node: &mut SemanticNode, s: String) {
     match &mut node.content {
         NodeContent::Text(t) => *t = s,
         NodeContent::Math(t) => *t = s,
+        NodeContent::FormField(spec) => spec.value = s,
         _ => {}
     }
 }

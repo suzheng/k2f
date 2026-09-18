@@ -1,6 +1,6 @@
 # k2f (Python)
 
-Restricted document SDK for AI agents. Build `.K2F` packages, edit by stable node id, convert Markdown, and export PDF, PPTX, or DOCX from the published lock.
+Restricted document SDK for AI agents. Build `.K2F` packages, edit by stable node id, convert Markdown, and export PDF, PPTX, DOCX, or IDML from the published lock.
 
 **License:** Apache-2.0
 
@@ -10,7 +10,7 @@ Restricted document SDK for AI agents. Build `.K2F` packages, edit by stable nod
 pip install k2f
 ```
 
-`pip install k2f` puts the **`k2f` CLI on PATH** (pack, compile, verify, render, export-pdf, export-pptx, export-docx, markdown) and installs the Python SDK (`import k2f`).
+`pip install k2f` puts the **`k2f` CLI on PATH** (pack, compile, verify, render, export-pdf, export-pptx, export-docx, export-idml, markdown) and installs the Python SDK (`import k2f`).
 
 From source (development):
 
@@ -109,6 +109,7 @@ Runtime errors include stable codes in the message:
 | `PDF_IS_NOT_A_SOURCE` | PDF cannot be opened as a semantic source |
 | `PPTX_IS_NOT_A_SOURCE` | PPTX cannot be opened as a semantic source |
 | `DOCX_IS_NOT_A_SOURCE` | DOCX cannot be opened as a semantic source |
+| `IDML_IS_NOT_A_SOURCE` | IDML cannot be opened as a semantic source |
 | `CONTENT_HASH_MISMATCH` | Save rejected — content hash drift |
 | `UNKNOWN_ID` | Node id not found |
 | `SCHEMA_INVALID` | JSON fails embedded schema validation |

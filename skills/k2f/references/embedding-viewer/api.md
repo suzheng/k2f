@@ -32,7 +32,7 @@ Changing `editable` / `no-banner` after connect does **not** remount. Use `eleme
 |----------------|---------|
 | `destroy()` | Tear down listeners and free WASM objects |
 | `goPage(n)` | Scroll page `n` into view |
-| `exportPdf()` | PDF bytes from the published lock (no re-layout) |
+| `export(format?)` | Lock bytes — `k2f`, `pdf`, `pptx`, `docx`, `idml`, `markdown`, `png`, `jpg` (default from toolbar / `exportFormat`) |
 | `selectId(id)` | Jump to a node (popover only in edit mode) |
 | `open(bytes)` | Replace the open package |
 | `editing` | `true` when the Edit toggle is active |

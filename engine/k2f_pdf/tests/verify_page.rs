@@ -82,6 +82,10 @@ fn default_export_matches_lock_page_count_without_trust_pack() {
     let text = String::from_utf8_lossy(&pdf);
     assert!(!text.contains("appearance_hash="));
     assert!(!text.contains("K2F integrity verification"));
+    assert!(
+        text.contains("K2F PDF bridge"),
+        "default export must embed Producer K2F PDF bridge"
+    );
 }
 
 #[test]

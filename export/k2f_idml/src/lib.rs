@@ -1,0 +1,35 @@
+mod align;
+mod autosize;
+mod classify;
+mod coord;
+mod effect;
+mod error;
+mod export;
+mod geo;
+mod handoff;
+mod idml;
+mod ir;
+mod master;
+mod para_xml;
+mod picture;
+mod shape;
+mod table;
+mod text;
+mod xml;
+
+pub use align::infer_text_align;
+pub use coord::{fmt_pt, millipt_to_pt, SpreadSpace, DOM, MIME, NS};
+pub use effect::{filter_chrome_ops, ChromeKeep};
+pub use error::IdmlError;
+pub use export::{export_bytes, export_opened};
+pub use handoff::{
+    export_handoff, export_handoff_bytes, export_package_zip, write_handoff_output, IdmlHandoff,
+    DOCUMENT_FONTS,
+};
+pub use idml::{story_xml, textframe_xml};
+pub use ir::{CellBorders, PictureBox, ScriptPos, ShapeBox, TextAlign, TextBox, TextRun};
+pub use picture::picture_from_draw;
+pub use shape::shapes_from_box;
+pub use table::{cell_borders, cell_edge_attrs, harvestable_inline_rows};
+pub use text::textbox_from_draw;
+pub use xml::escape_xml;

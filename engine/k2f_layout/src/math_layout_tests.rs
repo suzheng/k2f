@@ -46,6 +46,7 @@ fn math_theme() -> Theme {
         roles,
         modifiers: Default::default(),
         font_aliases: HashMap::new(),
+        font_faces: HashMap::new(),
     }
 }
 

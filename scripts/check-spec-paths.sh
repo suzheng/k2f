@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-spec=docs/spec/k2f-v0.1.md
+spec=docs/spec/k2f-v0.3.md
 for path in manifest.json content/root.json styles/theme.json document.K2F.lock signatures/v1.json; do
   grep -q "$path" "$spec" || { echo "missing path in spec: $path"; exit 1; }
 done

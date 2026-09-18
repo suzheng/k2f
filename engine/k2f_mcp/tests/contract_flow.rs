@@ -96,12 +96,7 @@ fn create_from_template_then_insert() {
     let src = repo_root().join("templates/legal");
     let _ = std::fs::remove_dir_all(&dest);
     let created = state
-        .create(
-            "Empty",
-            dest.to_str().unwrap(),
-            src.to_str().unwrap(),
-            "A4",
-        )
+        .create("Empty", dest.to_str().unwrap(), src.to_str().unwrap(), "A4")
         .unwrap();
     assert_eq!(created["kind"].as_str().unwrap(), "editor");
     let session_id = created["session_id"].as_str().unwrap();
@@ -219,7 +214,7 @@ fn empty_path_is_path_required() {
     let session_id = open_json["session_id"].as_str().unwrap();
     let err = state.save(session_id, None, "").unwrap_err();
     assert_eq!(err.code, "PATH_REQUIRED");
-    let err = state.export_pdf(session_id, "  ", None).unwrap_err();
+    let err = state.export_pdf(session_id, "  ", None, false).unwrap_err();
     assert_eq!(err.code, "PATH_REQUIRED");
 }
 

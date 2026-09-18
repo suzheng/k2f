@@ -108,7 +108,14 @@ pub(crate) fn textbox_from_draw(
         let glyph_refs: Vec<&GlyphPosition> =
             geo.map(|g| g.glyphs.iter().collect()).unwrap_or_default();
         let tracking = tracking_spc(&glyph_refs, &style, fonts);
-        split_runs(&text, &style, &node.modifiers, &font_name, tracking)
+        split_runs(
+            &text,
+            &style,
+            &node.modifiers,
+            &font_name,
+            tracking,
+            !paint_runs.is_empty(),
+        )
     } else {
         runs_from_paint(&raw, paint_runs, &node.modifiers, geo, fonts)
     };
@@ -457,7 +464,7 @@ pub(crate) fn cell_runs(
             style.bold = true;
         }
         let font_name = fonts.typeface(&style.font_family);
-        split_runs(text, &style, &node.modifiers, &font_name, 0)
+        split_runs(text, &style, &node.modifiers, &font_name, 0, false)
     } else {
         runs_from_paint(text, paint_runs, &node.modifiers, geo, fonts)
     };
@@ -479,7 +486,7 @@ fn runs_from_paint(
     if paint_runs.is_empty() {
         let style = fallback_style();
         let font_name = fonts.typeface(&style.font_family);
-        return split_runs(text, &style, modifiers, &font_name, 0);
+        return split_runs(text, &style, modifiers, &font_name, 0, false);
     }
     let default_style = &paint_runs[0].style;
     let mut spans: Vec<(usize, usize, &TextPaintStyle, Vec<&GlyphPosition>)> = Vec::new();
@@ -501,6 +508,8 @@ fn runs_from_paint(
             }
             let start = bs.max(pos);
             if start > pos {
+                // Gap between paint spans still uses a paint style; don't
+                // re-map emphasis on top (a missed space would become bold).
                 out.extend(split_piece(
                     text,
                     pos,
@@ -509,10 +518,11 @@ fn runs_from_paint(
                     modifiers,
                     fonts,
                     &[],
+                    true,
                 ));
             }
             out.extend(split_piece(
-                text, start, be, style, modifiers, fonts, &glyphs,
+                text, start, be, style, modifiers, fonts, &glyphs, true,
             ));
             pos = pos.max(be);
         }
@@ -526,6 +536,7 @@ fn runs_from_paint(
             modifiers,
             fonts,
             &[],
+            true,
         ));
     }
     out
@@ -562,6 +573,7 @@ fn split_piece(
     modifiers: &[Modifier],
     fonts: &FontCtx,
     glyphs: &[&GlyphPosition],
+    from_paint: bool,
 ) -> Vec<TextRun> {
     let font_name = fonts.typeface(&style.font_family);
     let slice =
@@ -576,6 +588,7 @@ fn split_piece(
         &shift_modifiers(modifiers, bs, be),
         &font_name,
         tracking_spc(glyphs, style, fonts),
+        from_paint,
     )
 }
 
@@ -673,6 +686,7 @@ fn split_runs(
     modifiers: &[Modifier],
     font_name: &str,
     tracking_spc: i32,
+    from_paint: bool,
 ) -> Vec<TextRun> {
     let base = run_from_style("", style, font_name, tracking_spc);
     let mut cuts = vec![0usize, text.len()];
@@ -702,7 +716,7 @@ fn split_runs(
         for m in modifiers {
             let [s, e] = m.range;
             if s <= a && b <= e {
-                apply_modifier(&mut run, m);
+                apply_modifier(&mut run, m, from_paint);
             }
         }
         out.push(run);
@@ -732,14 +746,30 @@ fn run_from_style(
     }
 }
 
-fn apply_modifier(run: &mut TextRun, m: &Modifier) {
+fn apply_modifier(run: &mut TextRun, m: &Modifier, from_paint: bool) {
     match m.mod_type.as_str() {
-        "emphasis" => match m.intent.as_str() {
-            "italic" => run.italic = true,
-            _ => run.bold = true,
-        },
-        "underline" => run.underline = true,
-        "strikethrough" => run.strike = true,
+        "emphasis" => {
+            // Lock paint already applied theme.modifiers.styles.emphasis
+            // (`emphasis` → italic, `strong` → bold). Re-mapping any non-italic
+            // intent to bold on top of that turns italic runs into bold-italic.
+            if from_paint {
+                return;
+            }
+            match m.intent.as_str() {
+                "italic" => run.italic = true,
+                _ => run.bold = true,
+            }
+        }
+        "underline" => {
+            if !from_paint {
+                run.underline = true;
+            }
+        }
+        "strikethrough" => {
+            if !from_paint {
+                run.strike = true;
+            }
+        }
         "link" => run.hyperlink = k2f_core::hyperlink_href(&m.intent).map(str::to_string),
         "subscript" => run.script = ScriptPos::Sub,
         "superscript" => run.script = ScriptPos::Super,
@@ -830,6 +860,18 @@ mod tests {
     }
 
     #[test]
+    fn regular_and_bold_stems_share_ttf_family() {
+        let mut fonts = BTreeMap::new();
+        fonts.insert("assets/fonts/Roboto-Regular.ttf".into(), roboto());
+        fonts.insert("assets/fonts/Roboto-Bold.ttf".into(), roboto());
+        let ctx = FontCtx::new(&fonts);
+        assert_eq!(ctx.typeface("Roboto-Regular"), "Roboto");
+        assert_eq!(ctx.typeface("Roboto-Bold"), "Roboto");
+        assert!(ctx.bytes_for("Roboto-Regular").is_some());
+        assert!(ctx.bytes_for("Roboto-Bold").is_some());
+    }
+
+    #[test]
     fn emphasis_splits_and_sets_bold() {
         let style = fallback_style();
         let mods = [Modifier {
@@ -837,7 +879,7 @@ mod tests {
             mod_type: "emphasis".into(),
             intent: "critical".into(),
         }];
-        let runs = split_runs("Hello world", &style, &mods, "Roboto", 0);
+        let runs = split_runs("Hello world", &style, &mods, "Roboto", 0, false);
         assert_eq!(runs.len(), 2);
         assert_eq!(runs[0].text, "Hello");
         assert!(runs[0].bold);
@@ -853,11 +895,94 @@ mod tests {
             mod_type: "emphasis".into(),
             intent: "italic".into(),
         }];
-        let runs = split_runs("italic rest", &style, &mods, "Roboto", 0);
+        let runs = split_runs("italic rest", &style, &mods, "Roboto", 0, false);
         assert!(runs[0].italic);
         assert!(!runs[0].bold);
         assert!(!runs[1].italic);
         assert!(!runs[1].bold);
+    }
+
+    #[test]
+    fn theme_emphasis_on_italic_paint_is_not_bold() {
+        let text = "92% Complete — Final validation underway";
+        let n = text.chars().count();
+        let prefix = 15; // "92% Complete — "
+        let fonts = FontCtx {
+            default_family: "Roboto".into(),
+            bytes: BTreeMap::new(),
+        };
+        let glyphs: Vec<GlyphPosition> = (0..n)
+            .map(|i| GlyphPosition {
+                glyph_id: 1,
+                cluster: i as u32,
+                x_offset: Pt(i as i128 * 8000),
+                y_offset: Pt(0),
+                x_advance: Pt(8000),
+                y_advance: Pt(0),
+            })
+            .collect();
+        let geo = GeometryNode {
+            id: "c".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(156_900),
+            height: Pt(36_950),
+            glyphs,
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        };
+        let mut italic = fallback_style();
+        italic.italic = true;
+        italic.font_size = Pt(8500);
+        let mut regular = fallback_style();
+        regular.font_size = Pt(8500);
+        let paint_runs = vec![
+            TextGlyphRun {
+                glyph_range: [0, prefix],
+                style: regular,
+            },
+            TextGlyphRun {
+                glyph_range: [prefix, n],
+                style: italic,
+            },
+        ];
+        let modifiers = vec![Modifier {
+            range: [17, text.len()],
+            mod_type: "emphasis".into(),
+            intent: "emphasis".into(),
+        }];
+        let runs = runs_from_paint(text, &paint_runs, &modifiers, Some(&geo), &fonts);
+        let italic_runs: Vec<_> = runs.iter().filter(|r| r.italic).collect();
+        assert!(
+            !italic_runs.is_empty(),
+            "expected italic suffix, got {runs:?}"
+        );
+        for r in &italic_runs {
+            assert!(
+                !r.bold,
+                "theme emphasis→italic must not become faux-bold, got {r:?}"
+            );
+        }
+        for r in &runs {
+            if !r.italic {
+                assert!(!r.bold, "unemphasized prefix must stay regular, got {r:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn emphasis_without_paint_still_bolds() {
+        let text = "note";
+        let modifiers = [Modifier {
+            range: [0, 4],
+            mod_type: "emphasis".into(),
+            intent: "emphasis".into(),
+        }];
+        let runs = split_runs(text, &fallback_style(), &modifiers, "Roboto", 0, false);
+        assert_eq!(runs.len(), 1);
+        assert!(runs[0].bold);
+        assert!(!runs[0].italic);
     }
 
     #[test]
@@ -868,7 +993,7 @@ mod tests {
             mod_type: "link".into(),
             intent: "default".into(),
         }];
-        let runs = split_runs("link text", &style, &mods, "Roboto", 0);
+        let runs = split_runs("link text", &style, &mods, "Roboto", 0, false);
         assert!(runs.iter().all(|r| r.hyperlink.is_none()), "{runs:?}");
         assert!(runs[0].hyperlink.is_none());
     }
@@ -881,7 +1006,7 @@ mod tests {
             mod_type: "link".into(),
             intent: "https://example.com".into(),
         }];
-        let runs = split_runs("link text", &style, &mods, "Roboto", 0);
+        let runs = split_runs("link text", &style, &mods, "Roboto", 0, false);
         assert_eq!(runs[0].hyperlink.as_deref(), Some("https://example.com"));
         assert!(runs[1].hyperlink.is_none());
     }
@@ -894,7 +1019,7 @@ mod tests {
             mod_type: "superscript".into(),
             intent: "superscript".into(),
         }];
-        let runs = split_runs("Zheng Su1,* x", &style, &mods, "Roboto", 0);
+        let runs = split_runs("Zheng Su1,* x", &style, &mods, "Roboto", 0, false);
         let super_run = runs.iter().find(|r| r.text == "1,*").expect("super");
         assert_eq!(super_run.script, ScriptPos::Super);
         assert!(!super_run.italic);

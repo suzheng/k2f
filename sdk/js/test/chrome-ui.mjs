@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { bannerIsPinned, formatBytes } from "../viewer/chrome-behavior.js";
+import { exportFilename, exportMime } from "../viewer/filenames.js";
 import { exportFormatLabel, EXPORT_FORMATS, normalizeExportFormat } from "../viewer/export-format.js";
 import { normalizeTheme, preferredTheme } from "../viewer/theme.js";
 
@@ -10,9 +11,12 @@ assert.equal(formatBytes(2 * 1024 * 1024), "2.0 MB");
 
 assert.equal(exportFormatLabel("pdf"), "Export as PDF");
 assert.equal(exportFormatLabel("pptx"), "Export as PowerPoint");
+assert.equal(exportFormatLabel("idml"), "Export as InDesign");
 assert.equal(normalizeExportFormat("nope"), "k2f");
-assert.equal(EXPORT_FORMATS.length, 7);
+assert.equal(EXPORT_FORMATS.length, 8);
 assert.ok(EXPORT_FORMATS.every((f) => f.label.startsWith("Export as ")));
+assert.equal(exportFilename("Invoice", "idml", 1), "Invoice.zip");
+assert.equal(exportMime("idml", 1), "application/zip");
 
 assert.equal(normalizeTheme("dark"), "dark");
 assert.equal(normalizeTheme("light"), "light");

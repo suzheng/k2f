@@ -118,6 +118,12 @@ pub struct PictureBox {
     pub cy_emu: i64,
     pub media_name: String,
     pub bytes: Vec<u8>,
+    /// DrawingML `a:srcRect` l/t/r/b (1/1000 percent). All zero = no crop.
+    pub src_l: i64,
+    pub src_t: i64,
+    pub src_r: i64,
+    pub src_b: i64,
+    pub corner_emu: i64,
 }
 
 #[derive(Clone, Debug)]
@@ -146,6 +152,10 @@ pub struct TableCell {
     pub preserve_whitespace: bool,
     pub borders: CellBorders,
     pub vert_center: bool,
+    /// Same-row occupancy; 1 means one `a:gridCol`.
+    pub colspan: u32,
+    /// Visual start column (0-based).
+    pub start_col: usize,
     /// Role padding baked into first-line glyph `y_offset` (`a:bodyPr tIns`).
     /// Zero when `vert_center` so host center is not shifted down.
     pub t_ins_emu: i64,

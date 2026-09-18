@@ -1,9 +1,20 @@
 mod common;
 
 use common::{compile_pkg, repo_root};
+use k2f_core::{for_each_node, NodeContent};
 use k2f_package::paths::FORMAT_SCHEMA_FILES;
 use k2f_package::{load_dir, pack_bytes, unpack_bytes, verify_package, Package, VerifyStatus};
 use std::fs;
+
+fn count_form_field_nodes(root: &k2f_core::SemanticNode) -> usize {
+    let mut n = 0usize;
+    for_each_node(root, &mut |node| {
+        if matches!(node.content, NodeContent::FormField(_)) {
+            n += 1;
+        }
+    });
+    n
+}
 
 #[test]
 fn committed_contract_k2f_verifies_valid() {
@@ -98,6 +109,66 @@ fn load_dir_packs_and_verifies_invoice_source() {
     assert_format_schemas_only(&pkg);
     compile_pkg(&mut pkg);
     assert_eq!(verify_package(&pkg).unwrap(), VerifyStatus::Valid);
+}
+
+#[test]
+fn committed_contract_k2f_has_form_field_signatures() {
+    let bytes = fs::read(repo_root().join("examples/published/contract.K2F")).unwrap();
+    let pkg = unpack_bytes(&bytes).unwrap();
+    assert_eq!(
+        count_form_field_nodes(&pkg.root),
+        4,
+        "published contract signatures must declare four form_field nodes"
+    );
+    assert!(pkg.lock_json.is_some(), "published contract must be locked");
+}
+
+#[test]
+fn committed_form_application_k2f_verifies_valid() {
+    let bytes = fs::read(repo_root().join("examples/published/form_application.K2F")).unwrap();
+    let pkg = unpack_bytes(&bytes).unwrap();
+    assert!(pkg.fonts.contains_key("assets/fonts/Roboto-Regular.ttf"));
+    assert!(pkg.lock_json.is_some());
+    assert_format_schemas_only(&pkg);
+    let hash = verify_package(&pkg).unwrap();
+    assert!(
+        matches!(hash, VerifyStatus::Valid | VerifyStatus::EngineMismatch),
+        "committed form_application must be self-consistent, got {hash:?}"
+    );
+    assert_eq!(
+        count_form_field_nodes(&pkg.root),
+        4,
+        "published application form must declare four fields"
+    );
+    let lock: k2f_core::LockFile = serde_json::from_str(pkg.lock_json.as_ref().unwrap()).unwrap();
+    assert_eq!(
+        lock.geometry.pages.len(),
+        1,
+        "application form must stay one page"
+    );
+}
+
+#[test]
+fn unpack_pack_committed_form_application_is_byte_identical() {
+    let bytes = fs::read(repo_root().join("examples/published/form_application.K2F")).unwrap();
+    let pkg = unpack_bytes(&bytes).unwrap();
+    assert_eq!(pack_bytes(&pkg).unwrap(), bytes);
+}
+
+#[test]
+fn load_dir_packs_and_verifies_form_application_source() {
+    let mut pkg = load_dir(&repo_root().join("examples/form_application"))
+        .expect("load examples/form_application");
+    assert!(pkg.fonts.contains_key("assets/fonts/Roboto-Regular.ttf"));
+    assert_format_schemas_only(&pkg);
+    compile_pkg(&mut pkg);
+    assert_eq!(verify_package(&pkg).unwrap(), VerifyStatus::Valid);
+    let lock: k2f_core::LockFile = serde_json::from_str(pkg.lock_json.as_ref().unwrap()).unwrap();
+    assert_eq!(
+        lock.geometry.pages.len(),
+        1,
+        "application form must stay one page"
+    );
 }
 
 fn assert_format_schemas_only(pkg: &Package) {

@@ -40,7 +40,9 @@ pub fn decode_svg(bytes: &[u8]) -> Result<DynamicImage, PaintError> {
 /// Text-bearing SVG elements need host fonts. Fail closed instead of dropping glyphs.
 pub(crate) fn reject_svg_text(bytes: &[u8]) -> Result<(), PaintError> {
     if svg_bytes_contain_text_element(bytes) {
-        return Err(PaintError::Image(SVG_TEXT_FORBIDDEN_MSG.into()));
+        return Err(PaintError::Image(format!(
+            "SVG_TEXT: {SVG_TEXT_FORBIDDEN_MSG}"
+        )));
     }
     Ok(())
 }
@@ -113,6 +115,7 @@ mod tests {
     fn svg_with_text_fails_closed() {
         let svg = br#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><text x="1" y="2">A</text></svg>"#;
         let err = decode_svg(svg).unwrap_err().to_string();
+        assert!(err.contains("SVG_TEXT"), "{err}");
         assert!(err.contains("<text>"), "{err}");
         assert!(err.contains("<path>"), "{err}");
     }
@@ -127,6 +130,7 @@ mod tests {
     fn svg_with_textpath_fails_closed() {
         let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><textPath href="#p">A</textPath></svg>"##;
         let err = decode_svg(svg).unwrap_err().to_string();
+        assert!(err.contains("SVG_TEXT"), "{err}");
         assert!(err.contains("<text>"), "{err}");
         assert!(err.contains("<path>"), "{err}");
     }
@@ -135,6 +139,7 @@ mod tests {
     fn svg_with_foreign_object_fails_closed() {
         let svg = br##"<svg xmlns="http://www.w3.org/2000/svg"><foreignObject width="4" height="4">A</foreignObject></svg>"##;
         let err = decode_svg(svg).unwrap_err().to_string();
+        assert!(err.contains("SVG_TEXT"), "{err}");
         assert!(err.contains("foreignObject"), "{err}");
     }
 }

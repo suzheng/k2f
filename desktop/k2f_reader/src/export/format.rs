@@ -5,17 +5,19 @@ pub enum ExportFormat {
     Pdf,
     Pptx,
     Docx,
+    Idml,
     Markdown,
     Png,
     Jpg,
 }
 
 impl ExportFormat {
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 8] = [
         Self::K2f,
         Self::Pdf,
         Self::Pptx,
         Self::Docx,
+        Self::Idml,
         Self::Markdown,
         Self::Png,
         Self::Jpg,
@@ -32,6 +34,7 @@ impl ExportFormat {
             Self::Pdf => "PDF",
             Self::Pptx => "PPTX",
             Self::Docx => "DOCX",
+            Self::Idml => "IDML",
             Self::Markdown => "MD",
             Self::Png => "PNG",
             Self::Jpg => "JPG",
@@ -45,6 +48,7 @@ impl ExportFormat {
             Self::Pdf => "Export as PDF",
             Self::Pptx => "Export as PowerPoint",
             Self::Docx => "Export as Word",
+            Self::Idml => "Export as InDesign",
             Self::Markdown => "Export as Markdown",
             Self::Png => "Export as PNG",
             Self::Jpg => "Export as JPG",
@@ -57,6 +61,7 @@ impl ExportFormat {
             Self::Pdf => "pdf",
             Self::Pptx => "pptx",
             Self::Docx => "docx",
+            Self::Idml => "idml",
             Self::Markdown => "md",
             Self::Png => "png",
             Self::Jpg => "jpg",
@@ -69,6 +74,7 @@ impl ExportFormat {
             Self::Pdf => ("PDF", &["pdf"]),
             Self::Pptx => ("PowerPoint", &["pptx"]),
             Self::Docx => ("Word", &["docx"]),
+            Self::Idml => ("InDesign", &["idml"]),
             Self::Markdown => ("Markdown", &["md"]),
             Self::Png => ("PNG", &["png", "zip"]),
             Self::Jpg => ("JPEG", &["jpg", "jpeg", "zip"]),

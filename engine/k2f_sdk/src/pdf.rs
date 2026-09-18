@@ -1,5 +1,5 @@
 use crate::error::{AgentError, INVALID_ARGUMENT, PDF_IS_NOT_A_SOURCE};
-use k2f_pdf::{export_bytes_at, PdfError, PdfScale};
+use k2f_pdf::{export_bytes_at, export_bytes_with, PdfError, PdfExportOptions, PdfScale};
 
 pub fn export_pdf(package_bytes: &[u8]) -> Result<Vec<u8>, AgentError> {
     export_pdf_at(package_bytes, PdfScale::DEFAULT)
@@ -7,6 +7,13 @@ pub fn export_pdf(package_bytes: &[u8]) -> Result<Vec<u8>, AgentError> {
 
 pub fn export_pdf_at(package_bytes: &[u8], scale: PdfScale) -> Result<Vec<u8>, AgentError> {
     export_bytes_at(package_bytes, scale).map_err(map_pdf)
+}
+
+pub fn export_pdf_with(
+    package_bytes: &[u8],
+    options: PdfExportOptions,
+) -> Result<Vec<u8>, AgentError> {
+    export_bytes_with(package_bytes, options).map_err(map_pdf)
 }
 
 pub fn parse_pdf_scale(scale: f32) -> Result<PdfScale, AgentError> {
@@ -25,6 +32,7 @@ fn map_pdf(e: PdfError) -> AgentError {
             "RASTER_PAINT_OP",
             format!("PDF cannot fake raster-only paint op '{op}'"),
         ),
+        PdfError::FillableExclusive => AgentError::new("FILLABLE_EXCLUSIVE", msg),
         other => AgentError::new(INVALID_ARGUMENT, other.to_string()),
     }
 }
