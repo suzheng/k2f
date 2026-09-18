@@ -166,6 +166,12 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
             let no_break = tb.no_break;
             let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
             let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
+            // Ink-hug card labels (attendee names): keep WidthOnly so host
+            // metrics / synthetic stroke cannot overset. Do this before the
+            // side-column lock-width pin, which is meant for full-width copy.
+            if want_width && hug_label_in_wide_parent(&rects[i], &rects, i) {
+                continue;
+            }
             // Hug title inside a padded card: keep the lock box. open_right
             // would eat the card inset and WidthOnly would recenter the ink.
             if want_width && padded_inside_card(&rects[i], &rects, i) {
@@ -175,20 +181,13 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                 }
                 continue;
             }
-            // Stacked left column: WidthOnly about ItemTransform recenters
-            // each hug line independently (eyebrow vs title, card labels,
-            // checklist rows). Isolated right-edge stacks (signature name)
-            // still keep WidthOnly unless they are left-aligned.
-            if want_width && stacked_col && side_col {
-                if let PageElement::TextBox(tb) = &mut elements[i] {
-                    tb.autosize_width = false;
-                    tb.autosize_no_wrap = false;
-                }
-            }
-            if want_width && side_col && !stacked_col {
-                let beside_icon =
-                    small_side_blocker(&rects[i], &rects, i, refer).is_some_and(is_icon_w);
-                if !beside_icon {
+            // Same-left stack: WidthOnly recenters hug lines (eyebrow/title,
+            // card labels, checklist). Isolated same-width signatures without
+            // a side column keep WidthOnly for host-metric slack.
+            if want_width && stacked_col {
+                let mixed = stacked_mixed_width_sibling(&rects[i], &rects, i);
+                let wide = rects[i].width.0 > NARROW_NOBREAK_W;
+                if side_col || mixed || wide {
                     if let PageElement::TextBox(tb) = &mut elements[i] {
                         tb.autosize_width = false;
                         tb.autosize_no_wrap = false;
@@ -199,7 +198,24 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                     }
                 }
             }
+            // Single-line hug next to a column (not a grow-side icon): keep
+            // the lock left edge. Multi-line still goes through clamp/wrap.
+            if want_width && side_col && !stacked_col && !multi && nbreaks == 0 {
+                let beside_icon =
+                    small_side_blocker(&rects[i], &rects, i, refer).is_some_and(is_icon_w);
+                if !beside_icon {
+                    if let PageElement::TextBox(tb) = &mut elements[i] {
+                        tb.autosize_width = false;
+                        tb.autosize_no_wrap = false;
+                    }
+                }
+            }
             if want_width && !side_col {
+                // Ink-hug label in a wide card: keep WidthOnly. Growing into
+                // open_right eats the card inset; dropping WidthOnly oversets.
+                if hug_label_in_wide_parent(&rects[i], &rects, i) {
+                    continue;
+                }
                 if no_break
                     && !multi
                     && nbreaks == 0
@@ -207,16 +223,9 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                 {
                     continue;
                 }
-                if stacked_lock_column_sibling(&rects[i], &rects, i) {
-                    continue;
-                }
-                if stacked_right_edge_sibling(&rects[i], &rects, i) {
-                    // Left-aligned date/caption in a right-edge stack: WidthOnly
-                    // shrinks about the box center and the left edge walks in.
-                    if let PageElement::TextBox(tb) = &mut elements[i] {
-                        tb.autosize_width = false;
-                        tb.autosize_no_wrap = false;
-                    }
+                if stacked_lock_column_sibling(&rects[i], &rects, i)
+                    || stacked_right_edge_sibling(&rects[i], &rects, i)
+                {
                     continue;
                 }
                 if is_page_centered(&rects[i], page_w) {
@@ -624,9 +633,6 @@ fn should_widthonly_two_line_nobreak(tb: &TextBox, nbreaks: usize) -> bool {
     if tb.full_width_lock_line {
         return false;
     }
-    if tb.rect.width.0 > WIDE_LOOSE_TITLE_W {
-        return false;
-    }
     if !tb.semantic_newlines {
         return true;
     }
@@ -845,6 +851,19 @@ const CARD_PAD_MIN: i128 = 6_000;
 const CARD_PAD_MAX: i128 = 80_000;
 const CARD_PAD_LEFT: i128 = 4_000;
 
+fn hug_label_in_wide_parent(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
+    for (j, other) in rects.iter().enumerate() {
+        if j == my_i || !covers(other, me) {
+            continue;
+        }
+        let extra_w = other.width.0.saturating_sub(me.width.0);
+        if extra_w.saturating_mul(3) > me.width.0 {
+            return true;
+        }
+    }
+    false
+}
+
 fn padded_inside_card(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
     for (j, other) in rects.iter().enumerate() {
         if j == my_i || !covers(other, me) {
@@ -852,9 +871,12 @@ fn padded_inside_card(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
         }
         let extra_w = other.width.0 - me.width.0;
         let extra_left = me.x.0 - other.x.0;
+        // Hug labels (attendee names) sit in a much wider card; leftover is
+        // not title padding. WidthOnly must stay so host/stroke cannot overset.
         if extra_w >= CARD_PAD_MIN
             && extra_w <= CARD_PAD_MAX
             && extra_left >= CARD_PAD_LEFT
+            && extra_w.saturating_mul(3) <= me.width.0
             && other.height.0 >= me.height.0
         {
             return true;
@@ -879,6 +901,31 @@ fn disable_widthonly_inside_cards(elements: &mut [PageElement]) {
     }
 }
 
+fn stacked_mixed_width_sibling(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
+    const COL_X_TOL: i128 = 2_000;
+    const COL_STACK_GAP: i128 = 16_000;
+    for (j, other) in rects.iter().enumerate() {
+        if j == my_i || (me.x.0 - other.x.0).abs() > COL_X_TOL {
+            continue;
+        }
+        if me.width.0 == other.width.0 {
+            continue;
+        }
+        if covers(other, me) || covers(me, other) {
+            continue;
+        }
+        if other.height.0 >= me.height.0.saturating_mul(3)
+            || me.height.0 >= other.height.0.saturating_mul(3)
+        {
+            continue;
+        }
+        if vertical_stack_gap(me, other).is_some_and(|g| g <= COL_STACK_GAP) {
+            return true;
+        }
+    }
+    false
+}
+
 fn stacked_lock_column_sibling(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
     const COL_X_TOL: i128 = 2_000;
     const COL_STACK_GAP: i128 = 16_000;
@@ -887,6 +934,11 @@ fn stacked_lock_column_sibling(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
             continue;
         }
         if covers(other, me) || covers(me, other) {
+            continue;
+        }
+        if other.height.0 >= me.height.0.saturating_mul(3)
+            || me.height.0 >= other.height.0.saturating_mul(3)
+        {
             continue;
         }
         if !x_overlap(me, other) {
@@ -2061,6 +2113,54 @@ mod tests {
         assert!(!title.autosize_width, "card title must not WidthOnly-recenter");
         assert_eq!(title.rect.x.0, 413_372);
         assert_eq!(title.rect.width.0, 149_628);
+    }
+
+    #[test]
+    fn hug_name_inside_card_keeps_widthonly() {
+        let mut els = vec![
+            shape(42_000, 200_000, 120_000, 110_000),
+            tb("doc.attendee.name1", 71_000, 62_000, true, "CenterLeftPoint"),
+        ];
+        if let PageElement::TextBox(t) = &mut els[1] {
+            t.rect.y = Pt(268_000);
+            t.rect.height = Pt(11_250);
+            t.runs[0].text = "Dr. Elena Vance".into();
+            t.runs[0].tracking = 0;
+            t.runs[0].size_pt = 9.0;
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(name) = &els[1] else {
+            panic!("textbox")
+        };
+        assert!(
+            name.autosize_width,
+            "ink-hug names inside a card must WidthOnly, not overset"
+        );
+    }
+
+    #[test]
+    fn right_edge_hug_name_keeps_widthonly() {
+        // David Miller: lock width ~47pt inside a ~70pt attendee cell.
+        let mut els = vec![
+            shape(166_000, 200_000, 70_000, 110_000),
+            tb("doc.attendee.name4", 178_000, 47_000, true, "CenterPoint"),
+        ];
+        if let PageElement::TextBox(t) = &mut els[1] {
+            t.rect.y = Pt(268_000);
+            t.rect.height = Pt(11_250);
+            t.align = TextAlign::Left;
+            t.runs[0].text = "David Miller".into();
+            t.runs[0].tracking = 0;
+            t.runs[0].size_pt = 9.0;
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(name) = &els[1] else {
+            panic!("textbox")
+        };
+        assert!(
+            name.autosize_width,
+            "right-edge hug names must WidthOnly, not overset"
+        );
     }
 
     #[test]
