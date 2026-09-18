@@ -32,6 +32,9 @@ export function wrapViewerWasm(wasm) {
       export_idml() {
         return call(() => super.export_idml());
       }
+      export_idml_only() {
+        return call(() => super.export_idml_only());
+      }
     },
   };
 }

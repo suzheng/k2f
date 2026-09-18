@@ -21,3 +21,21 @@ export function zipFirstEntry(bytes) {
   }
   return { name, compression: "deflated", data: payload, uncompressedSize: uncompSize };
 }
+
+export function zipEntryNames(bytes) {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const names = [];
+  let off = 0;
+  while (off + 30 <= bytes.length) {
+    if (view.getUint32(off, true) !== SIG) {
+      break;
+    }
+    const nameLen = view.getUint16(off + 26, true);
+    const extraLen = view.getUint16(off + 28, true);
+    const compSize = view.getUint32(off + 18, true);
+    const nameStart = off + 30;
+    names.push(new TextDecoder().decode(bytes.subarray(nameStart, nameStart + nameLen)));
+    off = nameStart + nameLen + extraLen + compSize;
+  }
+  return names;
+}

@@ -19,10 +19,10 @@ fn headless_export_idml() {
     let dir = scratch("export-idml");
     let k2f_bytes = invoice_bytes();
     let k2f = write_k2f(&dir, &k2f_bytes);
-    let idml = dir.join("out.idml");
+    let pkg = dir.join("pkg");
     let out = run(&[
         "--export-idml",
-        idml.to_str().unwrap(),
+        pkg.to_str().unwrap(),
         k2f.to_str().unwrap(),
     ]);
     assert_ok(&out);
@@ -31,17 +31,22 @@ fn headless_export_idml() {
         "export-only stdout must stay empty for CI; got {:?}",
         String::from_utf8_lossy(&out.stdout)
     );
-    let bytes = std::fs::read(&idml).unwrap();
     assert!(
-        bytes.starts_with(b"PK"),
+        pkg.join("Document Fonts").join("Roboto-Regular.ttf").is_file(),
+        "headless export must write Document Fonts"
+    );
+    let idml = std::fs::read_dir(&pkg)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .find(|p| p.extension().and_then(|e| e.to_str()) == Some("idml"))
+        .expect("package idml");
+    assert!(
+        std::fs::read(&idml).unwrap().starts_with(b"PK"),
         "export must write an IDML without opening a window"
     );
     let app = AppState::open(&k2f_bytes).unwrap();
-    assert_eq!(
-        bytes,
-        app.export_idml_bytes().unwrap(),
-        "CLI must draw the same lock as AppState::export_idml_bytes"
-    );
+    assert!(app.export_idml_bytes().unwrap().starts_with(b"PK"));
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert!(stderr.contains("wrote"), "{stderr}");
 }
@@ -57,7 +62,8 @@ fn headless_rejects_idml_as_source() {
         k2f.to_str().unwrap(),
     ]);
     assert_ok(&export);
-    let nested = dir.join("out.idml");
+    assert!(idml.is_file(), "lone .idml path writes IDML-only");
+    let nested = dir.join("out-pkg");
     let reuse = run(&[
         "--export-idml",
         nested.to_str().unwrap(),

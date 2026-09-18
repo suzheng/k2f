@@ -134,17 +134,18 @@ def test_export_docx_on_invoice() -> None:
 @pytest.mark.skipif(not INVOICE.is_file(), reason="invoice.K2F fixture missing")
 def test_export_idml_on_invoice() -> None:
     with tempfile.TemporaryDirectory() as tmp:
-        idml = Path(tmp) / "out.idml"
+        out = Path(tmp) / "invoice"
         export_idml = k2f_cmd(
             "export-idml",
             str(INVOICE),
             "-o",
-            str(idml),
+            str(out),
         )
         assert export_idml.returncode == 0, export_idml.stderr
-        data = idml.read_bytes()
-        assert data.startswith(b"PK"), "export-idml did not write ZIP"
-        with zipfile.ZipFile(BytesIO(data)) as archive:
+        idml = out / "invoice.idml"
+        assert idml.read_bytes().startswith(b"PK"), "export-idml did not write IDML"
+        assert (out / "Document Fonts" / "Roboto-Regular.ttf").is_file()
+        with zipfile.ZipFile(BytesIO(idml.read_bytes())) as archive:
             first = archive.infolist()[0]
             assert first.filename == "mimetype"
             assert first.compress_type == zipfile.ZIP_STORED

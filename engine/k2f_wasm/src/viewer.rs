@@ -180,8 +180,15 @@ impl K2fViewer {
         k2f_docx::export_opened(&self.doc).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
-    /// Draw the published lock into Adobe InDesign .idml. Not a second layout engine.
+    /// Draw the published lock into an InDesign package (IDML + Document Fonts zip).
     pub fn export_idml(&self) -> Result<Vec<u8>, JsValue> {
+        k2f_idml::export_handoff(&self.doc)
+            .and_then(|h| h.to_zip_bytes())
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    /// Lone .idml with no Document Fonts. InDesign will missing-font without the faces.
+    pub fn export_idml_only(&self) -> Result<Vec<u8>, JsValue> {
         k2f_idml::export_opened(&self.doc).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 }

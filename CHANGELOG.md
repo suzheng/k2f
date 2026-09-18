@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- `k2f export-idml <package> -o <out.idml>` — draw the published lock into Adobe InDesign. Not a second layout engine; slight text reflow is expected. Fonts are not embedded. IDML is not a K2F source (`IDML_IS_NOT_A_SOURCE`).
+- `k2f export-idml <package> -o <out-dir>` — InDesign package (`{stem}.idml` + `Document Fonts/`). `-o file.zip` writes the same tree zipped; `--idml-only` writes a lone `.idml`. The IDML ZIP still does not contain TTF bytes. IDML is not a K2F source (`IDML_IS_NOT_A_SOURCE`).
 
 ## [0.2.4] - 2026-09-11
 

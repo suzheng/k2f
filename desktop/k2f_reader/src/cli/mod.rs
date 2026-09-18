@@ -41,10 +41,10 @@ struct Cli {
         conflicts_with_all = ["export_pdf", "export_pptx", "export_idml"]
     )]
     export_docx: Option<PathBuf>,
-    /// Write InDesign .idml from lock to PATH (no window)
+    /// Write an InDesign package folder (IDML + Document Fonts) from lock to PATH (no window)
     #[arg(
         long,
-        value_name = "OUT_IDML",
+        value_name = "OUT_DIR",
         requires = "file",
         conflicts_with_all = ["export_pdf", "export_pptx", "export_docx"]
     )]
@@ -119,7 +119,7 @@ pub fn run() -> anyhow::Result<()> {
             return ui::run(None, None);
         }
         eprintln!(
-            "usage: k2f-reader <file.K2F> | --verify <file.K2F> | --export-pdf out.pdf <file.K2F> | --export-pptx out.pptx <file.K2F> | --export-docx out.docx <file.K2F> | --export-idml out.idml <file.K2F>"
+            "usage: k2f-reader <file.K2F> | --verify <file.K2F> | --export-pdf out.pdf <file.K2F> | --export-pptx out.pptx <file.K2F> | --export-docx out.docx <file.K2F> | --export-idml out-dir <file.K2F>"
         );
         std::process::exit(2);
     }

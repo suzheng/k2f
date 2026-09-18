@@ -15,11 +15,8 @@ assert.equal(exportFormatLabel("idml"), "Export as InDesign");
 assert.equal(normalizeExportFormat("nope"), "k2f");
 assert.equal(EXPORT_FORMATS.length, 8);
 assert.ok(EXPORT_FORMATS.every((f) => f.label.startsWith("Export as ")));
-assert.equal(exportFilename("Invoice", "idml", 1), "Invoice.idml");
-assert.equal(
-  exportMime("idml", 1),
-  "application/vnd.adobe.indesign-idml-package",
-);
+assert.equal(exportFilename("Invoice", "idml", 1), "Invoice.zip");
+assert.equal(exportMime("idml", 1), "application/zip");
 
 assert.equal(normalizeTheme("dark"), "dark");
 assert.equal(normalizeTheme("light"), "light");

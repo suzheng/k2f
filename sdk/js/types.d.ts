@@ -14,6 +14,7 @@ export function exportPdf(
 export function exportPptx(packageBytes: Uint8Array): Promise<Uint8Array>;
 export function exportDocx(packageBytes: Uint8Array): Promise<Uint8Array>;
 export function exportIdml(packageBytes: Uint8Array): Promise<Uint8Array>;
+export function exportIdmlOnly(packageBytes: Uint8Array): Promise<Uint8Array>;
 export function markdownToK2f(
   md: string,
   opts: { title?: string; templateBytes: Uint8Array },
@@ -102,6 +103,8 @@ export class Editor {
   export_docx(): Uint8Array;
   exportIdml(): Uint8Array;
   export_idml(): Uint8Array;
+  exportIdmlOnly(): Uint8Array;
+  export_idml_only(): Uint8Array;
   free(): void;
 }
 
@@ -146,6 +149,7 @@ export class Viewer {
   export_pptx(): Uint8Array;
   export_docx(): Uint8Array;
   export_idml(): Uint8Array;
+  export_idml_only(): Uint8Array;
   search(query: string): string;
   hit_test(page: number, x_pt: number, y_pt: number): string | undefined;
   hit_selection(page: number, x_pt: number, y_pt: number): string | undefined;

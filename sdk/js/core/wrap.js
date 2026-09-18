@@ -105,6 +105,12 @@ export function wrapWasm(wasm) {
       export_idml() {
         return this.exportIdml();
       }
+      exportIdmlOnly() {
+        return call(() => this._ed.export_idml_only());
+      }
+      export_idml_only() {
+        return this.exportIdmlOnly();
+      }
       free() {
         this._ed.free();
       }
@@ -137,6 +143,9 @@ export function wrapWasm(wasm) {
       }
       export_idml() {
         return call(() => super.export_idml());
+      }
+      export_idml_only() {
+        return call(() => super.export_idml_only());
       }
     },
     generateSigningKey() {

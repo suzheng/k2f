@@ -4,7 +4,7 @@ use super::pdf_dialog::PdfDialogHit;
 use super::scroll::{line_delta_px, wheel_y_to_scroll};
 use super::session::{PointerCursor, Session};
 use super::zoom::{zoom_after_ctrl_wheel, zoom_after_pinch};
-use crate::export::{ensure_extension, pick_open_path, pick_save_path, ExportFormat};
+use crate::export::{ensure_extension, pick_folder_path, pick_open_path, pick_save_path, ExportFormat};
 use crate::AppState;
 use softbuffer::{Context, Surface};
 use std::num::NonZeroU32;
@@ -143,15 +143,19 @@ impl Gui {
             return;
         };
         let format = app.export_format();
-        let Some(path) = pick_save_path(
-            format,
-            app.title(),
-            app.page_count(),
-            self.source.as_deref(),
-        ) else {
+        let Some(path) = (if format == ExportFormat::Idml {
+            pick_folder_path(self.source.as_deref())
+        } else {
+            pick_save_path(
+                format,
+                app.title(),
+                app.page_count(),
+                self.source.as_deref(),
+            )
+            .map(|p| ensure_extension(p, format))
+        }) else {
             return;
         };
-        let path = ensure_extension(path, format);
         let result = if format == ExportFormat::Pdf {
             let scale = pdf_scale.unwrap_or(k2f_pdf::PdfScale::DEFAULT);
             app.export_pdf_bytes_at(scale)

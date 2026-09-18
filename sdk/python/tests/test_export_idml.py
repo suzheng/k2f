@@ -9,6 +9,17 @@ ROOT = Path(__file__).resolve().parents[3]
 INVOICE = ROOT / "examples/published/invoice.K2F"
 
 
+def _inner_idml(pkg: bytes) -> bytes:
+    with zipfile.ZipFile(BytesIO(pkg)) as archive:
+        names = [
+            name.replace("\\", "/")
+            for name in archive.namelist()
+            if name.replace("\\", "/").endswith(".idml")
+        ]
+        assert names, "package zip must contain an .idml"
+        return archive.read(names[0])
+
+
 def _stories_xml(idml: bytes) -> str:
     """IDML body text lives in Stories/*.xml, not Spreads."""
     with zipfile.ZipFile(BytesIO(idml)) as archive:
@@ -23,10 +34,11 @@ def _stories_xml(idml: bytes) -> str:
 
 def test_editor_export_idml_bytes():
     ed = k2f.Editor.open_bytes(INVOICE.read_bytes())
-    idml = bytes(ed.export_idml_bytes())
-    assert idml.startswith(b"PK")
-    # 拒绝 idml 当源由 Rust SDK `export_idml` 测；不要 Editor.open_bytes(idml)
-    # （OpenedDocument 走 K2F unpack，不会发 IDML_IS_NOT_A_SOURCE）
+    pkg = bytes(ed.export_idml_bytes())
+    assert pkg.startswith(b"PK")
+    with zipfile.ZipFile(BytesIO(pkg)) as archive:
+        names = [n.replace("\\", "/") for n in archive.namelist()]
+    assert any("Document Fonts" in n and n.endswith("Roboto-Regular.ttf") for n in names)
     assert not hasattr(k2f, "export_idml")
 
 
@@ -52,13 +64,13 @@ def test_export_idml_unlocked_template_maps_error_code():
 def test_export_idml_invoice_contains_semantic_text():
     ed = k2f.Editor.open_bytes(INVOICE.read_bytes())
     header = json.loads(ed.get_node("invoice.header"))["content"]["value"]
-    xml = _stories_xml(bytes(ed.export_idml_bytes()))
+    xml = _stories_xml(_inner_idml(bytes(ed.export_idml_bytes()))).replace("\u00a0", " ")
     assert header in xml, "Stories XML must include visible invoice header text"
 
 
-def test_export_idml_mimetype_stored_first():
+def test_export_idml_inner_mimetype_stored_first():
     ed = k2f.Editor.open_bytes(INVOICE.read_bytes())
-    idml = bytes(ed.export_idml_bytes())
+    idml = _inner_idml(bytes(ed.export_idml_bytes()))
     with zipfile.ZipFile(BytesIO(idml)) as archive:
         first = archive.infolist()[0]
         assert first.filename == "mimetype"
@@ -69,16 +81,38 @@ def test_export_idml_mimetype_stored_first():
         )
 
 
-def test_editor_export_idml_bytes_matches_cli_export():
+def _font_bytes(pkg: bytes, name: str) -> bytes:
+    with zipfile.ZipFile(BytesIO(pkg)) as archive:
+        hits = [
+            n.replace("\\", "/")
+            for n in archive.namelist()
+            if n.replace("\\", "/").endswith(name)
+        ]
+        assert hits, f"package zip missing {name}"
+        return archive.read(hits[0])
+
+
+def test_editor_export_idml_inner_matches_cli_zip():
     import tempfile
 
     from test_cli import k2f_cmd
 
     ed = k2f.Editor.open_bytes(INVOICE.read_bytes())
     from_editor = bytes(ed.export_idml_bytes())
-    with tempfile.NamedTemporaryFile(suffix=".idml") as tmp:
-        proc = k2f_cmd("export-idml", str(INVOICE), "-o", tmp.name)
+    with tempfile.TemporaryDirectory() as tmp:
+        zpath = Path(tmp) / "invoice.zip"
+        proc = k2f_cmd("export-idml", str(INVOICE), "-o", str(zpath))
         assert proc.returncode == 0, proc.stderr
-        from_cli = Path(tmp.name).read_bytes()
+        from_cli = zpath.read_bytes()
     assert from_cli.startswith(b"PK")
-    assert from_editor == from_cli, "Editor.export_idml_bytes must match k2f export-idml"
+    assert _inner_idml(from_editor) == _inner_idml(from_cli)
+    assert _font_bytes(from_editor, "Roboto-Regular.ttf") == _font_bytes(
+        from_cli, "Roboto-Regular.ttf"
+    )
+
+
+def test_export_idml_only_bytes_is_lone_idml():
+    ed = k2f.Editor.open_bytes(INVOICE.read_bytes())
+    only = bytes(ed.export_idml_only_bytes())
+    with zipfile.ZipFile(BytesIO(only)) as archive:
+        assert archive.infolist()[0].filename == "mimetype"

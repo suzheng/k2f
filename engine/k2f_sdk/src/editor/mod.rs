@@ -292,6 +292,10 @@ impl Editor {
         crate::export_idml(&pack_bytes(&self.package).map_err(AgentError::from)?)
     }
 
+    pub fn export_idml_only_bytes(&self) -> Result<Vec<u8>, AgentError> {
+        crate::export_idml_only(&pack_bytes(&self.package).map_err(AgentError::from)?)
+    }
+
     pub fn save_with(
         &mut self,
         expected_content_hash: Option<&str>,

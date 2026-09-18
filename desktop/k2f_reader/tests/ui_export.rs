@@ -327,13 +327,54 @@ fn export_format_cycle_includes_docx() {
 }
 
 #[test]
-fn export_idml_to_writes_zip() {
+fn export_idml_to_writes_package_dir() {
     let app = AppState::open(&invoice_bytes()).unwrap();
-    let out = scratch("gui-export-idml").join("invoice.idml");
+    let out = scratch("gui-export-idml").join("pkg");
+    app.export_to(ExportFormat::Idml, &out).unwrap();
+    assert!(
+        out.join("Document Fonts").join("Roboto-Regular.ttf").is_file(),
+        "Document Fonts face"
+    );
+    let idml = std::fs::read_dir(&out)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .find(|p| p.extension().and_then(|e| e.to_str()) == Some("idml"))
+        .expect("package idml");
+    assert!(std::fs::read(&idml).unwrap().starts_with(b"PK"));
+    let zip = app.export_idml_bytes().unwrap();
+    assert!(zip.starts_with(b"PK"));
+}
+
+#[test]
+fn export_idml_to_zip_contains_document_fonts() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let out = scratch("gui-export-idml-zip").join("invoice.zip");
     app.export_to(ExportFormat::Idml, &out).unwrap();
     let bytes = std::fs::read(&out).unwrap();
-    assert!(bytes.starts_with(b"PK"));
-    assert_eq!(bytes, app.export_idml_bytes().unwrap());
+    assert!(bytes.starts_with(b"PK"), "zip magic");
+    let hay = String::from_utf8_lossy(&bytes);
+    assert!(
+        hay.contains("Document Fonts") && hay.contains("Roboto-Regular.ttf"),
+        "zip must list Document Fonts"
+    );
+}
+
+#[test]
+fn export_idml_to_idml_is_lone_file() {
+    let app = AppState::open(&invoice_bytes()).unwrap();
+    let dir = scratch("gui-export-idml-file");
+    let out = dir.join("invoice.idml");
+    app.export_to(ExportFormat::Idml, &out).unwrap();
+    assert!(out.is_file(), "lone idml");
+    assert!(
+        !dir.join("Document Fonts").exists(),
+        "--idml-only path must not write Document Fonts"
+    );
+    assert_eq!(
+        std::fs::read(&out).unwrap(),
+        k2f_idml::export_bytes(&invoice_bytes()).unwrap()
+    );
 }
 
 #[test]

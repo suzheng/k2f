@@ -20,6 +20,18 @@ pub fn pick_save_path(
     dlg.save_file().map(|p| ensure_extension(p, format))
 }
 
+/// Native folder picker for InDesign packages (IDML + Document Fonts).
+pub fn pick_folder_path(source: Option<&Path>) -> Option<PathBuf> {
+    let mut dlg = rfd::FileDialog::new();
+    if let Some(dir) = source
+        .and_then(Path::parent)
+        .filter(|p| !p.as_os_str().is_empty())
+    {
+        dlg = dlg.set_directory(dir);
+    }
+    dlg.pick_folder()
+}
+
 /// Native Open dialog. `.K2F` and `.k2f` are the same format.
 pub fn pick_open_path() -> Option<PathBuf> {
     rfd::FileDialog::new()

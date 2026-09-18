@@ -120,6 +120,10 @@ impl K2fEditor {
         self.inner.export_idml_bytes().map_err(js_err)
     }
 
+    pub fn export_idml_only(&self) -> Result<Vec<u8>, JsValue> {
+        self.inner.export_idml_only_bytes().map_err(js_err)
+    }
+
     pub fn save_with(&mut self, expected_content_hash: Option<String>) -> Result<Vec<u8>, JsValue> {
         self.inner
             .save_with(expected_content_hash.as_deref())

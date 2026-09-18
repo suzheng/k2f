@@ -1,6 +1,6 @@
 import { createK2f, exportPdf, exportPptx, exportDocx, exportIdml } from "../k2f.js";
 import { invoicePackage } from "./helpers/invoice-package.mjs";
-import { zipFirstEntry } from "./helpers/zip-first-entry.mjs";
+import { zipEntryNames, zipFirstEntry } from "./helpers/zip-first-entry.mjs";
 
 const k2f = await createK2f();
 const bytes = invoicePackage(k2f);
@@ -34,7 +34,12 @@ const viaViewerIdml = viewer.export_idml();
 if (Buffer.from(idml).compare(Buffer.from(viaViewerIdml)) !== 0) {
   throw new Error("exportIdml(bytes) must match Viewer.export_idml()");
 }
-const first = zipFirstEntry(idml);
+const pkgNames = zipEntryNames(idml);
+if (!pkgNames.some((n) => n.includes("Document Fonts") && n.endsWith(".ttf"))) {
+  throw new Error(`IDML package zip must include Document Fonts, got ${pkgNames.join(",")}`);
+}
+const only = viewer.export_idml_only();
+const first = zipFirstEntry(only);
 if (first.name !== "mimetype" || first.compression !== "stored") {
   throw new Error("IDML mimetype must be first stored entry");
 }

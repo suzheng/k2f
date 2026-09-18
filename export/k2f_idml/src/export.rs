@@ -25,7 +25,7 @@ pub fn export_opened(doc: &OpenedDocument) -> Result<Vec<u8>, IdmlError> {
     idml::write_idml_zip(&files)
 }
 
-fn looks_like_idml(bytes: &[u8]) -> bool {
+pub(crate) fn looks_like_idml(bytes: &[u8]) -> bool {
     let Ok(mut zip) = ZipArchive::new(Cursor::new(bytes)) else {
         return false;
     };

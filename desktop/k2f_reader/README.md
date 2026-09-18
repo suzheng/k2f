@@ -5,7 +5,7 @@ Native lock executor for `.K2F` files. Same rules as the web viewer:
 - Opening does not recompile
 - Pixels come from `document.K2F.lock`
 - PDF export draws the lock
-- PPTX / DOCX export also draws the lock (not a second layout engine)
+- PPTX / DOCX / IDML export also draws the lock (not a second layout engine). IDML default is a package folder (`idml` + `Document Fonts/`).
 - A PDF is not a K2F source (`PDF_IS_NOT_A_SOURCE`)
 
 Packaged builds: [k2f.dev/download](https://k2f.dev/download).
@@ -68,9 +68,10 @@ cargo run -p k2f_reader -- --verify path/to/file.K2F
 cargo run -p k2f_reader -- --export-pdf out.pdf examples/published/invoice.K2F
 cargo run -p k2f_reader -- --export-pptx out.pptx examples/published/invoice.K2F
 cargo run -p k2f_reader -- --export-docx out.docx examples/published/invoice.K2F
+cargo run -p k2f_reader -- --export-idml out-dir examples/published/invoice.K2F
 ```
 
-`--verify` prints the banner on stdout. Exit `0` if `UNSIGNED` or `SIGNED`; exit `1` if broken / unlocked (`status_code` on stderr); exit `2` on usage (no FILE). Unlocked files have no lock, so export fails. `--export-pdf` / `--export-pptx` / `--export-docx` still write the published lock when the banner is broken. Export flags conflict with each other. `--verify` together with one export writes then verifies.
+`--verify` prints the banner on stdout. Exit `0` if `UNSIGNED` or `SIGNED`; exit `1` if broken / unlocked (`status_code` on stderr); exit `2` on usage (no FILE). Unlocked files have no lock, so export fails. `--export-pdf` / `--export-pptx` / `--export-docx` / `--export-idml` still write the published lock when the banner is broken. `--export-idml` writes a package directory. Export flags conflict with each other. `--verify` together with one export writes then verifies.
 
 A self-consistent lock compiled by another engine stays `UNSIGNED` or `SIGNED`. `hash_code` may be `ENGINE_MISMATCH` (reader provenance, not a broken banner). Rewriting lock engine fields without updating `appearance_hash` is `APPEARANCE_CHANGED`. Do not treat `ENGINE_MISMATCH` as `BROKEN_INTEGRITY`. Use `cargo test -p k2f_reader` in CI. Tests never open a window or a Save dialog.
 

@@ -1,6 +1,8 @@
 # Exporting K2F to IDML
 
-IDML is a **drawing of the published lock**, not a second layout engine. `.K2F` stays the source. Slight text reflow in InDesign is expected and allowed. Fonts are listed by family name only — they are **not embedded**.
+IDML is a **drawing of the published lock**, not a second layout engine. `.K2F` stays the source. Slight text reflow in InDesign is expected and allowed.
+
+The IDML ZIP itself does not contain font files. Default export writes an InDesign **package folder**: `{stem}.idml` beside `Document Fonts/` so InDesign can open the file without a missing-font dialog. Byte APIs and the web viewer download a `.zip` of that folder. `--idml-only` writes a lone `.idml` (InDesign will missing-font unless the faces are already installed).
 
 ## When to Use
 
@@ -16,11 +18,13 @@ IDML is a **drawing of the published lock**, not a second layout engine. `.K2F` 
 ## Default path
 
 ```bash
-k2f export-idml file.K2F -o out.idml
-k2f export-idml ./out/doc/doc.K2F -o ./out/doc/doc.idml   # workspace: deliverable next to .K2F, not in source/
+k2f export-idml file.K2F -o ./out/doc/file          # folder: file/file.idml + file/Document Fonts/
+k2f export-idml ./out/doc/doc.K2F -o ./out/doc/doc  # workspace: package next to .K2F, not in source/
+k2f export-idml file.K2F -o ./out/doc/file.zip      # same tree, zipped
+k2f export-idml file.K2F --idml-only -o file.idml   # lone IDML, no fonts
 ```
 
-No `--scale`. No `--trust-pack`. Draws the published lock; does not compile.
+`-o foo.idml` without `--idml-only` writes directory `foo/` (strips the suffix). Unzip a `.zip` download, then open the `.idml` next to `Document Fonts`. No `--scale`. No `--trust-pack`. Draws the published lock; does not compile.
 
 ## Which lock is drawn
 
@@ -44,7 +48,8 @@ No `--scale`. No `--trust-pack`. Draws the published lock; does not compile.
 | Restyle with InDesign paragraph styles | Absolute lock coordinates would reflow |
 | Stamp a full-page PNG | Native text/tables/pics must stay editable |
 | Expect glyph-identical pages | Slight reflow is legal |
-| Expect fonts to travel with the package | Faces are not embedded; missing fonts substitute |
+| Open a lone `.idml` without `Document Fonts` | Use the default package folder (or unzip the download) |
+| Rename the package zip to `.idml` | The wrapper zip is not IDML; unzip first |
 
 ## See also
 

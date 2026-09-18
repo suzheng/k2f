@@ -14,7 +14,7 @@ fn help_lists_headless_flags() {
     assert!(stdout.contains("--export-docx"), "{stdout}");
     assert!(stdout.contains("OUT_DOCX"), "{stdout}");
     assert!(stdout.contains("--export-idml"), "{stdout}");
-    assert!(stdout.contains("OUT_IDML"), "{stdout}");
+    assert!(stdout.contains("OUT_DIR"), "{stdout}");
     assert!(stdout.contains("--verify"), "{stdout}");
     assert!(stdout.contains("[FILE]"), "{stdout}");
 }

@@ -118,7 +118,7 @@ impl Editor {
         Ok(PyBytes::new(py, &bytes))
     }
 
-    #[pyo3(signature = (scale=2.0, flatten=False))]
+    #[pyo3(signature = (scale=2.0, flatten=false))]
     fn export_pdf_bytes_at<'py>(
         &self,
         py: Python<'py>,
@@ -150,6 +150,11 @@ impl Editor {
 
     fn export_idml_bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
         let bytes = self.inner.export_idml_bytes().map_err(py_err)?;
+        Ok(PyBytes::new(py, &bytes))
+    }
+
+    fn export_idml_only_bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
+        let bytes = self.inner.export_idml_only_bytes().map_err(py_err)?;
         Ok(PyBytes::new(py, &bytes))
     }
 }
