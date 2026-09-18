@@ -321,6 +321,18 @@ fn infer_from_gaps(left: i128, right: i128, box_w: i128) -> TextAlign {
         return TextAlign::Left;
     }
     let delta = left - right;
+    // Wide table cells keep an 8pt inset. That leftover is not a centered
+    // pill: `slack * 10 > box_w` would flip a nearly-full 168pt cell to
+    // Center while the short cells in the same column stay Left.
+    const WIDE_CELL: i128 = 100_000;
+    const CELL_INSET: i128 = 12_000;
+    if box_w >= WIDE_CELL && left <= CELL_INSET {
+        return if delta > slack / 4 {
+            TextAlign::Right
+        } else {
+            TextAlign::Left
+        };
+    }
     // Balanced side gaps with slack dominating the box width → pill/badge
     // chrome (VIP label, session pill). `left * 10 > box_w` missed ~7.5%
     // padding on both sides; total slack catches shrink-wrapped badges while
@@ -424,6 +436,14 @@ mod tests {
                 "VIP PASS"
             ),
             TextAlign::Center
+        );
+        // Nearly-full table cell with 8pt inset: not a centered pill.
+        assert_eq!(
+            infer_text_align(
+                &geo(168_000, vec![glyph(0, 8_000, 148_500, 0)]),
+                "Executive Analytics UI & Design System"
+            ),
+            TextAlign::Left
         );
         assert_eq!(infer_text_align(&geo(w, vec![]), "A"), TextAlign::Left);
     }

@@ -162,6 +162,7 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
             let stacked_col = stacked_lock_column_sibling(&rects[i], &rects, i);
             let side_col = column_sibling(&rects[i], &rects, i);
             let want_width = tb.autosize_width;
+            let full_width = tb.full_width_lock_line;
             let refer = tb.autosize_refer;
             let no_break = tb.no_break;
             let nbreaks: usize = tb.runs.iter().map(|r| r.text.matches('\n').count()).sum();
@@ -169,15 +170,22 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
             // Ink-hug card labels (attendee names): keep WidthOnly so host
             // metrics / synthetic stroke cannot overset. Do this before the
             // side-column lock-width pin, which is meant for full-width copy.
-            if want_width && hug_label_in_wide_parent(&rects[i], &rects, i) {
+            // Parent-wider-than-child alone is not a hug: footer/column lines
+            // inside a card have leftover right slack and WidthOnly recenters.
+            if want_width && full_width && hug_label_in_wide_parent(&rects[i], &rects, i) {
                 continue;
             }
             // Hug title inside a padded card: keep the lock box. open_right
             // would eat the card inset and WidthOnly would recenter the ink.
+            // Ink-hug badge labels (dates/names in a pill) fill the frame;
+            // dropping WidthOnly then oversets and InDesign hides the story.
             if want_width && padded_inside_card(&rects[i], &rects, i) {
-                if let PageElement::TextBox(tb) = &mut elements[i] {
-                    tb.autosize_width = false;
-                    tb.autosize_no_wrap = false;
+                let hug = tb.full_width_lock_line && tb.lock_line_count <= 1;
+                if !hug {
+                    if let PageElement::TextBox(tb) = &mut elements[i] {
+                        tb.autosize_width = false;
+                        tb.autosize_no_wrap = false;
+                    }
                 }
                 continue;
             }
@@ -187,13 +195,18 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
             if want_width && stacked_col {
                 let mixed = stacked_mixed_width_sibling(&rects[i], &rects, i);
                 let wide = rects[i].width.0 > NARROW_NOBREAK_W;
-                if side_col || mixed || wide {
+                let hug = tb.full_width_lock_line && tb.lock_line_count <= 1;
+                // Loose leftover slack: WidthOnly shrinks about ItemTransform
+                // and left column copy looks centered (schedule times, venue).
+                if !hug {
                     if let PageElement::TextBox(tb) = &mut elements[i] {
                         tb.autosize_width = false;
                         tb.autosize_no_wrap = false;
-                        let extra = open_right(&rects[i], &rects, i, Some(page_w));
-                        if extra >= MIN_OPEN {
-                            tb.rect.width = Pt(tb.rect.width.0 + extra);
+                        if side_col || mixed || wide {
+                            let extra = open_right(&rects[i], &rects, i, Some(page_w));
+                            if extra >= MIN_OPEN {
+                                tb.rect.width = Pt(tb.rect.width.0 + extra);
+                            }
                         }
                     }
                 }
@@ -213,7 +226,7 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
             if want_width && !side_col {
                 // Ink-hug label in a wide card: keep WidthOnly. Growing into
                 // open_right eats the card inset; dropping WidthOnly oversets.
-                if hug_label_in_wide_parent(&rects[i], &rects, i) {
+                if full_width && hug_label_in_wide_parent(&rects[i], &rects, i) {
                     continue;
                 }
                 if no_break
@@ -226,9 +239,12 @@ fn ensure_nobreak_width(elements: &mut [PageElement], page_w: i128) {
                 if stacked_lock_column_sibling(&rects[i], &rects, i)
                     || stacked_right_edge_sibling(&rects[i], &rects, i)
                 {
+                    // Hug stacks that fill the lock may WidthOnly-grow. Loose
+                    // left ink must keep the lock box — open_right would walk
+                    // the longest line past shorter siblings.
                     continue;
                 }
-                if is_page_centered(&rects[i], page_w) {
+                if is_page_centered(&rects[i], page_w) && full_width {
                     if let PageElement::TextBox(tb) = &mut elements[i] {
                         apply_page_center_autosize(tb);
                     }
@@ -341,17 +357,22 @@ fn repair_left_nobreak(
         return;
     }
     if me.width.0 >= NARROW_NOBREAK_W {
-        // Wide hug one-liners (532pt slide subtitles) skip WidthOnly so the
-        // frame does not re-anchor, but still need host-metric room when the
-        // lock ink already fills the box. Loose wide headers must stay put.
-        if tb.full_width_lock_line
-            && tb.lock_line_count <= 1
-            && !stacked_lock_column_sibling(me, rects, my_i)
-            && !stacked_right_edge_sibling(me, rects, my_i)
-        {
-            let extra = open_right(me, rects, my_i, Some(page_w));
-            if extra >= MIN_OPEN {
-                tb.rect.width = Pt(tb.rect.width.0 + extra);
+        // Wide hug one-liners skip WidthOnly so the frame does not re-anchor,
+        // but still need host-metric room when lock ink fills the box.
+        // Same-width stacks (signature name/title) keep the lock box.
+        // Mixed-width stacks (hero lead under a shorter title) must still
+        // grow into open_right: NoBreak + lock width oversets and InDesign
+        // hides the whole line.
+        if tb.full_width_lock_line && tb.lock_line_count <= 1 {
+            let same_width_stack = stacked_lock_column_sibling(me, rects, my_i)
+                && !stacked_mixed_width_sibling(me, rects, my_i);
+            if !same_width_stack && !stacked_right_edge_sibling(me, rects, my_i) {
+                let extra = open_right(me, rects, my_i, Some(page_w));
+                if extra >= MIN_OPEN {
+                    tb.rect.width = Pt(tb.rect.width.0 + extra);
+                } else {
+                    drop_nobreak(tb);
+                }
             }
         }
         return;
@@ -359,13 +380,18 @@ fn repair_left_nobreak(
     if stacked_lock_column_sibling(me, rects, my_i) {
         // Same x/width stack: growing one line past the others walks the
         // right edge (signature name/title/org). Keep the lock box.
+        // Ink-hug badge labels still need WidthOnly: host metrics overset
+        // a 40pt date pill and InDesign hides the whole line.
+        if tb.full_width_lock_line && tb.lock_line_count <= 1 && !tb.autosize_height {
+            tb.autosize_width = true;
+            tb.autosize_no_wrap = true;
+        }
         return;
     }
     if stacked_right_edge_sibling(me, rects, my_i) {
-        if is_page_centered(me, page_w) && !stacked_lock_column_sibling(me, rects, my_i) {
-            apply_page_center_autosize(tb);
-            return;
-        }
+        // Page-midline is not centered text: a middle card/column can sit on
+        // the sheet center with flush-left ink (3.8×). Grow into open_right
+        // instead of flipping Justification to CenterAlign.
         let extra = open_right(me, rects, my_i, Some(page_w));
         if extra >= MIN_OPEN {
             tb.rect.width = Pt(tb.rect.width.0 + extra);
@@ -494,9 +520,7 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
         // to a verified badge used to disable it, pad 6pt, and keep NoBreak
         // — host Roboto then overset and hid "KRONOS // NIGHTFALL".
         if tb.no_break && !multi && nbreaks == 0 {
-            if small_side_blocker(me, &rects, i, &tb.autosize_refer)
-                .is_some_and(is_icon_w)
-            {
+            if small_side_blocker(me, &rects, i, &tb.autosize_refer).is_some_and(is_icon_w) {
                 continue;
             }
             if stacked_lock_column_sibling(me, &rects, i)
@@ -566,6 +590,7 @@ fn clamp_width_autosize_on(elements: &mut [PageElement], page_w: Option<i128>) {
                     };
                     if extra >= MIN_OPEN {
                         if page_w.is_some_and(|pw| is_page_centered(&tb.rect, pw))
+                            && tb.full_width_lock_line
                             && !column_sibling(&tb.rect, &rects, i)
                         {
                             apply_page_center_autosize(tb);
@@ -873,11 +898,13 @@ fn padded_inside_card(me: &Rect, rects: &[Rect], my_i: usize) -> bool {
         let extra_left = me.x.0 - other.x.0;
         // Hug labels (attendee names) sit in a much wider card; leftover is
         // not title padding. WidthOnly must stay so host/stroke cannot overset.
+        // Pills are only a few pt taller than the label (date/name badges);
+        // treating them as cards drops WidthOnly and InDesign hides the text.
         if extra_w >= CARD_PAD_MIN
             && extra_w <= CARD_PAD_MAX
             && extra_left >= CARD_PAD_LEFT
             && extra_w.saturating_mul(3) <= me.width.0
-            && other.height.0 >= me.height.0
+            && other.height.0 >= me.height.0.saturating_mul(3)
         {
             return true;
         }
@@ -894,7 +921,9 @@ fn disable_widthonly_inside_cards(elements: &mut [PageElement]) {
         if !matches!(tb.align, TextAlign::Left) || !tb.autosize_width {
             continue;
         }
-        if padded_inside_card(&rects[i], &rects, i) {
+        if padded_inside_card(&rects[i], &rects, i)
+            && !(tb.full_width_lock_line && tb.lock_line_count <= 1)
+        {
             tb.autosize_width = false;
             tb.autosize_no_wrap = false;
         }
@@ -1415,10 +1444,7 @@ mod tests {
         let PageElement::TextBox(body) = &els[0] else {
             panic!("textbox")
         };
-        assert!(
-            !body.runs[0].text.contains('\n'),
-            "3+ lock wraps collapse"
-        );
+        assert!(!body.runs[0].text.contains('\n'), "3+ lock wraps collapse");
         assert!(
             !body.runs[0].text.contains("  "),
             "must squeeze space+newline, got {:?}",
@@ -1501,8 +1527,7 @@ mod tests {
             t.lock_line_count = 2;
             t.align = TextAlign::Center;
             t.runs[0].text =
-                "Deterministic Semantic Layout Compilation\nfor Academic Publishing Systems"
-                    .into();
+                "Deterministic Semantic Layout Compilation\nfor Academic Publishing Systems".into();
         }
         apply(&mut els, 595_000);
         let PageElement::TextBox(title) = &els[0] else {
@@ -1825,12 +1850,17 @@ mod tests {
         }
         if let PageElement::TextBox(t) = &mut els[1] {
             t.runs[0].text =
-                "Licensed Blueprint Architecture signifies\nthe modular software kernels"
-                    .into();
+                "Licensed Blueprint Architecture signifies\nthe modular software kernels".into();
         }
         apply(&mut els, 595_000);
-        assert!(!is_width(&els[0]), "sidenote must not WidthOnly through body");
-        assert!(!is_width(&els[1]), "body must not WidthOnly through sidenote");
+        assert!(
+            !is_width(&els[0]),
+            "sidenote must not WidthOnly through body"
+        );
+        assert!(
+            !is_width(&els[1]),
+            "body must not WidthOnly through sidenote"
+        );
         assert_eq!(width(&els[0]), 116_000, "sidenote lock width stays");
         assert_eq!(width(&els[1]), 376_000, "body lock width stays");
         let PageElement::TextBox(sn) = &els[0] else {
@@ -1856,8 +1886,8 @@ mod tests {
             tb("seal", 92_500, 187_500, true, "CenterLeftPoint"),
         ];
         if let PageElement::TextBox(t) = &mut els[1] {
-            t.runs[0].text = "OFFICIAL CORPORATE SEAL\nAETHERIA SYSTEMS CORP.\nDELAWARE REGISTRATION"
-                .into();
+            t.runs[0].text =
+                "OFFICIAL CORPORATE SEAL\nAETHERIA SYSTEMS CORP.\nDELAWARE REGISTRATION".into();
             t.semantic_newlines = true;
         }
         apply(&mut els, 595_000);
@@ -1878,13 +1908,7 @@ mod tests {
     fn isolated_left_tight_lead_grows_right_not_widthonly() {
         // Tight single-line lead (editorial hero). WidthOnly grows about
         // ItemTransform and the line walks off the left page margin.
-        let mut els = vec![tb(
-            "hero.lead",
-            26_000,
-            454_000,
-            true,
-            "CenterLeftPoint",
-        )];
+        let mut els = vec![tb("hero.lead", 26_000, 454_000, true, "CenterLeftPoint")];
         if let PageElement::TextBox(t) = &mut els[0] {
             t.runs[0].text =
                 "A serialized field guide exploring mathematical proportion, deliberate whitespace"
@@ -1914,30 +1938,84 @@ mod tests {
     }
 
     #[test]
+    fn mixed_width_stacked_lead_grows_right_not_hidden() {
+        // editorial-grid hero: title 357pt and lead 454pt share x, 4pt gap.
+        // ink_tighter_than skips WidthOnly on 400pt+ nearly-full lines, so
+        // the lead is NoBreak in the lock box. Host Roboto oversets and
+        // InDesign hides the whole story unless the frame grows right.
+        let mut els = vec![
+            tb("hero.title", 26_000, 356_648, true, "CenterLeftPoint"),
+            tb("hero.lead", 26_000, 453_906, false, "CenterLeftPoint"),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.rect.y = Pt(65_400);
+            t.rect.height = Pt(28_750);
+            t.runs[0].text = "THE ARCHITECTURE OF SILENCE".into();
+            t.runs[0].size_pt = 28.75;
+            t.full_width_lock_line = true;
+        }
+        if let PageElement::TextBox(t) = &mut els[1] {
+            t.rect.y = Pt(98_150);
+            t.rect.height = Pt(13_300);
+            t.runs[0].text = "A serialized field guide exploring mathematical proportion, deliberate whitespace, and unified modular grids.".into();
+            t.runs[0].size_pt = 9.5;
+            t.full_width_lock_line = true;
+        }
+        apply(&mut els, 600_000);
+        let PageElement::TextBox(lead) = &els[1] else {
+            panic!("textbox")
+        };
+        assert_eq!(lead.rect.x.0, 26_000, "left margin stays");
+        assert!(
+            lead.rect.width.0 > 453_906,
+            "mixed-width stacked lead must grow into the open page, got {}",
+            lead.rect.width.0
+        );
+        assert!(
+            lead.rect.x.0 + lead.rect.width.0 <= 600_000,
+            "must not grow past the page"
+        );
+        assert!(
+            !lead.autosize_width,
+            "must not WidthOnly-reanchor under the title"
+        );
+        assert!(lead.no_break, "lead stays one glued line after growing");
+    }
+
+    #[test]
     fn stacked_right_edge_block_keeps_lock_width() {
         // Right-aligned end block: each line has a different width but the
         // same right edge. open_right would shift ItemTransform right.
         let right = 384_000i128;
         let mut els = vec![
             tb("closing", right - 238_686, 238_686, true, "CenterLeftPoint"),
-            tb("signature", right - 243_061, 243_061, true, "CenterLeftPoint"),
+            tb(
+                "signature",
+                right - 243_061,
+                243_061,
+                true,
+                "CenterLeftPoint",
+            ),
             tb("meta", right - 194_842, 194_842, true, "CenterLeftPoint"),
         ];
         if let PageElement::TextBox(t) = &mut els[0] {
             t.rect.y = Pt(488_800);
             t.rect.height = Pt(17_250);
             t.runs[0].text = "With our warmest love & heartfelt appreciation,".into();
+            t.full_width_lock_line = true;
         }
         if let PageElement::TextBox(t) = &mut els[1] {
             t.rect.y = Pt(511_050);
             t.rect.height = Pt(24_700);
             t.runs[0].text = "Julian & Vivienne Sterling".into();
             t.runs[0].bold = true;
+            t.full_width_lock_line = true;
         }
         if let PageElement::TextBox(t) = &mut els[2] {
             t.rect.y = Pt(540_750);
             t.rect.height = Pt(13_300);
             t.runs[0].text = "The Sterling Celebration · Autumn 2026".into();
+            t.full_width_lock_line = true;
         }
         apply(&mut els, 420_000);
         for (i, (id, w)) in [
@@ -1984,8 +2062,7 @@ mod tests {
         if let PageElement::TextBox(t) = &mut els[2] {
             t.rect.y = Pt(696_700);
             t.rect.height = Pt(13_300);
-            t.runs[0].text =
-                "The Heritage Botanical Studio · September 15, 2026".into();
+            t.runs[0].text = "The Heritage Botanical Studio · September 15, 2026".into();
             t.runs[0].tracking = 31;
         }
         apply(&mut els, 595_000);
@@ -1996,7 +2073,10 @@ mod tests {
             assert_eq!(tb.node_id, *id);
             assert_eq!(tb.rect.x.0, x, "{id} left edge");
             assert_eq!(tb.rect.width.0, w, "{id} lock width");
-            assert!(tb.autosize_width, "{id} keeps WidthOnly for host slack");
+            assert!(
+                !tb.autosize_width,
+                "{id} must not WidthOnly-shrink leftover slack and look centered"
+            );
         }
     }
 
@@ -2054,10 +2134,7 @@ mod tests {
             !title.autosize_height,
             "WidthOnly replaces HeightOnly on 2-line titles"
         );
-        assert!(
-            title.runs[0].text.contains('\n'),
-            "lock break must stay"
-        );
+        assert!(title.runs[0].text.contains('\n'), "lock break must stay");
     }
 
     #[test]
@@ -2110,16 +2187,72 @@ mod tests {
         let PageElement::TextBox(title) = &els[2] else {
             panic!("textbox")
         };
-        assert!(!title.autosize_width, "card title must not WidthOnly-recenter");
+        assert!(
+            !title.autosize_width,
+            "card title must not WidthOnly-recenter"
+        );
         assert_eq!(title.rect.x.0, 413_372);
         assert_eq!(title.rect.width.0, 149_628);
+    }
+
+    #[test]
+    fn ink_hug_date_pill_in_grid_keeps_widthonly() {
+        // Nested table cells export as box+text. Date/name text is an ink-hug
+        // frame inside a short pill, stacked with the next row and beside the
+        // owner column. Treating the pill as a padded card used to drop
+        // WidthOnly; host Roboto then overset and hid every date.
+        let mut els = vec![
+            shape(419_000, 359_700, 52_388, 15_600),
+            tb("t2.r0c3.txt", 425_000, 40_388, true, "CenterLeftPoint"),
+            tb("t2.r1c3.txt", 425_000, 40_388, true, "CenterLeftPoint"),
+            tb("t2.r0c4.txt", 499_000, 30_750, true, "CenterLeftPoint"),
+        ];
+        if let PageElement::TextBox(t) = &mut els[1] {
+            t.rect.y = Pt(362_700);
+            t.rect.height = Pt(9_600);
+            t.runs[0].text = "2026-08-14".into();
+            t.runs[0].tracking = 0;
+            t.runs[0].size_pt = 8.0;
+            t.full_width_lock_line = true;
+        }
+        if let PageElement::TextBox(t) = &mut els[2] {
+            t.rect.y = Pt(388_300);
+            t.rect.height = Pt(9_600);
+            t.runs[0].text = "2026-08-20".into();
+            t.runs[0].tracking = 0;
+            t.runs[0].size_pt = 8.0;
+            t.full_width_lock_line = true;
+        }
+        if let PageElement::TextBox(t) = &mut els[3] {
+            t.rect.y = Pt(362_700);
+            t.rect.height = Pt(9_600);
+            t.runs[0].text = "E. Vance".into();
+            t.runs[0].tracking = 0;
+            t.runs[0].size_pt = 8.0;
+            t.full_width_lock_line = true;
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(date) = &els[1] else {
+            panic!("textbox")
+        };
+        assert!(
+            date.autosize_width,
+            "ink-hug date in a pill must WidthOnly so host metrics do not hide it"
+        );
+        assert!(date.no_break, "date stays one unbreakable token");
     }
 
     #[test]
     fn hug_name_inside_card_keeps_widthonly() {
         let mut els = vec![
             shape(42_000, 200_000, 120_000, 110_000),
-            tb("doc.attendee.name1", 71_000, 62_000, true, "CenterLeftPoint"),
+            tb(
+                "doc.attendee.name1",
+                71_000,
+                62_000,
+                true,
+                "CenterLeftPoint",
+            ),
         ];
         if let PageElement::TextBox(t) = &mut els[1] {
             t.rect.y = Pt(268_000);
@@ -2127,6 +2260,7 @@ mod tests {
             t.runs[0].text = "Dr. Elena Vance".into();
             t.runs[0].tracking = 0;
             t.runs[0].size_pt = 9.0;
+            t.full_width_lock_line = true;
         }
         apply(&mut els, 595_000);
         let PageElement::TextBox(name) = &els[1] else {
@@ -2152,6 +2286,7 @@ mod tests {
             t.runs[0].text = "David Miller".into();
             t.runs[0].tracking = 0;
             t.runs[0].size_pt = 9.0;
+            t.full_width_lock_line = true;
         }
         apply(&mut els, 595_000);
         let PageElement::TextBox(name) = &els[1] else {
@@ -2167,7 +2302,13 @@ mod tests {
     fn tracked_title_beside_left_icon_keeps_lock_left() {
         let mut els = vec![
             shape(163_424, 67_800, 26_000, 26_000),
-            tb("doc.header.title", 205_424, 226_152, true, "CenterLeftPoint"),
+            tb(
+                "doc.header.title",
+                205_424,
+                226_152,
+                true,
+                "CenterLeftPoint",
+            ),
         ];
         if let PageElement::TextBox(t) = &mut els[1] {
             t.rect.y = Pt(68_000);
@@ -2181,12 +2322,21 @@ mod tests {
             panic!("textbox")
         };
         assert_eq!(title.rect.x.0, 205_424, "gap to the plus must stay");
-        assert!(!title.autosize_width, "tracked title must not WidthOnly-recenter");
+        assert!(
+            !title.autosize_width,
+            "tracked title must not WidthOnly-recenter"
+        );
     }
 
     #[test]
     fn padded_banner_keeps_letter_spacing() {
-        let mut els = vec![tb("notice.banner", 42_000, 511_000, false, "CenterLeftPoint")];
+        let mut els = vec![tb(
+            "notice.banner",
+            42_000,
+            511_000,
+            false,
+            "CenterLeftPoint",
+        )];
         if let PageElement::TextBox(t) = &mut els[0] {
             t.runs[0].text = "MANDATORY COMPLIANCE\nSCALES IS REQUIRED".into();
             t.runs[0].tracking = 47;
@@ -2199,7 +2349,10 @@ mod tests {
         let PageElement::TextBox(banner) = &els[0] else {
             panic!("textbox")
         };
-        assert_eq!(banner.runs[0].tracking, 47, "padded banner must keep tracking");
+        assert_eq!(
+            banner.runs[0].tracking, 47,
+            "padded banner must keep tracking"
+        );
     }
 
     #[test]
@@ -2225,10 +2378,17 @@ mod tests {
     fn page_centered_label_keeps_centerpoint_widthonly() {
         // Invitation monogram: tight ink, box centered on A5-width page.
         let page_w = 360_000i128;
-        let mut els = vec![tb("card.front.header.monogram", 158_087, 43_825, true, "CenterLeftPoint")];
+        let mut els = vec![tb(
+            "card.front.header.monogram",
+            158_087,
+            43_825,
+            true,
+            "CenterLeftPoint",
+        )];
         if let PageElement::TextBox(t) = &mut els[0] {
             t.runs[0].text = "E\u{00A0}·\u{00A0}L".into();
             t.runs[0].tracking = 0;
+            t.full_width_lock_line = true;
         }
         apply(&mut els, page_w);
         let PageElement::TextBox(mono) = &els[0] else {
@@ -2252,9 +2412,21 @@ mod tests {
         let col_w = 148_333i128;
         let col_x = (page_w - col_w) / 2;
         let mut els = vec![
-            tb("card1.tag", col_x - col_w - 10_000, col_w, true, "CenterLeftPoint"),
+            tb(
+                "card1.tag",
+                col_x - col_w - 10_000,
+                col_w,
+                true,
+                "CenterLeftPoint",
+            ),
             tb("card2.tag", col_x, col_w, true, "CenterLeftPoint"),
-            tb("card3.tag", col_x + col_w + 10_000, col_w, true, "CenterLeftPoint"),
+            tb(
+                "card3.tag",
+                col_x + col_w + 10_000,
+                col_w,
+                true,
+                "CenterLeftPoint",
+            ),
         ];
         if let PageElement::TextBox(t) = &mut els[1] {
             t.runs[0].text = "WERKSTATT 02 / TYPO".into();
@@ -2269,8 +2441,7 @@ mod tests {
             "middle grid column must stay left-aligned"
         );
         assert_ne!(
-            mid.autosize_refer,
-            "CenterPoint",
+            mid.autosize_refer, "CenterPoint",
             "column label must not re-anchor about center"
         );
     }
@@ -2348,7 +2519,10 @@ mod tests {
             !body.autosize_height,
             "must not HeightOnly through the CTA, got height autosize"
         );
-        assert!(!body.autosize_width, "must not WidthOnly through the column");
+        assert!(
+            !body.autosize_width,
+            "must not WidthOnly through the column"
+        );
         assert_eq!(body.rect.x.0, 300_000, "column left edge stays");
         assert!(
             body.rect.width.0 > 140_000,
@@ -2363,7 +2537,11 @@ mod tests {
             body.runs[0].text.contains('\n'),
             "lock wrap before the CTA must stay"
         );
-        assert_eq!(body.rect.y.0 + body.rect.height.0, 21_000, "lock height stays");
+        assert_eq!(
+            body.rect.y.0 + body.rect.height.0,
+            21_000,
+            "lock height stays"
+        );
     }
 
     #[test]
@@ -2393,5 +2571,81 @@ mod tests {
         };
         assert!(!folio.autosize_height, "CenterAlign needs lock height");
         assert_eq!(folio.rect.height.0, 20_400);
+    }
+
+    #[test]
+    fn page_centered_middle_card_stat_stays_left_aligned() {
+        // editorial-story 3.8×: tall number over a short kicker (3× height
+        // skip) sharing a right edge, box on the page midline. Must not flip
+        // to CenterAlign + WidthOnly.
+        let page_w = 960_000i128;
+        let card_w = 244_000i128;
+        let mid_x = 358_000i128;
+        let mut els = vec![
+            tb("card1.num", 62_000, card_w, false, "CenterLeftPoint"),
+            tb("card2.num", mid_x, card_w, false, "CenterLeftPoint"),
+            tb("card2.kicker", mid_x, card_w, false, "CenterLeftPoint"),
+            tb("card3.num", 654_000, card_w, false, "CenterLeftPoint"),
+        ];
+        if let PageElement::TextBox(t) = &mut els[1] {
+            t.rect.y = Pt(219_625);
+            t.rect.height = Pt(46_200);
+            t.runs[0].text = "3.8×".into();
+            t.runs[0].tracking = 0;
+        }
+        if let PageElement::TextBox(t) = &mut els[2] {
+            t.rect.y = Pt(273_825);
+            t.rect.height = Pt(12_000);
+            t.runs[0].text = "BRAND RECALL".into();
+            t.runs[0].tracking = 0;
+        }
+        apply(&mut els, page_w);
+        let PageElement::TextBox(num) = &els[1] else {
+            panic!("textbox")
+        };
+        assert_eq!(num.align, TextAlign::Left, "middle card stat stays Left");
+        assert_ne!(num.autosize_refer, "CenterPoint");
+        assert!(!num.autosize_width, "must not WidthOnly-recenter 3.8×");
+        assert_eq!(num.rect.x.0, mid_x, "left edge stays");
+    }
+
+    #[test]
+    fn loose_stacked_schedule_titles_keep_left_lock() {
+        // gallery-noir col3 session titles: leftover right slack, same-width
+        // stack, no y-overlapping side column. WidthOnly recenters them.
+        let mut els = vec![
+            tb("s1_time", 395_334, 167_666, true, "CenterLeftPoint"),
+            tb("s1_desc", 395_334, 167_666, false, "CenterLeftPoint"),
+            tb("s2_time", 395_334, 167_666, true, "CenterLeftPoint"),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.rect.y = Pt(413_616);
+            t.rect.height = Pt(10_140);
+            t.runs[0].text = "11:00 - ACOUSTIC CALIBRATION".into();
+            t.runs[0].tracking = 0;
+        }
+        if let PageElement::TextBox(t) = &mut els[1] {
+            t.rect.y = Pt(425_756);
+            t.rect.height = Pt(18_200);
+            t.runs[0].text = "Low-frequency resonant testing.".into();
+            t.runs[0].tracking = 0;
+        }
+        if let PageElement::TextBox(t) = &mut els[2] {
+            t.rect.y = Pt(489_008);
+            t.rect.height = Pt(10_140);
+            t.runs[0].text = "14:00 - CURATORIAL WALKTHROUGH".into();
+            t.runs[0].tracking = 0;
+        }
+        apply(&mut els, 595_000);
+        let PageElement::TextBox(title) = &els[0] else {
+            panic!("textbox")
+        };
+        assert_eq!(title.align, TextAlign::Left);
+        assert!(
+            !title.autosize_width,
+            "loose schedule title must not WidthOnly-recenter"
+        );
+        assert_eq!(title.rect.x.0, 395_334, "left edge stays");
+        assert_eq!(title.rect.width.0, 167_666, "lock width stays");
     }
 }
