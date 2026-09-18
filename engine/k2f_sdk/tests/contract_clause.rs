@@ -18,7 +18,7 @@ const CLAUSE_4_AFTER: &str = "本协议自双方签署之日起生效。任何�
 fn edit_contract_clause_4_warning_relocks_unsigned() {
     let mut editor = Editor::open(&contract_bytes()).unwrap();
     let before_2 = editor.node_text("contract.clause_2").unwrap();
-    let before_sig = editor.node_text("contract.signatures.client").unwrap();
+    let before_sig = editor.node_text("contract.signatures.client_label").unwrap();
 
     editor
         .replace_text("contract.clause_4", CLAUSE_4_AFTER)
@@ -51,7 +51,7 @@ fn edit_contract_clause_4_warning_relocks_unsigned() {
         other => panic!("{other:?}"),
     }
     assert_eq!(
-        editor::reopen_text(&bytes, "contract.signatures.client"),
+        editor::reopen_text(&bytes, "contract.signatures.client_label"),
         before_sig
     );
 }
