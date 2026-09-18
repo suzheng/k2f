@@ -4,6 +4,12 @@ Create a packed `.K2F`. Two paths: ask an agent, or write the JSON and pack it y
 
 To look at a file first, open the [Playground](https://k2f.dev/playground) or a sample in the [Gallery](https://k2f.dev/gallery).
 
+The native [desktop/k2f_reader in development](../../desktop/k2f_reader/README.md) opens locked packages offline from a clone:
+
+```bash
+cargo run -p k2f_reader -- examples/published/invoice.K2F
+```
+
 ## Use an agent
 
 ```bash

@@ -193,7 +193,7 @@ SDKs: [Python](sdk/python/README.md) · [JavaScript](sdk/js/README.md) · [Rust]
 ## Tooling
 
 - [Playground](https://k2f.dev/playground) — edit and preview `.K2F` in the browser
-- [Desktop Reader](https://k2f.dev/download) — open and verify files offline. Packaged builds are on the site; the source crate is still in development ([`desktop/k2f_reader`](desktop/k2f_reader/README.md))
+- [Desktop Reader](https://k2f.dev/download) — open and verify files offline. Packaged builds are on the site; the source crate is still in development ([desktop/k2f_reader in development](desktop/k2f_reader/README.md))
 - [Web viewer](docs/guide/web-viewer.md) — embed `<k2f-viewer>` (`npm i @openk2f/k2f`)
 - [Docs](https://k2f.dev/docs) — format spec, authoring, and export ([`docs/`](docs/README.md))
 
