@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-18
+
 ### Added
 
 - Pack/compile/raster reject SVG live text with `SVG_TEXT` (not `IMAGE_SIZE`). Still fail-closed; put labels in a K2F text node or convert to `<path>`.
