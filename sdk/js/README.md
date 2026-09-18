@@ -146,5 +146,5 @@ Types ship in `types.d.ts` for both `@openk2f/k2f` and `@openk2f/k2f/viewer` exp
 ## More documentation
 
 - [Repository README](https://github.com/suzheng/k2f#readme)
-- [Web viewer guide](https://github.com/suzheng/k2f/blob/main/docs/guide/web-viewer.md)
+- [Web viewer](https://github.com/suzheng/k2f/blob/main/skills/k2f/references/embedding-viewer.md)
 - [Format specification v0.1](https://github.com/suzheng/k2f/blob/main/docs/spec/k2f-v0.1.md)

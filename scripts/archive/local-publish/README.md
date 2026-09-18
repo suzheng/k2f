@@ -9,7 +9,10 @@ Publish through **GitHub Actions** — [`.github/workflows/publish.yml`](../../.
 1. Bump versions and update `CHANGELOG.md`.
 2. Run preflight locally: `bash scripts/publish-preflight.sh`
 3. Optional wheel-only dry run: `bash scripts/trigger-publish-dry-run.sh`
-4. Optional Linux install smoke (Modal): see `k2f-private/scripts/pypi-linux-smoke.sh`
+4. Optional Linux install smoke on **Modal** (verify SDK / `k2f` CLI on fresh Linux before or after tag):
+   - `k2f-private/scripts/pypi-linux-smoke.sh` (`--build-wheel`, `--from-wheel`, or `--from-pypi`)
+   - Docs: `k2f-private/scripts/modal-smoke-tests.md`
+   - **Billing:** `modal run` smokes end when the script exits. If you opened a long-lived **Modal Sandbox** for manual testing, **Terminate** it in the Modal dashboard when finished — or it keeps billing.
 5. Tag and push — the workflow publishes all registries:
 
    ```bash

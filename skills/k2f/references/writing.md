@@ -40,7 +40,7 @@ pip install k2f    # unpack, pack, compile, verify, render, schema dump — on P
    See [Design first](../SKILL.md#design-first) in the skill entry.
 2. **Get a workspace.** Probe once, stop at the first hit. Kind mismatch, missing tools, or download failure → do not retry; go to the next row.
    1. User gave a `.K2F` or an unpacked author dir → `k2f unpack existing.K2F -o ./out/doc/source` (do **not** use `--include-lock`; author dirs must not contain lock or embedded `schema/`) or use the existing `source/` directory. For patches, skip step 1 unless the brief changes visual design.
-   2. User gave a Gallery **package URL** → fetch it (`curl`/`fetch`) to `./out/doc/template.K2F`, then unpack as in (1). Do not load the ZIP into context.
+   2. User gave a Gallery URL (`<origin>/gallery/<slug>`) or package URL → fetch `<origin>/api/gallery/templates/<slug>` (or package URL) via `curl`/`fetch` to `./out/doc/template.K2F`, then unpack as in (1). Do not load the ZIP into context.
    3. Site MCP already connected (`list_templates` / `download_template`) **and** a catalog `kind` matches the deliverable → download the package URL to a `.K2F`, then unpack as in (1). See [Optional Gallery](#optional-gallery-mcp).
    4. Otherwise: `python scripts/init_package.py --workspace ./out/doc --title "…" --page a4` — creates `source/` (starter tree + core theme + Roboto) and `tmp/`. Empty dirs and notes-only dirs (a lone `design.md` in `source/`) are OK; an existing package is not. `--dir` still inits a package tree directly when you already have the author path.
 3. Implement the spec: edit `content/root.json` (+ optional `content/*.json` includes) and `styles/theme.json`. **Minimal diff** on patches — change only what the task requires.
@@ -168,7 +168,7 @@ Writes `tmp/compare_overlay.png` and `tmp/compare_diff.png` (default `--align fi
 
 ## Optional Gallery (MCP)
 
-Not required. Do not install or configure MCP for this skill. If the user already gave a Gallery package URL, fetch it directly — skip `list_templates`. If `list_templates` and `download_template` are already available:
+Not required. Do not install or configure MCP for this skill. If the user already gave a Gallery URL or package URL, fetch it directly — skip `list_templates`. If `list_templates` and `download_template` are already available:
 
 1. `list_templates` (optional filters: `kind`, `style`) — metadata only, not package bytes.
 2. Use an entry only when `kind` matches the deliverable. Otherwise skip to `init_package.py`.

@@ -14,7 +14,7 @@ pub(crate) fn runs_from_paint(
 ) -> Vec<TextRun> {
     if paint_runs.is_empty() {
         let style = fallback_style();
-        let out = split_piece(text, 0, text.len(), &style, modifiers, fonts, &[]);
+        let out = split_piece(text, 0, text.len(), &style, modifiers, fonts, &[], false);
         return expand_fields(out);
     }
     let default_style = &paint_runs[0].style;
@@ -42,6 +42,8 @@ pub(crate) fn runs_from_paint(
             }
             let start = bs.max(pos);
             if start > pos {
+                // Gap between paint spans still uses a paint style; don't
+                // re-map emphasis on top (a missed space would become bold).
                 out.extend(split_piece(
                     text,
                     pos,
@@ -50,10 +52,11 @@ pub(crate) fn runs_from_paint(
                     modifiers,
                     fonts,
                     &[],
+                    true,
                 ));
             }
             out.extend(split_piece(
-                text, start, be, style, modifiers, fonts, &glyphs,
+                text, start, be, style, modifiers, fonts, &glyphs, true,
             ));
             pos = pos.max(be);
         }
@@ -66,6 +69,7 @@ pub(crate) fn runs_from_paint(
                 modifiers,
                 fonts,
                 &[],
+                false,
             ));
         }
     }
@@ -78,6 +82,7 @@ pub(crate) fn runs_from_paint(
             modifiers,
             fonts,
             &[],
+            true,
         ));
     }
     expand_fields(out)
@@ -98,7 +103,16 @@ pub(crate) fn runs_from_plain(
         .map(|r| r.style.clone())
         .unwrap_or_else(fallback_style);
     let glyphs: Vec<&GlyphPosition> = geo.map(|g| g.glyphs.iter().collect()).unwrap_or_default();
-    split_piece(text, 0, text.len(), &style, modifiers, fonts, &glyphs)
+    split_piece(
+        text,
+        0,
+        text.len(),
+        &style,
+        modifiers,
+        fonts,
+        &glyphs,
+        !paint_runs.is_empty(),
+    )
 }
 
 fn push_span<'a>(
@@ -144,6 +158,7 @@ fn split_piece(
     modifiers: &[Modifier],
     fonts: &FontCtx,
     glyphs: &[&GlyphPosition],
+    from_paint: bool,
 ) -> Vec<TextRun> {
     let mut cuts = vec![bs, be];
     for m in modifiers {
@@ -175,7 +190,7 @@ fn split_piece(
         for m in modifiers {
             let [s, e] = m.range;
             if s <= a && b <= e {
-                apply_modifier(&mut run, m, style);
+                apply_modifier(&mut run, m, style, from_paint);
             }
         }
         out.push(run);
@@ -205,14 +220,30 @@ fn run_from_style(
     }
 }
 
-fn apply_modifier(run: &mut TextRun, m: &Modifier, style: &TextPaintStyle) {
+fn apply_modifier(run: &mut TextRun, m: &Modifier, style: &TextPaintStyle, from_paint: bool) {
     match m.mod_type.as_str() {
-        "emphasis" => match m.intent.as_str() {
-            "italic" => run.italic = true,
-            _ => run.bold = true,
-        },
-        "underline" => run.underline = true,
-        "strikethrough" => run.strike = true,
+        "emphasis" => {
+            // Lock paint already applied theme.modifiers.styles.emphasis
+            // (`emphasis` → italic, `strong` → bold). Re-mapping any non-italic
+            // intent to bold on top of that turns italic runs into bold-italic.
+            if from_paint {
+                return;
+            }
+            match m.intent.as_str() {
+                "italic" => run.italic = true,
+                _ => run.bold = true,
+            }
+        }
+        "underline" => {
+            if !from_paint {
+                run.underline = true;
+            }
+        }
+        "strikethrough" => {
+            if !from_paint {
+                run.strike = true;
+            }
+        }
         "link" => run.hyperlink = k2f_core::hyperlink_href(&m.intent).map(str::to_string),
         "subscript" => {
             run.script = ScriptPos::Sub;
@@ -314,6 +345,7 @@ mod tests {
                 intent: "default".into(),
             },
             &fallback_style(),
+            false,
         );
         assert!(run.hyperlink.is_none());
     }
@@ -329,6 +361,7 @@ mod tests {
                 intent: "https://example.com".into(),
             },
             &fallback_style(),
+            false,
         );
         assert_eq!(run.hyperlink.as_deref(), Some("https://example.com"));
     }
@@ -344,6 +377,7 @@ mod tests {
                 intent: "italic".into(),
             },
             &fallback_style(),
+            false,
         );
         assert!(run.italic);
         assert!(!run.bold);
@@ -360,8 +394,98 @@ mod tests {
                 intent: "critical".into(),
             },
             &fallback_style(),
+            false,
         );
         assert!(run.bold);
         assert!(!run.italic);
+    }
+
+    fn fonts() -> FontCtx {
+        FontCtx::new(&std::collections::BTreeMap::new())
+    }
+
+    fn paint(italic: bool) -> TextPaintStyle {
+        TextPaintStyle {
+            font_family: "default".into(),
+            font_size: Pt(8500),
+            color: "#22262E".into(),
+            bold: false,
+            italic,
+            strikethrough: false,
+            underline: false,
+        }
+    }
+
+    fn glyph(cluster: u32, x: i128) -> GlyphPosition {
+        GlyphPosition {
+            glyph_id: 1,
+            cluster,
+            x_offset: Pt(x),
+            y_offset: Pt(0),
+            x_advance: Pt(8000),
+            y_advance: Pt(0),
+        }
+    }
+
+    #[test]
+    fn theme_emphasis_on_italic_paint_is_not_bold() {
+        let text = "92% Complete — Final validation underway";
+        let n = text.chars().count();
+        let prefix = 15; // "92% Complete — "
+        let glyphs: Vec<GlyphPosition> = (0..n).map(|i| glyph(i as u32, i as i128 * 8000)).collect();
+        let geo = GeometryNode {
+            id: "c".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(156_900),
+            height: Pt(36_950),
+            glyphs,
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        };
+        let paint_runs = vec![
+            TextGlyphRun {
+                glyph_range: [0, prefix],
+                style: paint(false),
+            },
+            TextGlyphRun {
+                glyph_range: [prefix, n],
+                style: paint(true),
+            },
+        ];
+        let modifiers = vec![Modifier {
+            range: [17, text.len()],
+            mod_type: "emphasis".into(),
+            intent: "emphasis".into(),
+        }];
+        let runs = runs_from_paint(text, &paint_runs, &modifiers, Some(&geo), &fonts());
+        let italic: Vec<_> = runs.iter().filter(|r| r.italic).collect();
+        assert!(!italic.is_empty(), "expected italic suffix, got {runs:?}");
+        for r in &italic {
+            assert!(
+                !r.bold,
+                "theme emphasis→italic must not become faux-bold, got {r:?}"
+            );
+        }
+        for r in &runs {
+            if !r.italic {
+                assert!(!r.bold, "unemphasized prefix must stay regular, got {r:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn emphasis_without_paint_still_bolds() {
+        let text = "note";
+        let modifiers = vec![Modifier {
+            range: [0, 4],
+            mod_type: "emphasis".into(),
+            intent: "emphasis".into(),
+        }];
+        let runs = runs_from_paint(text, &[], &modifiers, None, &fonts());
+        assert_eq!(runs.len(), 1);
+        assert!(runs[0].bold);
+        assert!(!runs[0].italic);
     }
 }

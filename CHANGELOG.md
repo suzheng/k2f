@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- `export-docx` / `export-pptx`: lock paint already applied theme `emphasis` (including `emphasis` → italic) is not remapped to bold. Overlaying every non-`italic` intent as bold made true-italic runs export as bold-italic. Empty-paint fallback still bolds default emphasis.
 - `list_item` with a partial `list_style` (for example only `bullet_glyph`) compiles by merging starter defaults. Explicit `0` still wins; schema fields stay optional.
 
 ## [0.2.4] - 2026-09-11

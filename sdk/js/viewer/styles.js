@@ -477,6 +477,7 @@ export const VIEWER_CSS = `
   background: var(--k2f-divider);
 }
 .k2f-menu-export { display: none; }
+.k2f-menu-mobile-actions { display: none; flex-direction: column; gap: 2px; }
 .k2f-export-text { display: none; }
 .k2f-dialog-backdrop {
   position: absolute;
@@ -556,7 +557,12 @@ export const VIEWER_CSS = `
 @container k2f (max-width: 767px) {
   .k2f-toolbar {
     height: 40px;
-    padding: 0 12px;
+    padding: 0 8px;
+    gap: 4px;
+  }
+  .k2f-header-left,
+  .k2f-header-right {
+    gap: 4px;
   }
   .k2f-toolbar button {
     width: 28px;
@@ -566,8 +572,52 @@ export const VIEWER_CSS = `
   .k2f-page-nav button[data-act="next"] {
     display: none;
   }
+  .k2f-page-label {
+    min-width: 3.25em;
+    padding: 0 2px;
+    font-size: 12px;
+  }
+  .k2f-zoom-label {
+    min-width: 2.75em;
+    padding: 0 2px;
+    font-size: 12px;
+  }
+  .k2f-sep {
+    height: 18px;
+  }
+  .k2f-toolbar .k2f-edit,
+  .k2f-toolbar .k2f-save {
+    padding: 0 8px;
+  }
   .k2f-export { display: none; }
+  .k2f-toolbar [data-act="copy-all"] { display: none; }
+  .k2f-toolbar [data-act="theme"],
+  .k2f-toolbar .k2f-edit,
+  .k2f-toolbar .k2f-save { display: none; }
+  .k2f-header-right > .k2f-sep { display: none; }
   .k2f-menu-export { display: flex; flex-direction: column; gap: 2px; }
-  .k2f-doc-title { max-width: 14ch; }
+  .k2f-menu-mobile-actions { display: flex; }
+  .k2f-menu.k2f-more-menu {
+    max-height: min(78vh, 32rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--k2f-scroll) transparent;
+  }
+  .k2f-menu.k2f-more-menu::-webkit-scrollbar { width: 6px; }
+  .k2f-menu.k2f-more-menu::-webkit-scrollbar-thumb {
+    background: var(--k2f-scroll);
+    border-radius: 3px;
+  }
+  .k2f-menu.k2f-more-menu .k2f-menu-item {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  .k2f-menu.k2f-more-menu .k2f-menu-sep {
+    margin: 2px 6px;
+  }
+  /* Title is usually shown outside the embed; hide here to free toolbar width. */
+  .k2f-doc-title { display: none; }
 }
 `;

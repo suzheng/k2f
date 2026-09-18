@@ -68,7 +68,7 @@ A form field is a State A leaf like `Image`: the engine reserves a box from decl
 
 `manifest.json` may include `running_blocks`: an array of `{ "position": "header" | "footer", "node": <SemanticNode> }` repeated on each page. Valid only with `canvas_mode: "paged"`. Form fields are forbidden inside running blocks.
 
-A code block is `role: "code_block"` with `content: { "type": "code_block", "value": <string | string[]> }`. Role and content type must agree; `layout` is forbidden; modifiers are limited to `syntax_highlight`. See [semantic_code_blocks.md](../instructions/semantic_code_blocks.md).
+A code block is `role: "code_block"` with `content: { "type": "code_block", "value": <string | string[]> }`. Role and content type must agree; `layout` is forbidden; modifiers are limited to `syntax_highlight`. Inline code is `role: "code"` plus `content.type: "text"` ([`ex_code.json`](../../skills/k2f/catalog/content/ex_code.json)).
 
 Native tables may load rows from `data: { "type": "asset", "source": "assets/data/..." }` instead of inline cell trees.
 

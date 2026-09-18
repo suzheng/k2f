@@ -1,50 +1,47 @@
 # K2F documentation
 
-Public documentation for the K2F format and SDK.
+K2F is a document format: you write **meaning** as JSON, and one engine turns that into the same pixels everywhere.
 
-**How to read this tree:**
+A `.K2F` file is a ZIP with three layers:
 
-- **[Specification](spec/k2f-v0.1.md)** — normative format contract (paths, fields, verify codes).
-- **[Architecture](architecture/README.md)** — design rationale and engine internals for contributors.
-- **[Instructions](instructions/)** — authoring operations for agents and hand-edited JSON.
-- **[Agent skills](../skills/README.md)** — task-oriented playbooks that call the SDK/CLI.
+- **Content** (`content/root.json`) — semantic tree. Every node has a stable `id`, a `role`, and `content`. No coordinates, colors, or font sizes.
+- **Theme** (`styles/theme.json`) — appearance keyed by role (and optional variant). Fonts live here, plus `assets/fonts/`.
+- **Lock** (`document.K2F.lock`) — compiled geometry. Viewers and PDF paint this. Do not hand-edit it.
 
-## Specification
+`k2f pack` / `compile` is the compiler. Edit the tree or the theme, then relock.
 
-- [K2F format v0.1](spec/k2f-v0.1.md)
+## Get started
 
-## Architecture
+- [First document](guide/getting-started.md) — install, init a package, pack, verify
+- [Format spec](spec/k2f-v0.1.md) — normative contract (paths, fields, verify codes)
 
-- [Overview](architecture/README.md)
-- [Design goals and principles](architecture/design.md)
-- [Codebase overview](architecture/codebase.md)
-- [Layout engine](architecture/layout-engine.md)
-- [Human editor (design proposal)](architecture/editor.md)
+## Authoring
+
+Copy shapes from the [catalog](../skills/k2f/catalog/README.md) into `content/root.json` children. Look up allowed keys in [fields.md](../skills/k2f/references/writing/fields.md), then the matching file under [`schema/`](../skills/k2f/schema/).
+
+- [Text](authoring/text.md) — paragraphs, line breaks, headings, emphasis, lists
+- [Images](authoring/images.md) — embedded PNG/JPEG
+- [Tables](authoring/tables.md) — inline tables
+- [Layout](authoring/layout.md) — stack and grid
+- [Theme and fonts](authoring/theme.md) — roles, variants, embedded fonts
+
+## Reference
+
+- [Catalog](../skills/k2f/catalog/README.md) — golden `ex_*.json` shapes
+- [Allowed keys](../skills/k2f/references/writing/fields.md) — node, theme, and manifest fields
+- [Format spec](spec/k2f-v0.1.md)
 
 ## Guides
 
-- [Getting Started](guide/getting-started.md)
-- [SDK themes](guide/themes.md)
-- [Web viewer](guide/web-viewer.md)
-- [Status & roadmap](guide/status.md)
-- [Guide images](guide/images/README.md)
+- [Markdown conversion](../skills/k2f/references/converting-markdown.md)
+- [Web viewer](../skills/k2f/references/embedding-viewer.md)
+
+## Also
+
+- [Agent skill](../skills/k2f/SKILL.md) — task playbooks that call the CLI
+- [Project status](guide/status.md)
 - [Desktop reader (in development)](../desktop/k2f_reader/README.md)
-
-## Instructions (authoring)
-
-- [Attribute reference](instructions/attribute_reference.md)
-- [File operations](instructions/k2f_file_operations.md)
-- [Content operations](instructions/content_operations.md)
-- [Style operations](instructions/style_operations.md)
-- [Semantic code blocks](instructions/semantic_code_blocks.md)
-- [Agent profile v0](instructions/agent_v0.md) — SDK system-prompt dialect (not the format spec)
-
-## Related
-
-- [Agent skills](../skills/README.md)
-- [Security policy](../SECURITY.md)
 - [Contributing](../CONTRIBUTING.md)
+- [Security](../SECURITY.md)
 
----
-
-*Internal implementation plans live outside this public repository (private brain), not under `docs/`.*
+Contributor internals (engine design, crate map) live under [`architecture/`](architecture/README.md). They are not the authoring docs.

@@ -19,6 +19,7 @@ export function bindFormFill({
   zoomOf,
   editingOf,
   saveButton,
+  menuSaveButton,
   onRelock,
   onError,
   signal,
@@ -26,8 +27,11 @@ export function bindFormFill({
   const values = new Map();
   const dirty = new Map();
   let focusedId = null;
+  const saveButtons = [saveButton, menuSaveButton].filter(Boolean);
 
-  saveButton?.addEventListener("click", () => save(), { signal });
+  for (const btn of saveButtons) {
+    btn.addEventListener("click", () => save(), { signal });
+  }
 
   function fields() {
     return readFormFields(viewerOf());
@@ -53,11 +57,15 @@ export function bindFormFill({
   }
 
   function syncSaveButton() {
-    if (!saveButton) return;
+    if (!saveButtons.length) return;
     const editing = Boolean(editingOf());
     const n = fields().length;
-    saveButton.hidden = !editing || n === 0;
-    saveButton.disabled = !editing || dirty.size === 0;
+    const hidden = !editing || n === 0;
+    const disabled = !editing || dirty.size === 0;
+    for (const btn of saveButtons) {
+      btn.hidden = hidden;
+      btn.disabled = disabled;
+    }
   }
 
   function sync() {

@@ -238,7 +238,7 @@ Build from source, smoke tests, and troubleshooting: [Getting Started](docs/guid
 - [Playground](https://k2f.dev/playground): open and preview `.K2F` in the browser.
 - [Gallery](https://k2f.dev/gallery): official sample documents.
 - [Desktop reader](https://k2f.dev/download): open and verify files offline. Packaged builds are on the site; the source crate is still in development ([`desktop/k2f_reader` (in development)](desktop/k2f_reader/README.md)).
-- [Docs](https://k2f.dev/docs): spec, guides, and architecture ([`docs/`](docs/README.md)).
+- [Docs](https://k2f.dev/docs): introduction, authoring, and spec ([`docs/`](docs/README.md)).
 
 From a published lock you can export PDF, PowerPoint, Word, Markdown, or images. Those exports are drawings of the lock. The source stays K2F (`PDF_IS_NOT_A_SOURCE`).
 
@@ -275,6 +275,8 @@ Full status: [docs/guide/status.md](docs/guide/status.md).
 | Resource | Link |
 |----------|------|
 | Format spec | [docs/spec/k2f-v0.1.md](docs/spec/k2f-v0.1.md) |
+| Authoring | [docs/authoring/](docs/authoring/text.md) |
+| Catalog | [skills/k2f/catalog/](skills/k2f/catalog/README.md) |
 | Design goals | [docs/architecture/design.md](docs/architecture/design.md) |
 | Codebase map | [docs/architecture/codebase.md](docs/architecture/codebase.md) |
 | Agent skill | [skills/k2f/](skills/k2f/SKILL.md) |
