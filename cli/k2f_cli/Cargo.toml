@@ -23,7 +23,7 @@ k2f_paint = { path = "../../engine/k2f_paint", version = "0.3.0" }
 k2f_pdf = { path = "../../engine/k2f_pdf", version = "0.3.0" }
 k2f_pptx = { path = "../../export/k2f_pptx", version = "0.3.0" }
 k2f_docx = { path = "../../export/k2f_docx", version = "0.3.0" }
-k2f_idml = { path = "../../export/k2f_idml" }
+k2f_idml = { path = "../../export/k2f_idml", version = "0.3.0" }
 k2f_sdk = { path = "../../engine/k2f_sdk", version = "0.3.0" }
 clap = { version = "4.4", features = ["derive"] }
 anyhow = "1.0"
@@ -33,5 +33,5 @@ name = "k2f"
 path = "src/main.rs"
 
 [dev-dependencies]
-k2f_idml = { path = "../../export/k2f_idml" }
+k2f_idml = { path = "../../export/k2f_idml", version = "0.3.0" }
 zip = { version = "2", default-features = false, features = ["deflate"] }
