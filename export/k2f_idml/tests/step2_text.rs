@@ -64,6 +64,16 @@ fn stories_blob(idml: &[u8]) -> String {
     blob
 }
 
+fn inset_list(doc: &roxmltree::Document<'_>) -> Vec<String> {
+    doc.descendants()
+        .find(|n| n.has_tag_name("InsetSpacing"))
+        .expect("InsetSpacing list")
+        .children()
+        .filter(|n| n.has_tag_name("ListItem"))
+        .filter_map(|n| n.text().map(str::to_string))
+        .collect()
+}
+
 fn glyph(cluster: u32, x_off: i128, x_adv: i128, y: i128) -> GlyphPosition {
     GlyphPosition {
         glyph_id: 1,
@@ -617,14 +627,9 @@ fn left_align_left_inset_not_zero_when_glyphs_inset() {
     );
     let wrapped = format!("<root>{xml}</root>");
     let parsed = roxmltree::Document::parse(&wrapped).expect("frame xml");
-    let el = parsed
-        .descendants()
-        .find(|n| n.has_tag_name("TextFramePreference"))
-        .expect("TextFramePreference");
-    let inset = el.attribute("InsetSpacing").expect("InsetSpacing");
-    let parts: Vec<&str> = inset.split_whitespace().collect();
-    assert_eq!(parts.len(), 4, "{inset}");
-    assert_eq!(parts[1], "8.000", "left inset {inset}");
+    let parts = inset_list(&parsed);
+    assert_eq!(parts.len(), 4, "{xml}");
+    assert_eq!(parts[1], "8.000", "left inset {xml}");
 }
 
 #[test]
@@ -748,13 +753,11 @@ fn list_item_hangs_marker_column_not_body_inset() {
     let frame = textframe_xml(&tb, &space, "kTf0", "kSt0");
     let wrapped = format!("<root>{frame}</root>");
     let parsed = roxmltree::Document::parse(&wrapped).expect("frame xml");
-    let el = parsed
-        .descendants()
-        .find(|n| n.has_tag_name("TextFramePreference"))
-        .expect("TextFramePreference");
-    let inset = el.attribute("InsetSpacing").expect("InsetSpacing");
-    let parts: Vec<&str> = inset.split_whitespace().collect();
-    assert_eq!(parts[1], "19.000", "outer pad + (gutter − hang), got {inset}");
+    let parts = inset_list(&parsed);
+    assert_eq!(
+        parts[1], "19.000",
+        "outer pad + (gutter − hang), got {frame}"
+    );
 }
 
 #[test]

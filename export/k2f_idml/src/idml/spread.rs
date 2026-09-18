@@ -48,13 +48,6 @@ pub(crate) fn textframe_xml_on(
     } else {
         "TopAlign"
     };
-    let inset = format!(
-        "{} {} {} {}",
-        fmt_pt(tb.inset_top),
-        fmt_pt(tb.inset_left),
-        fmt_pt(tb.inset_bottom),
-        fmt_pt(tb.inset_right)
-    );
     let baseline = if tb.first_baseline_leading_offset {
         "LeadingOffset"
     } else {
@@ -80,12 +73,39 @@ pub(crate) fn textframe_xml_on(
     } else {
         String::new()
     };
+    // InDesign ignores the four-value InsetSpacing attribute. The IDML list
+    // (top, left, bottom, right) is what actually insets paint+padding boxes.
+    let insets = inset_spacing_xml(
+        tb.inset_top,
+        tb.inset_left,
+        tb.inset_bottom,
+        tb.inset_right,
+    );
     format!(
         r#"    <TextFrame Self="{tf_self}" ParentStory="{story_self}" ContentType="TextType" ItemLayer="kLayer" FillColor="Swatch/None" StrokeWeight="0" ItemTransform="{tf}" Name="{name}" NextTextFrame="n" PreviousTextFrame="n">
 {geo}
-      <TextFramePreference TextColumnCount="1" VerticalJustification="{vert}" InsetSpacing="{inset}" FirstBaselineOffset="{baseline}"{autosize}/>
+      <TextFramePreference TextColumnCount="1" VerticalJustification="{vert}" FirstBaselineOffset="{baseline}"{autosize}>
+{insets}
+      </TextFramePreference>
     </TextFrame>
 "#
+    )
+}
+
+fn inset_spacing_xml(top: f64, left: f64, bottom: f64, right: f64) -> String {
+    format!(
+        r#"        <Properties>
+          <InsetSpacing type="list">
+            <ListItem type="unit">{}</ListItem>
+            <ListItem type="unit">{}</ListItem>
+            <ListItem type="unit">{}</ListItem>
+            <ListItem type="unit">{}</ListItem>
+          </InsetSpacing>
+        </Properties>"#,
+        fmt_pt(top),
+        fmt_pt(left),
+        fmt_pt(bottom),
+        fmt_pt(right),
     )
 }
 
@@ -382,5 +402,71 @@ mod tests {
         ] {
             assert!(xml.contains(attr), "missing {attr} in {xml}");
         }
+    }
+
+    #[test]
+    fn text_frame_insets_use_idml_list_not_attribute() {
+        use crate::ir::{TextAlign, TextBox, TextRun};
+        let tb = TextBox {
+            node_id: "sec.banner".into(),
+            rect: Rect {
+                x: Pt(40_000),
+                y: Pt(100_000),
+                width: Pt(515_000),
+                height: Pt(21_600),
+            },
+            runs: vec![TextRun {
+                text: "TITLE".into(),
+                font_name: "Roboto".into(),
+                size_pt: 10.5,
+                bold: true,
+                italic: false,
+                underline: false,
+                strike: false,
+                color_hex: "000000".into(),
+                hyperlink: None,
+                script: crate::ir::ScriptPos::Baseline,
+                leading_pt: None,
+                auto_page_number: false,
+                tracking: 0,
+                face_style: "Regular".into(),
+            }],
+            align: TextAlign::Left,
+            inset_top: 0.0,
+            inset_left: 10.0,
+            inset_bottom: 0.0,
+            inset_right: 0.0,
+            first_line_indent_pt: 0.0,
+            left_indent_pt: 0.0,
+            vert_center: true,
+            autosize_width: false,
+            autosize_refer: "CenterLeftPoint",
+            autosize_no_wrap: false,
+            autosize_height: false,
+            no_break: true,
+            semantic_newlines: false,
+            lock_line_count: 1,
+            first_baseline_leading_offset: false,
+            full_width_lock_line: false,
+        };
+        let space = SpreadSpace {
+            page_w: 595.0,
+            page_h: 842.0,
+        };
+        let xml = textframe_xml(&tb, &space, "kTf0", "kSt0");
+        assert!(
+            !xml.contains("InsetSpacing=\""),
+            "attribute form is ignored by InDesign, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"<InsetSpacing type="list">"#),
+            "must write IDML inset list, got {xml}"
+        );
+        let items: Vec<_> = xml
+            .split("<ListItem type=\"unit\">")
+            .skip(1)
+            .map(|s| s.split('<').next().unwrap_or(""))
+            .collect();
+        assert_eq!(items, ["0.000", "10.000", "0.000", "0.000"], "{xml}");
     }
 }
