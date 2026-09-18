@@ -1,1 +1,0 @@
-../../../../docs/instructions/style_operations.md
