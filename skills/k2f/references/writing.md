@@ -26,6 +26,10 @@ pip install k2f    # unpack, pack, compile, verify, render, schema dump — on P
 
 `pack_verify.py` uses that CLI (or `K2F_CLI`). The author directory can be anywhere; pass its path. The script does not search a source tree or cargo `target/` for a binary.
 
+### Figures
+
+If the spec needs art, generate it — no placeholders. Has an image model → write a full prompt in `design.md` (composition, each object’s size/shape/position, style, color) that matches this document; generate an elegant image at the intended width×height; compress if the raster is heavy. No image model → a refined path-only SVG. Save under `assets/images/`.
+
 ### Steps
 
 1. **Write a design spec (Markdown).** Before any K2F JSON, produce a concrete design document **inside** the author directory (e.g. `./out/doc/source/design.md`). If the user named a style or brand, follow it. If not, design to the highest aesthetic standard for this deliverable. Outline:
@@ -36,6 +40,7 @@ pip install k2f    # unpack, pack, compile, verify, render, schema dump — on P
    - `## Color & surfaces` — palette intent, backgrounds, accents
    - `## Layout` — columns, hero, headers/footers, figure placement
    - `## Components` — cards, metrics, captions, tables as needed
+   - `## Figures` — generate art if needed (no placeholders); see [Figures](#figures)
 
    See [Design first](../SKILL.md#design-first) in the skill entry.
 2. **Get a workspace.** Probe once, stop at the first hit. Kind mismatch, missing tools, or download failure → do not retry; go to the next row.

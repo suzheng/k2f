@@ -29,4 +29,4 @@ Internal implementation tracks live outside this public repository. They are not
 
 ## Versioning
 
-Format spec [v0.1](../spec/k2f-v0.1.md) tracks engine crate `0.1.0`. See [COMPATIBILITY.md](../../COMPATIBILITY.md) for engine matching policy.
+Format spec [v0.1](../spec/k2f-v0.3.md) tracks engine crate `0.1.0`. See [COMPATIBILITY.md](../../COMPATIBILITY.md) for engine matching policy.

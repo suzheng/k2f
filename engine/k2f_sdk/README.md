@@ -38,7 +38,7 @@ let updated = editor.save_bytes()?;
 
 Agents should follow the dialect in [`instructions/agent_v0.md`](instructions/agent_v0.md) (also exposed as `k2f_sdk::SYSTEM_PROMPT`).
 
-Public format contract: [k2f-v0.1.md](https://github.com/suzheng/k2f/blob/main/docs/spec/k2f-v0.1.md).
+Public format contract: [k2f-v0.3.md](https://github.com/suzheng/k2f/blob/main/docs/spec/k2f-v0.3.md).
 
 ## Install
 

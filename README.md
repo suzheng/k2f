@@ -22,7 +22,7 @@
   <a href="https://k2f.dev/playground">Playground</a> ·
   <a href="https://k2f.dev/gallery">Gallery</a> ·
   <a href="https://k2f.dev/docs">Docs</a> ·
-  <a href="docs/spec/k2f-v0.1.md">Spec</a>
+  <a href="docs/spec/k2f-v0.3.md">Spec</a>
 </p>
 
 ```bash
@@ -125,7 +125,7 @@ The **theme** (`styles/theme.json`) holds appearance. A node says `role: "warnin
 }
 ```
 
-The full package also embeds fonts, schemas, and `changelog.json`. See the [format spec](docs/spec/k2f-v0.1.md) and [design goals](docs/architecture/design.md).
+The full package also embeds fonts, schemas, and `changelog.json`. See the [format spec](docs/spec/k2f-v0.3.md) and [design goals](docs/architecture/design.md).
 
 <details>
 <summary>Longer content and theme excerpts</summary>
@@ -231,7 +231,7 @@ JavaScript / WASM needs `initWasm`. See [`sdk/js/README.md`](sdk/js/README.md).
 
 A local stdio server is shipped ([`engine/k2f_mcp`](engine/k2f_mcp/README.md)). Remote HTTP MCP is not shipped.
 
-Build from source, smoke tests, and troubleshooting: [Getting Started](docs/guide/getting-started.md) · [Contributing](CONTRIBUTING.md). Python SDK: [`sdk/python/README.md`](sdk/python/README.md). CLI: [`cli/k2f_cli/README.md`](cli/k2f_cli/README.md).
+Build from source, smoke tests, and troubleshooting: [Contributing](CONTRIBUTING.md). First packed file from published tools: [Getting started](docs/guide/getting-started.md). Python SDK: [`sdk/python/README.md`](sdk/python/README.md). CLI: [`cli/k2f_cli/README.md`](cli/k2f_cli/README.md).
 
 ## Ecosystem
 
@@ -274,7 +274,7 @@ Full status: [docs/guide/status.md](docs/guide/status.md).
 
 | Resource | Link |
 |----------|------|
-| Format spec | [docs/spec/k2f-v0.1.md](docs/spec/k2f-v0.1.md) |
+| Format spec | [docs/spec/k2f-v0.3.md](docs/spec/k2f-v0.3.md) |
 | Authoring | [docs/authoring/](docs/authoring/text.md) |
 | Catalog | [skills/k2f/catalog/](skills/k2f/catalog/README.md) |
 | Design goals | [docs/architecture/design.md](docs/architecture/design.md) |

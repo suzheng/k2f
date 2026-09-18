@@ -1,47 +1,78 @@
-# K2F documentation
+# Introduction
 
-K2F is a document format: you write **meaning** as JSON, and one engine turns that into the same pixels everywhere.
+K2F is a document format for **pixel-identical, semantically editable** documents. You author **meaning** as JSON; one reference engine compiles it, and every viewer paints the same output.
 
-A `.K2F` file is a ZIP with three layers:
+## Package model
 
-- **Content** (`content/root.json`) — semantic tree. Every node has a stable `id`, a `role`, and `content`. No coordinates, colors, or font sizes.
-- **Theme** (`styles/theme.json`) — appearance keyed by role (and optional variant). Fonts live here, plus `assets/fonts/`.
-- **Lock** (`document.K2F.lock`) — compiled geometry. Viewers and PDF paint this. Do not hand-edit it.
+A `.K2F` file is a ZIP. You edit two layers; `k2f pack` / `compile` writes the third:
 
-`k2f pack` / `compile` is the compiler. Edit the tree or the theme, then relock.
+| Layer | Path | What it is |
+| --- | --- | --- |
+| **Content** | `content/root.json` | Semantic tree: stable `id`, `role`, and `content`. No coordinates, colors, or font sizes. |
+| **Theme** | `styles/theme.json` | Appearance keyed by role (and optional variant). Fonts live here and under `assets/fonts/`. |
+| **Lock** | `document.K2F.lock` | Compiled geometry and paint operations. Viewers and exports paint **this**. Do not hand-edit. |
+
+`manifest.json` sets page size and margins; `assets/` holds fonts and images. Change content or theme, then relock.
+
+## Quick install
+
+```bash
+pip install k2f
+```
+
+Python 3.9+. Optional: `npm i @openk2f/k2f` for the [web viewer](guide/web-viewer.md); `cargo install k2f` for a CLI without Python. For the full author loop (skill folder, `init_package.py`, `pack_verify.py`), see [Getting started](guide/getting-started.md).
 
 ## Get started
 
-- [First document](guide/getting-started.md) — install, init a package, pack, verify
-- [Format spec](spec/k2f-v0.1.md) — normative contract (paths, fields, verify codes)
+- [Getting started](guide/getting-started.md) — agent skill or CLI, first `.K2F`
+- [Format spec](spec/k2f-v0.3.md) — normative contract (container, processing, integrity)
 
 ## Authoring
 
-Copy shapes from the [catalog](../skills/k2f/catalog/README.md) into `content/root.json` children. Look up allowed keys in [fields.md](../skills/k2f/references/writing/fields.md), then the matching file under [`schema/`](../skills/k2f/schema/).
+1. Copy golden nodes from the [catalog](reference/catalog.md) into `content/root.json` `children` (keep `id: "root"`; do not replace the file with a catalog fragment).
+2. Look up allowed keys in [Allowed keys](reference/keys.md), then the matching file under [`schema/`](../skills/k2f/schema/).
 
-- [Text](authoring/text.md) — paragraphs, line breaks, headings, emphasis, lists
-- [Images](authoring/images.md) — embedded PNG/JPEG
+Topic guides:
+
+- [Text](authoring/text.md) — paragraphs, headings, lists, inline marks
+- [Images](authoring/images.md) — embedded bitmaps and SVG
 - [Tables](authoring/tables.md) — inline tables
 - [Layout](authoring/layout.md) — stack and grid
 - [Theme and fonts](authoring/theme.md) — roles, variants, embedded fonts
 
 ## Reference
 
-- [Catalog](../skills/k2f/catalog/README.md) — golden `ex_*.json` shapes
-- [Allowed keys](../skills/k2f/references/writing/fields.md) — node, theme, and manifest fields
-- [Format spec](spec/k2f-v0.1.md)
+- [Catalog](reference/catalog.md) — packable `ex_*.json` examples
+- [Allowed keys](reference/keys.md) — node, theme, and manifest fields
+- [Format spec](spec/k2f-v0.3.md)
+
+## Export
+
+Markdown or JSON → packed `.K2F` → PDF, PowerPoint, Word, or InDesign. The lock is the source; each file is a drawing of it.
+
+- [Export](guide/exporting.md) — pipeline and format comparison
+- [PDF](guide/exporting-pdf.md) — fillable AcroForm by default
+- [PowerPoint](guide/exporting-pptx.md)
+- [Word](guide/exporting-docx.md)
+- [InDesign](guide/exporting-idml.md)
 
 ## Guides
 
-- [Markdown conversion](../skills/k2f/references/converting-markdown.md)
-- [Web viewer](../skills/k2f/references/embedding-viewer.md)
+- [Markdown conversion](guide/markdown.md) — Markdown ↔ K2F
+- [Web viewer](guide/web-viewer.md) — embed `<k2f-viewer>` (serve packages over HTTP, not `file://`)
 
-## Also
+Permanent publish links (`/v/{appearance_hash}`) are documented in the [K2F Skill](../skills/k2f/SKILL.md) (`references/publishing.md`).
 
-- [Agent skill](../skills/k2f/SKILL.md) — task playbooks that call the CLI
-- [Project status](guide/status.md)
-- [Desktop reader (in development)](../desktop/k2f_reader/README.md)
-- [Contributing](../CONTRIBUTING.md)
-- [Security](../SECURITY.md)
+## Agents and tools
 
-Contributor internals (engine design, crate map) live under [`architecture/`](architecture/README.md). They are not the authoring docs.
+- [K2F Skill](../skills/k2f/SKILL.md) — install once; workflows for create, convert, export, and embed
+- [Playground](https://k2f.dev/playground) — compile and preview in the browser
+- [Verify](https://k2f.dev/verify) — check a `.K2F` file for integrity banners
+
+## Project
+
+- [Status and roadmap](guide/status.md)
+- [Desktop reader (in development)](../desktop/k2f_reader/README.md) — native lock executor (same rules as the web viewer)
+- [Contributing](../CONTRIBUTING.md) · [Security](../SECURITY.md) · [Compatibility](../COMPATIBILITY.md)
+
+Contributor internals (engine design, crate map): [`architecture/`](architecture/README.md). Not part of the authoring path.

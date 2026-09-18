@@ -3,7 +3,7 @@
 How the reference engine compiles semantic JSON into a deterministic render lock: two-pass layout, paint plan, fixed-point math, and modifier resolution.
 
 **Status:** Shipped in v0.1 (paged documents)  
-**Contract:** [k2f-v0.1.md](../spec/k2f-v0.1.md) · **Roadmap:** [status.md](../guide/status.md)
+**Contract:** [k2f-v0.3.md](../spec/k2f-v0.3.md) · **Roadmap:** [status.md](../guide/status.md)
 
 K2F treats document generation as a compilation process:
 

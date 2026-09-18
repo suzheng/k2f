@@ -1,70 +1,76 @@
-# First document
+# Getting started
 
-Install the toolchain, create an author directory, edit JSON like source, and pack a `.K2F`.
+Create a packed `.K2F`. Two paths: ask an agent, or write the JSON and pack it yourself.
 
-## Install
+To look at a file first, open the [Playground](https://k2f.dev/playground) or a sample in the [Gallery](https://k2f.dev/gallery).
+
+## Use an agent
+
+```bash
+npx skills add suzheng/k2f --skill k2f
+pip install k2f
+```
+
+Works with Cursor, Claude Code, Codex, and other agents that support [`npx skills`](https://github.com/vercel-labs/skills). `pip install k2f` puts the CLI on PATH; the skill scripts call it. If `npx skills` is not available, copy [`skills/k2f/`](https://github.com/suzheng/k2f/tree/main/skills/k2f) into your agent skills path ([skills/README.md](../../skills/README.md)).
+
+Then ask for a document, for example *Write a one-page monthly report.* The agent follows [K2F Skill](../../skills/k2f/SKILL.md).
+
+## Write JSON yourself
+
+### 1. Install the CLI
 
 ```bash
 pip install k2f
 ```
 
-Python 3.9+. Optional: `npm i @openk2f/k2f` for the [web viewer](../../skills/k2f/references/embedding-viewer.md); `cargo install k2f` for a CLI without Python.
+Python 3.9+. This installs the `k2f` CLI and the Python SDK. Optional: `cargo install k2f` for a CLI without Python. Install `@openk2f/k2f` only when you [embed the web viewer](web-viewer.md).
 
-You also need the **skill folder** (starter package, catalog shapes, `init_package.py` / `pack_verify.py`):
+### 2. Get the skill folder
 
-```bash
-npx skills add suzheng/k2f --skill k2f
-```
+Starter package, catalog shapes, and helper scripts live in [`skills/k2f/`](https://github.com/suzheng/k2f/tree/main/skills/k2f). Clone or copy that folder. Run the Python scripts from it (`k2f` must be on `PATH`).
 
-Or clone [`skills/k2f/`](https://github.com/suzheng/k2f/tree/main/skills/k2f) from the repository. Run the Python scripts from that directory (`k2f` must be on `PATH`).
-
-## Create a package
+### 3. Create a package
 
 ```bash
 python scripts/init_package.py --workspace ./out/doc --title "Hello K2F" --page a4
 ```
 
-That writes `./out/doc/source/` (empty `content/root.json`, starter theme, Roboto) and `./out/doc/tmp/` for preview PNGs.
+Writes `./out/doc/source/` (empty `content/root.json`, starter theme, Roboto) and `./out/doc/tmp/` for preview PNGs.
 
-Edit `source/content/root.json`. Keep `id: "root"` and paste catalog nodes into `children` — do not replace `root.json` with a fragment. Start with [`ex_heading.json`](../../skills/k2f/catalog/content/ex_heading.json).
+### 4. Add content
+
+Edit `source/content/root.json`. Keep `id: "root"` and paste catalog nodes into `children`. Do not replace `root.json` with a fragment. Start with [`ex_heading.json`](../../skills/k2f/catalog/content/ex_heading.json).
+
+### 5. Pack and preview
 
 ```bash
 python scripts/pack_verify.py ./out/doc/source -o ./out/doc/doc.K2F --render preview.png
 ```
 
-Expect `UNSIGNED`. Open `./out/doc/tmp/preview.png`. Empty paper in the lower third of a designed sheet means you are not done — see the skill [writing loop](../../skills/k2f/references/writing.md).
+Expect `UNSIGNED`. Open `./out/doc/tmp/preview.png`. If the bottom third of the PNG is blank paper, you are not done — see [visual check](../../skills/k2f/references/writing.md#visual-check).
 
-Existing file: `k2f unpack existing.K2F -o ./out/doc/source` (do not pass `--include-lock`), then the same edit / pack loop.
+Export from the lock (optional):
+
+```bash
+k2f export-pdf  ./out/doc/doc.K2F -o ./out/doc/doc.pdf
+k2f export-pptx ./out/doc/doc.K2F -o ./out/doc/doc.pptx
+k2f export-docx ./out/doc/doc.K2F -o ./out/doc/doc.docx
+k2f export-idml ./out/doc/doc.K2F -o ./out/doc/doc
+```
+
+Guides: [Export](exporting.md) — [PDF](exporting-pdf.md) (fillable AcroForm), [PowerPoint](exporting-pptx.md), [Word](exporting-docx.md), [InDesign](exporting-idml.md).
+
+### Existing file
+
+```bash
+k2f unpack existing.K2F -o ./out/doc/source
+```
+
+Do not pass `--include-lock`. Then the same edit / pack loop.
 
 ## Next
 
-- [Text](../authoring/text.md), [Images](../authoring/images.md), [Tables](../authoring/tables.md), [Layout](../authoring/layout.md), [Theme and fonts](../authoring/theme.md)
-- [Catalog](../../skills/k2f/catalog/README.md) · [Allowed keys](../../skills/k2f/references/writing/fields.md) · [Format spec](../spec/k2f-v0.1.md)
-- [Markdown conversion](../../skills/k2f/references/converting-markdown.md)
-
-## Open a document
-
-Serve files over **HTTP** (WASM does not load from `file://`). Embed with the [web viewer](../../skills/k2f/references/embedding-viewer.md).
-
-**Native reader** ([k2f_reader](../../desktop/k2f_reader/README.md), in development) — same lock-executor rules as the web viewer. Packaged builds: website `/download`. From a clone:
-
-```bash
-cargo run -p k2f_reader -- examples/published/invoice.K2F
-```
-
-## Build from this repository
-
-For contributors, golden tests, and the smoke script.
-
-```bash
-git clone https://github.com/suzheng/k2f.git
-cd k2f
-bash scripts/dev-install.sh
-bash scripts/test-getting-started.sh
-```
-
-`dev-install.sh` creates a Python venv under `sdk/python/.venv`, builds the `k2f` Python package with maturin, and compiles the JS WASM bindings. The smoke script writes a package, exports PDF, confirms `PDF_IS_NOT_A_SOURCE`, and runs `k2f verify`.
-
-On Windows, run the bash scripts in Git Bash or WSL. Rust is only required for this path.
-
-See [Contributing](../../CONTRIBUTING.md) and [project status](status.md).
+- Authoring: [Text](../authoring/text.md), [Images](../authoring/images.md), [Tables](../authoring/tables.md), [Layout](../authoring/layout.md), [Theme and fonts](../authoring/theme.md)
+- Look up: [Catalog](../reference/catalog.md) · [Allowed keys](../reference/keys.md) · [Format spec](../spec/k2f-v0.3.md)
+- [Markdown conversion](markdown.md) · [Export](exporting.md) · [Web viewer](web-viewer.md)
+- Build from a clone: [Contributing](../../CONTRIBUTING.md)

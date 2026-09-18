@@ -5,8 +5,11 @@ Stable package paths for docs and contracts. In a git checkout these are **relat
 | Export | Points to |
 |--------|-----------|
 | `k2f/public/architecture/*` | `docs/architecture/` |
+| `k2f/public/authoring/*` | `docs/authoring/` |
 | `k2f/public/spec/*` | `docs/spec/` |
 | `k2f/public/guide/*` | `docs/guide/` |
+| `k2f/public/reference/catalog.md` | `docs/reference/catalog.md` |
+| `k2f/public/reference/keys.md` | `docs/reference/keys.md` |
 | `k2f/public/docs-readme.md` | `docs/README.md` |
 | `k2f/public/instructions/*` | public authoring docs under `docs/instructions/` |
 | `k2f/public/skills/*` | `skills/` |

@@ -3,7 +3,7 @@
 Why K2F exists, what it optimizes for, and the design rules that must not be compromised.
 
 **Status:** Shipped in v0.1 (paged documents); slide and infinite-canvas modes are roadmap only  
-**Contract:** [k2f-v0.1.md](../spec/k2f-v0.1.md) · **Roadmap:** [status.md](../guide/status.md)
+**Contract:** [k2f-v0.3.md](../spec/k2f-v0.3.md) · **Roadmap:** [status.md](../guide/status.md)
 
 ## Motivation
 
@@ -47,7 +47,7 @@ State A (semantic tree)  →  Reference engine  →  State C (render lock)
 - JSON describing semantic content (headings, tables, text, containers).
 - Mutable; contains no physical coordinates.
 - Uses hierarchical dotted IDs and semantic roles.
-- Lives at `content/root.json` inside the `.K2F` ZIP. Long documents may add referenced `content/**/*.json` fragments via explicit `{ "include": "content/...." }` stubs in container `children` (resolved at pack time into one tree). See [k2f-v0.1.md](../spec/k2f-v0.1.md) for the full container layout.
+- Lives at `content/root.json` inside the `.K2F` ZIP. Long documents may add referenced `content/**/*.json` fragments via explicit `{ "include": "content/...." }` stubs in container `children` (resolved at pack time into one tree). See [k2f-v0.3.md](../spec/k2f-v0.3.md) for the full container layout.
 
 ### Reference engine (not a third on-disk state)
 
@@ -102,7 +102,7 @@ Content nodes express intent, not exact style.
 - **Role** — semantic meaning and structure (e.g. `warning`, `card`, `h1`).
 - **Variant** — visual skin without role explosion (e.g. `role: "card", variant: "glass"`).
 
-Role names, modifier types, and theme rules are defined in [k2f-v0.1.md](../spec/k2f-v0.1.md).
+Role names, modifier types, and theme rules are defined in [k2f-v0.3.md](../spec/k2f-v0.3.md).
 
 ### Data handling
 
@@ -252,7 +252,7 @@ This remains roadmap, not shipped.
 
 ## Related documents
 
-- [k2f-v0.1.md](../spec/k2f-v0.1.md) — format contract (paths, fields, validation). Spec "State B" means the compile phase (`k2f_layout`); it is not a third on-disk file in the package.
+- [k2f-v0.3.md](../spec/k2f-v0.3.md) — format contract (paths, processing, integrity). The compile step is not a third on-disk file in the package.
 - [agent_v0.md](../instructions/agent_v0.md) — narrow SDK agent dialect (not the full format)
 - [codebase.md](codebase.md) — repository and crate map
 - [layout-engine.md](layout-engine.md) — compile pipeline, two-pass layout, paint plan

@@ -18,6 +18,6 @@ Design rationale, repository map, and engine internals for K2F contributors.
 | [layout-engine.md](layout-engine.md) | Engine contributors | Shipped (paged mode) |
 | [editor.md](editor.md) | Future UI work | Design proposal only |
 
-Format contract (paths, fields, validation): [k2f-v0.1.md](../spec/k2f-v0.1.md). When this series disagrees with the spec or `schema/*.json`, the spec wins.
+Format contract (paths, fields, validation): [k2f-v0.3.md](../spec/k2f-v0.3.md). When this series disagrees with the spec or `schema/*.json`, the spec wins.
 
 Shipped vs roadmap: [status.md](../guide/status.md)

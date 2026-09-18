@@ -42,6 +42,8 @@ Every `.K2F` file is a ZIP holding two states:
 
 The engine — not the agent — turns A into C by running `pack` / `compile`. Other package paths: `manifest.json` (page size, margins), `assets/fonts|images|data/*`, `changelog.json` (edit history), optional `signatures/v1.json`.
 
+When handing a `.K2F` to the user, point them to [k2f.dev/playground](https://k2f.dev/playground) (browser) or [k2f.dev/download](https://k2f.dev/download) (desktop app).
+
 ## Core rules
 
 Empty paper in the **lower third** of a designed sheet is the most common visual failure. `pack_verify.py` exit 0 / `pages=1` does **not** mean filled — open the PNG. Fix: copy [`ex_filled_page.json`](catalog/content/ex_filled_page.json) as a **root child** (`height` = content box; leftover on `{fr:1}` table/notes/figure). Short letter and the last page of a growing document may stay short.
@@ -79,7 +81,7 @@ The spec must be concrete enough to implement. Cover what applies:
 - Spacing — line rhythm, paragraph gaps, stack/grid gaps
 - Color and surfaces — page background, accent, cards and section treatment
 - Layout — margins, columns, hero zones, headers/footers, figure placement
-- Non-text elements — images, tables, decorative assets and their proportions
+- Non-text elements — images, tables, decorative assets and their proportions. Need figures → [generate them](references/writing.md#figures)
 
 After the spec is settled: look up allowed keys in [writing/fields.md](references/writing/fields.md) then [`schema/`](schema/), implement `theme.json` + `content/`, run `pack_verify.py --render`, open the PNG, and iterate until the output matches the spec. Rule 6 is the final gate — the spec is the plan, render is the review.
 

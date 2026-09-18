@@ -3,7 +3,7 @@
 Map of the K2F repository for contributors: crates, compile vs execute, and where to find code by responsibility.
 
 **Status:** Shipped in v0.1  
-**Contract:** [k2f-v0.1.md](../spec/k2f-v0.1.md) · **Roadmap:** [status.md](../guide/status.md)
+**Contract:** [k2f-v0.3.md](../spec/k2f-v0.3.md) · **Roadmap:** [status.md](../guide/status.md)
 
 ## Skill audience (non-negotiable)
 
@@ -29,7 +29,7 @@ K2F authors describe meaning:
 
 The reference engine computes position, color, and appearance—consistently on every device. Opening a locked `.K2F` file does **not** re-layout body text; viewers execute `document.K2F.lock` only.
 
-Design rationale: [design.md](design.md). Format fields: [k2f-v0.1.md](../spec/k2f-v0.1.md).
+Design rationale: [design.md](design.md). Format fields: [k2f-v0.3.md](../spec/k2f-v0.3.md).
 
 ## Project structure
 

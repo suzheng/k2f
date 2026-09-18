@@ -3,7 +3,7 @@
 Candidate architecture for a future web-native writing UI. This is **not** the shipped editing surface in v0.1.
 
 **Status:** Design proposal (not implemented)  
-**Contract:** [k2f-v0.1.md](../spec/k2f-v0.1.md) · **Roadmap:** [status.md](../guide/status.md)
+**Contract:** [k2f-v0.3.md](../spec/k2f-v0.3.md) · **Roadmap:** [status.md](../guide/status.md)
 
 ## What ships today
 
