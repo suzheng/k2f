@@ -1,6 +1,7 @@
 use crate::coord::millipt_to_pt;
 use k2f_core::{GeometryNode, GridTrack};
 
+#[allow(dead_code)]
 pub(super) fn col_widths_from_row(row: &[GeometryNode], table: &GeometryNode) -> Vec<f64> {
     let n = row.len();
     (0..n)
@@ -15,6 +16,7 @@ pub(super) fn col_widths_from_row(row: &[GeometryNode], table: &GeometryNode) ->
         .collect()
 }
 
+#[allow(dead_code)]
 pub(super) fn row_heights_pt(rows: &[&[GeometryNode]], table: &GeometryNode) -> Vec<f64> {
     rows.iter()
         .enumerate()

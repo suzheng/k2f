@@ -104,6 +104,70 @@ pub fn resolve_font_family_key(font_family: &str, theme: &Theme) -> String {
         .unwrap_or_else(|| font_family.to_string())
 }
 
+fn slot_stem(slot: &Option<String>, theme: &Theme) -> Option<String> {
+    slot.as_ref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| resolve_font_family_key(s, theme))
+}
+
+fn lookup_font_faces<'a>(
+    family: &str,
+    alias: &str,
+    theme: &'a Theme,
+) -> Option<&'a crate::theme::FontFaceSlots> {
+    if let Some(faces) = theme.font_faces.get(family) {
+        return Some(faces);
+    }
+    if let Some(faces) = theme.font_faces.get(alias) {
+        return Some(faces);
+    }
+    // Starter roles name the Regular stem. Match a group whose regular slot is that stem.
+    let mut best_key: Option<&str> = None;
+    let mut best_slots: Option<&crate::theme::FontFaceSlots> = None;
+    for (key, slots) in &theme.font_faces {
+        let regular = slot_stem(&slots.regular, theme);
+        if regular.as_deref() == Some(alias) || regular.as_deref() == Some(family) {
+            if best_key.map(|prev| key.as_str() < prev).unwrap_or(true) {
+                best_key = Some(key.as_str());
+                best_slots = Some(slots);
+            }
+        }
+    }
+    best_slots
+}
+
+/// Resolve `(family, bold, italic)` to an embedded file stem via optional `font_faces`.
+///
+/// Missing slots keep the Regular (or aliased) stem; paint synthesizes weight/slant.
+/// Declared stems that are not embedded fail later as `FONT_MISSING`.
+pub fn resolve_face_key(family: &str, bold: bool, italic: bool, theme: &Theme) -> String {
+    let alias = resolve_font_family_key(family, theme);
+    let Some(faces) = lookup_font_faces(family, &alias, theme) else {
+        return alias;
+    };
+    match (bold, italic) {
+        (true, true) => slot_stem(&faces.bold_italic, theme)
+            .or_else(|| slot_stem(&faces.bold, theme))
+            .or_else(|| slot_stem(&faces.italic, theme))
+            .or_else(|| slot_stem(&faces.regular, theme))
+            .unwrap_or(alias),
+        (true, false) => slot_stem(&faces.bold, theme)
+            .or_else(|| slot_stem(&faces.regular, theme))
+            .unwrap_or(alias),
+        (false, true) => slot_stem(&faces.italic, theme)
+            .or_else(|| slot_stem(&faces.regular, theme))
+            .unwrap_or(alias),
+        (false, false) => slot_stem(&faces.regular, theme).unwrap_or(alias),
+    }
+}
+
+impl Style {
+    pub fn face_key(&self, theme: &Theme) -> String {
+        resolve_face_key(&self.font_family, self.bold, self.italic, theme)
+    }
+}
+
 fn role_text_complete(rs: &crate::theme::RoleStyle) -> bool {
     !rs.font_family.is_empty()
         && rs.font_size.0 != 0
@@ -339,6 +403,7 @@ mod tests {
                 italic: false,
                 letter_spacing_pt: Pt::ZERO,
                 first_line_indent_pt: Pt::ZERO,
+                image_fit: None,
                 variants: HashMap::new(),
             },
         );
@@ -357,6 +422,7 @@ mod tests {
                 italic: false,
                 letter_spacing_pt: Pt::ZERO,
                 first_line_indent_pt: Pt::ZERO,
+                image_fit: None,
                 variants: HashMap::new(),
             },
         );
@@ -367,6 +433,7 @@ mod tests {
             roles,
             modifiers: ModifierTheme::default(),
             font_aliases: HashMap::new(),
+            font_faces: HashMap::new(),
         }
     }
 
@@ -546,5 +613,129 @@ mod tests {
         let err = validate_role_text_fields(&theme).unwrap_err();
         assert!(err.contains("rule"), "{err}");
         assert!(err.contains("default"), "{err}");
+    }
+
+    fn faces_theme() -> Theme {
+        serde_json::from_str(
+            r#"{
+      "palette": {},
+      "font_aliases": {
+        "Roboto": "Roboto-Regular",
+        "Roboto-Regular": "Roboto-Regular",
+        "Roboto-Bold": "Roboto-Bold",
+        "Roboto-Italic": "Roboto-Italic",
+        "Roboto-BoldItalic": "Roboto-BoldItalic"
+      },
+      "font_faces": {
+        "Roboto": {
+          "regular": "Roboto-Regular",
+          "bold": "Roboto-Bold",
+          "italic": "Roboto-Italic",
+          "bold_italic": "Roboto-BoldItalic"
+        }
+      },
+      "roles": {
+        "default": { "font_family": "Roboto", "font_size": 12000, "line_height_mult": 1400, "color": "black" }
+      }
+    }"#,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn face_key_picks_bold_italic_slots() {
+        let theme = faces_theme();
+        assert_eq!(
+            resolve_face_key("Roboto", false, false, &theme),
+            "Roboto-Regular"
+        );
+        assert_eq!(
+            resolve_face_key("Roboto", true, false, &theme),
+            "Roboto-Bold"
+        );
+        assert_eq!(
+            resolve_face_key("Roboto", false, true, &theme),
+            "Roboto-Italic"
+        );
+        assert_eq!(
+            resolve_face_key("Roboto", true, true, &theme),
+            "Roboto-BoldItalic"
+        );
+    }
+
+    #[test]
+    fn face_key_missing_bold_italic_falls_back_to_bold() {
+        let theme: Theme = serde_json::from_str(
+            r#"{
+      "palette": {},
+      "font_aliases": {
+        "Roboto": "Roboto-Regular",
+        "Roboto-Regular": "Roboto-Regular",
+        "Roboto-Bold": "Roboto-Bold"
+      },
+      "font_faces": {
+        "Roboto": { "regular": "Roboto-Regular", "bold": "Roboto-Bold" }
+      },
+      "roles": {
+        "default": { "font_family": "Roboto", "font_size": 12000, "line_height_mult": 1400, "color": "black" }
+      }
+    }"#,
+        )
+        .unwrap();
+        assert_eq!(
+            resolve_face_key("Roboto", true, true, &theme),
+            "Roboto-Bold"
+        );
+    }
+
+    #[test]
+    fn face_key_matches_regular_stem_used_as_family() {
+        let theme = faces_theme();
+        assert_eq!(
+            resolve_face_key("Roboto-Regular", true, false, &theme),
+            "Roboto-Bold"
+        );
+    }
+
+    #[test]
+    fn family_name_without_alias_selects_slots() {
+        let theme: Theme = serde_json::from_str(
+            r#"{
+      "palette": {},
+      "font_faces": {
+        "Roboto": { "regular": "Roboto-Regular", "bold": "Roboto-Bold" }
+      },
+      "roles": {
+        "default": { "font_family": "Roboto", "font_size": 12000, "line_height_mult": 1400, "color": "black" }
+      }
+    }"#,
+        )
+        .unwrap();
+        assert_eq!(
+            resolve_face_key("Roboto", false, false, &theme),
+            "Roboto-Regular"
+        );
+        assert_eq!(
+            resolve_face_key("Roboto", true, false, &theme),
+            "Roboto-Bold"
+        );
+    }
+
+    #[test]
+    fn omitted_font_faces_keep_aliased_stem() {
+        let theme: Theme = serde_json::from_str(
+            r#"{
+      "palette": {},
+      "font_aliases": { "Roboto-Regular": "Roboto-Regular" },
+      "roles": {
+        "default": { "font_family": "Roboto-Regular", "font_size": 12000, "line_height_mult": 1400, "color": "black" }
+      }
+    }"#,
+        )
+        .unwrap();
+        assert_eq!(
+            resolve_face_key("Roboto-Regular", true, false, &theme),
+            "Roboto-Regular"
+        );
     }
 }

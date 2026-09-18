@@ -3,7 +3,7 @@ use ttf_parser::{Face, GlyphId, OutlineBuilder};
 
 use crate::coord::pdf_y;
 use crate::draw::PageDraw;
-use k2f_paint::PlacedGlyph;
+use k2f_paint::{PlacedGlyph, TextDecorationLine};
 
 pub fn draw_glyph(page: &mut PageDraw, faces: &HashMap<String, Face<'_>>, g: &PlacedGlyph) {
     let Some(face) = k2f_paint::face_for(faces, &g.font_family) else {
@@ -24,12 +24,12 @@ pub fn draw_glyph(page: &mut PageDraw, faces: &HashMap<String, Face<'_>>, g: &Pl
         scale,
         origin_x,
         origin_y,
-        italic: g.italic,
+        italic: g.synthetic_italic(face),
         last_x: 0.0,
         last_y: 0.0,
     };
     let _ = face.outline_glyph(GlyphId(g.glyph_id), &mut outline);
-    let stroke_pt = g.synthetic_bold_stroke_pt();
+    let stroke_pt = g.synthetic_bold_stroke_pt(face);
     if stroke_pt > 0.0 {
         page.content
             .set_stroke_rgb(r as f32 / 255.0, green as f32 / 255.0, blue as f32 / 255.0);
@@ -38,6 +38,22 @@ pub fn draw_glyph(page: &mut PageDraw, faces: &HashMap<String, Face<'_>>, g: &Pl
     } else {
         page.content.fill_nonzero();
     }
+}
+
+pub fn draw_decoration_line(page: &mut PageDraw, line: &TextDecorationLine) {
+    if line.rgba[3] == 0 || line.thickness_pt <= 0.0 || line.x1_pt <= line.x0_pt {
+        return;
+    }
+    page.note_decoration(line.x0_pt, line.y_pt, line.x1_pt, line.thickness_pt);
+    let [r, g, b, _] = line.rgba;
+    let y = pdf_y(page.page_h, line.y_pt);
+    page.content
+        .set_stroke_rgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0);
+    page.content.set_line_width(line.thickness_pt as f32);
+    page.content.set_dash_pattern([], 0.0);
+    page.content.move_to(line.x0_pt as f32, y);
+    page.content.line_to(line.x1_pt as f32, y);
+    page.content.stroke();
 }
 
 struct PdfOutline<'a> {

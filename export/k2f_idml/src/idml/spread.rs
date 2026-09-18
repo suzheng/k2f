@@ -221,14 +221,31 @@ fn framed_image_xml(
     let name = escape_xml(name);
     let type_name = image_type_name(&pic.ext);
     let b64 = b64_76(&pic.bytes);
-    let left = fmt_pt(-w / 2.0);
-    let top = fmt_pt(-h / 2.0);
-    let right = fmt_pt(w / 2.0);
-    let bottom = fmt_pt(h / 2.0);
+    let (gw, gh) = image_graphic_size(pic, w, h);
+    let left = fmt_pt(-gw / 2.0);
+    let top = fmt_pt(-gh / 2.0);
+    let right = fmt_pt(gw / 2.0);
+    let bottom = fmt_pt(gh / 2.0);
+    let corners = if pic.corner_pt > 0.0 {
+        let r = fmt_pt(pic.corner_pt);
+        format!(
+            " CornerOption=\"RoundedCorner\" CornerRadius=\"{r}\" \
+             TopLeftCornerOption=\"RoundedCorner\" TopLeftCornerRadius=\"{r}\" \
+             TopRightCornerOption=\"RoundedCorner\" TopRightCornerRadius=\"{r}\" \
+             BottomLeftCornerOption=\"RoundedCorner\" BottomLeftCornerRadius=\"{r}\" \
+             BottomRightCornerOption=\"RoundedCorner\" BottomRightCornerRadius=\"{r}\""
+        )
+    } else {
+        String::new()
+    };
+    let fitting = if pic.fill_proportionally {
+        "        <FrameFittingOption FittingOnEmptyFrame=\"FillProportionally\" FittingAlignment=\"CenterAlignment\"/>\n"
+    } else {
+        ""
+    };
     format!(
-        r#"    <Rectangle Self="{rect_id}" ContentType="GraphicType" ItemLayer="kLayer" FillColor="Swatch/None" StrokeWeight="0" ItemTransform="{tf}" Name="{name}">
-{geo}
-      <Image Self="{img_id}" ImageTypeName="{type_name}" Space="RGB" ItemTransform="1 0 0 1 0 0">
+        r#"    <Rectangle Self="{rect_id}" ContentType="GraphicType" ItemLayer="kLayer" FillColor="Swatch/None" StrokeWeight="0"{corners} ItemTransform="{tf}" Name="{name}">
+{geo}{fitting}      <Image Self="{img_id}" ImageTypeName="{type_name}" Space="RGB" ItemTransform="1 0 0 1 0 0">
         <Properties>
           <GraphicBounds Left="{left}" Top="{top}" Right="{right}" Bottom="{bottom}"/>
           <Contents>
@@ -239,6 +256,15 @@ fn framed_image_xml(
     </Rectangle>
 "#
     )
+}
+
+fn image_graphic_size(pic: &PictureBox, frame_w: f64, frame_h: f64) -> (f64, f64) {
+    if pic.fill_proportionally {
+        if let Ok(img) = k2f_paint::decode_raster(&pic.bytes) {
+            return (img.width() as f64, img.height() as f64);
+        }
+    }
+    (frame_w, frame_h)
 }
 
 fn stroke_attrs(shape: &ShapeBox) -> String {

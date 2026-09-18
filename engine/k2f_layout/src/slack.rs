@@ -29,7 +29,7 @@ const MIN_UNUSED_ABS: i128 = 36_000;
 
 const GROWER_HINT: &str = "nest {fr:1} in the grower; do not pack an auto-height stack";
 const PAGE_HINT_ONE: &str =
-    "one-page form: copy ex_filled_page.json; leftover on table or notes {fr:1}";
+    "one-page form: copy ex_filled_page.json; set height to page_h − margins; leftover on table or notes {fr:1}";
 const PAGE_HINT_MID: &str =
     "do not pre-paginate with break_before; one flow tree, engine fills the page";
 

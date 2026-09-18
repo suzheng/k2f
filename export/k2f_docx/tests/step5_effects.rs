@@ -78,6 +78,8 @@ fn filter_ops_drops_draw_text() {
             node_id: "logo".into(),
             rect: dummy_rect(),
             src: "assets/images/logo.png".into(),
+            fit: Default::default(),
+            corner_radius_pt: None,
         },
     ];
     let filtered = filter_chrome_ops(&ops, &glass_keep());
@@ -196,8 +198,8 @@ fn glass_fixture_raster_plus_editable_title() {
         "title must remain editable w:t"
     );
     assert!(
-        xml.contains("k2f-raster:card.glass"),
-        "glass card must be a k2f-raster pic"
+        xml.contains("<a:blipFill>"),
+        "folded glass chrome must be a blipFill"
     );
     let parsed = roxmltree::Document::parse(&xml).unwrap();
     let raster_docpr_count = parsed
@@ -210,8 +212,8 @@ fn glass_fixture_raster_plus_editable_title() {
         })
         .count();
     assert_eq!(
-        raster_docpr_count, 1,
-        "glass must emit one raster anchor (not duplicate blur+alpha slices)"
+        raster_docpr_count, 0,
+        "glass title folds into the shell text box; must not keep a sibling k2f-raster pic"
     );
     assert!(
         xml.contains("w:txbxContent") || xml.contains("wps:txbx"),
@@ -227,12 +229,9 @@ fn glass_fixture_raster_plus_editable_title() {
     assert!(png.len() > 64);
     let glass = parsed
         .descendants()
-        .find(|n| {
-            n.has_tag_name("docPr")
-                && common::local_attr(n, "name") == Some("k2f-raster:card.glass")
-        })
+        .find(|n| n.has_tag_name("docPr") && common::local_attr(n, "name") == Some("card.glass"))
         .and_then(|pr| pr.ancestors().find(|n| n.has_tag_name("anchor")))
-        .expect("glass raster anchor");
+        .expect("folded glass text box");
     assert!(
         glass.descendants().any(|n| n.has_tag_name("blipFill")),
         "glass chrome must be a shape blipFill so Writer z-orders it with text"
@@ -246,10 +245,10 @@ fn glass_fixture_raster_plus_editable_title() {
         "pic:pic would paint above later text boxes in LibreOffice Writer"
     );
     assert!(
-        !glass
+        glass
             .descendants()
             .any(|n| n.has_tag_name("txbx") || n.has_tag_name("txbxContent")),
-        "empty txBox on an overlapped glass raster covers later labels in Writer, got {xml}"
+        "folded glass must keep the editable title in the same frame, got {xml}"
     );
 }
 

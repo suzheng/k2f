@@ -1,6 +1,6 @@
 use crate::ir::PictureBox;
 use crate::IdmlError;
-use k2f_core::Rect;
+use k2f_core::{ImageFit, Rect};
 use k2f_paint::{decode_raster, letterbox_rect, lookup_image};
 use std::collections::BTreeMap;
 use std::io::Cursor;
@@ -11,10 +11,15 @@ pub fn picture_from_draw(
     src: &str,
     assets: &BTreeMap<String, Vec<u8>>,
     media_index: u32,
+    fit: ImageFit,
+    corner_radius_pt: Option<i64>,
 ) -> Result<PictureBox, IdmlError> {
     let bytes = lookup_image(assets, src)
         .ok_or_else(|| IdmlError::Write(format!("missing image '{src}'")))?;
-    let dest = dest_rect_for_image(rect, bytes);
+    let dest = match fit {
+        ImageFit::Cover => rect.clone(),
+        ImageFit::Contain => dest_rect_for_image(rect, bytes),
+    };
     let (ext, payload) = encode_media(bytes)?;
     Ok(PictureBox {
         node_id: node_id.to_string(),
@@ -22,6 +27,8 @@ pub fn picture_from_draw(
         raster_name: format!("image{media_index}.{ext}"),
         bytes: payload,
         ext: ext.to_string(),
+        corner_pt: corner_radius_pt.unwrap_or(0).max(0) as f64 / 1000.0,
+        fill_proportionally: matches!(fit, ImageFit::Cover),
     })
 }
 
@@ -74,4 +81,47 @@ fn looks_like_svg(bytes: &[u8]) -> bool {
     let s = String::from_utf8_lossy(bytes);
     let trimmed = s.trim_start().to_ascii_lowercase();
     trimmed.starts_with("<svg") || (trimmed.starts_with("<?xml") && trimmed.contains("<svg"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use image::codecs::png::PngEncoder;
+    use image::{ExtendedColorType, ImageEncoder};
+    use k2f_core::Pt;
+
+    fn rgb_png(w: u32, h: u32) -> Vec<u8> {
+        let pixels = vec![0u8; (w * h * 3) as usize];
+        let mut out = Cursor::new(Vec::new());
+        PngEncoder::new(&mut out)
+            .write_image(&pixels, w, h, ExtendedColorType::Rgb8)
+            .unwrap();
+        out.into_inner()
+    }
+
+    #[test]
+    fn cover_uses_full_box_and_fill_proportionally() {
+        let bytes = rgb_png(20, 10);
+        let mut assets = BTreeMap::new();
+        assets.insert("wide.png".into(), bytes);
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(100_000),
+            height: Pt(100_000),
+        };
+        let pic = picture_from_draw(
+            "pic",
+            &rect,
+            "wide.png",
+            &assets,
+            1,
+            ImageFit::Cover,
+            Some(12_000),
+        )
+        .unwrap();
+        assert_eq!(pic.rect, rect);
+        assert!(pic.fill_proportionally);
+        assert!((pic.corner_pt - 12.0).abs() < 0.001);
+    }
 }

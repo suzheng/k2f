@@ -125,6 +125,8 @@ fn filter_ops_drops_draw_text() {
             node_id: "logo".into(),
             rect: dummy_rect(),
             src: "assets/images/logo.png".into(),
+            fit: Default::default(),
+            corner_radius_pt: None,
         },
     ];
     let filtered = filter_chrome_ops(&ops, &glass_keep());

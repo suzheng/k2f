@@ -74,8 +74,13 @@ fn cell_xml(cell: &TableCell, hyperlink_rids: &BTreeMap<String, String>) -> Stri
     };
     let cell_id = escape_xml(&cell.node_id);
     let anchor = if cell.vert_center { "ctr" } else { "t" };
+    let span_attr = if cell.colspan > 1 {
+        format!(" gridSpan=\"{}\"", cell.colspan)
+    } else {
+        String::new()
+    };
     format!(
-        r#"            <a:tc>
+        r#"            <a:tc{span_attr}>
               <a:txBody>
                 <a:bodyPr wrap="square" lIns="0" tIns="{tins}" rIns="0" bIns="0" rtlCol="0" anchor="{anchor}"/>
                 <a:lstStyle/>
@@ -129,6 +134,8 @@ mod tests {
             preserve_whitespace: false,
             borders,
             vert_center: false,
+            colspan: 1,
+            start_col: 0,
             t_ins_emu: 0,
             line_spc_pts: None,
         }
@@ -217,6 +224,17 @@ mod tests {
         assert!(
             !xml.contains(r#"marT="88900""#),
             "must not double the inset on tcPr marT, got {xml}"
+        );
+    }
+
+    #[test]
+    fn colspan_emits_grid_span() {
+        let mut cell = dummy_cell(TextAlign::Left, CellBorders::default());
+        cell.colspan = 2;
+        let xml = cell_xml(&cell, &BTreeMap::new());
+        assert!(
+            xml.contains(r#"<a:tc gridSpan="2">"#),
+            "spanned cell must set a:tc gridSpan, got {xml}"
         );
     }
 }

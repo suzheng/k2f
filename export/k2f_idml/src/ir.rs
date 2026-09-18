@@ -107,7 +107,7 @@ impl TextRun {
 
     /// Faux italic when paint asked for italic but the face is not italic.
     pub fn synthetic_skew_deg(&self) -> Option<f64> {
-        if self.italic && !face_style_is_italic(&self.face_style) {
+        if self.italic && !k2f_paint::face_style_is_italic(&self.face_style) {
             Some(SYNTHETIC_ITALIC_SKEW_DEG)
         } else {
             None
@@ -116,21 +116,12 @@ impl TextRun {
 
     /// Faux bold when paint asked for bold but the face is not bold.
     pub fn synthetic_stroke_pt(&self) -> Option<f64> {
-        if self.bold && !face_style_is_bold(&self.face_style) && self.size_pt > 0.0 {
+        if self.bold && !k2f_paint::face_style_is_bold(&self.face_style) && self.size_pt > 0.0 {
             Some(self.size_pt / SYNTHETIC_BOLD_EM)
         } else {
             None
         }
     }
-}
-
-fn face_style_is_italic(style: &str) -> bool {
-    let l = style.to_ascii_lowercase();
-    l.contains("italic") || l.contains("oblique")
-}
-
-fn face_style_is_bold(style: &str) -> bool {
-    style.to_ascii_lowercase().contains("bold")
 }
 
 #[derive(Clone, Debug)]
@@ -197,6 +188,9 @@ pub struct PictureBox {
     pub raster_name: String,
     pub bytes: Vec<u8>,
     pub ext: String,
+    pub corner_pt: f64,
+    /// Fill the frame proportionally (cover). False = letterboxed dest already.
+    pub fill_proportionally: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -223,6 +217,10 @@ pub struct TableCell {
     pub fill_hex: Option<String>,
     pub borders: CellBorders,
     pub vert_center: bool,
+    /// Same-row occupancy; 1 means one InDesign column.
+    pub colspan: u32,
+    /// Visual start column (0-based); also the Cell `Name` column index.
+    pub start_col: usize,
     pub inset_top: f64,
     pub inset_left: f64,
     pub inset_bottom: f64,

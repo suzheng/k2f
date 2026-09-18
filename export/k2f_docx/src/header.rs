@@ -98,8 +98,23 @@ pub(crate) fn collect_running(
                     .map(PageElement::Shape),
                 );
             }
-            PaintOp::DrawImage { rect, src, .. } => {
-                let pic = picture_from_draw(node_id, rect, src, assets, *media_n, rel)?;
+            PaintOp::DrawImage {
+                rect,
+                src,
+                fit,
+                corner_radius_pt,
+                ..
+            } => {
+                let pic = picture_from_draw(
+                    node_id,
+                    rect,
+                    src,
+                    assets,
+                    *media_n,
+                    rel,
+                    *fit,
+                    *corner_radius_pt,
+                )?;
                 *media_n = media_n.saturating_add(1);
                 els.push(PageElement::Picture(pic));
             }

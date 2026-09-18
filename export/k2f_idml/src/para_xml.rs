@@ -503,4 +503,20 @@ mod tests {
         assert!(xml.contains(r#"FontStyle="Italic""#), "got {xml}");
         assert!(!xml.contains("Skew="), "real italic must not faux-skew, got {xml}");
     }
+
+    #[test]
+    fn real_bold_face_is_not_stroked() {
+        let mut run = default_run();
+        run.text = "Title".into();
+        run.bold = true;
+        run.face_style = "Bold".into();
+        run.size_pt = 24.0;
+        let mut hts = 0usize;
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0, 0.0, false);
+        assert!(xml.contains(r#"FontStyle="Bold""#), "got {xml}");
+        assert!(
+            !xml.contains("StrokeWeight="),
+            "real bold must not faux-stroke, got {xml}"
+        );
+    }
 }

@@ -348,6 +348,11 @@ mod tests {
             bytes: vec![],
             relative_height: 0,
             pin_empty_txbox: true,
+            src_l: 0,
+            src_t: 0,
+            src_r: 0,
+            src_b: 0,
+            corner_emu: 0,
         };
         let xml = raster_anchor(&pic, 2, "rId5");
         assert!(xml.contains("name=\"k2f-raster:snap.shell\""), "{xml}");

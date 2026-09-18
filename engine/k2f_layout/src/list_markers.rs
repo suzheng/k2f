@@ -167,6 +167,7 @@ mod tests {
                 italic: false,
                 letter_spacing_pt: Pt::ZERO,
                 first_line_indent_pt: Pt::ZERO,
+                image_fit: None,
                 variants: HashMap::new(),
             },
         );
@@ -177,6 +178,7 @@ mod tests {
             roles,
             modifiers: crate::ModifierTheme::default(),
             font_aliases: HashMap::new(),
+            font_faces: HashMap::new(),
         }
     }
 

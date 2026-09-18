@@ -39,8 +39,22 @@ fn export_pdf_draws_invoice_lock_not_a_second_layout() {
         "default export must not add trust-pack captions"
     );
     assert!(
+        pdf.windows(14).any(|w| w == b"K2F PDF bridge"),
+        "default export must embed Producer K2F PDF bridge"
+    );
+    assert!(
         !pdf.windows(9).any(|w| w == b"/AcroForm"),
         "invoice has no form fields so default PDF must not write /AcroForm"
+    );
+    let checker = repo_root().join("skills/k2f/scripts/check-pdf.py");
+    let check = Command::new("python3")
+        .args([checker.to_str().unwrap(), out.to_str().unwrap()])
+        .output()
+        .expect("python3 to run check-pdf.py");
+    assert!(
+        check.status.success(),
+        "check-pdf.py must accept a clean default export: {}",
+        String::from_utf8_lossy(&check.stderr)
     );
     // Page count vs lock is covered by k2f_pdf::tests::verify_page and export_opened tests.
 }

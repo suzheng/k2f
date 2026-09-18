@@ -15,6 +15,7 @@ pub const CODE_UNEXPECTED_PATH: &str = "UNEXPECTED_PATH";
 pub const CODE_UNKNOWN_PAINT_OP: &str = "UNKNOWN_PAINT_OP";
 pub const CODE_PDF_IS_NOT_A_SOURCE: &str = "PDF_IS_NOT_A_SOURCE";
 pub const CODE_IMAGE_SIZE: &str = "IMAGE_SIZE";
+pub const CODE_SVG_TEXT: &str = "SVG_TEXT";
 
 #[derive(Debug, Error)]
 pub enum PackageError {
@@ -30,6 +31,8 @@ pub enum PackageError {
     PdfIsNotASource,
     #[error("{CODE_IMAGE_SIZE}: {0}")]
     ImageSize(String),
+    #[error("{CODE_SVG_TEXT}: {0}")]
+    SvgText(String),
     #[error("package error: {0}")]
     Other(String),
 }

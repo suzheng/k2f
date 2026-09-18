@@ -32,8 +32,8 @@ pub(crate) fn table_xml(tbl: &TableBox, table_self: &str) -> String {
     }
     let mut hts = 0usize;
     for (r, row) in tbl.rows.iter().enumerate() {
-        for (c, cell) in row.cells.iter().enumerate() {
-            inner.push_str(&cell_xml(table_self, r, c, cell, &mut hts));
+        for cell in row.cells.iter() {
+            inner.push_str(&cell_xml(table_self, r, cell.start_col, cell, &mut hts));
         }
     }
     format!(
@@ -63,8 +63,9 @@ fn cell_xml(table_self: &str, r: usize, c: usize, cell: &TableCell, hts: &mut us
         fmt_pt(cell.inset_right),
     );
     let paras = para_xml::write_paras(cell.align, &cell.runs, hts, false, 0.0, 0.0, true);
+    let column_span = cell.colspan.max(1);
     format!(
-        "      <Cell Self=\"{table_self}_r{r}c{c}\" Name=\"{c}:{r}\" RowSpan=\"1\" ColumnSpan=\"1\" AppliedCellStyle=\"CellStyle/$ID/[None]\" Justification=\"{just}\" VerticalJustification=\"{vert}\" {fill}{edges}{insets}>\n{paras}      </Cell>\n"
+        "      <Cell Self=\"{table_self}_r{r}c{c}\" Name=\"{c}:{r}\" RowSpan=\"1\" ColumnSpan=\"{column_span}\" AppliedCellStyle=\"CellStyle/$ID/[None]\" Justification=\"{just}\" VerticalJustification=\"{vert}\" {fill}{edges}{insets}>\n{paras}      </Cell>\n"
     )
 }
 
@@ -110,6 +111,8 @@ mod tests {
             fill_hex: None,
             borders: CellBorders::default(),
             vert_center: false,
+            colspan: 1,
+            start_col: 2,
             inset_top: 5.0,
             inset_left: 6.0,
             inset_bottom: 0.0,
@@ -132,6 +135,40 @@ mod tests {
         assert!(
             xml.contains(r#"TextRightInset="0.000""#),
             "must write 0 right inset, got {xml}"
+        );
+    }
+
+    #[test]
+    fn cell_xml_writes_column_span() {
+        let mut cell = TableCell {
+            node_id: "c".into(),
+            runs: Vec::new(),
+            align: TextAlign::Left,
+            fill_hex: None,
+            borders: CellBorders::default(),
+            vert_center: false,
+            colspan: 2,
+            start_col: 0,
+            inset_top: 0.0,
+            inset_left: 0.0,
+            inset_bottom: 0.0,
+            inset_right: 0.0,
+        };
+        let mut hts = 0usize;
+        let xml = cell_xml("kTbl0", 1, cell.start_col, &cell, &mut hts);
+        assert!(
+            xml.contains(r#"ColumnSpan="2""#),
+            "spanned cell must set ColumnSpan, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"Name="0:1""#),
+            "Name must use visual start column, got {xml}"
+        );
+        cell.colspan = 1;
+        let xml = cell_xml("kTbl0", 1, 2, &cell, &mut hts);
+        assert!(
+            xml.contains(r#"ColumnSpan="1""#),
+            "default occupancy stays 1, got {xml}"
         );
     }
 }

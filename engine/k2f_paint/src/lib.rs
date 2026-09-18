@@ -2,6 +2,7 @@ mod banner;
 mod blit;
 mod blur;
 mod box_op;
+mod decoration;
 mod document;
 mod error;
 mod executor;
@@ -20,6 +21,7 @@ mod text;
 mod text_layer;
 
 pub use banner::Banner;
+pub use decoration::{decoration_lines, TextDecorationLine};
 pub use document::{OpenedDocument, OFFICIAL_PNG_SCALE};
 pub use error::PaintError;
 pub use executor::{
@@ -33,8 +35,13 @@ pub use fill::resolve_fill;
 pub use form_fields::FormFieldLoc;
 pub use geo_index::{geo_for_op, geo_for_op_str, index_geometry_multi, index_geometry_multi_str};
 pub use geom::parse_hex_rgba;
-pub use glyphs::{baseline_y_pt, face_for, glyph_origin_pt, placed_glyphs, PlacedGlyph};
-pub use image::{decode_raster, letterbox_dest, letterbox_rect, lookup_image};
+pub use glyphs::{
+    baseline_y_pt, face_for, face_style_is_bold, face_style_is_italic, face_subfamily,
+    glyph_origin_pt, placed_glyphs, PlacedGlyph,
+};
+pub use image::{
+    cover_src, cover_src_rect_100000, decode_raster, letterbox_dest, letterbox_rect, lookup_image,
+};
 pub use query::LocatedBox;
 pub use rgb::pixmap_to_rgb8;
 pub use text_layer::{spans_for_page, TextSpan};

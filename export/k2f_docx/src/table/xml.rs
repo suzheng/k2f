@@ -15,6 +15,8 @@ pub fn table_cell_wml(align: TextAlign, border: Option<&Border>) -> String {
         preserve_whitespace: false,
         borders: cell_borders(border).unwrap_or_default(),
         vert_center: false,
+        colspan: 1,
+        start_col: 0,
         line_twips: None,
     };
     format!(
@@ -118,8 +120,12 @@ fn tr_xml(
     hyperlink_rids: &BTreeMap<String, String>,
 ) -> String {
     let mut cells = String::new();
-    for (i, cell) in row.cells.iter().enumerate() {
-        let w = col_widths.get(i).copied().unwrap_or(cell.width_twips);
+    for cell in row.cells.iter() {
+        let span = cell.colspan.max(1) as usize;
+        let w = col_widths
+            .get(cell.start_col..cell.start_col + span)
+            .map(|s| s.iter().sum())
+            .unwrap_or(cell.width_twips);
         cells.push_str(&tc_xml(cell, w, hyperlink_rids));
     }
     format!(
@@ -145,6 +151,14 @@ fn tc_xml(cell: &TableCell, width_twips: i64, hyperlink_rids: &BTreeMap<String, 
         "                              <w:vAlign w:val=\"center\"/>\n"
     } else {
         ""
+    };
+    let grid_span = if cell.colspan > 1 {
+        format!(
+            "                              <w:gridSpan w:val=\"{}\"/>\n",
+            cell.colspan
+        )
+    } else {
+        String::new()
     };
     let dummy = TextBox {
         node_id: cell.node_id.clone(),
@@ -185,7 +199,7 @@ fn tc_xml(cell: &TableCell, width_twips: i64, hyperlink_rids: &BTreeMap<String, 
         r#"                          <w:tc>
                             <w:tcPr>
                               <w:tcW w:w="{width_twips}" w:type="dxa"/>
-{borders}{shd}{valign}                            </w:tcPr>
+{grid_span}{borders}{shd}{valign}                            </w:tcPr>
 {paras}                          </w:tc>
 "#,
         borders = tc_borders_xml(&cell.borders),
@@ -237,6 +251,8 @@ mod tests {
             preserve_whitespace: false,
             borders: CellBorders::default(),
             vert_center: true,
+            colspan: 1,
+            start_col: 0,
             line_twips: None,
         };
         let xml = tc_xml(&cell, 1440, &BTreeMap::new());
@@ -249,6 +265,28 @@ mod tests {
         assert!(
             !top.contains("vAlign"),
             "top-aligned cell must not emit vAlign, got {top}"
+        );
+    }
+
+    #[test]
+    fn colspan_emits_w_grid_span() {
+        let cell = TableCell {
+            node_id: "c".into(),
+            width_twips: 2880,
+            runs: Vec::new(),
+            align: TextAlign::Left,
+            fill_hex: None,
+            preserve_whitespace: false,
+            borders: CellBorders::default(),
+            vert_center: false,
+            colspan: 2,
+            start_col: 0,
+            line_twips: None,
+        };
+        let xml = tc_xml(&cell, 2880, &BTreeMap::new());
+        assert!(
+            xml.contains(r#"<w:gridSpan w:val="2"/>"#),
+            "spanned cell must set w:gridSpan, got {xml}"
         );
     }
 }

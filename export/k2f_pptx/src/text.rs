@@ -830,6 +830,18 @@ mod tests {
     }
 
     #[test]
+    fn regular_and_bold_stems_share_ttf_family() {
+        let mut fonts = BTreeMap::new();
+        fonts.insert("assets/fonts/Roboto-Regular.ttf".into(), roboto());
+        fonts.insert("assets/fonts/Roboto-Bold.ttf".into(), roboto());
+        let ctx = FontCtx::new(&fonts);
+        assert_eq!(ctx.typeface("Roboto-Regular"), "Roboto");
+        assert_eq!(ctx.typeface("Roboto-Bold"), "Roboto");
+        assert!(ctx.bytes_for("Roboto-Regular").is_some());
+        assert!(ctx.bytes_for("Roboto-Bold").is_some());
+    }
+
+    #[test]
     fn emphasis_splits_and_sets_bold() {
         let style = fallback_style();
         let mods = [Modifier {

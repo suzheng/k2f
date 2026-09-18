@@ -130,6 +130,8 @@ pub fn picture_from_crop(
         raster_name: format!("raster{raster_index}.png"),
         bytes: png,
         ext: "png".into(),
+        corner_pt: 0.0,
+        fill_proportionally: false,
     }
 }
 

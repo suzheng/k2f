@@ -9,11 +9,12 @@ use crate::text_align::{
 };
 use crate::text_layout::layout_code_block;
 use crate::text_layout::layout_text;
+use crate::text_layout::measure_text_run_width;
 use crate::{measure_node, LayoutContext, Point, Size, SizeConstraint};
 use k2f_core::{
     GeometryNode, LayoutHint, ListMarkerType, NodeContent, Pt, SemanticNode, StackDirection,
 };
-use k2f_text::{byte_to_char_index, TextShaper};
+use k2f_text::byte_to_char_index;
 
 pub fn arrange_node(
     node: &SemanticNode,
@@ -419,19 +420,7 @@ fn marker_label_offset(
     style: &crate::style::Style,
     ctx: &LayoutContext,
 ) -> Result<Pt, String> {
-    let font_name = crate::style::resolve_font_family_key(&style.font_family, ctx.theme);
-    let font = ctx.fonts.get_font(&font_name).ok_or_else(|| {
-        format!(
-            "Font '{}' not loaded (resolved from '{}')",
-            font_name, style.font_family
-        )
-    })?;
-    let mut glyphs = TextShaper::shape_text(label, font, style.font_size)?;
-    crate::text_layout::apply_tracking(&mut glyphs, style.letter_spacing);
-    let mut width = Pt::ZERO;
-    for g in &glyphs {
-        width += g.x_advance;
-    }
+    let width = measure_text_run_width(label, style, ctx)?;
     Ok(line_start_offset(align, marker_box_width, width))
 }
 

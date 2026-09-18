@@ -41,7 +41,6 @@
         "layout": {
           "type": "grid",
           "columns": [{ "fr": 1 }, { "auto": true }],
-          "rows": [{ "auto": true }],
           "column_gap": 12000,
           "cell_align": { "x": "stretch", "y": "center" }
         }
@@ -79,7 +78,6 @@
         "layout": {
           "type": "grid",
           "columns": [{ "fr": 1 }, { "auto": true }],
-          "rows": [{ "auto": true }],
           "column_gap": 12000,
           "cell_align": { "x": "stretch", "y": "center" }
         }

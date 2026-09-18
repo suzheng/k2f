@@ -136,6 +136,7 @@ fn name_english(face: &Face<'_>, id: u16) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeMap;
     use std::path::PathBuf;
 
     fn roboto_bytes() -> Vec<u8> {
@@ -149,5 +150,18 @@ mod tests {
         let n = names_from_bytes(&roboto_bytes()).expect("names");
         assert_eq!(n.family, "Roboto");
         assert_eq!(n.style, "Regular");
+    }
+
+    #[test]
+    fn regular_and_bold_stems_share_ttf_family() {
+        let mut fonts = BTreeMap::new();
+        fonts.insert("assets/fonts/Roboto-Regular.ttf".into(), roboto_bytes());
+        fonts.insert("assets/fonts/Roboto-Bold.ttf".into(), roboto_bytes());
+        let ctx = FontCtx::new(&fonts);
+        assert_eq!(ctx.typeface("Roboto-Regular"), "Roboto");
+        assert_eq!(ctx.typeface("Roboto-Bold"), "Roboto");
+        assert_eq!(ctx.face_style("Roboto-Regular"), "Regular");
+        assert!(ctx.bytes_for("Roboto-Regular").is_some());
+        assert!(ctx.bytes_for("Roboto-Bold").is_some());
     }
 }

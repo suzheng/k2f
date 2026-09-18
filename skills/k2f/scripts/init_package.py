@@ -281,6 +281,7 @@ def main() -> int:
         default=[],
         metavar="TTF",
         help="Keep Roboto and copy this TTF/OTF for glyph fallback (repeatable). "
+        "serif: catalog NotoSerif-Regular.ttf; "
         "Japanese/Korean/math: --add-font covering.otf (NotoSansSC is Simplified Chinese, not kana)",
     )
     parser.add_argument(
@@ -405,12 +406,13 @@ def main() -> int:
         )
     if args.width is not None and applied_margin != [0, 0, 0, 0]:
         print(
-            "  tip: full-bleed posters often use --margin 0 + catalog/content/ex_poster_shell.json "
-            "(role page_shell; set layout.height to page height — see writing/package.md)"
+            "  tip: full-bleed posters often use --margin 0; paste catalog/content/ex_poster_shell.json "
+            "into root children (role page_shell; set layout.height to page height — see writing/package.md)"
         )
     print(
         "Next: edit content/root.json (+ optional content/*.json includes) and styles/theme.json; "
-        "copy shapes from catalog/content/ex_*.json; then pack_verify.py"
+        "copy shapes from catalog/content/ex_*.json into root children "
+        "(do not replace root.json); then pack_verify.py"
     )
     if workspace is not None:
         stem = workspace.name

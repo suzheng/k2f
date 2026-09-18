@@ -1,4 +1,4 @@
-use crate::error::{AgentError, IMAGE_SIZE};
+use crate::error::{AgentError, IMAGE_SIZE, SVG_TEXT};
 use image::{GenericImageView, ImageFormat};
 use k2f_core::{looks_like_svg, svg_bytes_contain_text_element, SVG_TEXT_FORBIDDEN_MSG};
 
@@ -37,7 +37,7 @@ fn size_from_raster(
 
 fn svg_size(bytes: &[u8]) -> Result<(u32, u32, &'static str), AgentError> {
     if svg_bytes_contain_text_element(bytes) {
-        return Err(AgentError::new(IMAGE_SIZE, SVG_TEXT_FORBIDDEN_MSG));
+        return Err(AgentError::new(SVG_TEXT, SVG_TEXT_FORBIDDEN_MSG));
     }
     let opt = resvg::usvg::Options::default();
     let tree = resvg::usvg::Tree::from_data(bytes, &opt)

@@ -387,6 +387,87 @@ mod tests {
     }
 
     #[test]
+    fn malformed_table_header_rows_does_not_report_table_reference() {
+        let node = json!({
+            "id": "root",
+            "role": "document",
+            "content": {
+                "type": "container",
+                "value": {
+                    "children": [{
+                        "id": "root.t",
+                        "role": "table",
+                        "content": {
+                            "type": "table",
+                            "value": {
+                                "column_widths": [{ "fr": 1 }],
+                                "header_rows": [[{
+                                    "id": "root.t.h0",
+                                    "role": "table_header_cell",
+                                    "content": { "type": "text", "value": "A" }
+                                }]],
+                                "data": {
+                                    "type": "inline",
+                                    "rows": [[{
+                                        "id": "root.t.r0c0",
+                                        "role": "table_row_cell",
+                                        "content": { "type": "text", "value": "x" }
+                                    }]]
+                                }
+                            }
+                        }
+                    }]
+                }
+            }
+        });
+        let err = validate_root_json(&node).unwrap_err().to_string();
+        assert!(err.contains(crate::CODE_SCHEMA_INVALID), "got {err}");
+        assert!(
+            err.contains("header_rows"),
+            "should name the bad field, got {err}"
+        );
+        assert!(
+            !err.contains("table_reference"),
+            "must not pick the sibling content tag, got {err}"
+        );
+    }
+
+    #[test]
+    fn malformed_grid_track_does_not_report_stack_or_overlay() {
+        let node = json!({
+            "id": "root",
+            "role": "document",
+            "content": {
+                "type": "container",
+                "value": {
+                    "children": [{
+                        "id": "root.grid",
+                        "role": "body",
+                        "content": {
+                            "type": "container",
+                            "value": { "children": [] }
+                        },
+                        "layout": {
+                            "type": "grid",
+                            "columns": [{ "fr": 1.5 }]
+                        }
+                    }]
+                }
+            }
+        });
+        let err = validate_root_json(&node).unwrap_err().to_string();
+        assert!(err.contains(crate::CODE_SCHEMA_INVALID), "got {err}");
+        assert!(
+            !err.to_lowercase().contains("stack"),
+            "must not pick a sibling layout tag, got {err}"
+        );
+        assert!(
+            !err.contains("overlay"),
+            "must not pick a sibling layout tag, got {err}"
+        );
+    }
+
+    #[test]
     fn padding_pt_accepts_trbl_array() {
         let theme = json!({
             "palette": { "ink": "#111111" },

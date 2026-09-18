@@ -191,6 +191,12 @@ pub struct PictureBox {
     /// Slices (and lock images) under later paint must not: Writer paints that
     /// empty frame over later labels.
     pub pin_empty_txbox: bool,
+    /// DrawingML `a:srcRect` l/t/r/b (1/1000 percent). All zero = no crop.
+    pub src_l: i64,
+    pub src_t: i64,
+    pub src_r: i64,
+    pub src_b: i64,
+    pub corner_emu: i64,
 }
 
 #[derive(Clone, Debug)]
@@ -226,6 +232,10 @@ pub struct TableCell {
     pub borders: CellBorders,
     /// Lock glyphs vertically centered in the cell box (`w:vAlign`).
     pub vert_center: bool,
+    /// Same-row occupancy; 1 means one `w:gridCol`.
+    pub colspan: u32,
+    /// Visual start column (0-based).
+    pub start_col: usize,
     pub line_twips: Option<i64>,
 }
 

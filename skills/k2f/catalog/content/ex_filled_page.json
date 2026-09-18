@@ -74,8 +74,31 @@
         },
         {
           "id": "ex.filled_page.footer",
-          "role": "body",
-          "content": { "type": "text", "value": "Total ({auto:true} footer)." }
+          "role": "section",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.filled_page.footer.label",
+                  "role": "body",
+                  "content": { "type": "text", "value": "Total" }
+                },
+                {
+                  "id": "ex.filled_page.footer.amount",
+                  "role": "body",
+                  "variant": "end",
+                  "content": { "type": "text", "value": "1,240.00" }
+                }
+              ]
+            }
+          },
+          "layout": {
+            "type": "grid",
+            "columns": [{ "fr": 1 }, { "auto": true }],
+            "column_gap": 12000,
+            "cell_align": { "x": "stretch", "y": "center" }
+          }
         }
       ]
     }

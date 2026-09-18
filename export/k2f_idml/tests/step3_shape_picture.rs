@@ -160,7 +160,16 @@ fn no_k2f_raster_yet() {
 #[test]
 fn missing_image_is_write_error() {
     let err =
-        picture_from_draw("pic", &sample_rect(), "nope.png", &BTreeMap::new(), 1).unwrap_err();
+        picture_from_draw(
+            "pic",
+            &sample_rect(),
+            "nope.png",
+            &BTreeMap::new(),
+            1,
+            k2f_core::ImageFit::Contain,
+            None,
+        )
+        .unwrap_err();
     match err {
         IdmlError::Write(msg) => assert!(msg.contains("missing image"), "{msg}"),
         other => panic!("expected Write, got {other:?}"),
@@ -172,7 +181,16 @@ fn svg_encodes_as_png() {
     let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="#00f"/></svg>"##;
     let mut assets = BTreeMap::new();
     assets.insert("mark.svg".into(), svg.to_vec());
-    let pic = picture_from_draw("pic", &sample_rect(), "mark.svg", &assets, 1).unwrap();
+    let pic = picture_from_draw(
+        "pic",
+        &sample_rect(),
+        "mark.svg",
+        &assets,
+        1,
+        k2f_core::ImageFit::Contain,
+        None,
+    )
+    .unwrap();
     assert_eq!(pic.ext, "png");
     assert!(
         pic.bytes.starts_with(&[0x89, b'P', b'N', b'G']),

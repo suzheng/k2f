@@ -49,8 +49,12 @@ impl Package {
             ));
         }
         k2f_core::validate_svg_assets(&self.assets).map_err(|e| {
-            let rest = e.strip_prefix("IMAGE_SIZE: ").unwrap_or(e.as_str());
-            PackageError::ImageSize(rest.to_string())
+            if let Some(rest) = e.strip_prefix("SVG_TEXT: ") {
+                PackageError::SvgText(rest.to_string())
+            } else {
+                let rest = e.strip_prefix("IMAGE_SIZE: ").unwrap_or(e.as_str());
+                PackageError::ImageSize(rest.to_string())
+            }
         })?;
         Ok(())
     }

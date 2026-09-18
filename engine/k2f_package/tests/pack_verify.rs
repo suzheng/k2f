@@ -214,7 +214,7 @@ fn pack_rejects_svg_text_element() {
     );
     let err = pack_bytes(&pkg).unwrap_err();
     assert!(
-        err.to_string().contains(k2f_package::CODE_IMAGE_SIZE),
+        err.to_string().contains(k2f_package::CODE_SVG_TEXT),
         "got {err}"
     );
     assert!(err.to_string().contains("<text>"), "got {err}");
@@ -254,7 +254,7 @@ fn pack_rejects_svg_textpath() {
     );
     let err = pack_bytes(&pkg).unwrap_err();
     assert!(
-        err.to_string().contains(k2f_package::CODE_IMAGE_SIZE),
+        err.to_string().contains(k2f_package::CODE_SVG_TEXT),
         "got {err}"
     );
 }
@@ -304,7 +304,7 @@ fn pack_rejects_svg_foreign_object() {
     );
     let err = pack_bytes(&pkg).unwrap_err();
     assert!(
-        err.to_string().contains(k2f_package::CODE_IMAGE_SIZE),
+        err.to_string().contains(k2f_package::CODE_SVG_TEXT),
         "got {err}"
     );
 }

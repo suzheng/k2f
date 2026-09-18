@@ -8,7 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Pack/compile/raster reject SVG live text with `SVG_TEXT` (not `IMAGE_SIZE`). Still fail-closed; put labels in a K2F text node or convert to `<path>`.
+- List markers and code blocks use the same package-font coverage fallback as body text.
+- Skill catalog: OFL `NotoSerif-Regular.ttf` for serif headings or body (`--add-font catalog/assets/fonts/NotoSerif-Regular.ttf`, then retarget role `font_family`). Starter stays Roboto-only; no cross-family fallback.
 - `k2f export-idml <package> -o <out-dir>` — InDesign package (`{stem}.idml` + `Document Fonts/`). `-o file.zip` writes the same tree zipped; `--idml-only` writes a lone `.idml`. The IDML ZIP still does not contain TTF bytes. IDML is not a K2F source (`IDML_IS_NOT_A_SOURCE`).
+- Role/variant `image_fit` (`contain` default, or `cover` center-crop). An image node's own `corner_radius` clips that bitmap. PPTX/DOCX emit `a:srcRect` + `roundRect`; IDML uses FillProportionally + frame corners.
+
+### Changed
+
+- Root `layout` of `grid` / `overlay` / `columns` / horizontal `stack` is a compile error (was a silent vertical-flow fallback for horizontal). Nest under a child. Catalog `ex_*.json` are children — do not replace `content/root.json`.
+
+### Fixed
+
+- `list_item` with a partial `list_style` (for example only `bullet_glyph`) compiles by merging starter defaults. Explicit `0` still wins; schema fields stay optional.
 
 ## [0.2.4] - 2026-09-11
 

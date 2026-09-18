@@ -259,6 +259,42 @@ def test_init_package_pack_verify() -> None:
         assert out.is_file() and out.stat().st_size > 0
 
 
+SERIF_TTF = CATALOG / "assets" / "fonts" / "NotoSerif-Regular.ttf"
+
+
+@pytest.mark.skipif(not SERIF_TTF.is_file(), reason="catalog NotoSerif-Regular.ttf missing")
+def test_init_package_add_font_serif_retargets_h1() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        dest = Path(tmp) / "doc"
+        out = Path(tmp) / "doc.K2F"
+        init_proc = _run_init(dest, ["--add-font", str(SERIF_TTF)])
+        assert init_proc.returncode == 0, init_proc.stderr
+        assert (dest / "assets" / "fonts" / "NotoSerif-Regular.ttf").is_file()
+        theme_path = dest / "styles" / "theme.json"
+        theme = json.loads(theme_path.read_text(encoding="utf-8"))
+        assert theme["font_aliases"]["NotoSerif-Regular"] == "NotoSerif-Regular"
+        assert theme["font_aliases"]["Roboto-Regular"] == "Roboto-Regular"
+        theme["roles"]["h1"]["font_family"] = "NotoSerif-Regular"
+        theme_path.write_text(json.dumps(theme, indent=2) + "\n", encoding="utf-8")
+        pack_proc = subprocess.run(
+            [
+                sys.executable,
+                str(PACK_VERIFY),
+                str(dest),
+                "-o",
+                str(out),
+                "--expect-pages",
+                "1",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            env=pack_verify_env(),
+        )
+        assert pack_proc.returncode == 0, pack_proc.stdout + pack_proc.stderr
+        assert out.is_file() and out.stat().st_size > 0
+
+
 def _run_init(dest: Path, extra: list[str] | None = None) -> subprocess.CompletedProcess[str]:
     cmd = [
         sys.executable,

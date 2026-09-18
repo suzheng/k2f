@@ -113,6 +113,8 @@ pub(crate) fn build_cell(
         preserve_whitespace: preserve,
         borders: cell_borders(paint.and_then(|p| p.border.as_ref()))?,
         vert_center: centered,
+        colspan: 1,
+        start_col: 0,
         line_twips,
     })
 }

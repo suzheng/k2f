@@ -8,7 +8,7 @@ pub use resolve::{resolve_palette_color, resolve_theme_decoration};
 
 use crate::list_style::ListStyle;
 use crate::style::{StylePatch, TextAlign};
-use k2f_core::{Align, Pt};
+use k2f_core::{Align, ImageFit, Pt};
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -22,6 +22,22 @@ pub struct Theme {
     pub modifiers: ModifierTheme,
     #[serde(default)]
     pub font_aliases: HashMap<String, String>,
+    /// Explicit Regular/Bold/Italic/BoldItalic stems for a family name.
+    /// Omitted slots stay synthetic (stroke / shear). Not CSS font-weight.
+    #[serde(default)]
+    pub font_faces: HashMap<String, FontFaceSlots>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct FontFaceSlots {
+    #[serde(default)]
+    pub regular: Option<String>,
+    #[serde(default)]
+    pub bold: Option<String>,
+    #[serde(default)]
+    pub italic: Option<String>,
+    #[serde(default)]
+    pub bold_italic: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -50,6 +66,10 @@ pub struct RoleStyle {
     pub box_decoration: Option<ThemeDecoration>,
     #[serde(default)]
     pub list_style: Option<ListStyle>,
+    /// How image nodes using this role map the bitmap into the laid-out box.
+    /// Omit / None = contain (letterbox).
+    #[serde(default)]
+    pub image_fit: Option<ImageFit>,
     #[serde(default)]
     pub bold: bool,
     #[serde(default)]
@@ -72,6 +92,8 @@ pub struct RoleVariant {
     pub text_overrides: Option<StylePatch>,
     #[serde(default)]
     pub list_style: Option<ListStyle>,
+    #[serde(default)]
+    pub image_fit: Option<ImageFit>,
 }
 
 #[cfg(test)]

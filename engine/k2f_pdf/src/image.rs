@@ -1,5 +1,5 @@
-use k2f_core::Rect;
-use k2f_paint::{decode_raster, letterbox_dest, lookup_image};
+use k2f_core::{ImageFit, Rect};
+use k2f_paint::{cover_src, decode_raster, letterbox_dest, lookup_image};
 use miniz_oxide::deflate::{compress_to_vec_zlib, CompressionLevel};
 use pdf_writer::{Filter, Finish, Name, Pdf, Ref};
 use std::collections::BTreeMap;
@@ -104,6 +104,8 @@ pub fn draw_image(
     rect: &Rect,
     src: &str,
     images: &BTreeMap<String, ImageRes>,
+    fit: ImageFit,
+    corner_radius_pt: Option<i64>,
 ) -> Result<(), PdfError> {
     let img = images
         .get(src)
@@ -111,14 +113,36 @@ pub fn draw_image(
     page.note_image(rect);
     let box_w = rect.width.as_f64_pt().round().max(1.0) as u32;
     let box_h = rect.height.as_f64_pt().round().max(1.0) as u32;
-    let (dx, dy, dw, dh) =
-        letterbox_dest(img.w, img.h, box_w, box_h).ok_or(PdfError::Write("letterbox".into()))?;
-    let x = rect.x.as_f64_pt() + dx as f64;
-    let y_top = rect.y.as_f64_pt() + dy as f64;
-    let pdf_x = x as f32;
-    let pdf_y = pdf_y(page.page_h, y_top + dh as f64);
+    let radius = corner_radius_pt
+        .map(|r| r as f64 / 1000.0)
+        .unwrap_or(0.0);
     let name = Name(img.name.as_bytes());
     page.content.save_state();
+    if radius > 0.0 || matches!(fit, ImageFit::Cover) {
+        crate::box_op::rounded_rect(&mut page.content, page.page_h, rect, radius);
+        page.content.clip_nonzero();
+        page.content.end_path();
+    }
+    let (dx, dy, dw, dh) = match fit {
+        ImageFit::Cover => {
+            let (sx, sy, sw, sh) = cover_src(img.w, img.h, box_w, box_h)
+                .ok_or(PdfError::Write("cover".into()))?;
+            let dest_w = (img.w as f64) * (box_w as f64) / (sw as f64);
+            let dest_h = (img.h as f64) * (box_h as f64) / (sh as f64);
+            let dx = -(sx as f64) * (box_w as f64) / (sw as f64);
+            let dy = -(sy as f64) * (box_h as f64) / (sh as f64);
+            (dx, dy, dest_w, dest_h)
+        }
+        ImageFit::Contain => {
+            let (dx, dy, dw, dh) = letterbox_dest(img.w, img.h, box_w, box_h)
+                .ok_or(PdfError::Write("letterbox".into()))?;
+            (dx as f64, dy as f64, dw as f64, dh as f64)
+        }
+    };
+    let x = rect.x.as_f64_pt() + dx;
+    let y_top = rect.y.as_f64_pt() + dy;
+    let pdf_x = x as f32;
+    let pdf_y = pdf_y(page.page_h, y_top + dh);
     page.content
         .transform([dw as f32, 0.0, 0.0, dh as f32, pdf_x, pdf_y]);
     page.content.x_object(name);

@@ -521,6 +521,11 @@ mod tests {
             bytes: vec![],
             relative_height: 0,
             pin_empty_txbox: false,
+            src_l: 0,
+            src_t: 0,
+            src_r: 0,
+            src_b: 0,
+            corner_emu: 0,
         });
         let mut rids = BTreeMap::new();
         rids.insert("raster1.png".into(), "rIdM1".into());
@@ -528,6 +533,31 @@ mod tests {
         assert!(xml.contains(r#"<a:blipFill>"#), "{xml}");
         assert!(xml.contains(r#"r:embed="rIdM1""#), "{xml}");
         assert!(xml.contains("txBox=\"1\""), "{xml}");
+    }
+
+    #[test]
+    fn bold_run_emits_b_and_family_name() {
+        let run = TextRun {
+            text: "Hello".into(),
+            font_name: "Roboto".into(),
+            sz_half_points: 24,
+            bold: true,
+            italic: false,
+            underline: false,
+            strike: false,
+            color_hex: "000001".into(),
+            hyperlink: None,
+            script: ScriptPos::Baseline,
+            tracking_twips: 0,
+            field: None,
+        };
+        let xml = rpr_xml(&run);
+        assert!(xml.contains("<w:b/>"), "{xml}");
+        assert!(xml.contains(r#"w:ascii="Roboto""#), "{xml}");
+        assert!(
+            !xml.contains("Roboto-Bold") && !xml.contains("Roboto-Regular"),
+            "Office family must be the TTF name, got {xml}"
+        );
     }
 
     #[test]

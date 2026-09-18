@@ -151,11 +151,26 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
                         }
                     }
                 }
-                PaintOp::DrawImage { node_id, rect, src } => {
+                PaintOp::DrawImage {
+                    node_id,
+                    rect,
+                    src,
+                    fit,
+                    corner_radius_pt,
+                } => {
                     if crate::geo::image_occluded_by_later_opaque_box(rect, &ops[i + 1..]) {
                         continue;
                     }
-                    let pic = picture_from_draw(node_id, rect, src, assets, media_n, rel)?;
+                    let pic = picture_from_draw(
+                        node_id,
+                        rect,
+                        src,
+                        assets,
+                        media_n,
+                        rel,
+                        *fit,
+                        *corner_radius_pt,
+                    )?;
                     media_n = media_n.saturating_add(1);
                     // Writer paints pic:pic above every wps:wsp. Images that
                     // later lock paint sits on must use the raster shape path.
@@ -1121,6 +1136,11 @@ mod tests {
             bytes: vec![],
             relative_height: rel,
             pin_empty_txbox: false,
+            src_l: 0,
+            src_t: 0,
+            src_r: 0,
+            src_b: 0,
+            corner_emu: 0,
         }
     }
 

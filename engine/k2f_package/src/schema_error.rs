@@ -52,28 +52,41 @@ fn collect_leaves(err: &ValidationError<'_, '_>, out: &mut Vec<String>) {
 }
 
 fn score_branch(err: &ValidationError<'_, '_>) -> i32 {
-    let mut score = 0i32;
-    walk(err, &mut |leaf| match &leaf.kind {
-        ErrorKind::AdditionalProperties { got } => {
-            score += 200 + (got.len() as i32) * 10;
+    match &err.kind {
+        // Nested tagged unions must not poison the parent: only the best
+        // sibling counts (same choice collect_leaves makes).
+        ErrorKind::OneOf(_) | ErrorKind::AnyOf => {
+            err.causes.iter().map(score_branch).max().unwrap_or(0)
         }
-        ErrorKind::Required { want } => {
-            score += 150 + (want.len() as i32) * 10;
-        }
-        ErrorKind::Const { .. } | ErrorKind::Enum { .. } => score -= 50,
-        ErrorKind::Type { .. } => score -= 20,
-        _ => score += 1,
-    });
-    score
+        _ if err.causes.is_empty() => leaf_score(err),
+        _ => err.causes.iter().map(score_branch).sum(),
+    }
 }
 
-fn walk(err: &ValidationError<'_, '_>, visit: &mut impl FnMut(&ValidationError<'_, '_>)) {
-    if err.causes.is_empty() {
-        visit(err);
-        return;
-    }
-    for cause in &err.causes {
-        walk(cause, visit);
+fn leaf_score(err: &ValidationError<'_, '_>) -> i32 {
+    let loc = err.instance_location.to_string();
+    let type_disc = loc == "/type" || loc.ends_with("/type");
+    match &err.kind {
+        ErrorKind::AdditionalProperties { got } => {
+            let mut s = 200 + (got.len() as i32) * 10;
+            // include stub vs node: id/role/content are not "almost an include".
+            if got
+                .iter()
+                .any(|k| matches!(k.as_ref(), "id" | "role" | "content"))
+            {
+                s -= 10_000;
+            }
+            s
+        }
+        ErrorKind::Required { want } => 150 + (want.len() as i32) * 10,
+        ErrorKind::Const { .. } | ErrorKind::Enum { .. } if type_disc => {
+            // Tagged oneOf (content.type, layout.type, data.type): a sibling
+            // tag must not win just because it has more required/extra keys.
+            -10_000
+        }
+        ErrorKind::Const { .. } | ErrorKind::Enum { .. } => -50,
+        ErrorKind::Type { .. } => -20,
+        _ => 1,
     }
 }
 

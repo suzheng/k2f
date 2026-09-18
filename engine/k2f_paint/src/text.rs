@@ -1,8 +1,11 @@
 use k2f_core::{GeometryNode, Rect, TextGlyphRun};
 use std::collections::HashMap;
-use tiny_skia::{Color, FillRule, LineJoin, Paint, Path, Pixmap, Stroke, Transform};
+use tiny_skia::{
+    Color, FillRule, LineCap, LineJoin, Paint, Path, PathBuilder, Pixmap, Stroke, Transform,
+};
 use ttf_parser::{Face, GlyphId, OutlineBuilder};
 
+use crate::decoration::{decoration_lines, TextDecorationLine};
 use crate::error::PaintError;
 use crate::geo_index::geo_for_op;
 use crate::glyphs::{face_for, placed_glyphs, PlacedGlyph};
@@ -21,7 +24,37 @@ pub(crate) fn draw_text(
     for g in placed_glyphs(faces, geo, rect, runs)? {
         fill_glyph(pixmap, faces, &g, scale);
     }
+    for line in decoration_lines(faces, geo, rect, runs) {
+        stroke_decoration(pixmap, &line, scale);
+    }
     Ok(())
+}
+
+fn stroke_decoration(pixmap: &mut Pixmap, line: &TextDecorationLine, scale: f32) {
+    let [r, g, b, a] = line.rgba;
+    if a == 0 || line.thickness_pt <= 0.0 {
+        return;
+    }
+    let mut pb = PathBuilder::new();
+    pb.move_to(
+        (line.x0_pt * scale as f64) as f32,
+        (line.y_pt * scale as f64) as f32,
+    );
+    pb.line_to(
+        (line.x1_pt * scale as f64) as f32,
+        (line.y_pt * scale as f64) as f32,
+    );
+    let Some(path) = pb.finish() else {
+        return;
+    };
+    let mut paint = Paint::default();
+    paint.set_color(Color::from_rgba8(r, g, b, a));
+    let mut stroke = Stroke::default();
+    stroke.width = (line.thickness_pt * scale as f64) as f32;
+    stroke.line_cap = LineCap::Butt;
+    pixmap
+        .as_mut()
+        .stroke_path(&path, &paint, &stroke, Transform::identity(), None);
 }
 
 fn fill_glyph(pixmap: &mut Pixmap, faces: &HashMap<String, Face<'_>>, g: &PlacedGlyph, scale: f32) {
@@ -42,7 +75,7 @@ fn fill_glyph(pixmap: &mut Pixmap, faces: &HashMap<String, Face<'_>>, g: &Placed
         px_per_font_unit,
         (g.origin_x_pt * scale as f64) as f32,
         (g.origin_y_pt * scale as f64) as f32,
-        g.italic,
+        g.synthetic_italic(face),
     );
     if face.outline_glyph(GlyphId(g.glyph_id), &mut pb).is_some() {
         if let Some(path) = pb.finish() {
@@ -53,7 +86,7 @@ fn fill_glyph(pixmap: &mut Pixmap, faces: &HashMap<String, Face<'_>>, g: &Placed
                 Transform::identity(),
                 None,
             );
-            let stroke_px = (g.synthetic_bold_stroke_pt() * scale as f64) as f32;
+            let stroke_px = (g.synthetic_bold_stroke_pt(face) * scale as f64) as f32;
             if stroke_px > 0.0 {
                 let mut stroke = Stroke::default();
                 stroke.width = stroke_px;

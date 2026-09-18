@@ -136,6 +136,11 @@ pub fn picture_from_crop(
         bytes: png,
         relative_height,
         pin_empty_txbox: true,
+        src_l: 0,
+        src_t: 0,
+        src_r: 0,
+        src_b: 0,
+        corner_emu: 0,
     }
 }
 

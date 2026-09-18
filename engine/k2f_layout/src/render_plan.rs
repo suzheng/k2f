@@ -1,4 +1,4 @@
-use crate::resolved_style::{padding_for_role_variant, resolve_box_decoration};
+use crate::resolved_style::{padding_for_role_variant, resolve_box_decoration, resolve_image_fit};
 use crate::theme::resolve_theme_decoration;
 use crate::Theme;
 use k2f_core::{
@@ -172,10 +172,12 @@ fn append_ops_for_geometry(
         height: geo.height,
     };
 
+    let mut image_corner_radius_pt = None;
     if let Some(mut named) = resolve_box_decoration(&info.role, info.variant.as_deref(), theme) {
         named.padding_pt = None;
         if named.has_paint_refs() {
             let mut decoration = resolve_theme_decoration(&named, theme)?;
+            image_corner_radius_pt = decoration.corner_radius_pt;
             if let Some(blur) = inline_blur(&decoration) {
                 ops.push(PaintOp::BackdropBlur {
                     node_id: geo.id.clone(),
@@ -249,6 +251,8 @@ fn append_ops_for_geometry(
                 node_id: geo.id.clone(),
                 rect: image_rect,
                 src: src.clone(),
+                fit: resolve_image_fit(&info.role, info.variant.as_deref(), theme),
+                corner_radius_pt: image_corner_radius_pt,
             });
         }
         NodeContentInfo::TableReference { source, view_mode } => {

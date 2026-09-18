@@ -70,6 +70,10 @@ Field reference for authoring K2F packages. **Normative contract:** `schema/*.js
 - Inside a `layout.type = "columns"` container: `"all"` spans full content width
 - Default: `"none"`
 
+**`colspan`** (integer ≥ 1)
+- Table-cell occupancy along `column_widths` (same row only). Omit or `1` = one column
+- Illegal outside a table cell (`COLSPAN_OUTSIDE_TABLE`). Not `rowspan`; not `column_span`
+
 **`list_id`** (string | null)
 - List group identifier
 - Used when `role` is `"list_item"`
@@ -200,7 +204,7 @@ Use with `role: "math"`. Inline math stays on a text node as U+FFFC plus modifie
     "header_rows": 0,          // Optional, default: 0 (repeat on page breaks in paged mode)
     "gap": 0,                  // Optional, default: 0 (Pt in 1/1000 units)
     "row_gap": null,           // Optional; omit/null uses gap (same as grid)
-    "column_gap": null,        // Optional; omit/null uses gap. No colspan/rowspan.
+    "column_gap": null,        // Optional; omit/null uses gap
     "data": {
       "type": "inline",
       "rows": [
@@ -222,7 +226,7 @@ Use with `role: "math"`. Inline math stays on a text node as U+FFFC plus modifie
 
 **Constraints (enforced by engine validation):**
 - `column_widths` must be non-empty (`{pt}` / `{fr}` only — no `{auto:true}`)
-- Every row must have exactly `column_widths.length` cells (after asset expand)
+- Each row covers `column_widths.length` via summed cell `colspan` (default 1; optional integer ≥ 1 on table cells only). No `rowspan`
 - `header_rows <= rows.length`
 
 ## Layout Attributes

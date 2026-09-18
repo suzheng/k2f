@@ -34,6 +34,11 @@ impl PageDraw {
             .push_str(&format!("% k2f.g {x:.3} {y:.3} {gid}\n"));
     }
 
+    pub fn note_decoration(&mut self, x0: f64, y: f64, x1: f64, thickness: f64) {
+        self.notes
+            .push_str(&format!("% k2f.d {x0:.3} {y:.3} {x1:.3} {thickness:.3}\n"));
+    }
+
     pub fn note_image(&mut self, rect: &Rect) {
         self.notes.push_str(&format!(
             "% k2f.i {:.3} {:.3} {:.3} {:.3}\n",

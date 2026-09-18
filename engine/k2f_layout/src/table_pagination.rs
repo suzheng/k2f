@@ -74,7 +74,9 @@ pub(crate) fn paginate_table_root_flow_paged(
             return Ok(h);
         }
         let max_h = Pt(i128::MAX);
-        let h = crate::table::measure_row_height(&node.id, &rows[idx], &col_sizes, max_h, ctx)?;
+        let h = crate::table::measure_row_height(
+            &node.id, &rows[idx], &col_sizes, col_gap_pt, max_h, ctx,
+        )?;
         row_height_cache[idx] = Some(h);
         Ok(h)
     };

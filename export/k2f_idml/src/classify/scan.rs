@@ -125,8 +125,22 @@ pub(super) fn scan_ops(
                     elements.push(PageElement::Shape(shape));
                 }
             }
-            PaintOp::DrawImage { node_id, rect, src } => {
-                let pic = picture_from_draw(node_id, rect, src, assets, *media_n)?;
+            PaintOp::DrawImage {
+                node_id,
+                rect,
+                src,
+                fit,
+                corner_radius_pt,
+            } => {
+                let pic = picture_from_draw(
+                    node_id,
+                    rect,
+                    src,
+                    assets,
+                    *media_n,
+                    *fit,
+                    *corner_radius_pt,
+                )?;
                 *media_n = media_n.saturating_add(1);
                 elements.push(PageElement::Picture(pic));
             }

@@ -133,6 +133,11 @@ pub fn picture_from_crop(
         cy_emu: pt_to_emu(crop.height),
         media_name: format!("raster{raster_index}.png"),
         bytes: png,
+        src_l: 0,
+        src_t: 0,
+        src_r: 0,
+        src_b: 0,
+        corner_emu: 0,
     }
 }
 

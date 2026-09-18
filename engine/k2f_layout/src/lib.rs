@@ -48,8 +48,10 @@ pub use visual_primitives::*;
 
 use k2f_core::{Align, CanvasMode, LayoutHint, LayoutResult, Manifest, Pt, StackDirection};
 
-/// Root is document flow: omitted/`stack` only. Grid/overlay/columns on root are not paginated
-/// as those layout types — they used to degrade silently to a vertical stack.
+/// Root is document flow: omitted / vertical `stack` only. Other layout types on root are
+/// not paginated as those types — they used to degrade silently to a vertical stack.
+const ROOT_FLOW_NEST: &str = " Nest under a child of the document-flow root (catalog ex_*.json are children — do not replace content/root.json).";
+
 fn root_flow_layout(layout: Option<&LayoutHint>) -> Result<(StackDirection, i64, Align), String> {
     match layout {
         None => Ok((StackDirection::Vertical, 0, Align::Stretch)),
@@ -58,19 +60,23 @@ fn root_flow_layout(layout: Option<&LayoutHint>) -> Result<(StackDirection, i64,
             gap,
             align_items,
             ..
-        }) => Ok((*direction, *gap, *align_items)),
-        Some(LayoutHint::Grid { .. }) => Err(
-            "root layout type grid is not document flow (children would paginate as a vertical stack). Nest the grid under a child, e.g. root → root.grid"
-                .to_string(),
-        ),
-        Some(LayoutHint::Overlay { .. }) => Err(
-            "root layout type overlay is not document flow. Nest the overlay under a child container"
-                .to_string(),
-        ),
-        Some(LayoutHint::Columns { .. }) => Err(
-            "root layout type columns is not document flow. Nest the columns container under a child, e.g. root → root.columns"
-                .to_string(),
-        ),
+        }) => {
+            if *direction == StackDirection::Horizontal {
+                return Err(format!(
+                    "root layout type stack direction horizontal is not document flow. Nest the horizontal stack under a child, e.g. root → root.row.{ROOT_FLOW_NEST}"
+                ));
+            }
+            Ok((*direction, *gap, *align_items))
+        }
+        Some(LayoutHint::Grid { .. }) => Err(format!(
+            "root layout type grid is not document flow (children would paginate as a vertical stack). Nest the grid under a child, e.g. root → root.grid.{ROOT_FLOW_NEST}"
+        )),
+        Some(LayoutHint::Overlay { .. }) => Err(format!(
+            "root layout type overlay is not document flow. Nest the overlay under a child container.{ROOT_FLOW_NEST}"
+        )),
+        Some(LayoutHint::Columns { .. }) => Err(format!(
+            "root layout type columns is not document flow. Nest the columns container under a child, e.g. root → root.columns.{ROOT_FLOW_NEST}"
+        )),
     }
 }
 
@@ -143,31 +149,17 @@ impl LayoutEngine {
             // Current pagination model paginates root's immediate children; we still do that,
             // but we apply the same stack semantics (gap + cross-axis alignment) that
             // `arrange_container` would apply if the root itself were arranged.
-            let (direction, gap_i64, align_items) =
+            let (_direction, gap_i64, align_items) =
                 root_flow_layout(manifest.root.layout.as_ref())?;
-
-            // Only vertical stack behaves like document flow today.
-            // If the root declares horizontal, we fall back to the previous behavior.
-            if direction == k2f_core::StackDirection::Horizontal {
-                for child in children {
-                    let constraint =
-                        SizeConstraint::new(Size::ZERO, Size::new(content_width, Pt(i128::MAX)));
-                    let size = measure_node(child, constraint, ctx)?;
-                    let pos = paginator.allocate_space(size.height);
-                    let geo = arrange_node(child, pos, size, ctx)?;
-                    paginator.add_item(geo);
-                }
-            } else {
-                crate::flow::paginate_flow_items(
-                    children,
-                    &mut paginator,
-                    content_width,
-                    Pt(gap_i64 as i128),
-                    align_items,
-                    manifest.canvas_mode,
-                    ctx,
-                )?;
-            }
+            crate::flow::paginate_flow_items(
+                children,
+                &mut paginator,
+                content_width,
+                Pt(gap_i64 as i128),
+                align_items,
+                manifest.canvas_mode,
+                ctx,
+            )?;
         } else {
             crate::flow::paginate_flow_items(
                 std::slice::from_ref(&manifest.root),

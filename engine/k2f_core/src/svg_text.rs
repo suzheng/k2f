@@ -51,7 +51,7 @@ where
             continue;
         }
         if svg_bytes_contain_text_element(bytes) {
-            return Err(format!("IMAGE_SIZE: {path}: {SVG_TEXT_FORBIDDEN_MSG}"));
+            return Err(format!("SVG_TEXT: {path}: {SVG_TEXT_FORBIDDEN_MSG}"));
         }
     }
     Ok(())
@@ -171,7 +171,7 @@ mod tests {
             br#"<svg xmlns="http://www.w3.org/2000/svg"><text>A</text></svg>"#.to_vec(),
         );
         let err = validate_svg_assets(&bad).unwrap_err();
-        assert!(err.contains("IMAGE_SIZE"), "{err}");
+        assert!(err.contains("SVG_TEXT"), "{err}");
         assert!(err.contains("<path>"), "{err}");
 
         let mut ok = crate::AssetsMap::new();

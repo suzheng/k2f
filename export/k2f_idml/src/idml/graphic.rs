@@ -76,6 +76,27 @@ mod tests {
     use super::*;
 
     #[test]
+    fn fonts_xml_registers_regular_and_bold() {
+        let xml = fonts_xml(&[
+            ("Roboto".into(), "Regular".into()),
+            ("Roboto".into(), "Bold".into()),
+        ]);
+        assert!(
+            xml.contains("FontStyleName=\"Regular\""),
+            "got {xml}"
+        );
+        assert!(
+            xml.contains("FontStyleName=\"Bold\""),
+            "got {xml}"
+        );
+        assert_eq!(
+            xml.matches("<FontFamily ").count(),
+            1,
+            "one family for Regular+Bold, got {xml}"
+        );
+    }
+
+    #[test]
     fn fonts_xml_registers_book_not_only_regular() {
         let xml = fonts_xml(&[
             ("DejaVu Serif".into(), "Book".into()),
