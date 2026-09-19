@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-19
+
 ### Fixed
 
 - `export-idml`: two-line author-`\n` titles beside a column (hero image) drop `NoBreak`. InDesign still hid the whole story when every paragraph was NoBreak+HeightOnly, even with lock-line slack — the designed newline stays, the lock column is not WidthOnly-grown into the gutter. Iceberg for any stacked display title next to a figure, not only this editorial hero. Invoice/text/corpus tests still pass.

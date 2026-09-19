@@ -32,12 +32,14 @@ export K2F_ENGINE_COMMIT_SHA="$(git -C "$ROOT" rev-parse HEAD)"
 #   or GHA publish-pypi workflow (maturin-action).
 if [[ -x .venv/bin/maturin ]]; then
   .venv/bin/maturin build --release
-  .venv/bin/pip install -q ../../target/wheels/k2f-*.whl
+  PY_VER="$(grep '^version' pyproject.toml | sed -n 's/^version = "\(.*\)"/\1/p')"
+  .venv/bin/pip install -q "../../target/wheels/k2f-${PY_VER}-"*.whl
   .venv/bin/pytest -q
 else
   python3 -m pip install -q maturin pytest
   python3 -m maturin build --release
-  pip install -q ../../target/wheels/k2f-*.whl
+  PY_VER="$(grep '^version' pyproject.toml | sed -n 's/^version = "\(.*\)"/\1/p')"
+  pip install -q "../../target/wheels/k2f-${PY_VER}-"*.whl
   pytest -q
 fi
 cd "$ROOT"

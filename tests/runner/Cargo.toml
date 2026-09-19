@@ -1,6 +1,6 @@
 [package]
 name = "k2f-test-runner"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 description = "K2F golden test runner"
 license = "Apache-2.0"
