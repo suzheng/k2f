@@ -30,6 +30,7 @@ pub fn build_package(
     let page0 = &lock.geometry.pages[0];
     let space = SpreadSpace::new(page0.width, page0.height);
     let swatches = ir.collect_color_hexes();
+    let gradients = ir.collect_gradients();
     let mut ids = EmitIds {
         next_st: 0,
         next_tf: 0,
@@ -81,7 +82,7 @@ pub fn build_package(
     );
     files.insert(
         "Resources/Graphic.xml".into(),
-        graphic::graphic_xml(&swatches).into_bytes(),
+        graphic::graphic_xml(&swatches, &gradients).into_bytes(),
     );
     files.insert(
         "Resources/Preferences.xml".into(),

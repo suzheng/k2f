@@ -2,15 +2,18 @@ use crate::ir::{DocField, ScriptPos, TextAlign, TextBox, TextRun};
 use crate::xml::{escape_xml, word_hex_color};
 use std::collections::BTreeMap;
 
+use super::fonts::FontEmbedPlan;
+
 pub(crate) fn textbox_wsp_xml(
     tb: &TextBox,
     hyperlink_rids: &BTreeMap<String, String>,
     picture_rids: &BTreeMap<String, String>,
+    font_embed: &FontEmbedPlan,
 ) -> String {
-    let body = txbx_content(tb, hyperlink_rids);
-    let anchor = if tb.vert_center { "ctr" } else { "t" };
+    let body = txbx_content(tb, hyperlink_rids, font_embed);
+    let (anchor, t) = body_anchor_tins(tb);
     let fill = textbox_fill_xml(tb, picture_rids);
-    let (l, t, r, b) = (tb.l_ins_emu, tb.t_ins_emu, tb.r_ins_emu, tb.b_ins_emu);
+    let (l, r, b) = (tb.l_ins_emu, tb.r_ins_emu, tb.b_ins_emu);
     // Host metrics that are wider than rustybuzz wrap an extra line in a
     // lock-tight frame. Writer clips that row unless overflow is explicit
     // (one-liners already set this; wrapped body needs it too).
@@ -53,6 +56,29 @@ pub(crate) fn textbox_wsp_xml(
     )
 }
 
+/// Compact pills (~1.9× face): Word honors `anchor=ctr` and tIns would sit
+/// the glyphs low. Tall table/card boxes: Writer ignores `wps` `anchor=ctr`
+/// and paints at the top unless lock first-line pad is `tIns`.
+fn body_anchor_tins(tb: &TextBox) -> (&'static str, i64) {
+    if tb.vert_center && box_is_compact_center(tb) {
+        ("ctr", 0)
+    } else {
+        ("t", tb.t_ins_emu)
+    }
+}
+
+fn box_is_compact_center(tb: &TextBox) -> bool {
+    let half = tb
+        .runs
+        .iter()
+        .filter(|r| r.text != "\n" && !r.text.is_empty())
+        .map(|r| i64::from(r.sz_half_points))
+        .max()
+        .unwrap_or(24);
+    let face_emu = half.saturating_mul(6_350);
+    face_emu > 0 && tb.cy_emu <= face_emu.saturating_mul(5) / 2
+}
+
 fn textbox_fill_xml(tb: &TextBox, picture_rids: &BTreeMap<String, String>) -> String {
     if let Some(blip) = &tb.fill_blip {
         if let Some(rid) = picture_rids.get(&blip.media_name) {
@@ -89,8 +115,20 @@ fn textbox_ln_xml(tb: &TextBox) -> String {
     )
 }
 
-fn txbx_content(tb: &TextBox, hyperlink_rids: &BTreeMap<String, String>) -> String {
-    let paras = split_paragraphs(&tb.runs);
+fn txbx_content(
+    tb: &TextBox,
+    hyperlink_rids: &BTreeMap<String, String>,
+    font_embed: &FontEmbedPlan,
+) -> String {
+    // Lock-wrapped list items pin `\n` at wrap points and pad with NBSP.
+    // Splitting those into new `<w:p>` resets hanging: each para's first
+    // line sits in the marker gutter (under `•`). Keep one paragraph and
+    // emit `<w:br/>` so the pad stays on continuation lines.
+    let paras = if tb.bullet || tb.numbered {
+        vec![tb.runs.clone()]
+    } else {
+        split_paragraphs(&tb.runs)
+    };
     let mut xml = String::new();
     let n = paras.len();
     for (i, para) in paras.iter().enumerate() {
@@ -100,16 +138,21 @@ fn txbx_content(tb: &TextBox, hyperlink_rids: &BTreeMap<String, String>) -> Stri
             i,
             i + 1 == n && n > 1,
             hyperlink_rids,
+            font_embed,
         ));
     }
     if paras.is_empty() {
-        xml.push_str(&paragraph_xml(tb, &[], 0, false, hyperlink_rids));
+        xml.push_str(&paragraph_xml(tb, &[], 0, false, hyperlink_rids, font_embed));
     }
     xml
 }
 
-pub(crate) fn txbx_paragraphs(tb: &TextBox, hyperlink_rids: &BTreeMap<String, String>) -> String {
-    txbx_content(tb, hyperlink_rids)
+pub(crate) fn txbx_paragraphs(
+    tb: &TextBox,
+    hyperlink_rids: &BTreeMap<String, String>,
+    font_embed: &FontEmbedPlan,
+) -> String {
+    txbx_content(tb, hyperlink_rids, font_embed)
 }
 
 fn split_paragraphs(runs: &[TextRun]) -> Vec<Vec<TextRun>> {
@@ -146,6 +189,7 @@ fn paragraph_xml(
     para_idx: usize,
     last_para: bool,
     hyperlink_rids: &BTreeMap<String, String>,
+    font_embed: &FontEmbedPlan,
 ) -> String {
     // CT_PPr is an xsd:sequence: numPr, then spacing, then ind, then jc.
     // Word (especially Mac) refuses to open the package if these are out of order.
@@ -173,6 +217,7 @@ fn paragraph_xml(
         tb.line_twips
     };
     let after = tb.para_after_twips.get(para_idx).copied().unwrap_or(0);
+    let before = tb.para_before_twips.get(para_idx).copied().unwrap_or(0);
     // Folded stacks pin exact lock pitch so host fonts cannot grow every
     // line and shove the stack into the roundRect floor. The final paragraph
     // uses atLeast so descenders on PASSBAND / "and SGLang." are not sliced
@@ -183,13 +228,21 @@ fn paragraph_xml(
         .copied()
         .flatten()
         .is_some();
-    let rule = if folded_para && last_para {
+    let rule = if folded_para && (last_para || before > 0) {
         "atLeast"
     } else {
         "exact"
     };
-    if line.is_some() || after > 0 {
+    if line.is_some() || after > 0 || before > 0 {
         match line {
+            Some(line) if before > 0 && after > 0 => ppr.push_str(&format!(
+                r#"                          <w:spacing w:before="{before}" w:after="{after}" w:line="{line}" w:lineRule="{rule}"/>
+"#
+            )),
+            Some(line) if before > 0 => ppr.push_str(&format!(
+                r#"                          <w:spacing w:before="{before}" w:line="{line}" w:lineRule="{rule}"/>
+"#
+            )),
             Some(line) if after > 0 => ppr.push_str(&format!(
                 r#"                          <w:spacing w:after="{after}" w:line="{line}" w:lineRule="{rule}"/>
 "#
@@ -198,25 +251,32 @@ fn paragraph_xml(
                 r#"                          <w:spacing w:line="{line}" w:lineRule="{rule}"/>
 "#
             )),
+            None if before > 0 && after > 0 => ppr.push_str(&format!(
+                r#"                          <w:spacing w:before="{before}" w:after="{after}"/>
+"#
+            )),
+            None if before > 0 => ppr.push_str(&format!(
+                r#"                          <w:spacing w:before="{before}"/>
+"#
+            )),
             None => ppr.push_str(&format!(
                 r#"                          <w:spacing w:after="{after}"/>
 "#
             )),
         }
     }
-    if tb.numbered || tb.bullet {
-        let hang = crate::coord::emu_to_twips(tb.hang_emu).max(0);
-        if hang > 0 {
-            ppr.push_str(&format!(
-                r#"                          <w:ind w:left="{hang}" w:hanging="{hang}"/>
-"#
-            ));
-        }
-    }
+    // Literal list markers sit in the text. Continuation indent is NBSP pad
+    // (U+2028 + NBSPs). Do not also emit w:ind hanging — hosts that honor it
+    // would indent wrap lines twice.
+    let align = tb
+        .para_align
+        .get(para_idx)
+        .copied()
+        .unwrap_or(tb.align);
     ppr.push_str(&format!(
         r#"                          <w:jc w:val="{}"/>
 "#,
-        tb.align.jc_val()
+        align.jc_val()
     ));
     ppr.push_str("                        </w:pPr>\n");
     let mut body = String::new();
@@ -226,6 +286,7 @@ fn paragraph_xml(
             tb.preserve_whitespace,
             tb.align,
             hyperlink_rids,
+            font_embed,
         ));
     }
     format!(
@@ -240,11 +301,12 @@ fn run_xml(
     preserve_box: bool,
     _align: TextAlign,
     hyperlink_rids: &BTreeMap<String, String>,
+    font_embed: &FontEmbedPlan,
 ) -> String {
     if let Some(field) = run.field {
-        return field_xml(run, field);
+        return field_xml(run, field, font_embed);
     }
-    let inner = styled_t(run, preserve_box);
+    let inner = styled_t(run, preserve_box, font_embed);
     if let Some(url) = &run.hyperlink {
         if let Some(rid) = hyperlink_rids.get(url) {
             return format!(
@@ -257,12 +319,12 @@ fn run_xml(
     inner
 }
 
-fn field_xml(run: &TextRun, field: DocField) -> String {
+fn field_xml(run: &TextRun, field: DocField, font_embed: &FontEmbedPlan) -> String {
     let instr = match field {
         DocField::Page => " PAGE ",
         DocField::NumPages => " NUMPAGES ",
     };
-    let rpr = rpr_xml(run);
+    let rpr = rpr_xml(run, font_embed);
     format!(
         r#"                        <w:r>
 {rpr}                          <w:fldChar w:fldCharType="begin"/>
@@ -284,12 +346,47 @@ fn field_xml(run: &TextRun, field: DocField) -> String {
     )
 }
 
-fn styled_t(run: &TextRun, preserve_box: bool) -> String {
-    let rpr = rpr_xml(run);
+fn styled_t(run: &TextRun, preserve_box: bool, font_embed: &FontEmbedPlan) -> String {
+    // List wrap uses U+2028 so fold can still split labels on `\n`.
+    let text = run.text.replace('\u{2028}', "\n");
+    if !text.contains('\n') {
+        return styled_t_piece(run, &run.text, preserve_box, font_embed);
+    }
+    let mut out = String::new();
+    let mut first = true;
+    for piece in text.split('\n') {
+        if !first {
+            out.push_str(&br_xml(run, font_embed));
+        }
+        first = false;
+        if !piece.is_empty() {
+            out.push_str(&styled_t_piece(run, piece, preserve_box, font_embed));
+        }
+    }
+    out
+}
+
+fn br_xml(run: &TextRun, font_embed: &FontEmbedPlan) -> String {
+    let rpr = rpr_xml(run, font_embed);
+    format!(
+        r#"                        <w:r>
+{rpr}                          <w:br/>
+                        </w:r>
+"#
+    )
+}
+
+fn styled_t_piece(
+    run: &TextRun,
+    text: &str,
+    preserve_box: bool,
+    font_embed: &FontEmbedPlan,
+) -> String {
+    let rpr = rpr_xml(run, font_embed);
     let space = if preserve_box
-        || run.text.starts_with(' ')
-        || run.text.ends_with(' ')
-        || run.text.contains("  ")
+        || text.starts_with(char::is_whitespace)
+        || text.ends_with(char::is_whitespace)
+        || text.contains("  ")
     {
         r#" xml:space="preserve""#
     } else {
@@ -300,21 +397,26 @@ fn styled_t(run: &TextRun, preserve_box: bool) -> String {
 {rpr}                          <w:t{space}>{}</w:t>
                         </w:r>
 "#,
-        escape_xml(&run.text)
+        escape_xml(text)
     )
 }
 
-fn rpr_xml(run: &TextRun) -> String {
+fn rpr_xml(run: &TextRun, font_embed: &FontEmbedPlan) -> String {
     // CT_RPr sequence: rFonts, b, i, strike, color, spacing, sz, szCs, u, vertAlign.
     // w14:textFill is an extension and must come after the 2006 children.
     let color = word_hex_color(&run.color_hex);
+    let embed = font_embed
+        .run_embed(&run.font_family_key)
+        .map(|(attr, rid)| format!(r#" {attr}="{rid}""#))
+        .unwrap_or_default();
     let mut s = format!(
         r#"                          <w:rPr>
-                            <w:rFonts w:ascii="{f}" w:hAnsi="{f}" w:eastAsia="{f}" w:cs="{f}"/>
+                            <w:rFonts w:ascii="{f}" w:hAnsi="{f}" w:eastAsia="{f}" w:cs="{f}"{embed}/>
 "#,
         f = escape_xml(&run.font_name),
+        embed = embed,
     );
-    if run.bold {
+    if run.bold || font_embed.run_needs_b(&run.font_family_key) {
         s.push_str("                            <w:b/>\n");
     }
     if run.italic {
@@ -393,6 +495,8 @@ mod tests {
             last_line_twips: None,
             para_line_twips: Vec::new(),
             para_after_twips: Vec::new(),
+            para_before_twips: Vec::new(),
+            para_align: Vec::new(),
             vert_center: false,
             preserve_whitespace: false,
             relative_height: 1,
@@ -422,26 +526,227 @@ mod tests {
 
     #[test]
     fn ppr_skips_numpr_for_literal_numbered_lists() {
-        let xml = paragraph_xml(&box_with(true, Some(240)), &[], 0, false, &BTreeMap::new());
+        let xml = paragraph_xml(&box_with(true, Some(240)), &[], 0, false, &BTreeMap::new(), &Default::default());
         assert!(!xml.contains("<w:numPr>"), "{xml}");
         child_order(&xml, &["<w:spacing", "<w:jc "]);
     }
 
     #[test]
-    fn ppr_emits_ind_between_spacing_and_jc_for_lists() {
+    fn ppr_skips_hanging_indent_for_literal_lists() {
         let mut tb = box_with(true, Some(240));
         tb.hang_emu = 635 * 360;
-        let xml = paragraph_xml(&tb, &[], 0, false, &BTreeMap::new());
+        let xml = paragraph_xml(&tb, &[], 0, false, &BTreeMap::new(), &Default::default());
         assert!(!xml.contains("<w:numPr>"), "{xml}");
-        child_order(&xml, &["<w:spacing", "<w:ind ", "<w:jc "]);
-        assert!(xml.contains(r#"w:hanging="360""#), "{xml}");
+        assert!(!xml.contains("<w:ind "), "{xml}");
+        child_order(&xml, &["<w:spacing", "<w:jc "]);
+    }
+
+    #[test]
+    fn vert_center_emits_anchor_ctr_and_zero_tins() {
+        let mut tb = box_with(false, None);
+        tb.vert_center = true;
+        tb.t_ins_emu = 80_000;
+        tb.cy_emu = 200_000; // ~15.7pt, 12pt face → compact pill
+        tb.runs = vec![TextRun {
+            text: "PPTX".into(),
+            font_family_key: String::new(),
+            font_name: "Roboto".into(),
+            sz_half_points: 24,
+            bold: false,
+            italic: false,
+            underline: false,
+            strike: false,
+            color_hex: "0F172A".into(),
+            hyperlink: None,
+            script: ScriptPos::Baseline,
+            tracking_twips: 0,
+            field: None,
+        }];
+        let xml = super::textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new(), &Default::default());
+        assert!(xml.contains(r#"anchor="ctr""#), "{xml}");
+        assert!(
+            xml.contains(r#"tIns="0""#),
+            "compact centered pill must not keep lock tIns, got {xml}"
+        );
+    }
+
+    #[test]
+    fn tall_centered_box_emits_tins_not_anchor_ctr() {
+        let mut tb = box_with(false, Some(220));
+        tb.vert_center = true;
+        tb.t_ins_emu = 80_000;
+        tb.cy_emu = 540_000; // ~42pt cell, 8.5pt face
+        tb.runs = vec![TextRun {
+            text: "01 Identity".into(),
+            font_family_key: String::new(),
+            font_name: "Roboto".into(),
+            sz_half_points: 17,
+            bold: false,
+            italic: false,
+            underline: false,
+            strike: false,
+            color_hex: "0F172A".into(),
+            hyperlink: None,
+            script: ScriptPos::Baseline,
+            tracking_twips: 0,
+            field: None,
+        }];
+        let xml = super::textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new(), &Default::default());
+        assert!(xml.contains(r#"anchor="t""#), "Writer ignores ctr on tall wps, got {xml}");
+        assert!(
+            xml.contains(r#"tIns="80000""#),
+            "tall cell must keep lock first-line pad, got {xml}"
+        );
+    }
+
+    #[test]
+    fn list_wrap_stays_one_paragraph_with_break() {
+        let mut tb = box_with(false, Some(240));
+        tb.bullet = true;
+        tb.hang_emu = 635 * 360;
+        tb.runs = vec![
+            TextRun {
+                text: "•\u{00A0}".into(),
+            font_family_key: String::new(),
+                font_name: "Arial".into(),
+                sz_half_points: 19,
+                bold: false,
+                italic: false,
+                underline: false,
+                strike: false,
+                color_hex: "0F172A".into(),
+                hyperlink: None,
+                script: ScriptPos::Baseline,
+                tracking_twips: 0,
+                field: None,
+            },
+            TextRun {
+                text: "Senior managers".into(),
+            font_family_key: String::new(),
+                font_name: "Roboto".into(),
+                sz_half_points: 19,
+                bold: false,
+                italic: false,
+                underline: false,
+                strike: false,
+                color_hex: "0F172A".into(),
+                hyperlink: None,
+                script: ScriptPos::Baseline,
+                tracking_twips: 0,
+                field: None,
+            },
+            TextRun {
+                text: "\u{2028}".into(),
+            font_family_key: String::new(),
+                font_name: "Roboto".into(),
+                sz_half_points: 19,
+                bold: false,
+                italic: false,
+                underline: false,
+                strike: false,
+                color_hex: "0F172A".into(),
+                hyperlink: None,
+                script: ScriptPos::Baseline,
+                tracking_twips: 0,
+                field: None,
+            },
+            TextRun {
+                text: "\u{00A0}\u{00A0}leads.".into(),
+            font_family_key: String::new(),
+                font_name: "Roboto".into(),
+                sz_half_points: 19,
+                bold: false,
+                italic: false,
+                underline: false,
+                strike: false,
+                color_hex: "0F172A".into(),
+                hyperlink: None,
+                script: ScriptPos::Baseline,
+                tracking_twips: 0,
+                field: None,
+            },
+        ];
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new(), &Default::default());
+        assert_eq!(xml.matches("<w:p>").count(), 1, "{xml}");
+        assert!(xml.contains("<w:br/>"), "{xml}");
+        assert!(xml.contains("leads."), "{xml}");
+        assert!(!xml.contains("<w:ind "), "{xml}");
+    }
+
+    #[test]
+    fn folded_list_wrap_stays_in_item_paragraph() {
+        let mut tb = box_with(false, Some(240));
+        tb.bullet = false;
+        tb.runs = vec![
+            TextRun {
+                text: "PHASE 01".into(),
+            font_family_key: String::new(),
+                font_name: "Roboto".into(),
+                sz_half_points: 16,
+                bold: true,
+                italic: false,
+                underline: false,
+                strike: false,
+                color_hex: "0F172A".into(),
+                hyperlink: None,
+                script: ScriptPos::Baseline,
+                tracking_twips: 0,
+                field: None,
+            },
+            TextRun {
+                text: "\n".into(),
+            font_family_key: String::new(),
+                font_name: "Roboto".into(),
+                sz_half_points: 16,
+                bold: false,
+                italic: false,
+                underline: false,
+                strike: false,
+                color_hex: "0F172A".into(),
+                hyperlink: None,
+                script: ScriptPos::Baseline,
+                tracking_twips: 0,
+                field: None,
+            },
+            TextRun {
+                text: "•\u{00A0}Cross-team roadmap \u{2028}\u{00A0}\u{00A0}calibration".into(),
+            font_family_key: String::new(),
+                font_name: "Roboto".into(),
+                sz_half_points: 16,
+                bold: false,
+                italic: false,
+                underline: false,
+                strike: false,
+                color_hex: "0F172A".into(),
+                hyperlink: None,
+                script: ScriptPos::Baseline,
+                tracking_twips: 0,
+                field: None,
+            },
+        ];
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new(), &Default::default());
+        assert_eq!(xml.matches("<w:p>").count(), 2, "{xml}");
+        assert!(xml.contains("<w:br/>"), "{xml}");
+        assert!(xml.contains("calibration"), "{xml}");
+        assert!(xml.contains("Cross-team roadmap"), "{xml}");
+    }
+
+    #[test]
+    fn ppr_uses_per_paragraph_align_when_folded() {
+        let mut tb = box_with(false, Some(240));
+        tb.align = TextAlign::Left;
+        tb.para_align = vec![TextAlign::Center, TextAlign::Left];
+        let title = paragraph_xml(&tb, &[], 0, false, &BTreeMap::new(), &Default::default());
+        let body = paragraph_xml(&tb, &[], 1, true, &BTreeMap::new(), &Default::default());
+        assert!(title.contains(r#"w:jc w:val="center""#), "{title}");
+        assert!(body.contains(r#"w:jc w:val="left""#), "{body}");
     }
 
     #[test]
     fn ppr_emits_numpr_when_legacy_num_id_set() {
         let mut tb = box_with(true, Some(240));
         tb.num_id = 1001;
-        let xml = paragraph_xml(&tb, &[], 0, false, &BTreeMap::new());
+        let xml = paragraph_xml(&tb, &[], 0, false, &BTreeMap::new(), &Default::default());
         child_order(&xml, &["<w:numPr>", "<w:spacing", "<w:jc "]);
         assert!(xml.contains(r#"w:numId w:val="1001""#), "{xml}");
     }
@@ -451,7 +756,7 @@ mod tests {
         let mut tb = box_with(false, None);
         tb.align = TextAlign::Center;
         tb.wrap = true;
-        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new());
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new(), &Default::default());
         assert!(xml.contains("<a:noAutofit/>"), "{xml}");
         assert!(xml.contains(r#"wrap="square""#), "{xml}");
         assert!(xml.contains(r#"w:jc w:val="center""#), "{xml}");
@@ -462,7 +767,7 @@ mod tests {
     #[test]
     fn chrome_textbox_emits_transparent_solid_not_nofill() {
         let tb = box_with(false, None);
-        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new());
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new(), &Default::default());
         assert!(
             xml.contains("<a:solidFill>") && xml.contains(r#"<a:alpha val="0"/>"#),
             "Word Dark Mode inverts noFill text boxes; expected alpha-0 fill, got {xml}"
@@ -491,7 +796,7 @@ mod tests {
         tb.line_hex = Some("DC2626".into());
         tb.line_w_emu = 12_700;
         tb.corner_emu = 8_000;
-        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new());
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new(), &Default::default());
         assert!(xml.contains(r#"<a:srgbClr val="DC2626"/>"#), "{xml}");
         assert!(xml.contains(r#"<a:ln w="12700">"#), "{xml}");
         assert!(!xml.contains("<a:ln>\n                      <a:noFill/>"), "{xml}");
@@ -503,7 +808,7 @@ mod tests {
         tb.line_hex = Some("38BDF8".into());
         tb.line_alpha = 0x66;
         tb.line_w_emu = 6_350;
-        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new());
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new(), &Default::default());
         assert!(xml.contains("<a:alpha val=\"40000\"/>"), "{xml}");
         assert!(xml.contains(r#"val="38BDF8""#), "{xml}");
     }
@@ -529,7 +834,7 @@ mod tests {
         });
         let mut rids = BTreeMap::new();
         rids.insert("raster1.png".into(), "rIdM1".into());
-        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &rids);
+        let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &rids, &Default::default());
         assert!(xml.contains(r#"<a:blipFill>"#), "{xml}");
         assert!(xml.contains(r#"r:embed="rIdM1""#), "{xml}");
         assert!(xml.contains("txBox=\"1\""), "{xml}");
@@ -539,6 +844,7 @@ mod tests {
     fn bold_run_emits_b_and_family_name() {
         let run = TextRun {
             text: "Hello".into(),
+            font_family_key: String::new(),
             font_name: "Roboto".into(),
             sz_half_points: 24,
             bold: true,
@@ -551,7 +857,7 @@ mod tests {
             tracking_twips: 0,
             field: None,
         };
-        let xml = rpr_xml(&run);
+        let xml = rpr_xml(&run, &Default::default());
         assert!(xml.contains("<w:b/>"), "{xml}");
         assert!(xml.contains(r#"w:ascii="Roboto""#), "{xml}");
         assert!(
@@ -564,6 +870,7 @@ mod tests {
     fn rpr_follows_schema_order_with_w14_last() {
         let run = TextRun {
             text: "a".into(),
+            font_family_key: String::new(),
             font_name: "Calibri".into(),
             sz_half_points: 22,
             bold: true,
@@ -576,7 +883,7 @@ mod tests {
             tracking_twips: 20,
             field: None,
         };
-        let xml = rpr_xml(&run);
+        let xml = rpr_xml(&run, &Default::default());
         child_order(
             &xml,
             &[

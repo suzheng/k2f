@@ -1,6 +1,6 @@
 use crate::IdmlError;
-use k2f_core::{BoxDecoration, Fill, NodeContent, Pt, Rect, SemanticNode, ROLE_MATH};
-use k2f_paint::{parse_hex_rgba, resolve_fill};
+use k2f_core::{BoxDecoration, NodeContent, Pt, Rect, SemanticNode, ROLE_MATH};
+use k2f_paint::resolve_fill;
 use std::collections::HashSet;
 
 pub fn is_rule_id(node_id: &str) -> bool {
@@ -26,8 +26,9 @@ pub fn is_full_page(page_w: Pt, page_h: Pt, rect: &Rect) -> bool {
     rect.x == Pt(0) && rect.y == Pt(0) && rect.width == page_w && rect.height == page_h
 }
 
-/// Boxes that cannot be native InDesign rectangles: blur, linear gradient,
-/// or translucent solid fill/stroke. Fraction rules stay with math.
+/// Boxes that cannot be native InDesign rectangles: blur. Linear gradients
+/// and translucent solids/strokes stay native (`Gradient` fill /
+/// `FillTransparencySetting`). Fraction rules stay with math.
 ///
 /// Shadow-only boxes stay native fill+stroke. An opaque shadow PNG is
 /// expanded for blur/spread, so it covers earlier labels that sit in the
@@ -40,61 +41,12 @@ pub fn box_is_effect(node_id: &str, decoration: &BoxDecoration) -> Result<bool, 
     if decoration.blur.is_some() {
         return Ok(true);
     }
-    if translucent_border(decoration)? {
-        return Ok(!partial_translucent_border_is_native_edge(decoration)?);
-    }
+    // Linear gradients, opaque solids, and `#RRGGBBAA` fills/strokes are
+    // native InDesign rectangles. Rasterizing a translucent scrim as opaque
+    // RGB (page paper behind it) hid the picture underneath — hero overlays
+    // became a gray plate. Same iceberg as PPTX/DOCX `a:alpha`.
     match resolve_fill(decoration) {
-        Ok(Some(Fill::LinearGradient { .. })) => Ok(true),
-        Ok(Some(Fill::Solid { color })) => translucent_solid(&color),
-        Ok(None) => Ok(false),
-        Err(k2f_paint::PaintError::UnresolvedRef(name)) => {
-            Err(IdmlError::Write(format!("unresolved fill ref '{name}'")))
-        }
-        Err(e) => Err(e.into()),
-    }
-}
-
-fn translucent_solid(color: &str) -> Result<bool, IdmlError> {
-    let [_, _, _, a] = parse_hex_rgba(color)
-        .ok_or_else(|| IdmlError::Write(format!("unparseable fill color '{color}'")))?;
-    Ok(a < 255)
-}
-
-/// Opaque native Stroke strips the alpha byte, so a 10% hairline becomes a
-/// solid ink rim. Slice those boxes instead (same path as translucent fill).
-fn translucent_border(decoration: &BoxDecoration) -> Result<bool, IdmlError> {
-    let Some(border) = decoration.border.as_ref() else {
-        return Ok(false);
-    };
-    if border.width_pt <= 0 || border.edges.is_empty() {
-        return Ok(false);
-    }
-    let [_, _, _, a] = parse_hex_rgba(&border.color)
-        .ok_or_else(|| IdmlError::Write(format!("unparseable color '{}'", border.color)))?;
-    Ok(a > 0 && a < 255)
-}
-
-/// Partial-edge translucent borders on signature underlines share a node with
-/// native text. Slicing the full box duplicates the label; emit `::edge_*`
-/// bars with opaque RGB instead (v1 alpha loss on a hairline is acceptable).
-fn partial_translucent_border_is_native_edge(decoration: &BoxDecoration) -> Result<bool, IdmlError> {
-    let Some(border) = decoration.border.as_ref() else {
-        return Ok(false);
-    };
-    if border.width_pt <= 0 || border.edges.is_empty() {
-        return Ok(false);
-    }
-    if border.is_full_rect_stroke() || border.draws_all_four_edges() {
-        return Ok(false);
-    }
-    match resolve_fill(decoration) {
-        Ok(Some(Fill::LinearGradient { .. })) => Ok(false),
-        Ok(Some(Fill::Solid { color })) => {
-            let [_, _, _, a] = parse_hex_rgba(&color)
-                .ok_or_else(|| IdmlError::Write(format!("unparseable fill color '{color}'")))?;
-            Ok(a >= 255)
-        }
-        Ok(None) => Ok(true),
+        Ok(_) => Ok(false),
         Err(k2f_paint::PaintError::UnresolvedRef(name)) => {
             Err(IdmlError::Write(format!("unresolved fill ref '{name}'")))
         }
@@ -105,7 +57,7 @@ fn partial_translucent_border_is_native_edge(decoration: &BoxDecoration) -> Resu
 #[cfg(test)]
 mod tests {
     use super::*;
-    use k2f_core::{Blur, BlurRef, FillRef, Shadow, ShadowRef};
+    use k2f_core::{Blur, BlurRef, Fill, FillRef, Shadow, ShadowRef};
 
     fn opaque_glow_plaque() -> BoxDecoration {
         BoxDecoration {
@@ -161,7 +113,7 @@ mod tests {
     }
 
     #[test]
-    fn four_side_translucent_stroke_stays_effect() {
+    fn four_side_translucent_stroke_is_native() {
         use k2f_core::{Border, BorderEdge, BorderStyle, FillRef};
 
         let dec = BoxDecoration {
@@ -181,6 +133,37 @@ mod tests {
             }),
             ..Default::default()
         };
-        assert!(box_is_effect("card.front", &dec).unwrap());
+        assert!(
+            !box_is_effect("card.front", &dec).unwrap(),
+            "translucent four-side stroke must stay native Fill+Stroke + opacity"
+        );
+    }
+
+    #[test]
+    fn linear_gradient_is_not_effect() {
+        use k2f_core::{GradientStop, LinearGradient};
+
+        let dec = BoxDecoration {
+            background: Some(FillRef::Inline(Fill::LinearGradient {
+                value: LinearGradient::Linear {
+                    angle_degrees: 135,
+                    stops: vec![
+                        GradientStop {
+                            pos: 0,
+                            color: "#FF8A00".into(),
+                        },
+                        GradientStop {
+                            pos: 1000,
+                            color: "#FF5E00".into(),
+                        },
+                    ],
+                },
+            })),
+            ..Default::default()
+        };
+        assert!(
+            !box_is_effect("hero.right.labels.pptx", &dec).unwrap(),
+            "rounded gradient pills must stay native Gradient fills"
+        );
     }
 }

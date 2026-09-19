@@ -128,11 +128,26 @@ pub(crate) fn rectangle_xml_on(
     let tf = item_transform(tx, ty);
     let w = pt_val(shape.rect.width);
     let h = pt_val(shape.rect.height);
-    let geo = path_geometry_xml(w, h);
     let name = escape_xml(&shape.node_id);
-    let fill = match &shape.fill_hex {
-        Some(hex) => format!("FillColor=\"Color/k2f_{hex}\""),
-        None => "FillColor=\"Swatch/None\"".into(),
+    let (fill, geo) = if let Some(name) = shape.gradient_swatch_name() {
+        let g = shape.gradient.as_ref().expect("swatch name implies gradient");
+        let (sx, sy, len) = gradient_aabb_start_length(&shape.rect, g.angle_degrees);
+        (
+            format!(
+                "FillColor=\"Gradient/{name}\" GradientFillAngle=\"{}\" GradientFillLength=\"{}\" GradientFillStart=\"{} {}\"",
+                idml_gradient_angle(g.angle_degrees),
+                fmt_pt(len),
+                fmt_pt(sx),
+                fmt_pt(sy),
+            ),
+            path_geometry_xml_with_gradient_start(w, h, sx, sy),
+        )
+    } else {
+        let fill = match &shape.fill_hex {
+            Some(hex) => format!("FillColor=\"Color/k2f_{hex}\""),
+            None => "FillColor=\"Swatch/None\"".into(),
+        };
+        (fill, path_geometry_xml(w, h))
     };
     let stroke = stroke_attrs(shape);
     let corners = if shape.corner_pt > 0.0 {
@@ -149,10 +164,11 @@ pub(crate) fn rectangle_xml_on(
     } else {
         String::new()
     };
+    let transparency = transparency_xml(shape);
     format!(
         r#"    <Rectangle Self="{self_id}" ContentType="Unassigned" ItemLayer="kLayer" {fill}{stroke}{corners} ItemTransform="{tf}" Name="{name}">
 {geo}
-    </Rectangle>
+{transparency}    </Rectangle>
 "#
     )
 }
@@ -272,7 +288,7 @@ fn stroke_attrs(shape: &ShapeBox) -> String {
         Some(hex) => {
             // K2F paints borders inside the box. Default IDML center strokes
             // split across the path edge and read as a double rim on filled shells.
-            let alignment = if shape.fill_hex.is_some() {
+            let alignment = if shape.fill_hex.is_some() || shape.gradient.is_some() {
                 " StrokeAlignment=\"InsideAlignment\""
             } else {
                 ""
@@ -295,6 +311,68 @@ fn stroke_type(dash: LineDash) -> &'static str {
     }
 }
 
+/// K2F paint: 0° = +x (right), 90° = +y (down). InDesign `GradientFillAngle`
+/// uses the same 0° = right but 90° = up. Negate so a 135° wash still ends
+/// on the bottom-left once `GradientFillStart` is in page coordinates.
+fn idml_gradient_angle(k2f_deg: i64) -> i64 {
+    let mut a = -k2f_deg % 360;
+    if a > 180 {
+        a -= 360;
+    }
+    if a < -180 {
+        a += 360;
+    }
+    a
+}
+
+/// K2F paint AABB corner projection in **page** coordinates (top-left origin,
+/// Y-down), which is what InDesign’s `gradientFillStart` API documents.
+/// 0° = +x, 90° = +y (down). Start is the axis point of the min-projection
+/// corner; length reaches the opposite corner so both end-stops sit on the box.
+fn gradient_aabb_start_length(rect: &k2f_core::Rect, angle_degrees: i64) -> (f64, f64, f64) {
+    let w = pt_val(rect.width).max(0.0);
+    let h = pt_val(rect.height).max(0.0);
+    let cx = pt_val(rect.x) + w * 0.5;
+    let cy = pt_val(rect.y) + h * 0.5;
+    let theta = (angle_degrees as f64).to_radians();
+    let dir_x = theta.cos();
+    let dir_y = theta.sin();
+    let hw = w * 0.5;
+    let hh = h * 0.5;
+    let corners = [(-hw, -hh), (hw, -hh), (-hw, hh), (hw, hh)];
+    let mut min_t = f64::INFINITY;
+    let mut max_t = f64::NEG_INFINITY;
+    for (dx, dy) in corners {
+        let t = dx * dir_x + dy * dir_y;
+        min_t = min_t.min(t);
+        max_t = max_t.max(t);
+    }
+    (
+        cx + dir_x * min_t,
+        cy + dir_y * min_t,
+        (max_t - min_t).max(0.0),
+    )
+}
+
+fn transparency_xml(shape: &ShapeBox) -> String {
+    let mut out = String::new();
+    if shape.fill_hex.is_some() && shape.fill_alpha < 255 {
+        out.push_str(&blending_xml("FillTransparencySetting", shape.fill_alpha));
+    }
+    if shape.line_hex.is_some() && shape.line_alpha < 255 {
+        out.push_str(&blending_xml("StrokeTransparencySetting", shape.line_alpha));
+    }
+    out
+}
+
+fn blending_xml(tag: &str, alpha: u8) -> String {
+    let opacity = (f64::from(alpha) * 100.0 / 255.0).clamp(0.0, 100.0);
+    format!(
+        "      <{tag}>\n        <BlendingSetting BlendMode=\"Normal\" Opacity=\"{}\" KnockoutGroup=\"false\" IsolateBlending=\"false\"/>\n      </{tag}>\n",
+        fmt_pt(opacity)
+    )
+}
+
 fn image_type_name(ext: &str) -> &'static str {
     match ext {
         "jpg" | "jpeg" => "$ID/JPEG",
@@ -315,7 +393,27 @@ fn b64_76(bytes: &[u8]) -> String {
 }
 
 pub(crate) fn path_geometry_xml(w: f64, h: f64) -> String {
+    path_geometry_properties(w, h, None)
+}
+
+fn path_geometry_xml_with_gradient_start(w: f64, h: f64, sx: f64, sy: f64) -> String {
+    path_geometry_properties(w, h, Some((sx, sy)))
+}
+
+fn path_geometry_properties(w: f64, h: f64, gradient_start: Option<(f64, f64)>) -> String {
     let [tl, tr, br, bl] = local_rect_path(w, h);
+    // List-valued IDML points are ignored as attributes on import (same as
+    // InsetSpacing). Put GradientFillStart next to PathGeometry so InDesign
+    // actually applies the AABB start instead of the object center.
+    let start = if let Some((sx, sy)) = gradient_start {
+        format!(
+            "\n        <GradientFillStart type=\"list\">\n          <ListItem type=\"unit\">{}</ListItem>\n          <ListItem type=\"unit\">{}</ListItem>\n        </GradientFillStart>",
+            fmt_pt(sx),
+            fmt_pt(sy),
+        )
+    } else {
+        String::new()
+    };
     format!(
         r#"      <Properties>
         <PathGeometry>
@@ -327,7 +425,7 @@ pub(crate) fn path_geometry_xml(w: f64, h: f64) -> String {
               <PathPointType Anchor="{bl}" LeftDirection="{bl}" RightDirection="{bl}"/>
             </PathPointArray>
           </GeometryPathType>
-        </PathGeometry>
+        </PathGeometry>{start}
       </Properties>"#
     )
 }
@@ -350,8 +448,10 @@ mod tests {
             },
             fill_hex: Some("FAF8F3".into()),
             fill_alpha: 255,
+            gradient: None,
             corner_pt: 0.0,
             line_hex: Some("D2C8B4".into()),
+            line_alpha: 255,
             line_w_pt: 0.65,
             line_dash: LineDash::Solid,
         };
@@ -378,8 +478,10 @@ mod tests {
             },
             fill_hex: Some("D5CCBA".into()),
             fill_alpha: 255,
+            gradient: None,
             corner_pt: 0.0,
             line_hex: None,
+            line_alpha: 255,
             line_w_pt: 0.0,
             line_dash: LineDash::Solid,
         };
@@ -406,8 +508,10 @@ mod tests {
             },
             fill_hex: Some("E05A47".into()),
             fill_alpha: 255,
+            gradient: None,
             corner_pt: 20.0,
             line_hex: None,
+            line_alpha: 255,
             line_w_pt: 0.0,
             line_dash: LineDash::Solid,
         };
@@ -428,6 +532,168 @@ mod tests {
         ] {
             assert!(xml.contains(attr), "missing {attr} in {xml}");
         }
+    }
+
+    #[test]
+    fn gradient_rect_emits_gradient_fill_and_corners() {
+        use crate::ir::{GradientFill, GradientStopFill};
+        let shape = ShapeBox {
+            node_id: "hero.right.labels.pptx".into(),
+            rect: Rect {
+                x: Pt(0),
+                y: Pt(0),
+                width: Pt(58_794),
+                height: Pt(26_800),
+            },
+            fill_hex: None,
+            fill_alpha: 255,
+            gradient: Some(GradientFill {
+                angle_degrees: 135,
+                stops: vec![
+                    GradientStopFill {
+                        pos: 0,
+                        hex: "FF8A00".into(),
+                    },
+                    GradientStopFill {
+                        pos: 1000,
+                        hex: "FF5E00".into(),
+                    },
+                ],
+            }),
+            corner_pt: 26.8,
+            line_hex: None,
+            line_alpha: 255,
+            line_w_pt: 0.0,
+            line_dash: LineDash::Solid,
+        };
+        let space = SpreadSpace {
+            page_w: 960.0,
+            page_h: 540.0,
+        };
+        let xml = rectangle_xml(&shape, &space, "kRect0");
+        assert!(
+            xml.contains("FillColor=\"Gradient/k2f_g_hero_right_labels_pptx\""),
+            "{xml}"
+        );
+        assert!(xml.contains("GradientFillAngle=\"-135\""), "{xml}");
+        let (sx, sy, len) = gradient_aabb_start_length(&shape.rect, 135);
+        assert!(
+            xml.contains(&format!("GradientFillLength=\"{}\"", fmt_pt(len))),
+            "{xml}"
+        );
+        assert!(
+            xml.contains(&format!("GradientFillStart=\"{} {}\"", fmt_pt(sx), fmt_pt(sy))),
+            "{xml}"
+        );
+        assert!(
+            xml.contains(&format!(
+                "<ListItem type=\"unit\">{}</ListItem>",
+                fmt_pt(sx)
+            )),
+            "{xml}"
+        );
+        assert!(
+            xml.contains(&format!(
+                "<ListItem type=\"unit\">{}</ListItem>",
+                fmt_pt(sy)
+            )),
+            "{xml}"
+        );
+        assert!(xml.contains("TopRightCornerOption=\"RoundedCorner\""), "{xml}");
+        assert!(!xml.contains("k2f-raster"), "{xml}");
+    }
+
+    #[test]
+    fn gradient_aabb_puts_135_end_stop_on_square_bottom_left() {
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(600_000),
+            height: Pt(600_000),
+        };
+        let (sx, sy, len) = gradient_aabb_start_length(&rect, 135);
+        // Page top-right; length is the diagonal.
+        assert!((sx - 600.0).abs() < 0.01, "sx={sx}");
+        assert!(sy.abs() < 0.01, "sy={sy}");
+        assert!((len - 600.0 * 2.0_f64.sqrt()).abs() < 0.01, "len={len}");
+        let (sx0, sy0, len0) = gradient_aabb_start_length(&rect, 0);
+        assert!(sx0.abs() < 0.01, "sx0={sx0}");
+        assert!((sy0 - 300.0).abs() < 0.01, "sy0={sy0}");
+        assert!((len0 - 600.0).abs() < 0.01, "len0={len0}");
+    }
+
+    #[test]
+    fn k2f_down_angle_flips_for_indesign() {
+        assert_eq!(idml_gradient_angle(0), 0);
+        assert_eq!(idml_gradient_angle(90), -90);
+        assert_eq!(idml_gradient_angle(135), -135);
+        assert_eq!(idml_gradient_angle(-45), 45);
+    }
+
+    #[test]
+    fn translucent_fill_emits_fill_transparency() {
+        let shape = ShapeBox {
+            node_id: "top_hero.scrim".into(),
+            rect: Rect {
+                x: Pt(80_000),
+                y: Pt(40_000),
+                width: Pt(200_000),
+                height: Pt(80_000),
+            },
+            fill_hex: Some("000000".into()),
+            fill_alpha: 0x44,
+            gradient: None,
+            corner_pt: 7.0,
+            line_hex: None,
+            line_alpha: 255,
+            line_w_pt: 0.0,
+            line_dash: LineDash::Solid,
+        };
+        let space = SpreadSpace {
+            page_w: 595.0,
+            page_h: 842.0,
+        };
+        let xml = rectangle_xml(&shape, &space, "kRect0");
+        assert!(
+            xml.contains("<FillTransparencySetting>"),
+            "{xml}"
+        );
+        assert!(
+            xml.contains("Opacity=\"26.667\""),
+            "0x44 / 255 = 26.667%, got {xml}"
+        );
+        assert!(!xml.contains("k2f-raster"), "{xml}");
+        assert!(!xml.contains("StrokeTransparencySetting"), "{xml}");
+    }
+
+    #[test]
+    fn translucent_stroke_emits_stroke_transparency() {
+        let shape = ShapeBox {
+            node_id: "glass_card".into(),
+            rect: Rect {
+                x: Pt(40_000),
+                y: Pt(40_000),
+                width: Pt(200_000),
+                height: Pt(80_000),
+            },
+            fill_hex: Some("FFFFFF".into()),
+            fill_alpha: 0x24,
+            gradient: None,
+            corner_pt: 16.0,
+            line_hex: Some("FFFFFF".into()),
+            line_alpha: 0x59,
+            line_w_pt: 1.0,
+            line_dash: LineDash::Solid,
+        };
+        let space = SpreadSpace {
+            page_w: 600.0,
+            page_h: 600.0,
+        };
+        let xml = rectangle_xml(&shape, &space, "kRect0");
+        assert!(xml.contains("<FillTransparencySetting>"), "{xml}");
+        assert!(xml.contains("<StrokeTransparencySetting>"), "{xml}");
+        assert!(xml.contains("Opacity=\"14.118\""), "fill 0x24, got {xml}");
+        assert!(xml.contains("Opacity=\"34.902\""), "stroke 0x59, got {xml}");
     }
 
     #[test]

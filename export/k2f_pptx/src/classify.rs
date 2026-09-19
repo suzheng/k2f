@@ -47,14 +47,32 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DeckIR, PptxError> {
                 continue;
             }
             if let Some(tid) = paint_node_id(op).and_then(|id| tables.owner_of(id)) {
-                if emitted_tables.contains(tid) {
-                    continue;
+                if !emitted_tables.contains(tid) {
+                    if let Some(tbl) =
+                        table_on_page(&tables, tid, page, &plan.ops, root, running, &fonts)?
+                    {
+                        emitted_tables.insert(tid.to_string());
+                        elements.push(SlideElement::Table(tbl));
+                    }
                 }
-                if let Some(tbl) =
-                    table_on_page(&tables, tid, page, &plan.ops, root, running, &fonts)?
-                {
-                    emitted_tables.insert(tid.to_string());
-                    elements.push(SlideElement::Table(tbl));
+                if emitted_tables.contains(tid) {
+                    // Native `a:lnB` hairlines (dashed note rules, booktabs)
+                    // vanish in LibreOffice Impress. Keep the table for text
+                    // and still paint partial-edge bars from the cell DrawBox
+                    // — same split as unharvested shapes. Closed four-side
+                    // strokes stay `a:ln` on the table (no `::edge_*`).
+                    if let PaintOp::DrawBox {
+                        node_id,
+                        rect,
+                        decoration,
+                    } = op
+                    {
+                        for shape in shapes_from_box(node_id, rect, decoration)? {
+                            if shape.node_id.contains("::edge_") {
+                                elements.push(SlideElement::Shape(shape));
+                            }
+                        }
+                    }
                     continue;
                 }
             }
@@ -178,6 +196,7 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DeckIR, PptxError> {
                 }
             }
         }
+        drop_redundant_underline_on_bottom_rules(&mut elements);
         let bg_hex = page_bg_hex(page, &plan.ops);
         assign_table_cell_underlays(&mut elements, &bg_hex);
         slides.push(SlideIR {
@@ -191,6 +210,42 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DeckIR, PptxError> {
         title: doc.title().to_string(),
         slides,
     })
+}
+
+/// Same as Word: a wrap=none heading with a same-node bottom bar should not
+/// also emit DrawingML `u`. Impress paints that underline far from the face.
+fn drop_redundant_underline_on_bottom_rules(elements: &mut [SlideElement]) {
+    let ruled: HashSet<String> = elements
+        .iter()
+        .filter_map(|el| match el {
+            SlideElement::Shape(s) if s.node_id.ends_with("::edge_bottom") => s
+                .node_id
+                .strip_suffix("::edge_bottom")
+                .map(str::to_string),
+            _ => None,
+        })
+        .collect();
+    if ruled.is_empty() {
+        return;
+    }
+    for el in elements {
+        let SlideElement::TextBox(tb) = el else {
+            continue;
+        };
+        if tb.wrap || !ruled.contains(&tb.node_id) {
+            continue;
+        }
+        if tb
+            .runs
+            .iter()
+            .any(|r| r.text.contains('\n') || r.hyperlink.is_some())
+        {
+            continue;
+        }
+        for run in &mut tb.runs {
+            run.underline = false;
+        }
+    }
 }
 
 fn page_bg_hex(page: &Page, ops: &[PaintOp]) -> String {

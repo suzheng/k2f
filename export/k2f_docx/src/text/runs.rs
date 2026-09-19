@@ -206,6 +206,7 @@ fn run_from_style(
 ) -> TextRun {
     TextRun {
         text: text.to_string(),
+        font_family_key: style.font_family.clone(),
         font_name: fonts.typeface(&style.font_family),
         sz_half_points: sz_half_points(style.font_size.0),
         bold: style.bold,
@@ -320,6 +321,7 @@ mod tests {
     fn dummy_run() -> TextRun {
         TextRun {
             text: "link".into(),
+            font_family_key: String::new(),
             font_name: "Roboto".into(),
             sz_half_points: 22,
             bold: false,

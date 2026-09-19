@@ -103,8 +103,9 @@ pub(crate) fn textbox_from_draw_ctx(
     for run in &mut runs {
         run.leading_pt = leading;
     }
-    let (mut inset_top, mut inset_left, mut inset_bottom, inset_right) = insets(geo, align);
-    let mut first_line_indent_pt = infer_first_line_indent(geo, align);
+    let (mut inset_top, mut inset_left, mut inset_bottom, inset_right) =
+        insets(geo, align, &node.modifiers);
+    let mut first_line_indent_pt = infer_first_line_indent(geo, align, &node.modifiers);
     let mut left_indent_pt = 0.0;
     if is_list {
         // Hang wrap lines by the literal `•\u{00A0}` / `{n}.\u{00A0}` width, not
@@ -309,7 +310,11 @@ pub(crate) fn cell_runs(
     runs
 }
 
-pub(crate) fn insets(geo: Option<&GeometryNode>, align: TextAlign) -> (f64, f64, f64, f64) {
+pub(crate) fn insets(
+    geo: Option<&GeometryNode>,
+    align: TextAlign,
+    modifiers: &[Modifier],
+) -> (f64, f64, f64, f64) {
     let Some(geo) = geo else {
         return (0.0, 0.0, 0.0, 0.0);
     };
@@ -324,7 +329,7 @@ pub(crate) fn insets(geo: Option<&GeometryNode>, align: TextAlign) -> (f64, f64,
         .unwrap_or(0)
         .max(0);
     let top_pt = millipt_to_pt(top).max(0.0);
-    let lines = source_lines(geo);
+    let lines = body_lines(geo, modifiers);
     let bottom_pt = if lines.len() >= 2 {
         let last = lines.last().unwrap()[0].y_offset.0;
         let leading = (lines[1][0].y_offset.0 - lines[0][0].y_offset.0).abs();
@@ -358,14 +363,19 @@ pub(crate) fn insets(geo: Option<&GeometryNode>, align: TextAlign) -> (f64, f64,
 
 /// Extra indent of the first lock line vs later lines (Left only).
 /// Common left padding stays on the frame (`inset_left`); this is `FirstLineIndent`.
-pub(crate) fn infer_first_line_indent(geo: Option<&GeometryNode>, align: TextAlign) -> f64 {
+/// Superscript/subscript-only rows (™, author marks) are not wrap lines.
+pub(crate) fn infer_first_line_indent(
+    geo: Option<&GeometryNode>,
+    align: TextAlign,
+    modifiers: &[Modifier],
+) -> f64 {
     if !matches!(align, TextAlign::Left) {
         return 0.0;
     }
     let Some(geo) = geo else {
         return 0.0;
     };
-    let lines = source_lines(geo);
+    let lines = body_lines(geo, modifiers);
     if lines.len() < 2 {
         return 0.0;
     }
@@ -646,7 +656,7 @@ mod tests {
             !vert_center(Some(&geo), &rect, Pt(9_500)),
             "ratio band alone must not center multi-line body"
         );
-        let (top, _, bottom, _) = insets(Some(&geo), TextAlign::Left);
+        let (top, _, bottom, _) = insets(Some(&geo), TextAlign::Left, &[]);
         assert!(
             symmetric_vertical_padding(top, bottom),
             "equal top/bottom insets must detect vertical center"
@@ -657,7 +667,7 @@ mod tests {
     fn two_line_banner_with_symmetric_padding_centers() {
         let mut geo = line_geo(&[7_000, 18_050]);
         geo.height = Pt(36_100);
-        let (top, _, bottom, _) = insets(Some(&geo), TextAlign::Left);
+        let (top, _, bottom, _) = insets(Some(&geo), TextAlign::Left, &[]);
         assert!(
             symmetric_vertical_padding(top, bottom),
             "notice.banner style padded bar must center"
@@ -668,7 +678,7 @@ mod tests {
     fn flush_top_body_stays_top_aligned() {
         let ys: Vec<i128> = (0..5).map(|i| i * 14_000).collect();
         let geo = line_geo(&ys);
-        let (top, _, bottom, _) = insets(Some(&geo), TextAlign::Left);
+        let (top, _, bottom, _) = insets(Some(&geo), TextAlign::Left, &[]);
         assert!(
             !symmetric_vertical_padding(top, bottom),
             "flush-top column body must not vertically center"

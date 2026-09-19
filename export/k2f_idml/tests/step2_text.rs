@@ -676,6 +676,66 @@ fn first_line_indent_on_first_para_only() {
 }
 
 #[test]
+fn superscript_mark_is_not_first_line_indent() {
+    // Brand titles: "NEXUS DYNAMICS™" paints ™ on a higher baseline at the
+    // end of the word. That is not a wrap line; using it as line 1 made
+    // FirstLineIndent ≈ the mark's x and overset the name.
+    let text = "TITLE*";
+    let mut glyphs = Vec::new();
+    for i in 0..5 {
+        glyphs.push(glyph(i as u32, i as i128 * 8_000, 8_000, 12_000));
+    }
+    glyphs.push(glyph(5, 200_000, 6_000, 4_000));
+    let xml = story_from(
+        text,
+        vec![Modifier {
+            range: [5, 6],
+            mod_type: "superscript".into(),
+            intent: "default".into(),
+        }],
+        vec![TextGlyphRun {
+            glyph_range: [0, 6],
+            style: style("#0F2042", 24_000),
+        }],
+        glyphs,
+        315_000,
+    );
+    assert!(
+        !xml.contains("FirstLineIndent="),
+        "superscript-only row must not indent the title, got {xml}"
+    );
+    let frame = frame_from(
+        text,
+        vec![Modifier {
+            range: [5, 6],
+            mod_type: "superscript".into(),
+            intent: "default".into(),
+        }],
+        vec![TextGlyphRun {
+            glyph_range: [0, 6],
+            style: style("#0F2042", 24_000),
+        }],
+        {
+            let mut g = Vec::new();
+            for i in 0..5 {
+                g.push(glyph(i as u32, i as i128 * 8_000, 8_000, 12_000));
+            }
+            g.push(glyph(5, 200_000, 6_000, 4_000));
+            g
+        },
+        315_000,
+    );
+    let wrapped = format!("<root>{frame}</root>");
+    let parsed = roxmltree::Document::parse(&wrapped).expect("frame");
+    let parts = inset_list(&parsed);
+    assert_eq!(parts.len(), 4, "{frame}");
+    assert_eq!(
+        parts[2], "0.000",
+        "superscript-only row must not steal bottom inset, got {frame}"
+    );
+}
+
+#[test]
 fn list_item_hangs_marker_column_not_body_inset() {
     let text = "Item";
     let mut node = node_with(text, vec![]);

@@ -184,13 +184,14 @@ fn fits_n_lines(geo: &GeometryNode, line: &[&GlyphPosition], font_size: Pt, n: u
     content_h >= font_size.0.saturating_mul(n)
 }
 
-/// Lock-wrapped paragraph in a frame that cannot fit N+1 lines: host wrap
-/// creates a clipped extra row. Caller should insert `\n` at lock line
-/// starts and keep wrap off. Justify still wraps (hard breaks would drop
-/// last-line raggedness).
+/// Lock-wrapped paragraph: insert `\n` at lock line starts so each visual
+/// line is its own paragraph. Impress ignores DrawingML `spcPts` line
+/// spacing on wrapped runs *and* on one-line paragraphs; stacking with
+/// `spcAft` (lock delta − face) is what actually opens the leading.
+/// Justify still wraps (hard breaks would drop last-line raggedness).
 pub(crate) fn should_pin_lock_breaks(
     geo: Option<&GeometryNode>,
-    font_size: Pt,
+    _font_size: Pt,
     text: Option<&str>,
     align: TextAlign,
 ) -> bool {
@@ -204,10 +205,7 @@ pub(crate) fn should_pin_lock_breaks(
         return false;
     };
     let lines = source_lines(geo);
-    if lines.len() < 2 || lines.len() <= source_paragraphs(text) {
-        return false;
-    }
-    !fits_n_lines(geo, &lines[0], font_size, lines.len() + 1)
+    lines.len() >= 2 && lines.len() > source_paragraphs(text)
 }
 
 /// Character indices (in `text`) where lock lines after the first begin.
@@ -304,7 +302,9 @@ fn infer_from_gaps(left: i128, right: i128) -> TextAlign {
 
 /// Lock leftover above the first baseline vs below the last line box.
 pub(crate) fn vert_center(geo: &GeometryNode, font_size: Pt) -> bool {
-    if geo.height.0 <= font_size.0.saturating_mul(2) {
+    // Compact pills (~1.9× face) still have leftover to center in. Reject
+    // only when the box is no taller than the face.
+    if geo.height.0 <= font_size.0 {
         return false;
     }
     let lines = source_lines(geo);
@@ -584,12 +584,15 @@ mod tests {
             ),
             "padded two-line cells must not host-wrap a long second paragraph"
         );
-        assert!(!should_pin_lock_breaks(
-            Some(&g),
-            fs,
-            Some("one paragraph that the lock wrapped onto two lines"),
-            TextAlign::Left
-        ));
+        assert!(
+            should_pin_lock_breaks(
+                Some(&g),
+                fs,
+                Some("one paragraph that the lock wrapped onto two lines"),
+                TextAlign::Left
+            ),
+            "PPTX pins lock wraps so Impress can take spcAft between one-line paras"
+        );
     }
 
     #[test]
@@ -644,5 +647,17 @@ mod tests {
         let mut stretch = with_font(geo(80_000, vec![glyph(0, 6_000, 40_000, 7_500)]), 7_500);
         stretch.height = Pt(40_000);
         assert!(!vert_center(&stretch, fs));
+    }
+
+    #[test]
+    fn compact_format_chip_is_vert_centered() {
+        // Same-node pills just under 2× face (hero right labels: 14pt in 26.8pt).
+        let fs = Pt(14_000);
+        let mut g = with_font(geo(58_794, vec![glyph(0, 12_000, 8_000, 5_000)]), 14_000);
+        g.height = Pt(26_800);
+        assert!(vert_center(&g, fs));
+        let mut tight = with_font(geo(58_794, vec![glyph(0, 12_000, 8_000, 0)]), 14_000);
+        tight.height = Pt(14_000);
+        assert!(!vert_center(&tight, fs));
     }
 }

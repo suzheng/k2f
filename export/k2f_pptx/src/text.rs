@@ -1,5 +1,5 @@
 use crate::align::{
-    host_wrap, infer_text_align, last_line_spc_pts as last_line_spc_from_font,
+    body_font_size, host_wrap, infer_text_align, last_line_spc_pts as last_line_spc_from_font,
     line_spacing_spc_pts, lock_break_char_indices, lock_ink_height, should_pin_lock_breaks,
     should_wrap_lock, source_lines,
 };
@@ -7,7 +7,7 @@ use crate::coord::pt_to_emu;
 use crate::ir::{ScriptPos, TextAlign, TextBox, TextRun};
 use k2f_core::{
     GeometryNode, GlyphPosition, ListMarkerType, Modifier, NodeContent, Pt, Rect, SemanticNode,
-    TableDataSource, TextGlyphRun, TextPaintStyle,
+    TableDataSource, TextGlyphRun, TextPaintStyle, CHECKBOX_CHECKED,
 };
 use k2f_paint::parse_hex_rgba;
 use std::collections::{BTreeMap, HashSet};
@@ -74,6 +74,17 @@ impl FontCtx {
     }
 }
 
+/// Lock paints a checked box as `X`. `node_text` is the semantic value `"true"`,
+/// which overflows a 12pt square (garbled host glyphs).
+pub(crate) fn office_source_text(node: &SemanticNode) -> Option<&str> {
+    match &node.content {
+        NodeContent::FormField(spec) if spec.kind.is_checkbox() => {
+            (spec.value == CHECKBOX_CHECKED).then_some("X")
+        }
+        _ => k2f_core::node_text(node),
+    }
+}
+
 pub(crate) fn textbox_from_draw(
     node: &SemanticNode,
     rect: &Rect,
@@ -87,7 +98,7 @@ pub(crate) fn textbox_from_draw(
     if node.role == "math" || matches!(node.content, NodeContent::Math(_)) {
         return None;
     }
-    let raw = k2f_core::node_text(node)?;
+    let raw = office_source_text(node)?;
     if raw.is_empty() {
         return None;
     }
@@ -123,11 +134,22 @@ pub(crate) fn textbox_from_draw(
         return None;
     }
     let numbered = node.marker_type == Some(ListMarkerType::Number);
-    let is_bullet = !numbered
-        && (node.role == "list_item" || node.marker_type == Some(ListMarkerType::Bullet));
-    let align = geo
-        .map(|g| infer_text_align(g, &raw))
-        .unwrap_or(TextAlign::Left);
+    let is_bullet =
+        !numbered && (node.role == "list_item" || node.marker_type == Some(ListMarkerType::Bullet));
+    let checkbox = matches!(
+        &node.content,
+        NodeContent::FormField(spec) if spec.kind.is_checkbox()
+    );
+    let align = if checkbox {
+        TextAlign::Center
+    } else if is_bullet || numbered {
+        // Marker glyphs are CLUSTER_NOT_SOURCE, so gap inference sees a
+        // left-padded body and calls short items Right/Center.
+        TextAlign::Left
+    } else {
+        geo.map(|g| infer_text_align(g, &raw))
+            .unwrap_or(TextAlign::Left)
+    };
     // Prefer the largest face (body), not paint_runs[0] (often a leading super).
     let font_size = paint_runs
         .iter()
@@ -136,19 +158,40 @@ pub(crate) fn textbox_from_draw(
         .or_else(|| geo.map(|g| Pt(crate::align::body_font_size(g))))
         .unwrap_or(Pt(12_000));
     let (mut l_ins_emu, r_ins_emu) = h_insets_emu(geo, align);
+    let mar_l_emu = if is_bullet || numbered {
+        list_hanging_lock_emu(geo)
+    } else {
+        0
+    };
+    let list_wraps = (is_bullet || numbered)
+        && geo
+            .map(|g| !lock_break_char_indices(g, &raw).is_empty())
+            .unwrap_or(false);
     let pin = !running
-        && !(is_bullet || numbered)
-        && should_pin_lock_breaks(geo, font_size, Some(&raw), align);
+        && (list_wraps
+            || (!(is_bullet || numbered)
+                && should_pin_lock_breaks(geo, font_size, Some(&raw), align)));
     if pin {
         if let Some(g) = geo {
             runs = insert_lock_line_breaks(runs, &raw, g);
         }
     }
-    // Pin inserts hard `\n` at lock line starts. wrap=none prevents host
+    if is_bullet || numbered {
+        // Pad wrap by the literal marker, not the lock marker box (often
+        // 12–16pt). Hang-by-gutter made line 2 sit past line-1 body.
+        pad_list_wrap_lines(
+            &mut runs,
+            &list_marker_text(is_bullet, numbered, list_start),
+        );
+    }
+    // Pin inserts hard breaks at lock line starts. wrap=none prevents host
     // reflow clipping for left text, but hosts ignore algn under wrap=none —
     // so non-left still takes host_wrap (square when aligned).
-    let wrap = if is_bullet || numbered {
+    // Lists stay wrap=none so the NBSP pad is not reflowed under the marker.
+    let wrap = if checkbox {
         true
+    } else if is_bullet || numbered {
+        false
     } else if pin && matches!(align, TextAlign::Left) {
         false
     } else {
@@ -159,12 +202,24 @@ pub(crate) fn textbox_from_draw(
                 !pin && should_wrap_lock(geo, font_size, Some(&raw)),
             )
     };
+    let font_spc = i32::try_from(font_size.0 / 10).ok().map(|v| v.max(100));
     let mut line_spc_pts = line_spacing_spc_pts(geo);
     if !wrap && line_spc_pts.is_none() {
-        line_spc_pts = i32::try_from(font_size.0 / 10).ok().map(|v| v.max(100));
+        line_spc_pts = font_spc;
     }
-    let last_line_spc_pts = if pin {
-        last_line_spc_from_font(font_size)
+    // Hard `\n` or pinned wrap → stacked one-line paragraphs. Impress
+    // ignores `lnSpc` on those; `spcAft` = lock pitch − face is the gap.
+    let stacked = pin || raw.contains('\n');
+    let last_line_spc_pts = if pin || stacked {
+        last_line_spc_from_font(font_size).or(font_spc)
+    } else {
+        None
+    };
+    let spc_aft_pts = if stacked {
+        match (line_spacing_spc_pts(geo).or(line_spc_pts), font_spc) {
+            (Some(delta), Some(face)) if delta > face => Some(delta - face),
+            _ => None,
+        }
     } else {
         None
     };
@@ -181,14 +236,15 @@ pub(crate) fn textbox_from_draw(
     } else if numbered {
         prepend_literal_number(&mut runs, list_start.max(1));
     }
+    if pin && !list_wraps {
+        runs = nobreak_spaces_runs(runs);
+    }
     let x_emu = pt_to_emu(rect.x);
     let cx_emu = pt_to_emu(rect.width);
-    let mar_l_emu = if is_bullet || numbered {
+    if is_bullet || numbered {
+        // Outer pad → bodyPr lIns. Wrap indent is NBSP pad, not marL hanging.
         l_ins_emu = list_outer_pad_emu(geo);
-        list_hanging_lock_emu(geo)
-    } else {
-        0
-    };
+    }
     Some(TextBox {
         node_id: node.id.clone(),
         x_emu,
@@ -203,12 +259,23 @@ pub(crate) fn textbox_from_draw(
         wrap,
         line_spc_pts,
         last_line_spc_pts,
+        spc_aft_pts,
         t_ins_emu: top_inset_emu(geo),
+        vert_center: checkbox || geo.is_some_and(|g| crate::align::vert_center(g, font_size)),
         l_ins_emu,
         r_ins_emu,
         mar_l_emu,
         list_start: if numbered { list_start.max(1) } else { 1 },
     })
+}
+
+fn nobreak_spaces_runs(mut runs: Vec<TextRun>) -> Vec<TextRun> {
+    for r in &mut runs {
+        if r.text.contains(' ') {
+            r.text = r.text.replace(' ', "\u{00A0}");
+        }
+    }
+    runs
 }
 
 fn prepend_literal_bullet(runs: &mut Vec<TextRun>) {
@@ -249,6 +316,95 @@ fn prepend_literal_number(runs: &mut Vec<TextRun>, n: u32) {
         tracking_spc: 0,
     };
     runs.insert(0, marker);
+}
+
+fn list_marker_text(is_bullet: bool, numbered: bool, list_start: u32) -> String {
+    if numbered {
+        format!("{}.\u{00A0}", list_start.max(1))
+    } else if is_bullet {
+        "•\u{00A0}".into()
+    } else {
+        String::new()
+    }
+}
+
+/// Hosts ignore DrawingML hanging (`marL` / negative `indent`) in many
+/// frames. Pin lock wrap points, then pad continuation lines with NBSPs so
+/// wrap aligns with body, not the literal marker. ~0.25em per NBSP.
+///
+/// Wrap breaks become U+2028 (line separator), not `\n`.
+fn pad_list_wrap_lines(runs: &mut Vec<TextRun>, marker: &str) {
+    isolate_line_breaks(runs);
+    let pad = list_wrap_nbsp_for_marker(marker);
+    if !pad.is_empty() {
+        let mut out = Vec::with_capacity(runs.len() + 4);
+        let mut after_break = false;
+        for run in runs.drain(..) {
+            if after_break {
+                if !run.text.chars().all(|c| c == '\u{00A0}') {
+                    let mut spacer = run.clone();
+                    spacer.text = pad.clone();
+                    out.push(spacer);
+                }
+                after_break = false;
+            }
+            let is_break = run.text == "\n" || run.text == "\u{2028}";
+            out.push(run);
+            if is_break {
+                after_break = true;
+            }
+        }
+        *runs = out;
+    }
+    for run in runs.iter_mut() {
+        if run.text == "\n" {
+            run.text = "\u{2028}".into();
+        }
+    }
+}
+
+fn isolate_line_breaks(runs: &mut Vec<TextRun>) {
+    let mut out = Vec::with_capacity(runs.len());
+    for run in runs.drain(..) {
+        if !run.text.contains('\n') && !run.text.contains('\u{2028}') {
+            out.push(run);
+            continue;
+        }
+        let mut buf = String::new();
+        for ch in run.text.chars() {
+            if ch == '\n' || ch == '\u{2028}' {
+                if !buf.is_empty() {
+                    let mut head = run.clone();
+                    head.text = std::mem::take(&mut buf);
+                    out.push(head);
+                }
+                let mut br = run.clone();
+                br.text = ch.to_string();
+                out.push(br);
+            } else {
+                buf.push(ch);
+            }
+        }
+        if !buf.is_empty() {
+            let mut tail = run;
+            tail.text = buf;
+            out.push(tail);
+        }
+    }
+    *runs = out;
+}
+
+/// Approximate the prepended marker in NBSP units so wrap lines start even
+/// with line-1 body. Bullet/digit ≈ 0.5em (2), other glyphs ≈ 0.25em (1).
+fn list_wrap_nbsp_for_marker(marker: &str) -> String {
+    let n: usize = marker
+        .chars()
+        .map(|c| match c {
+            '•' | '0'..='9' => 2,
+            _ => 1,
+        })
+        .sum();
+    "\u{00A0}".repeat(n.max(1))
 }
 
 fn insert_lock_line_breaks(runs: Vec<TextRun>, text: &str, geo: &GeometryNode) -> Vec<TextRun> {
@@ -381,25 +537,41 @@ pub(crate) fn top_inset_emu(geo: Option<&GeometryNode>) -> i64 {
         Some(g) => g,
         None => return 0,
     };
-    let Some(line) = source_lines(geo).into_iter().next() else {
+    let lines = source_lines(geo);
+    let Some(line) = lines.first() else {
         return 0;
     };
     let y = line.iter().map(|g| g.y_offset.0).min().unwrap_or(0);
-    if y < 1_000 {
-        return 0;
-    }
-    pt_to_emu(Pt(y))
+    let pad = if y < 1_000 { 0 } else { pt_to_emu(Pt(y)) };
+    pad + line_box_slack_emu(geo, lines.len(), y)
 }
 
-/// Lock glyph gaps become DrawingML insets. Left leftover on a left-aligned
-/// line is padding; unused width on the right is editable slack, not `rIns`.
-fn h_insets_emu(geo: Option<&GeometryNode>, align: TextAlign) -> (i64, i64) {
-    let Some(geo) = geo else {
-        return (0, 0);
-    };
+/// Extra `tIns` for a shrink-wrapped one-line frame whose height is the
+/// lock line box (`face × line_height_mult`). Office packs `anchor=t` to
+/// the frame top and drops that air — same iceberg as Word running headers.
+///
+/// Height beyond ~1.4× face is `padding_pt.bottom` for a heading rule.
+/// Dumping all `h − face` into tIns sat glyphs on that underline.
+fn line_box_slack_emu(geo: &GeometryNode, nlines: usize, first_y: i128) -> i64 {
+    if nlines != 1 || first_y >= 1_000 {
+        return 0;
+    }
+    let fs = body_font_size(geo);
+    if fs <= 0 {
+        return 0;
+    }
+    let h = geo.height.0;
+    if h <= fs || h > fs.saturating_mul(7) / 5 {
+        return 0;
+    }
+    pt_to_emu(Pt(h - fs))
+}
+
+fn h_gaps_millipt(geo: Option<&GeometryNode>) -> Option<(i128, i128)> {
+    let geo = geo?;
     let lines = source_lines(geo);
     if lines.is_empty() {
-        return (0, 0);
+        return None;
     }
     let box_w = geo.width.0;
     let min_left = lines
@@ -414,17 +586,21 @@ fn h_insets_emu(geo: Option<&GeometryNode>, align: TextAlign) -> (i64, i64) {
         .min()
         .unwrap_or(0)
         .max(0);
+    Some((min_left, min_right))
+}
+
+/// Lock glyph gaps become DrawingML insets. Left leftover on a left-aligned
+/// line is padding; unused width on the right is editable slack, not `rIns`.
+fn h_insets_emu(geo: Option<&GeometryNode>, align: TextAlign) -> (i64, i64) {
+    let Some((min_left, min_right)) = h_gaps_millipt(geo) else {
+        return (0, 0);
+    };
+    let box_w = geo.map(|g| g.width.0).unwrap_or(0);
     match align {
-        TextAlign::Left => {
-            // A line that already fills the padded width needs the leftover
-            // left gap as host-metric slack. Keeping it as lIns clips the last
-            // glyphs (section title rows). Short lines keep lock left padding.
-            if line_fills_padded_width(min_left, min_right, box_w) {
-                (0, 0)
-            } else {
-                (pt_to_emu(Pt(min_left)), 0)
-            }
-        }
+        // Keep lock left pad on every left-aligned box. Dropping it only when
+        // the line fills ≥85% made short cells in the same column indent more
+        // than filled neighbors. Overflow is already `overflow`.
+        TextAlign::Left => (pt_to_emu(Pt(min_left)), 0),
         TextAlign::Right => {
             if line_fills_padded_width(min_right, min_left, box_w) {
                 (0, 0)
@@ -432,6 +608,20 @@ fn h_insets_emu(geo: Option<&GeometryNode>, align: TextAlign) -> (i64, i64) {
                 (0, pt_to_emu(Pt(min_right)))
             }
         }
+        TextAlign::Center | TextAlign::Justify => (0, 0),
+    }
+}
+
+/// Native table cells have a fixed grid width, so the lock-side glyph gap is
+/// always padding. The text-box ≥85%-full skip would flush numbers to the
+/// cell border (and first-column labels to the left edge).
+pub(crate) fn cell_h_insets_emu(geo: Option<&GeometryNode>, align: TextAlign) -> (i64, i64) {
+    let Some((min_left, min_right)) = h_gaps_millipt(geo) else {
+        return (0, 0);
+    };
+    match align {
+        TextAlign::Left => (pt_to_emu(Pt(min_left)), 0),
+        TextAlign::Right => (0, pt_to_emu(Pt(min_right))),
         TextAlign::Center | TextAlign::Justify => (0, 0),
     }
 }
@@ -454,7 +644,7 @@ pub(crate) fn cell_runs(
     let Some(node) = node else {
         return (Vec::new(), false);
     };
-    let Some(text) = k2f_core::node_text(node) else {
+    let Some(text) = office_source_text(node) else {
         return (Vec::new(), false);
     };
     let preserve = node.preserve_whitespace == Some(true) || node.role == "code_block";
@@ -1227,8 +1417,8 @@ mod tests {
         let (l, r) = h_insets_emu(Some(&geo), TextAlign::Left);
         assert_eq!(
             (l, r),
-            (0, 0),
-            "almost-full line must keep slack for host metrics"
+            (pt_to_emu(Pt(6_500)), 0),
+            "left pad stays even when the line is nearly full"
         );
         let (cl, cr) = h_insets_emu(Some(&geo), TextAlign::Center);
         assert_eq!((cl, cr), (0, 0));
@@ -1260,7 +1450,7 @@ mod tests {
     }
 
     #[test]
-    fn left_align_drops_l_ins_when_line_fills_the_box() {
+    fn left_align_keeps_l_ins_when_line_fills_the_box() {
         let geo = GeometryNode {
             id: "g".into(),
             x: Pt(0),
@@ -1280,7 +1470,43 @@ mod tests {
             children: vec![],
         };
         let (l, r) = h_insets_emu(Some(&geo), TextAlign::Left);
-        assert_eq!((l, r), (0, 0));
+        assert_eq!((l, r), (pt_to_emu(Pt(6_000)), 0));
+    }
+
+    #[test]
+    fn cell_h_insets_keep_right_pad_when_line_fills_the_box() {
+        let geo = GeometryNode {
+            id: "g".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(50_000),
+            height: Pt(13_000),
+            glyphs: vec![GlyphPosition {
+                glyph_id: 1,
+                cluster: 0,
+                x_offset: Pt(2_000),
+                y_offset: Pt(2_500),
+                x_advance: Pt(40_000),
+                y_advance: Pt(0),
+            }],
+            text_runs: vec![],
+            fill_rects: vec![],
+            children: vec![],
+        };
+        let (l, r) = cell_h_insets_emu(Some(&geo), TextAlign::Right);
+        assert_eq!(
+            (l, r),
+            (0, pt_to_emu(Pt(8_000))),
+            "native table cells keep lock right pad even when the number fills the column"
+        );
+        let (tl, tr) = h_insets_emu(Some(&geo), TextAlign::Right);
+        assert_eq!(
+            (tl, tr),
+            (0, 0),
+            "text boxes still skip rIns on ≥85%-full right lines (editable slack)"
+        );
+        let (ll, lr) = cell_h_insets_emu(Some(&geo), TextAlign::Left);
+        assert_eq!((ll, lr), (pt_to_emu(Pt(2_000)), 0));
     }
 
     fn dummy_text_run(text: &str) -> TextRun {
@@ -1369,5 +1595,93 @@ mod tests {
         assert_eq!(blob, "Ab\nCd \nwrap", "got {blob:?}");
         assert_eq!(blob.matches('\n').count(), 2);
         assert!(!blob.contains("\n\n"));
+    }
+
+    #[test]
+    fn list_wrap_lines_get_nbsp_pad_after_lock_break() {
+        let mut runs = vec![
+            dummy_text_run("Senior managers"),
+            dummy_text_run("\n"),
+            dummy_text_run("leads."),
+        ];
+        pad_list_wrap_lines(&mut runs, "•\u{00A0}");
+        let blob: String = runs.iter().map(|r| r.text.as_str()).collect();
+        assert!(
+            blob.contains('\u{2028}'),
+            "list wrap must use U+2028, got {blob:?}"
+        );
+        let pad = blob
+            .split('\u{2028}')
+            .nth(1)
+            .unwrap()
+            .chars()
+            .take_while(|c| *c == '\u{00A0}')
+            .count();
+        assert_eq!(pad, 3, "{blob:?}");
+    }
+
+    #[test]
+    fn list_wrap_pad_matches_numbered_marker_not_lock_gutter() {
+        assert_eq!(list_wrap_nbsp_for_marker("•\u{00A0}").chars().count(), 3);
+        assert_eq!(list_wrap_nbsp_for_marker("1.\u{00A0}").chars().count(), 4);
+        assert_eq!(list_wrap_nbsp_for_marker("10.\u{00A0}").chars().count(), 6);
+    }
+
+    fn header_line_geo(height: i128, font: i128, y: i128) -> GeometryNode {
+        GeometryNode {
+            id: "header.running.left".into(),
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(372_955),
+            height: Pt(height),
+            glyphs: vec![GlyphPosition {
+                glyph_id: 1,
+                cluster: 0,
+                x_offset: Pt(0),
+                y_offset: Pt(y),
+                x_advance: Pt(8_000),
+                y_advance: Pt(0),
+            }],
+            text_runs: vec![TextGlyphRun {
+                glyph_range: [0, 1],
+                style: TextPaintStyle {
+                    font_family: "Roboto-Regular".into(),
+                    font_size: Pt(font),
+                    color: "#7C8390".into(),
+                    bold: false,
+                    italic: false,
+                    strikethrough: false,
+                    underline: false,
+                },
+            }],
+            fill_rects: vec![],
+            children: vec![],
+        }
+    }
+
+    #[test]
+    fn line_sized_header_keeps_line_box_slack_as_tins() {
+        let geo = header_line_geo(10_125, 7_500, 0);
+        assert_eq!(
+            top_inset_emu(Some(&geo)),
+            pt_to_emu(Pt(2_625)),
+            "line-box slack must become tIns"
+        );
+    }
+
+    #[test]
+    fn tall_frame_does_not_treat_empty_body_as_tins() {
+        let geo = header_line_geo(80_000, 12_000, 0);
+        assert_eq!(top_inset_emu(Some(&geo)), 0);
+    }
+
+    #[test]
+    fn padded_underline_row_keeps_gap_below_not_tins() {
+        let geo = header_line_geo(21_200, 14_000, 0);
+        assert_eq!(
+            top_inset_emu(Some(&geo)),
+            0,
+            "underline padding must stay below glyphs"
+        );
     }
 }

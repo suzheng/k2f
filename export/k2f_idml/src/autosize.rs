@@ -421,11 +421,10 @@ fn repair_nobreak_overset(elements: &mut [PageElement]) {
         let multi = tb.runs.iter().any(|r| r.text.contains('\n'));
         // Author affiliation / title stacks: semantic `\n` paragraphs with
         // HeightOnly. NoBreak on every paragraph oversets and hides the story.
-        if tb.semantic_newlines
-            && tb.autosize_height
-            && tb.lock_line_count >= 2
-            && !column_sibling(&rects[i], &rects, i)
-        {
+        // A side column (hero image) is not a reason to keep NoBreak — the
+        // designed `\n` already splits the lines, and InDesign still hides
+        // the whole story when NoBreak cannot compose inside the lock width.
+        if tb.semantic_newlines && tb.autosize_height && tb.lock_line_count >= 2 {
             drop_nobreak(tb);
             continue;
         }
@@ -1200,8 +1199,10 @@ mod tests {
             },
             fill_hex: None,
             fill_alpha: 255,
+            gradient: None,
             corner_pt: 0.0,
             line_hex: None,
+            line_alpha: 255,
             line_w_pt: 0.0,
             line_dash: crate::ir::LineDash::Solid,
         })
@@ -1514,6 +1515,46 @@ mod tests {
             "overlapping chrome must not turn off WidthOnly"
         );
         assert_eq!(width(&els[1]), 200_000);
+    }
+
+    #[test]
+    fn semantic_two_line_title_beside_column_drops_nobreak() {
+        // editorial-story slide.01.title: "THE ESSENCE\nOF STILLNESS." in the
+        // left column beside the figure. NoBreak+HeightOnly hid both lines.
+        let mut els = vec![
+            tb("slide.01.title", 46_000, 416_000, false, "TopLeftPoint"),
+            shape(516_000, 88_775, 380_000, 342_000),
+        ];
+        if let PageElement::TextBox(t) = &mut els[0] {
+            t.rect.y = Pt(166_200);
+            t.rect.height = Pt(114_400);
+            t.no_break = true;
+            t.autosize_height = true;
+            t.semantic_newlines = true;
+            t.lock_line_count = 2;
+            t.runs[0].text = "THE ESSENCE\nOF STILLNESS.".into();
+            t.runs[0].size_pt = 52.0;
+        }
+        apply(&mut els, 960_000);
+        let PageElement::TextBox(title) = &els[0] else {
+            panic!("textbox")
+        };
+        assert!(
+            !title.no_break,
+            "2-line semantic title beside a figure must not NoBreak-overset"
+        );
+        assert!(
+            title.runs[0].text.contains('\n'),
+            "author newline must stay, got {:?}",
+            title.runs[0].text
+        );
+        assert!(title.autosize_height);
+        assert!(
+            !title.autosize_width,
+            "must not WidthOnly through the figure gutter"
+        );
+        assert_eq!(title.rect.x.0, 46_000, "left edge stays");
+        assert_eq!(title.rect.width.0, 416_000, "lock column width stays");
     }
 
     #[test]

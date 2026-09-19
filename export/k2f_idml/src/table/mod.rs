@@ -112,8 +112,10 @@ pub(crate) fn table_ref_placeholder(node_id: &str, rect: &Rect) -> ShapeBox {
         rect: rect.clone(),
         fill_hex: None,
         fill_alpha: 255,
+        gradient: None,
         corner_pt: 0.0,
         line_hex: Some("808080".into()),
+        line_alpha: 255,
         line_w_pt: 1.0,
         line_dash: LineDash::Solid,
     }

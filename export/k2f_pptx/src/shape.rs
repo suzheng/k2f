@@ -1,7 +1,7 @@
 use crate::coord::{millipt_to_emu, pt_to_emu};
-use crate::ir::{LineDash, ShapeBox};
+use crate::ir::{GradientFill, GradientStopFill, LineDash, ShapeBox};
 use crate::PptxError;
-use k2f_core::{Border, BorderEdge, BorderStyle, BoxDecoration, Fill, Rect};
+use k2f_core::{Border, BorderEdge, BorderStyle, BoxDecoration, Fill, LinearGradient, Rect};
 use k2f_paint::{parse_hex_rgba, resolve_fill};
 
 pub(crate) fn shapes_from_box(
@@ -19,16 +19,16 @@ pub(crate) fn shapes_from_box(
         }
         Err(e) => return Err(e.into()),
     };
-    let (fill_hex, fill_alpha) = match fill {
-        Some(Fill::LinearGradient { .. }) => return Ok(Vec::new()),
+    let (fill_hex, fill_alpha, gradient) = match fill {
+        Some(Fill::LinearGradient { value }) => (None, 255, Some(gradient_from_lock(&value)?)),
         Some(Fill::Solid { color }) => match rgba_hex_alpha(&color)? {
-            None => (None, 255),
-            Some((hex, alpha)) => (Some(hex), alpha),
+            None => (None, 255, None),
+            Some((hex, alpha)) => (Some(hex), alpha, None),
         },
-        None => (None, 255),
+        None => (None, 255, None),
     };
     let line = line_from(decoration)?;
-    if fill_hex.is_none() && line.is_none() {
+    if fill_hex.is_none() && gradient.is_none() && line.is_none() {
         return Ok(Vec::new());
     }
     let base = ShapeBox {
@@ -39,6 +39,7 @@ pub(crate) fn shapes_from_box(
         cy_emu: pt_to_emu(rect.height),
         fill_hex,
         fill_alpha,
+        gradient,
         corner_emu: millipt_to_emu(decoration.corner_radius_pt.unwrap_or(0).max(0)),
         line_hex: None,
         line_alpha: 255,
@@ -57,7 +58,7 @@ pub(crate) fn shapes_from_box(
         }
         Some(ln) => {
             let mut out = Vec::new();
-            if base.fill_hex.is_some() {
+            if base.fill_hex.is_some() || base.gradient.is_some() {
                 out.push(base.clone());
             }
             out.extend(edge_bars(&base, decoration.border.as_ref().unwrap(), &ln));
@@ -162,6 +163,7 @@ fn edge_bars(base: &ShapeBox, border: &Border, ln: &LineSpec) -> Vec<ShapeBox> {
             cy_emu: cy,
             fill_hex: Some(ln.hex.clone()),
             fill_alpha: ln.alpha,
+            gradient: None,
             corner_emu: 0,
             line_hex: None,
             line_alpha: 255,
@@ -182,6 +184,31 @@ fn rgba_hex_alpha(color: &str) -> Result<Option<(String, u8)>, PptxError> {
         crate::text::pin_office_srgb(&format!("{r:02X}{g:02X}{b:02X}")),
         a,
     )))
+}
+
+fn gradient_from_lock(value: &LinearGradient) -> Result<GradientFill, PptxError> {
+    let LinearGradient::Linear {
+        angle_degrees,
+        stops,
+    } = value;
+    let mut out = Vec::with_capacity(stops.len());
+    for stop in stops {
+        let Some((hex, alpha)) = rgba_hex_alpha(&stop.color)? else {
+            continue;
+        };
+        out.push(GradientStopFill {
+            pos: stop.pos.clamp(0, 1000),
+            hex,
+            alpha,
+        });
+    }
+    if out.is_empty() {
+        return Err(PptxError::Write("linear gradient has no stops".into()));
+    }
+    Ok(GradientFill {
+        angle_degrees: *angle_degrees,
+        stops: out,
+    })
 }
 
 pub(crate) fn round_rect_adj(corner_emu: i64, cx: i64, cy: i64) -> i64 {
@@ -398,5 +425,38 @@ mod tests {
         assert_eq!(boxes[0].node_id, "callout");
         assert_eq!(boxes[0].fill_hex.as_deref(), Some("FFE600"));
         assert!(boxes[1].node_id.ends_with("::edge_left"));
+    }
+
+    #[test]
+    fn linear_gradient_is_native_fill_not_skipped() {
+        use k2f_core::{GradientStop, LinearGradient};
+        let dec = BoxDecoration {
+            background: Some(FillRef::Inline(Fill::LinearGradient {
+                value: LinearGradient::Linear {
+                    angle_degrees: 135,
+                    stops: vec![
+                        GradientStop {
+                            pos: 0,
+                            color: "#FF8A00".into(),
+                        },
+                        GradientStop {
+                            pos: 1000,
+                            color: "#FF5E00".into(),
+                        },
+                    ],
+                },
+            })),
+            corner_radius_pt: Some(12_000),
+            ..Default::default()
+        };
+        assert!(!crate::effect::box_is_effect("pill", &dec).unwrap());
+        let boxes = shapes_from_box("pill", &rect(), &dec).unwrap();
+        assert_eq!(boxes.len(), 1);
+        let g = boxes[0].gradient.as_ref().expect("native gradFill");
+        assert_eq!(g.angle_degrees, 135);
+        assert_eq!(g.stops.len(), 2);
+        assert_eq!(g.stops[0].hex, "FF8A00");
+        assert!(boxes[0].fill_hex.is_none());
+        assert!(boxes[0].corner_emu > 0);
     }
 }

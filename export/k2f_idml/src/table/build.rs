@@ -1,4 +1,4 @@
-use super::geom::col_widths_from_tracks;
+use super::geom::{col_widths_from_tracks, row_cells_share_band, rows_are_horizontally_flush};
 use super::paint::{cell_paints, CellPaint};
 use super::{cell_borders, harvestable_inline_rows, TableIndex};
 use crate::align::infer_text_align_for;
@@ -171,6 +171,21 @@ fn page_row_geos<'a>(
         .collect()
 }
 
+fn native_cell_grid_ok(rows: &[Vec<&GeometryNode>], paints: &HashMap<String, CellPaint>) -> bool {
+    if !row_cells_share_band(rows) {
+        return false;
+    }
+    let rounded = rows.iter().flatten().any(|g| {
+        paints
+            .get(&g.id)
+            .is_some_and(|p| p.corner_radius_pt > 0 && p.fill_hex.is_some())
+    });
+    if rounded && !rows_are_horizontally_flush(rows) {
+        return false;
+    }
+    true
+}
+
 fn col_widths_from_geos(row: &[&GeometryNode], table: &GeometryNode) -> Vec<f64> {
     let n = row.len();
     (0..n)
@@ -289,6 +304,11 @@ fn from_page_rows(
     if page_rows.is_empty() {
         return Ok(None);
     }
+    let geos: Vec<Vec<&GeometryNode>> = page_rows.iter().map(|(_, g)| g.clone()).collect();
+    if !native_cell_grid_ok(&geos, paints) {
+        // Pills / gapped rounded cards would stretch to the InDesign cell AABB.
+        return Ok(None);
+    }
     let col_widths_pt = visual_col_widths_pt(ncols, &page_rows, geo);
     let heights: Vec<f64> = page_rows
         .iter()
@@ -400,7 +420,11 @@ fn build_cell(
         fonts,
         header && paint_runs.is_empty(),
     );
-    let (inset_top, inset_left, inset_bottom, inset_right) = insets(Some(geo), align);
+    let (inset_top, inset_left, inset_bottom, inset_right) = insets(
+        Some(geo),
+        align,
+        node.map(|n| n.modifiers.as_slice()).unwrap_or(&[]),
+    );
     // Fixed-height rows: CenterAlign lets host metrics bleed into the next row.
     Ok(TableCell {
         node_id: node.map(|n| n.id.clone()).unwrap_or_else(|| geo.id.clone()),

@@ -180,7 +180,11 @@ fn pic_xml_named(pic: &PictureBox, embed_rid: &str, name: &str, cnv_id: u32) -> 
                       <a:off x="0" y="0"/>
                       <a:ext cx="{cx}" cy="{cy}"/>
                     </a:xfrm>
-{geom}                  </pic:spPr>
+{geom}                    <a:noFill/>
+                    <a:ln>
+                      <a:noFill/>
+                    </a:ln>
+                  </pic:spPr>
                 </pic:pic>
 "#,
         rid = embed_rid,

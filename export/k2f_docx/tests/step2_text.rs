@@ -417,6 +417,14 @@ fn resolved_font_not_alias_stem_in_invoice() {
         !xml.contains(r#"w:ascii="Roboto-Regular""#) && !xml.contains(r#"w:ascii="default""#),
         "lock alias keys must not leak into Word rFonts, got {xml}"
     );
+    assert!(
+        xml.contains(r#"w:embedRegular="rIdEF"#),
+        "package fonts must be embedded for hosts without Roboto installed, got {xml}"
+    );
+    assert!(
+        common::xml_in(&docx, "word/fontTable.xml").contains("w:embedRegular"),
+        "fontTable must list embedded faces"
+    );
 }
 
 #[test]

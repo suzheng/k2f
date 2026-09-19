@@ -1,6 +1,6 @@
 ---
 name: k2f
-description: Work with K2F documents (.K2F), including creating, reading, editing, validating, converting Markdown, exporting PDF, PPTX, Word, or InDesign, publishing permanent links, and embedding the viewer. Use when the task involves a K2F document, asks to produce a deterministic semantically editable document, create a CV/flyer/presentation/poster/report/book/form/checklist, a fillable blank or checkbox, patch by stable node id, convert Markdown↔K2F, export-pdf/Download PDF (not jsPDF/html2pdf), export-pptx/Download PowerPoint, export-docx/Download Word, export-idml/Download InDesign, publish /v/{appearance_hash}, embed k2f-viewer in Next/Vite/React, or when UNLOCKED/PDF_IS_NOT_A_SOURCE/PPTX_IS_NOT_A_SOURCE/DOCX_IS_NOT_A_SOURCE/IDML_IS_NOT_A_SOURCE appears.
+description: Create, design, edit, validate, and export elegant Word, PowerPoint, editable PDF, fillable AcroForm PDF, and Adobe InDesign (IDML) documents with K2F. Use when creating aesthetic Word, PowerPoint, fillable PDF, AcroForm, IDML, or InDesign documents with AI agents, such as menus, certificates, planners, invitations, or worksheets and much more. K2F is a mature file format designed for AI agents to design and edit elegant aesthetic documents precisely and effortlessly. It has a rich ecosystem.
 ---
 
 # K2F

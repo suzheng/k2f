@@ -87,15 +87,20 @@ pub struct TextRun {
 
 /// K2F paint shears synthetic italic by 0.2126 (atan ≈ 12°).
 const SYNTHETIC_ITALIC_SKEW_DEG: f64 = 12.0;
-/// K2F paint strokes Regular-only bold at 1/30 em.
-const SYNTHETIC_BOLD_EM: f64 = 30.0;
+/// K2F paint strokes synthetic bold at 1/30 em (center path). InDesign's
+/// character stroke at that width reads heavier (outer silhouette). 1/45 em
+/// with only StrokeWeight + fill StrokeColor matches the templates; 1/18 em,
+/// FontStyle="Bold", StrokeType, and StrokeAlignment all went extra-black or
+/// dropped the outline.
+const SYNTHETIC_BOLD_EM: f64 = 45.0;
 
 impl TextRun {
     /// InDesign `FontStyle` / `FontStyleName` for the embedded face.
     ///
-    /// Paint `bold`/`italic` on a Regular-only package are synthetic (shear +
-    /// stroke). Advertising `Bold`/`Italic` here makes InDesign substitute a
-    /// missing style and drop the slant/weight.
+    /// Paint `bold` on Regular is synthetic. Advertising `Bold` makes InDesign
+    /// substitute a system Bold cut when one is installed (too heavy) or fall
+    /// back to Regular when it is not. Keep this on the TTF that shipped in the
+    /// package; faux bold is a same-color character stroke.
     pub fn idml_font_style(&self) -> String {
         let s = self.face_style.trim();
         if s.is_empty() {
@@ -114,8 +119,14 @@ impl TextRun {
         }
     }
 
-    /// Faux bold when paint asked for bold but the face is not bold.
-    pub fn synthetic_stroke_pt(&self) -> Option<f64> {
+    /// Stroke width in pt when paint asked for bold on a non-bold face.
+    ///
+    /// ~2/3 of K2F paint's 1/30 em so InDesign's outer character stroke
+    /// matches the centered path stroke. Stroke color must be the run fill
+    /// (default is Black — extra-black). Do not emit StrokeType / alignment.
+    /// Real Bold files skip this (`font_faces` packs). Do not advertise
+    /// `FontStyle="Bold"` on a Regular-only package.
+    pub fn synthetic_bold_stroke_pt(&self) -> Option<f64> {
         if self.bold && !k2f_paint::face_style_is_bold(&self.face_style) && self.size_pt > 0.0 {
             Some(self.size_pt / SYNTHETIC_BOLD_EM)
         } else {
@@ -174,11 +185,45 @@ pub struct ShapeBox {
     pub node_id: String,
     pub rect: Rect,
     pub fill_hex: Option<String>,
+    /// 255 = opaque. Used for glass/translucent surfaces (`#RRGGBBAA`).
     pub fill_alpha: u8,
+    /// Native InDesign `Gradient` fill. `None` = solid or no fill.
+    pub gradient: Option<GradientFill>,
     pub corner_pt: f64,
     pub line_hex: Option<String>,
+    /// 255 = opaque. Used for glass/translucent rims (`#RRGGBBAA`).
+    pub line_alpha: u8,
     pub line_w_pt: f64,
     pub line_dash: LineDash,
+}
+
+#[derive(Clone, Debug)]
+pub struct GradientFill {
+    pub angle_degrees: i64,
+    pub stops: Vec<GradientStopFill>,
+}
+
+#[derive(Clone, Debug)]
+pub struct GradientStopFill {
+    /// 0..=1000, same as the lock.
+    pub pos: i64,
+    pub hex: String,
+}
+
+impl ShapeBox {
+    /// Graphic.xml `Gradient/…` Self for this shape.
+    pub fn gradient_swatch_name(&self) -> Option<String> {
+        self.gradient.as_ref()?;
+        Some(gradient_swatch_name(&self.node_id))
+    }
+}
+
+pub(crate) fn gradient_swatch_name(node_id: &str) -> String {
+    let slug: String = node_id
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
+        .collect();
+    format!("k2f_g_{slug}")
 }
 
 #[derive(Clone, Debug)]
@@ -251,6 +296,30 @@ impl DocIR {
         collect_box_colors(&mut out, &self.master);
         out
     }
+
+    pub fn collect_gradients(&self) -> Vec<(String, GradientFill)> {
+        let mut out = Vec::new();
+        for page in &self.pages {
+            collect_box_gradients(&mut out, &page.elements);
+        }
+        collect_box_gradients(&mut out, &self.master);
+        out
+    }
+}
+
+fn collect_box_gradients(out: &mut Vec<(String, GradientFill)>, els: &[PageElement]) {
+    for el in els {
+        let PageElement::Shape(s) = el else {
+            continue;
+        };
+        let Some(g) = &s.gradient else {
+            continue;
+        };
+        let Some(name) = s.gradient_swatch_name() else {
+            continue;
+        };
+        out.push((name, g.clone()));
+    }
 }
 
 fn collect_box_colors(out: &mut std::collections::BTreeSet<String>, els: &[PageElement]) {
@@ -260,6 +329,11 @@ fn collect_box_colors(out: &mut std::collections::BTreeSet<String>, els: &[PageE
             PageElement::Shape(s) => {
                 if let Some(hex) = &s.fill_hex {
                     out.insert(hex.clone());
+                }
+                if let Some(g) = &s.gradient {
+                    for stop in &g.stops {
+                        out.insert(stop.hex.clone());
+                    }
                 }
                 if let Some(hex) = &s.line_hex {
                     out.insert(hex.clone());

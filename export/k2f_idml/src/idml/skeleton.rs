@@ -110,10 +110,12 @@ pub fn preferences_xml(space: &SpreadSpace) -> String {
     } else {
         "Portrait"
     };
+    // K2F lock paint is sRGB. PrintIntent makes InDesign convert process RGB
+    // swatches to CMYK on PDF, which kills saturated oranges/magentas.
     format!(
         r#"{XML_DECL}
 <idPkg:Preferences xmlns:idPkg="{NS}" DOMVersion="{DOM}">
-  <DocumentPreference PageWidth="{w}" PageHeight="{h}" PageOrientation="{orient}" FacingPages="false" DocumentBleedTopOffset="0" DocumentBleedBottomOffset="0" DocumentBleedInsideOrLeftOffset="0" DocumentBleedOutsideOrRightOffset="0" DocumentSlugTopOffset="0" DocumentSlugBottomOffset="0" DocumentSlugInsideOrLeftOffset="0" DocumentSlugRightOrOutsideOffset="0" ColumnGuideCount="1" ColumnGuideGutter="12" Intent="PrintIntent" PageBinding="LeftToRight" MasterTextFrame="false"/>
+  <DocumentPreference PageWidth="{w}" PageHeight="{h}" PageOrientation="{orient}" FacingPages="false" DocumentBleedTopOffset="0" DocumentBleedBottomOffset="0" DocumentBleedInsideOrLeftOffset="0" DocumentBleedOutsideOrRightOffset="0" DocumentSlugTopOffset="0" DocumentSlugBottomOffset="0" DocumentSlugInsideOrLeftOffset="0" DocumentSlugRightOrOutsideOffset="0" ColumnGuideCount="1" ColumnGuideGutter="12" Intent="WebIntent" PageBinding="LeftToRight" MasterTextFrame="false"/>
   <ViewPreference HorizontalMeasurementUnits="Points" VerticalMeasurementUnits="Points"/>
 </idPkg:Preferences>
 "#

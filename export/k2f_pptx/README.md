@@ -14,7 +14,8 @@ PPTX is a one-way dump of an already-locked package. It is not a K2F source (`PP
 | Opaque solid box | shape | fill can be changed |
 | Translucent solid (`#RRGGBBAA`) | shape `a:solidFill` + `a:alpha` | fill can be changed |
 | Shadowed opaque box | shape (fill + stroke; glow is a v1 gap) | fill can be changed |
-| blur / glass / gradient / math | `k2f-raster` pic | no |
+| blur / glass / math | `k2f-raster` pic | no |
+| Linear gradient box | shape `a:gradFill` | fill can be changed |
 
 Do **not** stamp a full-slide PNG and overlay invisible text. That is the PDF-bridge stamp path and would destroy native text, tables, and pictures.
 

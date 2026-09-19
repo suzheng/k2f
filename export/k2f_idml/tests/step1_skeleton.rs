@@ -66,6 +66,11 @@ fn page_size_matches_lock_page_config() {
     let h = fmt_pt(millipt_to_pt(page.height.0));
     assert_eq!(pref.attribute("PageWidth"), Some(w.as_str()));
     assert_eq!(pref.attribute("PageHeight"), Some(h.as_str()));
+    assert_eq!(
+        pref.attribute("Intent"),
+        Some("WebIntent"),
+        "K2F paint is RGB; PrintIntent converts fills to CMYK"
+    );
     assert_eq!(w, "595.000");
     assert_eq!(h, "842.000");
 }

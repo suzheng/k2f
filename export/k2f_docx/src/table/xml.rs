@@ -18,6 +18,8 @@ pub fn table_cell_wml(align: TextAlign, border: Option<&Border>) -> String {
         colspan: 1,
         start_col: 0,
         line_twips: None,
+        l_ins_twips: 0,
+        r_ins_twips: 0,
     };
     format!(
         r#"<root xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -181,6 +183,8 @@ fn tc_xml(cell: &TableCell, width_twips: i64, hyperlink_rids: &BTreeMap<String, 
         last_line_twips: None,
         para_line_twips: Vec::new(),
         para_after_twips: Vec::new(),
+        para_before_twips: Vec::new(),
+        para_align: Vec::new(),
         vert_center: cell.vert_center,
         preserve_whitespace: cell.preserve_whitespace,
         relative_height: 0,
@@ -199,11 +203,24 @@ fn tc_xml(cell: &TableCell, width_twips: i64, hyperlink_rids: &BTreeMap<String, 
         r#"                          <w:tc>
                             <w:tcPr>
                               <w:tcW w:w="{width_twips}" w:type="dxa"/>
-{grid_span}{borders}{shd}{valign}                            </w:tcPr>
+{grid_span}{borders}{shd}{valign}{cell_mar}                            </w:tcPr>
 {paras}                          </w:tc>
 "#,
         borders = tc_borders_xml(&cell.borders),
-        paras = ooxml::txbx_paragraphs(&dummy, hyperlink_rids),
+        cell_mar = tc_mar_xml(cell.l_ins_twips, cell.r_ins_twips),
+        paras = ooxml::txbx_paragraphs(&dummy, hyperlink_rids, &Default::default()),
+    )
+}
+
+fn tc_mar_xml(left_twips: i64, right_twips: i64) -> String {
+    format!(
+        r#"                              <w:tcMar>
+                                <w:top w:w="0" w:type="dxa"/>
+                                <w:left w:w="{left_twips}" w:type="dxa"/>
+                                <w:bottom w:w="0" w:type="dxa"/>
+                                <w:right w:w="{right_twips}" w:type="dxa"/>
+                              </w:tcMar>
+"#
     )
 }
 
@@ -254,6 +271,8 @@ mod tests {
             colspan: 1,
             start_col: 0,
             line_twips: None,
+            l_ins_twips: 0,
+            r_ins_twips: 0,
         };
         let xml = tc_xml(&cell, 1440, &BTreeMap::new());
         assert!(
@@ -282,11 +301,49 @@ mod tests {
             colspan: 2,
             start_col: 0,
             line_twips: None,
+            l_ins_twips: 0,
+            r_ins_twips: 0,
         };
         let xml = tc_xml(&cell, 2880, &BTreeMap::new());
         assert!(
             xml.contains(r#"<w:gridSpan w:val="2"/>"#),
             "spanned cell must set w:gridSpan, got {xml}"
+        );
+    }
+
+    #[test]
+    fn cell_emits_tc_mar_from_lock_insets() {
+        let mut cell = TableCell {
+            node_id: "c".into(),
+            width_twips: 1440,
+            runs: Vec::new(),
+            align: TextAlign::Left,
+            fill_hex: None,
+            preserve_whitespace: false,
+            borders: CellBorders::default(),
+            vert_center: false,
+            colspan: 1,
+            start_col: 0,
+            line_twips: None,
+            l_ins_twips: 160,
+            r_ins_twips: 0,
+        };
+        let left = tc_xml(&cell, 1440, &BTreeMap::new());
+        assert!(
+            left.contains(r#"<w:left w:w="160" w:type="dxa"/>"#),
+            "left pad must become w:tcMar left, got {left}"
+        );
+        assert!(
+            left.contains(r#"<w:right w:w="0" w:type="dxa"/>"#),
+            "left-aligned leftover right is not cell margin, got {left}"
+        );
+        cell.align = TextAlign::Right;
+        cell.l_ins_twips = 0;
+        cell.r_ins_twips = 160;
+        let right = tc_xml(&cell, 1440, &BTreeMap::new());
+        assert!(
+            right.contains(r#"<w:right w:w="160" w:type="dxa"/>"#),
+            "right pad must become w:tcMar right, got {right}"
         );
     }
 }

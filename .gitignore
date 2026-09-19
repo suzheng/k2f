@@ -4,6 +4,7 @@
 downloads
 /target
 target/
+target*
 /debug
 debug/
 **/*.rs.bk

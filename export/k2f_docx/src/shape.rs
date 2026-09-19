@@ -84,11 +84,15 @@ pub(crate) fn shapes_from_box(
             // hit-test that frame over nested labels even when demoted in
             // relativeHeight (full-page business-card shells).
             //
-            // Rounded solid rims keep `a:ln` on the fill shape (no sibling):
+            // Rounded rims keep `a:ln` on the fill shape (no sibling):
             // a separate roundRect ::stroke is the same click-shield class.
-            // Dashed outlines keep a closed `a:ln` shape so dash stays one path.
+            // Axis-aligned rims (solid or dashed) use four thin `::edge_*`
+            // bars. Folded opaque text boxes clip a centered `a:ln` (Writer
+            // draws the stroke under the fill and clips the outer half), so
+            // dashed card shells vanished. Bars stay visible after hairline
+            // raise. Dash pattern is lost on square frames (v1).
+            let use_edge_bars = base.corner_emu <= 0;
             let solid = ln.dash == LineDash::Solid;
-            let use_edge_bars = base.corner_emu <= 0 && solid;
             if base.fill_hex.is_some() || base.gradient.is_some() {
                 if use_edge_bars {
                     let mut out = vec![base.clone()];
@@ -97,11 +101,19 @@ pub(crate) fn shapes_from_box(
                 }
                 if solid {
                     // roundRect (or other non-zero corner): merge outline onto fill.
+                    // Axis-aligned paper clones send the fill behindDoc and keep
+                    // `::edge_*` bars in front. A roundRect has no edge-bar split,
+                    // so behindDoc would hide `a:ln` under the page wash (empty
+                    // form boxes, rounded paper cards). Keep that shell in front.
                     let mut s = base;
                     s.line_hex = Some(ln.hex);
                     s.line_alpha = ln.alpha;
                     s.line_w_emu = ln.w_emu;
                     s.line_dash = ln.dash;
+                    if s.behind_doc {
+                        s.behind_doc = false;
+                        s.pin_empty_txbox = true;
+                    }
                     return Ok(vec![s]);
                 }
                 // Dashed: fill + closed outline sibling (dash needs `a:ln`).

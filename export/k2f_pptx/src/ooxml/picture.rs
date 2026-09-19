@@ -35,7 +35,9 @@ fn pic_xml(pic: &PictureBox, cnv_id: u32, embed_rid: &str, name: &str) -> String
           <a:off x="{x}" y="{y}"/>
           <a:ext cx="{cx}" cy="{cy}"/>
         </a:xfrm>
-{geom}      </p:spPr>
+{geom}        <a:noFill/>
+        <a:ln><a:noFill/></a:ln>
+      </p:spPr>
     </p:pic>
 "#,
         id = cnv_id,

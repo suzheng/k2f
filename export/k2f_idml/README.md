@@ -15,7 +15,9 @@ Do **not** stamp a full-page PNG and overlay invisible text. That is the PDF-bri
 | Bitmap / SVG illustration | embedded Rectangle / Image | replaceable (bytes live in the package) |
 | Opaque solid box | Rectangle | fill can be changed |
 | Engine shadow-only (no blur) | native Rectangle; glow dropped | yes |
-| blur / glass / gradient / translucent / math | `k2f-raster:` Image | no |
+| Opaque linear gradient | Rectangle + `Gradient` fill | yes (live corners) |
+| Translucent solid / stroke (`#RRGGBBAA`) | Rectangle + fill/stroke opacity | yes |
+| blur / math | `k2f-raster:` Image | no |
 
 ## Coordinates
 
@@ -28,15 +30,15 @@ idml_x = k2f_x_pt - page_w_pt / 2
 idml_y = k2f_y_pt - page_h_pt / 2
 ```
 
-Page items are children of `Spread`, not nested in `Page`. Each lock page is one single-page spread (`FacingPages=false`).
+Page items are children of `Spread`, not nested in `Page`. Each lock page is one single-page spread (`FacingPages=false`). `DocumentPreference/@Intent` is `WebIntent` so process RGB swatches stay RGB (PrintIntent converted them to CMYK on PDF). Linear gradients set `GradientFillStart` (page coordinates, Properties list) and `GradientFillLength` to the same AABB corner span as `k2f_paint`. `GradientFillAngle` is negated (K2F 90°=down, InDesign 90°=up).
 
 ## Limits (v1)
 
 - Slight text reflow vs K2F is expected. Glyphs are not absolutely positioned.
 - **Fonts:** the IDML ZIP still lists family names only (`Fonts.xml`, no TTF inside). Official export writes a sibling `Document Fonts/` folder (or a zip of that package) so InDesign can open without substituting. `--idml-only` skips the faces.
-- Glass / blur slices sample only the chrome lock (page background plus the effect ops). They do **not** blur native card shapes sitting behind the glass.
+- Glass / blur slices sample only the chrome lock (page background plus the effect ops). They do **not** blur native card shapes sitting behind the glass. Translucent solids without blur are native opacity, so a hero scrim still shows the picture underneath.
 - Engine shadows on otherwise-native boxes are dropped. An expanded opaque PNG of the glow halo covers earlier labels (invoice totals, raised plaques).
-- Nested / image / still-Asset table cells are not native `Table` (they stay box+text+pic).
+- Nested / image / still-Asset table cells are not native `Table` (they stay box+text+pic). Rows whose lock boxes do not share y/height (status pills, vertically centered day cards) or that combine rounded fills with column gaps also stay box+text: InDesign `Cell` fill cannot leave air. Invoice-style grids with a 4pt `gap` and square fills still harvest.
 - SVG assets are rasterized to PNG at export. No IDML → K2F import. No `.indd`. No MathML.
 - Tracking is omitted when advance cannot be measured; the writer does not fake `Tracking="0"`.
 

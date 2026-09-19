@@ -3,6 +3,7 @@ use crate::xml::escape_xml;
 use std::collections::BTreeMap;
 
 use super::document::{document_xml, hdrftr_xml};
+use super::fonts::build_font_embed_plan;
 use super::media::{
     collect_page_pictures, hyperlink_rel_xml, image_rel_xml, insert_media, media_default_xml,
     media_exts, part_rels_xml, picture_rids,
@@ -39,19 +40,32 @@ pub fn build_package(ir: &DocIR) -> BTreeMap<String, Vec<u8>> {
     let body_pic_rids = picture_rids(&body_pics);
     let header_pic_rids = picture_rids(&header_pics);
     let footer_pic_rids = picture_rids(&footer_pics);
+    let font_embed = build_font_embed_plan(&ir.package_fonts);
+    let embed_fonts = !font_embed.is_empty();
 
     let mut files = BTreeMap::new();
     insert_media(&mut files, &all_pics);
+    for (path, bytes) in font_embed.parts() {
+        files.insert(path.to_string(), bytes.to_vec());
+    }
     files.insert(
         "[Content_Types].xml".into(),
-        content_types(has_header, has_footer, has_numbering, &exts).into_bytes(),
+        content_types(has_header, has_footer, has_numbering, &exts, embed_fonts).into_bytes(),
     );
     files.insert("_rels/.rels".into(), ROOT_RELS.as_bytes().to_vec());
     files.insert("docProps/core.xml".into(), core_xml(&ir.title).into_bytes());
     files.insert("docProps/app.xml".into(), app_xml(n).into_bytes());
     files.insert(
         "word/document.xml".into(),
-        document_xml(ir, &hyperlink_rids, &body_pic_rids, has_header, has_footer).into_bytes(),
+        document_xml(
+            ir,
+            &hyperlink_rids,
+            &body_pic_rids,
+            has_header,
+            has_footer,
+            &font_embed,
+        )
+        .into_bytes(),
     );
     files.insert(
         "word/_rels/document.xml.rels".into(),
@@ -61,6 +75,7 @@ pub fn build_package(ir: &DocIR) -> BTreeMap<String, Vec<u8>> {
             has_numbering,
             &hyperlink_rids,
             &body_pic_rids,
+            &font_embed,
         )
         .into_bytes(),
     );
@@ -73,8 +88,15 @@ pub fn build_package(ir: &DocIR) -> BTreeMap<String, Vec<u8>> {
         "word/theme/theme1.xml".into(),
         xml_theme::theme_xml(hlink_hex.as_deref()).into_bytes(),
     );
-    files.insert("word/settings.xml".into(), SETTINGS.as_bytes().to_vec());
-    files.insert("word/fontTable.xml".into(), FONT_TABLE.as_bytes().to_vec());
+    files.insert("word/settings.xml".into(), settings_xml(embed_fonts).into_bytes());
+    files.insert(
+        "word/fontTable.xml".into(),
+        if embed_fonts {
+            font_embed.font_table_xml().into_bytes()
+        } else {
+            FONT_TABLE.as_bytes().to_vec()
+        },
+    );
     files.insert(
         "word/webSettings.xml".into(),
         WEB_SETTINGS.as_bytes().to_vec(),
@@ -85,7 +107,8 @@ pub fn build_package(ir: &DocIR) -> BTreeMap<String, Vec<u8>> {
     if has_header {
         files.insert(
             "word/header1.xml".into(),
-            hdrftr_xml("hdr", &ir.header, &hyperlink_rids, &header_pic_rids).into_bytes(),
+            hdrftr_xml("hdr", &ir.header, &hyperlink_rids, &header_pic_rids, &font_embed)
+                .into_bytes(),
         );
         if let Some(xml) = part_rels_xml(&rids_used(&hyperlink_rids, &ir.header), &header_pic_rids)
         {
@@ -95,7 +118,8 @@ pub fn build_package(ir: &DocIR) -> BTreeMap<String, Vec<u8>> {
     if has_footer {
         files.insert(
             "word/footer1.xml".into(),
-            hdrftr_xml("ftr", &ir.footer, &hyperlink_rids, &footer_pic_rids).into_bytes(),
+            hdrftr_xml("ftr", &ir.footer, &hyperlink_rids, &footer_pic_rids, &font_embed)
+                .into_bytes(),
         );
         if let Some(xml) = part_rels_xml(&rids_used(&hyperlink_rids, &ir.footer), &footer_pic_rids)
         {
@@ -146,8 +170,14 @@ fn content_types(
     footer: bool,
     numbering: bool,
     media_exts: &std::collections::BTreeSet<String>,
+    embed_fonts: bool,
 ) -> String {
     let mut extra = String::new();
+    let odttf = if embed_fonts {
+        "  <Default Extension=\"odttf\" ContentType=\"application/vnd.openxmlformats-officedocument.obfuscatedFont\"/>\n"
+    } else {
+        ""
+    };
     if numbering {
         extra.push_str("  <Override PartName=\"/word/numbering.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml\"/>\n");
     }
@@ -163,7 +193,7 @@ fn content_types(
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
-{media}  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+{odttf}{media}  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
   <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
   <Override PartName="/word/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>
   <Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>
@@ -172,7 +202,10 @@ fn content_types(
   <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
   <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
 {extra}</Types>
-"#
+"#,
+        odttf = odttf,
+        media = media,
+        extra = extra,
     )
 }
 
@@ -182,6 +215,7 @@ fn document_rels(
     numbering: bool,
     hyperlink_rids: &BTreeMap<String, String>,
     picture_rids: &BTreeMap<String, String>,
+    font_embed: &super::fonts::FontEmbedPlan,
 ) -> String {
     let mut rels = String::from(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -204,8 +238,17 @@ fn document_rels(
     }
     rels.push_str(&image_rel_xml(picture_rids));
     rels.push_str(&hyperlink_rel_xml(hyperlink_rids));
+    rels.push_str(&font_embed.font_rels_xml());
     rels.push_str("</Relationships>\n");
     rels
+}
+
+fn settings_xml(embed_fonts: bool) -> String {
+    if embed_fonts {
+        SETTINGS_EMBED_FONTS.to_string()
+    } else {
+        SETTINGS.to_string()
+    }
 }
 
 const ROOT_RELS: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -273,6 +316,17 @@ fn styles_xml(hlink_hex: Option<&str>) -> String {
 // Word Dark Mode may hide it; the lock's full-page solid is the wash.
 const SETTINGS: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:displayBackgroundShape/>
+  <w:compat>
+    <w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/>
+  </w:compat>
+</w:settings>
+"#;
+
+const SETTINGS_EMBED_FONTS: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:embedTrueTypeFonts/>
+  <w:saveSubsetFonts/>
   <w:displayBackgroundShape/>
   <w:compat>
     <w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/>

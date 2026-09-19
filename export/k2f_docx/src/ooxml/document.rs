@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use super::drawing::{
     drawing_run, picture_anchor, raster_anchor, shape_anchor, textbox_anchor,
 };
+use super::fonts::FontEmbedPlan;
 
 const NS: &str = r#"xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
             xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -22,6 +23,7 @@ pub fn document_xml(
     picture_rids: &BTreeMap<String, String>,
     has_header: bool,
     has_footer: bool,
+    font_embed: &FontEmbedPlan,
 ) -> String {
     let mut body = String::new();
     let mut doc_pr_id = 1u32;
@@ -32,6 +34,7 @@ pub fn document_xml(
             &mut doc_pr_id,
             hyperlink_rids,
             picture_rids,
+            font_embed,
         ));
         if i + 1 < n {
             body.push_str(
@@ -89,6 +92,7 @@ fn page_paragraph(
     doc_pr_id: &mut u32,
     hyperlink_rids: &BTreeMap<String, String>,
     picture_rids: &BTreeMap<String, String>,
+    font_embed: &FontEmbedPlan,
 ) -> String {
     let mut runs = String::new();
     // Page-0 w:background is a hint. The lock's per-page full-page solid is
@@ -104,6 +108,7 @@ fn page_paragraph(
             *doc_pr_id,
             hyperlink_rids,
             picture_rids,
+            font_embed,
         )));
         *doc_pr_id += 1;
     }
@@ -131,6 +136,7 @@ pub fn hdrftr_xml(
     elements: &[PageElement],
     hyperlink_rids: &BTreeMap<String, String>,
     picture_rids: &BTreeMap<String, String>,
+    font_embed: &FontEmbedPlan,
 ) -> String {
     let mut runs = String::new();
     let mut doc_pr_id = 1u32;
@@ -140,6 +146,7 @@ pub fn hdrftr_xml(
             doc_pr_id,
             hyperlink_rids,
             picture_rids,
+            font_embed,
         )));
         doc_pr_id += 1;
     }
@@ -158,9 +165,12 @@ fn element_anchor(
     doc_pr_id: u32,
     hyperlink_rids: &BTreeMap<String, String>,
     picture_rids: &BTreeMap<String, String>,
+    font_embed: &FontEmbedPlan,
 ) -> String {
     match el {
-        PageElement::TextBox(tb) => textbox_anchor(tb, doc_pr_id, hyperlink_rids, picture_rids),
+        PageElement::TextBox(tb) => {
+            textbox_anchor(tb, doc_pr_id, hyperlink_rids, picture_rids, font_embed)
+        }
         PageElement::Shape(s) => shape_anchor(s, doc_pr_id),
         PageElement::Picture(p) => {
             let rid = picture_rids

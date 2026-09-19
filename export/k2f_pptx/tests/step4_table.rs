@@ -364,3 +364,45 @@ fn draw_table_reference_is_shape_not_tbl() {
         "placeholder uses shape, not raw op name"
     );
 }
+
+#[test]
+fn harvested_table_keeps_partial_edge_bars() {
+    let doc = common::invoice();
+    let lock = doc.lock().expect("locked");
+    let mut one_edge_id = None;
+    for page in &lock.render_plan.pages {
+        for op in &page.ops {
+            let PaintOp::DrawBox {
+                node_id,
+                decoration,
+                ..
+            } = op
+            else {
+                continue;
+            };
+            let Some(border) = decoration.border.as_ref() else {
+                continue;
+            };
+            if border.edges.len() == 1 {
+                one_edge_id = Some(node_id.clone());
+                break;
+            }
+        }
+        if one_edge_id.is_some() {
+            break;
+        }
+    }
+    let pptx = export_opened(&doc).unwrap();
+    let xml = all_slide_xml(&pptx);
+    if let Some(node_id) = one_edge_id {
+        assert!(
+            xml.contains("::edge_"),
+            "partial-edge cell {node_id} must keep a filled bar; LibreOffice drops hairline a:lnB"
+        );
+    } else {
+        assert!(
+            xml.contains("<a:tbl>"),
+            "invoice without a one-edge DrawBox must still emit a:tbl"
+        );
+    }
+}

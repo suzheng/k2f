@@ -3,6 +3,8 @@ use std::collections::BTreeMap;
 #[derive(Clone, Debug)]
 pub struct DocIR {
     pub title: String,
+    /// Embedded TTF/OTF bytes from the K2F package (for DOCX font embedding).
+    pub package_fonts: BTreeMap<String, Vec<u8>>,
     #[allow(dead_code)]
     pub page_width_emu: i64,
     #[allow(dead_code)]
@@ -61,6 +63,11 @@ pub struct TextBox {
     pub para_line_twips: Vec<Option<i64>>,
     /// Extra space after each paragraph (twips); length may be shorter than paras.
     pub para_after_twips: Vec<i64>,
+    /// Extra space before each paragraph (twips); stacked note-line cells.
+    pub para_before_twips: Vec<i64>,
+    /// Per-paragraph `w:jc` when folding mixed-align labels (centered title +
+    /// left body). Empty → use [`align`] for every paragraph.
+    pub para_align: Vec<TextAlign>,
     pub vert_center: bool,
     pub preserve_whitespace: bool,
     pub relative_height: u32,
@@ -107,6 +114,8 @@ impl TextAlign {
 #[derive(Clone, Debug)]
 pub struct TextRun {
     pub text: String,
+    /// Lock/package font key (`Roboto-Regular`, `default`, …) for embedding.
+    pub font_family_key: String,
     pub font_name: String,
     pub sz_half_points: i32,
     pub bold: bool,
@@ -237,6 +246,11 @@ pub struct TableCell {
     /// Visual start column (0-based).
     pub start_col: usize,
     pub line_twips: Option<i64>,
+    /// Lock glyph left gap as `w:tcMar` left (twips). Left-aligned cells only.
+    pub l_ins_twips: i64,
+    /// Lock glyph right gap as `w:tcMar` right (twips). Right-aligned cells
+    /// only — table width is fixed, so this is padding, not editable slack.
+    pub r_ins_twips: i64,
 }
 
 #[derive(Clone, Debug, Default)]

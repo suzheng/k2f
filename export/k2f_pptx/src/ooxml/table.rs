@@ -60,6 +60,7 @@ fn cell_xml(cell: &TableCell, hyperlink_rids: &BTreeMap<String, String>) -> Stri
         cell.preserve_whitespace,
         cell.line_spc_pts,
         None,
+        None,
         0,
         1,
         hyperlink_rids,
@@ -85,7 +86,7 @@ fn cell_xml(cell: &TableCell, hyperlink_rids: &BTreeMap<String, String>) -> Stri
                 <a:bodyPr wrap="square" lIns="0" tIns="{tins}" rIns="0" bIns="0" rtlCol="0" anchor="{anchor}"/>
                 <a:lstStyle/>
 {body}              </a:txBody>
-              <a:tcPr marL="0" marR="0" marT="0" marB="0" anchor="{anchor}">
+              <a:tcPr marL="{lins}" marR="{rins}" marT="0" marB="0" anchor="{anchor}">
                 {ln_l}
                 {ln_r}
                 {ln_t}
@@ -94,7 +95,9 @@ fn cell_xml(cell: &TableCell, hyperlink_rids: &BTreeMap<String, String>) -> Stri
               </a:tcPr>
             </a:tc><!--{cell_id}-->
 "#,
+        lins = cell.l_ins_emu,
         tins = cell.t_ins_emu,
+        rins = cell.r_ins_emu,
         ln_l = ln_xml("lnL", cell.borders.left.as_ref()),
         ln_r = ln_xml("lnR", cell.borders.right.as_ref()),
         ln_t = ln_xml("lnT", cell.borders.top.as_ref()),
@@ -137,6 +140,8 @@ mod tests {
             colspan: 1,
             start_col: 0,
             t_ins_emu: 0,
+            l_ins_emu: 0,
+            r_ins_emu: 0,
             line_spc_pts: None,
         }
     }
@@ -224,6 +229,36 @@ mod tests {
         assert!(
             !xml.contains(r#"marT="88900""#),
             "must not double the inset on tcPr marT, got {xml}"
+        );
+    }
+
+    #[test]
+    fn left_cell_emits_marl_not_bodypr_lins() {
+        let mut cell = dummy_cell(TextAlign::Left, CellBorders::default());
+        cell.l_ins_emu = 101_600;
+        let xml = cell_xml(&cell, &BTreeMap::new());
+        assert!(
+            xml.contains(r#"marL="101600""#),
+            "lock left pad must become tcPr marL, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"lIns="0""#),
+            "must not double the inset on bodyPr lIns, got {xml}"
+        );
+    }
+
+    #[test]
+    fn right_cell_emits_marr_not_bodypr_rins() {
+        let mut cell = dummy_cell(TextAlign::Right, CellBorders::default());
+        cell.r_ins_emu = 101_600;
+        let xml = cell_xml(&cell, &BTreeMap::new());
+        assert!(
+            xml.contains(r#"marR="101600""#),
+            "lock right pad must become tcPr marR, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"rIns="0""#),
+            "must not double the inset on bodyPr rIns, got {xml}"
         );
     }
 

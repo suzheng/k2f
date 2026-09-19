@@ -135,6 +135,7 @@ pub(crate) fn textbox_anchor(
     doc_pr_id: u32,
     hyperlink_rids: &BTreeMap<String, String>,
     picture_rids: &BTreeMap<String, String>,
+    font_embed: &super::fonts::FontEmbedPlan,
 ) -> String {
     wp_anchor(
         tb.x_emu,
@@ -146,7 +147,7 @@ pub(crate) fn textbox_anchor(
         doc_pr_id,
         &tb.node_id,
         SHAPE_URI,
-        &textbox_wsp_xml(tb, hyperlink_rids, picture_rids),
+        &textbox_wsp_xml(tb, hyperlink_rids, picture_rids, font_embed),
     )
 }
 

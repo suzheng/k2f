@@ -5,9 +5,13 @@ use crate::xml::escape_xml;
 pub(crate) fn shape_sp_xml(shape: &ShapeBox, cnv_id: u32) -> String {
     let name = escape_xml(&shape.node_id);
     let geom = geom_xml(shape);
-    let fill = match &shape.fill_hex {
-        Some(hex) => solid_fill_xml(hex, shape.fill_alpha),
-        None => "        <a:noFill/>\n".into(),
+    let fill = if let Some(g) = &shape.gradient {
+        gradient_fill_xml(g)
+    } else {
+        match &shape.fill_hex {
+            Some(hex) => solid_fill_xml(hex, shape.fill_alpha),
+            None => "        <a:noFill/>\n".into(),
+        }
     };
     let ln = line_xml(shape);
     format!(
@@ -57,6 +61,23 @@ fn solid_fill_xml(hex: &str, alpha: u8) -> String {
     )
 }
 
+fn gradient_fill_xml(g: &crate::ir::GradientFill) -> String {
+    let mut gs = String::new();
+    for stop in &g.stops {
+        let pos = (stop.pos.saturating_mul(100)).clamp(0, 100_000);
+        gs.push_str(&format!(
+            "          <a:gs pos=\"{pos}\">{}</a:gs>\n",
+            srgb_clr_xml(&stop.hex, stop.alpha)
+        ));
+    }
+    // K2F 0° is +x (right), 90° is +y (down). OOXML `a:lin ang` is 1/60000 deg
+    // with 0 = left-to-right, increasing clockwise — same as screen-y-down.
+    let ang = g.angle_degrees.saturating_mul(60_000);
+    format!(
+        "        <a:gradFill>\n          <a:gsLst>\n{gs}          </a:gsLst>\n          <a:lin ang=\"{ang}\" scaled=\"0\"/>\n        </a:gradFill>\n"
+    )
+}
+
 fn srgb_clr_xml(hex: &str, alpha: u8) -> String {
     if alpha >= 255 {
         format!("<a:srgbClr val=\"{hex}\"/>")
@@ -98,6 +119,7 @@ mod tests {
             cy_emu: 50_000,
             fill_hex: None,
             fill_alpha: 255,
+            gradient: None,
             corner_emu: 0,
             line_hex: Some("1E3A8A".into()),
             line_alpha: alpha,
@@ -130,6 +152,33 @@ mod tests {
             xml.contains(r#"<a:srgbClr val="FFFFFF"><a:alpha val="90196"/>"#),
             "{xml}"
         );
+        assert!(!xml.contains("k2f-raster:"), "{xml}");
+    }
+
+    #[test]
+    fn linear_gradient_emits_grad_fill() {
+        let mut shape = stroke(255);
+        shape.line_hex = None;
+        shape.gradient = Some(crate::ir::GradientFill {
+            angle_degrees: 135,
+            stops: vec![
+                crate::ir::GradientStopFill {
+                    pos: 0,
+                    hex: "FF8A00".into(),
+                    alpha: 255,
+                },
+                crate::ir::GradientStopFill {
+                    pos: 1000,
+                    hex: "FF5E00".into(),
+                    alpha: 255,
+                },
+            ],
+        });
+        let xml = shape_sp_xml(&shape, 2);
+        assert!(xml.contains("<a:gradFill>"), "{xml}");
+        assert!(xml.contains(r#"ang="8100000""#), "{xml}");
+        assert!(xml.contains("FF8A00"), "{xml}");
+        assert!(!xml.contains("<a:solidFill>"), "{xml}");
         assert!(!xml.contains("k2f-raster:"), "{xml}");
     }
 }

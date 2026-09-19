@@ -302,11 +302,13 @@ fn synthetic_face_attrs(run: &TextRun) -> String {
     if let Some(deg) = run.synthetic_skew_deg() {
         s.push_str(&format!(r#" Skew="{}""#, fmt_pt(deg)));
     }
-    if let Some(w) = run.synthetic_stroke_pt() {
+    if let Some(w) = run.synthetic_bold_stroke_pt() {
+        // Only StrokeWeight + fill color. StrokeType="$ID/Solid" drops the
+        // stroke; StrokeAlignment is a page-item attr (ignored / outlines).
         s.push_str(&format!(
             r#" StrokeWeight="{}" StrokeColor="Color/k2f_{}""#,
             fmt_pt(w),
-            run.color_hex
+            run.color_hex,
         ));
     }
     s
@@ -487,8 +489,12 @@ mod tests {
             "synthetic italic must shear like K2F paint, got {xml}"
         );
         assert!(
-            xml.contains(r#"StrokeWeight="0.900""#),
-            "synthetic bold must stroke 1/30 em, got {xml}"
+            xml.contains(r#"StrokeWeight="0.600""#),
+            "synthetic bold must stroke Regular at 1/45 em, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"StrokeColor="Color/k2f_000000""#),
+            "faux-bold stroke must use the fill color, not default Black, got {xml}"
         );
     }
 
@@ -517,6 +523,54 @@ mod tests {
         assert!(
             !xml.contains("StrokeWeight="),
             "real bold must not faux-stroke, got {xml}"
+        );
+    }
+
+    #[test]
+    fn regular_bold_uses_fill_colored_stroke() {
+        let mut run = default_run();
+        run.text = "Title".into();
+        run.bold = true;
+        run.face_style = "Regular".into();
+        run.size_pt = 26.0;
+        run.color_hex = "1A1A2E".into();
+        let mut hts = 0usize;
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0, 0.0, false);
+        assert!(xml.contains(r#"FontStyle="Regular""#), "got {xml}");
+        assert!(
+            !xml.contains(r#"FontStyle="Bold""#),
+            "must not advertise a missing Bold cut, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"StrokeWeight="0.578""#),
+            "26pt / 45 = 0.578pt stroke, got {xml}"
+        );
+        assert!(
+            xml.contains(r#"StrokeColor="Color/k2f_1A1A2E""#),
+            "stroke must match fill, got {xml}"
+        );
+        assert!(
+            !xml.contains("StrokeAlignment="),
+            "extra alignment dropped or outlined the stroke, got {xml}"
+        );
+        assert!(
+            !xml.contains("StrokeType="),
+            "StrokeType on characters drops or outlines the stroke, got {xml}"
+        );
+    }
+
+    #[test]
+    fn small_regular_bold_uses_em_stroke() {
+        let mut run = default_run();
+        run.text = "Date".into();
+        run.bold = true;
+        run.face_style = "Regular".into();
+        run.size_pt = 9.0;
+        let mut hts = 0usize;
+        let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0, 0.0, false);
+        assert!(
+            xml.contains(r#"StrokeWeight="0.200""#),
+            "9pt / 45 = 0.2pt, got {xml}"
         );
     }
 }

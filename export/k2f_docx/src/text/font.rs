@@ -98,14 +98,56 @@ impl FontCtx {
 
 fn family_from_bytes(data: &[u8]) -> Option<String> {
     let face = Face::parse(data, 0).ok()?;
+    name_english(&face, name_id::FAMILY, true)
+        .or_else(|| name_english(&face, name_id::TYPOGRAPHIC_FAMILY, true))
+        .or_else(|| {
+            name_english(&face, name_id::FULL_NAME, true).and_then(family_from_full_name)
+        })
+        .or_else(|| name_english(&face, name_id::FULL_NAME, true))
+}
+
+/// Apple TTFs often omit Windows FAMILY and only have FULL_NAME
+/// `"Bradley Hand Bold"`. Hosts register the face as family `"Bradley Hand"`.
+fn family_from_full_name(full: String) -> Option<String> {
+    const SUFFIXES: &[&str] = &[
+        " Bold Italic",
+        " Bold Oblique",
+        " Bold",
+        " Italic",
+        " Oblique",
+        " Regular",
+        " Medium",
+        " Light",
+        " Black",
+        " Semibold",
+        " SemiBold",
+    ];
+    for suffix in SUFFIXES {
+        if let Some(rest) = full.strip_suffix(suffix) {
+            let rest = rest.trim();
+            if !rest.is_empty() {
+                return Some(rest.to_string());
+            }
+        }
+    }
+    None
+}
+
+fn name_english(face: &Face<'_>, id: u16, unicode_only: bool) -> Option<String> {
     let mut fallback = None;
     for name in face.names() {
-        if name.name_id != name_id::FAMILY || !name.is_unicode() {
+        if name.name_id != id {
+            continue;
+        }
+        if unicode_only && !name.is_unicode() {
             continue;
         }
         let Some(s) = name.to_string() else {
             continue;
         };
+        if s.trim().is_empty() {
+            continue;
+        }
         if name.language() == Language::English_UnitedStates {
             return Some(s);
         }

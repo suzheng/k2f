@@ -1,10 +1,11 @@
 use crate::coord::{DOM, NS};
+use crate::ir::GradientFill;
 use crate::xml::escape_xml;
 use std::collections::BTreeSet;
 
 const XML_DECL: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>"#;
 
-pub fn graphic_xml(extra_hex: &BTreeSet<String>) -> String {
+pub fn graphic_xml(extra_hex: &BTreeSet<String>, gradients: &[(String, GradientFill)]) -> String {
     let mut group = String::from(
         r#"    <ColorGroupSwatch Self="kCgsNone" SwatchItemRef="Swatch/None"/>
     <ColorGroupSwatch Self="kCgsPaper" SwatchItemRef="Color/Paper"/>
@@ -21,6 +22,13 @@ pub fn graphic_xml(extra_hex: &BTreeSet<String>) -> String {
             "  <Color Self=\"Color/k2f_{hex}\" Model=\"Process\" Space=\"RGB\" ColorValue=\"{value}\" Name=\"k2f_{hex}\"/>\n"
         ));
     }
+    let mut grads = String::new();
+    for (name, g) in gradients {
+        group.push_str(&format!(
+            "    <ColorGroupSwatch Self=\"kCgs{name}\" SwatchItemRef=\"Gradient/{name}\"/>\n"
+        ));
+        grads.push_str(&gradient_xml(name, g));
+    }
     format!(
         r#"{XML_DECL}
 <idPkg:Graphic xmlns:idPkg="{NS}" DOMVersion="{DOM}">
@@ -29,9 +37,21 @@ pub fn graphic_xml(extra_hex: &BTreeSet<String>) -> String {
   <Swatch Self="Swatch/None" Name="$ID/None" ColorValue=""/>
   <Color Self="Color/Paper" Model="Process" Space="RGB" ColorValue="255 255 255" Name="Paper"/>
   <Color Self="Color/Black" Model="Process" Space="RGB" ColorValue="0 0 0" Name="Black"/>
-{colors}</idPkg:Graphic>
+{colors}{grads}</idPkg:Graphic>
 "#
     )
+}
+
+fn gradient_xml(name: &str, g: &GradientFill) -> String {
+    let mut stops = String::new();
+    for (i, stop) in g.stops.iter().enumerate() {
+        let loc = (stop.pos as f64) / 10.0;
+        stops.push_str(&format!(
+            "    <GradientStop Self=\"{name}Stop{i}\" StopColor=\"Color/k2f_{}\" Location=\"{loc}\"/>\n",
+            stop.hex
+        ));
+    }
+    format!("  <Gradient Self=\"Gradient/{name}\" Type=\"Linear\" Name=\"{name}\">\n{stops}  </Gradient>\n")
 }
 
 pub fn fonts_xml(faces: &[(String, String)]) -> String {

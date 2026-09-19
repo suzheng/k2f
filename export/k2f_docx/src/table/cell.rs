@@ -1,9 +1,12 @@
-use crate::coord::pt_to_twips;
+use crate::coord::{emu_to_twips, pt_to_twips};
 use crate::ir::{BorderStroke, CellBorders, TableCell, TextAlign};
-use crate::text::{infer_text_align, line_spacing_twips, runs_from_paint, vert_center, FontCtx};
+use crate::text::{
+    cell_h_insets_emu, infer_text_align, line_spacing_twips, office_source_text, runs_from_paint,
+    vert_center, FontCtx,
+};
 use crate::DocxError;
 use k2f_core::{
-    node_text, Border, BorderEdge, BorderStyle, BoxDecoration, Fill, GeometryNode, PaintOp, Rect,
+    Border, BorderEdge, BorderStyle, BoxDecoration, Fill, GeometryNode, PaintOp, Rect,
     RunningBlockNode, SemanticNode, TextGlyphRun,
 };
 use k2f_paint::{parse_hex_rgba, resolve_fill};
@@ -58,7 +61,7 @@ pub(crate) fn build_cell(
     header: bool,
     fonts: &FontCtx,
 ) -> Result<TableCell, DocxError> {
-    let text = node.and_then(node_text).unwrap_or("");
+    let text = node.and_then(office_source_text).unwrap_or("");
     let align = if text.is_empty() {
         TextAlign::Left
     } else {
@@ -104,6 +107,7 @@ pub(crate) fn build_cell(
     if line_twips.is_none() && !runs.is_empty() {
         line_twips = Some(pt_to_twips(font_size).max(20));
     }
+    let (l_ins_emu, r_ins_emu) = cell_h_insets_emu(Some(geo), align);
     Ok(TableCell {
         node_id: geo.id.clone(),
         width_twips,
@@ -116,6 +120,8 @@ pub(crate) fn build_cell(
         colspan: 1,
         start_col: 0,
         line_twips,
+        l_ins_twips: emu_to_twips(l_ins_emu),
+        r_ins_twips: emu_to_twips(r_ins_emu),
     })
 }
 

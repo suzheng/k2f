@@ -1,5 +1,6 @@
 mod document;
 mod drawing;
+mod fonts;
 mod media;
 mod numbering;
 mod skeleton;
@@ -8,6 +9,7 @@ mod xml_theme;
 mod zip_write;
 
 pub(crate) use drawing::wp_anchor;
+pub(crate) use fonts::{collect_package_fonts, FontEmbedPlan};
 pub(crate) use skeleton::build_package;
 pub(crate) use textbox::{textbox_wsp_xml, txbx_paragraphs};
 pub(crate) use zip_write::write_deterministic_zip;

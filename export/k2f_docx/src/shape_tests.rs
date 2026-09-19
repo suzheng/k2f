@@ -258,6 +258,34 @@ fn rounded_filled_card_merges_stroke_onto_fill() {
 }
 
 #[test]
+fn rounded_paper_form_box_stays_in_front() {
+    let (w, h) = page();
+    let field = Rect {
+        x: Pt(32_000),
+        y: Pt(644_000),
+        width: Pt(531_000),
+        height: Pt(40_000),
+    };
+    let dec = BoxDecoration {
+        background: Some(FillRef::Inline(Fill::Solid {
+            color: "#FFFFFF".into(),
+        })),
+        border: Some(four_edge(BorderStyle::Solid)),
+        corner_radius_pt: Some(4_000),
+        ..Default::default()
+    };
+    let boxes = shapes_from_box("q3.field", &field, &dec, w, h, 370, "FFFFFF").unwrap();
+    assert_eq!(boxes.len(), 1, "rounded form box stays one roundRect, got {boxes:?}");
+    assert!(
+        !boxes[0].behind_doc,
+        "roundRect a:ln cannot split to edge bars; behindDoc hid the rim"
+    );
+    assert!(boxes[0].pin_empty_txbox, "empty form box must pin lock extent");
+    assert_eq!(boxes[0].line_hex.as_deref(), Some("FF0000"));
+    assert!(boxes[0].corner_emu > 0);
+}
+
+#[test]
 fn translucent_border_keeps_lock_alpha() {
     let (w, h) = page();
     let dec = BoxDecoration {
@@ -331,7 +359,7 @@ fn large_fill_keeps_edge_bars_in_front() {
 }
 
 #[test]
-fn four_dashed_edges_use_ln_not_bars() {
+fn four_dashed_edges_use_edge_bars() {
     let (w, h) = page();
     let border = four_edge(BorderStyle::Dashed);
     assert!(!border.is_full_rect_stroke());
@@ -342,11 +370,14 @@ fn four_dashed_edges_use_ln_not_bars() {
     let boxes = shapes_from_box("card", &rect(), &dec, w, h, 10, "FFFFFF").unwrap();
     assert_eq!(
         boxes.len(),
-        1,
-        "dashed rectangle must stay one a:ln, not four bars"
+        4,
+        "axis-aligned dashed rect → 4 thin bars so folded fills cannot clip a:ln, got {boxes:?}"
     );
-    assert_eq!(boxes[0].line_dash, LineDash::Dash);
-    assert_eq!(boxes[0].line_hex.as_deref(), Some("FF0000"));
+    for b in &boxes {
+        assert!(b.node_id.contains("::edge_"), "{}", b.node_id);
+        assert_eq!(b.fill_hex.as_deref(), Some("FF0000"));
+        assert!(b.line_hex.is_none());
+    }
 }
 
 #[test]

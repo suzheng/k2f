@@ -266,7 +266,7 @@ fn partial_border_emits_edge_bars() {
 }
 
 #[test]
-fn translucent_stroke_is_not_opaque_native_line() {
+fn translucent_stroke_keeps_native_line_alpha() {
     let dec = BoxDecoration {
         background: Some(FillRef::Inline(Fill::Solid {
             color: "#F7FAFA".into(),
@@ -285,18 +285,11 @@ fn translucent_stroke_is_not_opaque_native_line() {
         ..Default::default()
     };
     let boxes = shapes_from_box("card.front", &sample_rect(), &dec).unwrap();
-    assert!(
-        boxes.is_empty(),
-        "alpha<255 hairline must not strip to an opaque native Stroke, got {:?}",
-        boxes
-            .iter()
-            .map(|s| (
-                s.node_id.as_str(),
-                s.line_hex.as_deref(),
-                s.fill_hex.as_deref()
-            ))
-            .collect::<Vec<_>>()
-    );
+    assert_eq!(boxes.len(), 1, "translucent four-side stroke stays one rectangle");
+    assert_eq!(boxes[0].line_hex.as_deref(), Some("0E2A2A"));
+    assert_eq!(boxes[0].line_alpha, 0x1A);
+    assert_eq!(boxes[0].fill_hex.as_deref(), Some("F7FAFA"));
+    assert_eq!(boxes[0].fill_alpha, 255);
 }
 
 #[test]

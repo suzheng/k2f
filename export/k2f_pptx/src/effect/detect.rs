@@ -37,12 +37,14 @@ pub fn box_is_effect(node_id: &str, decoration: &BoxDecoration) -> Result<bool, 
     if decoration.blur.is_some() {
         return Ok(true);
     }
-    // Linear gradients stay rasters (no native PPTX gradFill path yet).
-    // Translucent solids are native `a:solidFill`+`a:alpha` — same as Word —
-    // so porcelain/glass surfaces stay editable shapes instead of k2f-raster pics.
+    // Linear gradients and translucent solids are native DrawingML fills
+    // (`a:gradFill` / `a:solidFill`+`a:alpha`) — same as Word. Rasterizing
+    // a rounded gradient as opaque RGB put a page-background AABB around
+    // pills and clipped transparent SVG corners.
     match resolve_fill(decoration) {
-        Ok(Some(Fill::LinearGradient { .. })) => Ok(true),
-        Ok(Some(Fill::Solid { .. })) | Ok(None) => Ok(false),
+        Ok(Some(Fill::LinearGradient { .. })) | Ok(Some(Fill::Solid { .. })) | Ok(None) => {
+            Ok(false)
+        }
         Err(k2f_paint::PaintError::UnresolvedRef(name)) => {
             Err(PptxError::Write(format!("unresolved fill ref '{name}'")))
         }

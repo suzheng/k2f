@@ -29,6 +29,7 @@ pip install k2f    # unpack, pack, compile, verify, render, schema dump — on P
 ### Figures
 
 If the spec needs art, generate it — no placeholders. Has an image model → write a full prompt in `design.md` (composition, each object’s size/shape/position, style, color) that matches this document; generate an elegant image at the intended width×height; compress if the raster is heavy. No image model → a refined path-only SVG. Save under `assets/images/`.
+The images should have highest aesthetic standard.
 
 ### Steps
 

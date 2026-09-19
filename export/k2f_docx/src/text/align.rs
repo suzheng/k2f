@@ -151,10 +151,14 @@ pub(crate) fn host_wrap(geo: Option<&GeometryNode>, align: TextAlign, wrap: bool
                 left >= MIN_SLACK && !line_fills_padded_width(right, left, box_w)
             }
             TextAlign::Center | TextAlign::Justify => {
+                let slack = left.saturating_add(right);
+                let balanced = slack > 0
+                    && (left - right).abs().saturating_mul(5) <= slack;
                 left >= MIN_SLACK
                     && right >= MIN_SLACK
                     && (!line_fills_padded_width(left, right, box_w)
-                        || box_w >= WIDE_CENTER_MIN)
+                        || box_w >= WIDE_CENTER_MIN
+                        || (lines.len() >= 2 && balanced))
             }
             TextAlign::Left => false,
         }
@@ -250,6 +254,44 @@ pub(crate) fn line_gaps(glyphs: &[&GlyphPosition], box_w: i128) -> (i128, i128, 
         .unwrap_or(0);
     let right = box_w - right_edge;
     (left.saturating_add(right), left, right)
+}
+
+/// Per-paragraph `w:jc` when the source has explicit `\n` and lock lines match.
+pub(crate) fn infer_para_align(geo: &GeometryNode, text: &str) -> Vec<TextAlign> {
+    let paras: Vec<&str> = text.split('\n').collect();
+    if paras.len() <= 1 {
+        return Vec::new();
+    }
+    let lines = source_lines(geo);
+    if lines.len() != paras.len() {
+        return Vec::new();
+    }
+    let box_w = geo.width.0;
+    lines
+        .iter()
+        .map(|line| {
+            let (_, left, right) = line_gaps(line, box_w);
+            infer_from_gaps(left, right)
+        })
+        .collect()
+}
+
+pub(crate) fn host_wrap_box(
+    geo: Option<&GeometryNode>,
+    align: TextAlign,
+    para_align: &[TextAlign],
+    wrap: bool,
+) -> bool {
+    if wrap {
+        return true;
+    }
+    if para_align.is_empty() {
+        host_wrap(geo, align, false)
+    } else {
+        para_align
+            .iter()
+            .any(|&a| host_wrap(geo, a, false))
+    }
 }
 
 fn infer_from_gaps(left: i128, right: i128) -> TextAlign {
@@ -371,6 +413,32 @@ mod tests {
         let mut padded = geo(87_000, vec![glyph(0, 6_500, 74_000, 2_500)]);
         padded.height = Pt(13_250);
         assert!(!should_wrap_lock(Some(&padded), Pt(7_500), None));
+    }
+
+    #[test]
+    fn host_wrap_square_for_multiline_centered_title_near_page_width() {
+        // Wedding names: ~199pt frame, line 1 has symmetric side pads but
+        // fills ≥85% — below WIDE_CENTER_MIN yet must use square wrap so
+        // hosts honor w:jc on both explicit `\n` paragraphs.
+        let mut g = with_font(
+            geo(
+                199_048,
+                vec![
+                    glyph(0, 10_288, 178_471, 0),
+                    glyph(1, 0, 199_048, 24_700),
+                ],
+            ),
+            19_000,
+        );
+        g.height = Pt(49_400);
+        assert!(host_wrap(Some(&g), TextAlign::Center, false));
+        let paras = infer_para_align(
+            &g,
+            "EMMA ELEONORA\n& LIAM ALEXANDER",
+        );
+        assert_eq!(paras.len(), 2);
+        assert_eq!(paras[0], TextAlign::Center);
+        assert_eq!(paras[1], TextAlign::Left);
     }
 
     #[test]

@@ -4,10 +4,10 @@ use crate::coord::{millipt_to_emu, pt_to_emu};
 use crate::ir::{
     BorderStroke, CellBorders, LineDash, ShapeBox, TableBox, TableCell, TableRow, TextAlign,
 };
-use crate::text::{cell_runs, top_inset_emu, FontCtx};
+use crate::text::{cell_h_insets_emu, cell_runs, office_source_text, top_inset_emu, FontCtx};
 use crate::PptxError;
 use k2f_core::{
-    find_in_trees, node_text, table_row_slots, table_rows_on_page, Border, BorderEdge, BorderStyle,
+    find_in_trees, table_row_slots, table_rows_on_page, Border, BorderEdge, BorderStyle,
     GeometryNode, NodeContent, Page, PaintOp, Rect, RunningBlockNode, SemanticNode,
     TableDataSource, TextGlyphRun,
 };
@@ -72,7 +72,7 @@ pub(crate) fn table_on_page(
                 fonts,
                 header && no_text,
             );
-            let text = node.and_then(node_text).unwrap_or("");
+            let text = node.and_then(office_source_text).unwrap_or("");
             let align = if text.is_empty() {
                 TextAlign::Left
             } else {
@@ -97,6 +97,7 @@ pub(crate) fn table_on_page(
             if line_spc_pts.is_none() && !runs.is_empty() {
                 line_spc_pts = i32::try_from(font_size.0 / 10).ok().map(|v| v.max(100));
             }
+            let (l_ins_emu, r_ins_emu) = cell_h_insets_emu(Some(g), align);
             cells.push(TableCell {
                 node_id: g.id.clone(),
                 runs,
@@ -108,6 +109,8 @@ pub(crate) fn table_on_page(
                 colspan: slot.span as u32,
                 start_col: slot.start_col,
                 t_ins_emu: if centered { 0 } else { top_inset_emu(Some(g)) },
+                l_ins_emu,
+                r_ins_emu,
                 line_spc_pts,
             });
         }
@@ -134,9 +137,10 @@ pub(crate) fn table_ref_placeholder(node_id: &str, rect: &Rect) -> ShapeBox {
         y_emu: pt_to_emu(rect.y),
         cx_emu: pt_to_emu(rect.width),
         cy_emu: pt_to_emu(rect.height),
-        fill_hex: None,
-        fill_alpha: 255,
-        corner_emu: 0,
+            fill_hex: None,
+            fill_alpha: 255,
+            gradient: None,
+            corner_emu: 0,
         line_hex: Some("D0D0D0".into()),
         line_alpha: 255,
         line_w_emu: millipt_to_emu(1_000),

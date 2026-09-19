@@ -7,6 +7,7 @@ pub(super) struct CellPaint {
     pub fill_hex: Option<String>,
     pub border: Option<k2f_core::Border>,
     pub runs: Vec<TextGlyphRun>,
+    pub corner_radius_pt: i64,
 }
 
 impl CellPaint {
@@ -15,6 +16,7 @@ impl CellPaint {
             fill_hex: None,
             border: None,
             runs: Vec::new(),
+            corner_radius_pt: 0,
         }
     }
 }
@@ -32,6 +34,7 @@ pub(super) fn cell_paints(ops: &[PaintOp]) -> Result<HashMap<String, CellPaint>,
                 let e = map.entry(node_id.clone()).or_insert_with(CellPaint::empty);
                 e.fill_hex = fill;
                 e.border = decoration.border.clone();
+                e.corner_radius_pt = decoration.corner_radius_pt.unwrap_or(0).max(0);
             }
             PaintOp::DrawText { node_id, runs, .. } => {
                 map.entry(node_id.clone())
