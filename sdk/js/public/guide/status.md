@@ -9,7 +9,7 @@
 - **Agent layers** — skills (repo instructions) → SDK (implementation) → MCP stdio adapter ([`engine/k2f_mcp`](../../engine/k2f_mcp/README.md))
 - **Markdown bridge** — `markdown_to_k2f` / `k2f_to_markdown` (display `$$...$$` nodes; inline `$...$` modifiers)
 - **Native math** — display `$$` nodes and inline `$` modifiers compiled to glyphs + fraction rules (TeX subset including stretchy `\left\right` and `matrix`/`align`/`cases`; unknown commands fail).
-- **Agent skills** — one skill under [`skills/k2f/`](../../skills/k2f/SKILL.md) with workflow references
+- **Agent skills** — core skill in [k2f-skills](https://github.com/suzheng/k2f-skills) ([`skills/core/k2f/SKILL.md`](https://github.com/suzheng/k2f-skills/blob/main/skills/core/k2f/SKILL.md)); install with `npx skills add suzheng/k2f-skills --skill k2f`
 - **MCP stdio server** — local `k2f_mcp`; tool contract [`mcp_tools.json`](../../engine/k2f_mcp/mcp_tools.json); run notes [`README`](../../engine/k2f_mcp/README.md). **Remote HTTP MCP not shipped**
 - **Fillable form fields** — `content.type: "form_field"` reserved boxes (measure ignores value). Web and desktop viewers overlay native inputs; Save `replace_text` + relock. Default `export-pdf` writes AcroForm widgets; `--flatten` paints lock glyphs. DOCX/PPTX export lock `DrawBox`/`DrawText` (no Word content controls).
 

@@ -13,16 +13,22 @@ K2F release (GitHub Actions — do not publish from a laptop)
      (preflight refuses SDK WASM that still exports official_templates / openTemplate,
       and k2f_sdk that include_dir-embeds k2f/templates/)
   3. bash scripts/trigger-publish-dry-run.sh          # optional: build wheels only
-  4. git tag vX.Y.Z && git push origin vX.Y.Z       # publishes crates.io, npm, PyPI
+  4. Modal — Linux SDK/CLI smoke (before tag; k2f-private, source .env):
+       ../k2f-private/scripts/pypi-linux-smoke.sh --build-wheel
+     Docs: ../k2f-private/scripts/modal-smoke-tests.md
+  5. git tag vX.Y.Z && git push origin vX.Y.Z       # publishes crates.io, npm, PyPI
+  6. Optional: ../k2f-private/scripts/pypi-linux-smoke.sh --from-pypi
+
+  *** k2f-site — bump @openk2f/k2f (tag publish does NOT update the website) ***
+  After npm has the new @openk2f/k2f: bump dependencies.k2f in k2f-site/package.json,
+  npm install, npm test, commit lockfile, push (Vercel deploy).
+  Checklist: ../k2f-site/docs/maintainer/release-sdk-dependency.md
+  (Full maintainer flow incl. desktop: ../k2f-private/scripts/publish-all.sh)
 
   npm @openk2f/k2f must not embed templates/. Agents create packages with
   init_package.py / unpack / Gallery; the SDK opens dirs or .K2F bytes.
 
   Optional: gh release create vX.Y.Z --notes-file ...
-
-  4. Modal — Linux SDK/CLI smoke (before/after tag; k2f-private, source .env):
-       ../k2f-private/scripts/pypi-linux-smoke.sh --build-wheel
-     Docs: ../k2f-private/scripts/modal-smoke-tests.md
 
   *** Modal billing ***
   pypi-linux-smoke.sh uses `modal run` and stops when the script exits.

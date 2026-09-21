@@ -142,4 +142,4 @@ The script packs the catalog folder as-is; it does not search your document work
 
 - [Allowed keys](keys.md) — field summary and catalog recipes
 - [Format spec](../spec/k2f-v0.3.md)
-- Per-row theme notes for agents: [catalog README on GitHub](https://github.com/suzheng/k2f/blob/main/skills/k2f/catalog/README.md)
+- Per-row theme notes for agents: [catalog README on GitHub](https://github.com/suzheng/k2f-skills/blob/main/skills/core/k2f/catalog/README.md)

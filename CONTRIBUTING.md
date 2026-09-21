@@ -21,6 +21,7 @@ See [COMPATIBILITY.md](COMPATIBILITY.md) for engine version matching and release
 3. Optional: Modal Linux SDK smoke — `../k2f-private/scripts/pypi-linux-smoke.sh` (see `../k2f-private/scripts/modal-smoke-tests.md`). Terminate any long-lived Modal **Sandbox** you opened for manual testing when done (dashboard → Sandboxes → Terminate), or it keeps billing.
 4. `git tag vX.Y.Z && git push origin vX.Y.Z` — publishes crates.io, npm, and PyPI
 5. Optionally `gh release create vX.Y.Z` for release notes on GitHub
+6. **k2f-site:** bump `dependencies.k2f` (`npm:@openk2f/k2f@^…`), `npm install`, test, and deploy — the tag workflow does not update the public site ([`../k2f-site/docs/maintainer/release-sdk-dependency.md`](../k2f-site/docs/maintainer/release-sdk-dependency.md))
 
 Details: [scripts/archive/local-publish/README.md](scripts/archive/local-publish/README.md) · `bash scripts/publish-all.sh` (cheat sheet)
 

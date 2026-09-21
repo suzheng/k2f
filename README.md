@@ -29,13 +29,13 @@
 </p>
 
 ```bash
-npx skills add suzheng/k2f --skill k2f
+npx skills add suzheng/k2f-skills --skill k2f
 ```
 
 Then paste into your agent:
 
 ```
-Use the K2F skill to create a [describe what you want]. Install with npx skills add suzheng/k2f --skill k2f if needed.
+Use the K2F skill to create a [describe what you want]. Install with npx skills add suzheng/k2f-skills --skill k2f if needed.
 ```
 
 Works with Cursor, Claude Code, Codex, Workbuddy, Manus, OpenClaw, and any agent with `npx skills` support.
@@ -166,17 +166,17 @@ Every node has a stable dotted `id` such as `invoice.total`. Coordinates and col
 ### Use an agent
 
 ```bash
-npx skills add suzheng/k2f --skill k2f
+npx skills add suzheng/k2f-skills --skill k2f
 pip install k2f
 ```
 
 Then paste *Use the K2F skill to create a [describe what you want]…* `pip install k2f` puts the CLI on PATH; the skill scripts call it.
 
-If `npx skills` is not available, copy [`skills/k2f/`](skills/k2f/) into your agent's skills directory (for example `~/.cursor/skills/k2f/`), or browse [skills/k2f on GitHub](https://github.com/suzheng/k2f/tree/main/skills/k2f).
+If `npx skills` is not available, copy [`skills/core/k2f`](https://github.com/suzheng/k2f-skills/tree/main/skills/core/k2f) from [k2f-skills](https://github.com/suzheng/k2f-skills) into your agent's skills directory as `k2f/` (for example `~/.cursor/skills/k2f/`).
 
 MCP is optional. A local stdio server is shipped ([`engine/k2f_mcp`](engine/k2f_mcp/README.md)); remote HTTP MCP is not.
 
-Workflows: [skills/README.md](skills/README.md) · [skills/k2f/SKILL.md](skills/k2f/SKILL.md).
+Workflows: [skills/README.md](skills/README.md) · [K2F Skill on GitHub](https://github.com/suzheng/k2f-skills/blob/main/skills/core/k2f/SKILL.md) · [k2f.dev/skills/k2f](https://k2f.dev/skills/k2f).
 
 ### Use the CLI
 
@@ -233,7 +233,7 @@ SDKs: [Python](sdk/python/README.md) · [JavaScript](sdk/js/README.md) · [Rust]
 
 **Tools**
 
-- [Agent skill](skills/k2f/SKILL.md)
+- [Agent skill](https://github.com/suzheng/k2f-skills/blob/main/skills/core/k2f/SKILL.md) ([k2f-skills](https://github.com/suzheng/k2f-skills))
 - [Python SDK](sdk/python/README.md)
 - [JavaScript SDK](sdk/js/README.md)
 - [CLI](cli/k2f_cli/README.md)

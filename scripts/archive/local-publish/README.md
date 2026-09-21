@@ -24,6 +24,8 @@ Publish through **GitHub Actions** — [`.github/workflows/publish.yml`](../../.
 
 6. Optional: create a [GitHub Release](https://docs.github.com/en/repositories/releasing-projects-on-github) for the same tag so release notes and wheel artifacts are visible on the Releases page. Registry upload still happens in the workflow; the GitHub Release is for changelog and discovery.
 
+7. **k2f-site:** after `@openk2f/k2f` is on npm, bump the site’s `package.json` dependency, refresh `package-lock.json`, run tests, and push so Vercel deploys the new SDK/WASM. See `k2f-site/docs/maintainer/release-sdk-dependency.md`.
+
 ### Why not local publish?
 
 | Problem | Local scripts | GitHub Actions |
