@@ -81,6 +81,35 @@ pub fn render_lockfile_page_rgb(
     ))
 }
 
+/// Same paint as [`render_lockfile_page_rgb`], cleared to transparent and
+/// returned as straight RGBA. Existing RGB callers stay on an opaque white clear.
+pub fn render_lockfile_page_rgba(
+    lock: &LockFile,
+    page_idx: usize,
+    scale: f32,
+    fonts: &BTreeMap<String, Vec<u8>>,
+    images: &BTreeMap<String, Vec<u8>>,
+) -> Result<(u32, u32, Vec<u8>), PaintError> {
+    if lock.has_unknown_paint_ops() {
+        return Err(PaintError::UnknownOp);
+    }
+    require_positive_scale(scale)?;
+    let faces = load_faces(fonts)?;
+    let pixmap = render_lockfile_page_to_pixmap_clear(
+        lock,
+        page_idx,
+        scale,
+        &faces,
+        images,
+        Color::from_rgba8(0, 0, 0, 0),
+    )?;
+    Ok((
+        pixmap.width(),
+        pixmap.height(),
+        crate::rgb::pixmap_to_rgba8(&pixmap),
+    ))
+}
+
 pub fn render_lockfile_page_to_png(
     lock: &LockFile,
     page_idx: usize,
@@ -103,6 +132,24 @@ fn render_lockfile_page_to_pixmap(
     faces: &HashMap<String, Face<'_>>,
     images: &BTreeMap<String, Vec<u8>>,
 ) -> Result<Pixmap, PaintError> {
+    render_lockfile_page_to_pixmap_clear(
+        lock,
+        page_idx,
+        scale,
+        faces,
+        images,
+        Color::from_rgba8(255, 255, 255, 255),
+    )
+}
+
+fn render_lockfile_page_to_pixmap_clear(
+    lock: &LockFile,
+    page_idx: usize,
+    scale: f32,
+    faces: &HashMap<String, Face<'_>>,
+    images: &BTreeMap<String, Vec<u8>>,
+    clear: Color,
+) -> Result<Pixmap, PaintError> {
     let page = lock
         .geometry
         .pages
@@ -118,7 +165,7 @@ fn render_lockfile_page_to_pixmap(
     let w_px = pt_to_px_u32(page.width, scale).max(1);
     let h_px = pt_to_px_u32(page.height, scale).max(1);
     let mut pixmap = Pixmap::new(w_px, h_px).ok_or(PaintError::Pixmap)?;
-    pixmap.fill(Color::from_rgba8(255, 255, 255, 255));
+    pixmap.fill(clear);
 
     let mut geo_by_id: HashMap<String, Vec<&GeometryNode>> = HashMap::new();
     crate::geo_index::index_geometry_multi(&page.root, &mut geo_by_id);

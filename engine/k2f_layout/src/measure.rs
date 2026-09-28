@@ -113,7 +113,8 @@ fn measure_text(
             &node.modifiers,
             inner_constraint,
             ctx,
-        )?
+        )
+        .map_err(|e| crate::text_layout::tag_node(e, &node.id, &node.role))?
     };
     Ok(constraint.constrain(Size::new(
         layout.width + padding.horizontal(),
@@ -146,7 +147,8 @@ fn measure_list_item_text(
         &node.modifiers,
         inner_constraint,
         ctx,
-    )?;
+    )
+    .map_err(|e| crate::text_layout::tag_node(e, &node.id, &node.role))?;
 
     Ok(constraint.constrain(Size::new(
         layout.width + leading + padding.horizontal(),
@@ -179,7 +181,7 @@ fn measure_container(
         let child_constraint = SizeConstraint::new(Size::ZERO, Size::new(inner_max_w, inner_max_h));
 
         for child in children {
-            let child_size = measure_node(child, child_constraint, ctx)?;
+            let child_size = measure_in(child, child_constraint, ctx, node, padding.horizontal())?;
             if child_size.width > width {
                 width = child_size.width;
             }
@@ -214,7 +216,8 @@ fn measure_container(
             available_h,
             children,
             ctx,
-        )?;
+        )
+        .map_err(|e| note_inside(e, node, padding.horizontal()))?;
 
         let total_w = sum_with_gaps(&col_sizes, col_gap_pt);
         let total_h = sum_with_gaps(&row_sizes, row_gap_pt);
@@ -228,7 +231,8 @@ fn measure_container(
             }
             let cell = Size::new(col_sizes[c], row_sizes[r]);
             let child_constraint = SizeConstraint::new(Size::ZERO, cell);
-            let _ = measure_node(child, child_constraint, ctx)?;
+            let _ = measure_in(child, child_constraint, ctx, node, padding.horizontal())
+                .map_err(|e| note_column(e, c, col_sizes[c]))?;
         }
 
         let measured = Size::new(total_w + padding.horizontal(), total_h + padding.vertical());
@@ -247,7 +251,8 @@ fn measure_container(
         let child_constraint = SizeConstraint::new(Size::ZERO, Size::new(measure_w, Pt(i128::MAX)));
         let mut content_h = Pt::ZERO;
         for child in children {
-            content_h += measure_node(child, child_constraint, ctx)?.height;
+            content_h +=
+                measure_in(child, child_constraint, ctx, node, padding.horizontal())?.height;
         }
         let packed_h = if content_h.0 <= 0 {
             Pt::ZERO
@@ -283,7 +288,8 @@ fn measure_container(
                 SizeConstraint::new(Size::ZERO, Size::new(inner_max_w, child_max_h));
 
             for (i, child) in children.iter().enumerate() {
-                let child_size = measure_node(child, child_constraint, ctx)?;
+                let child_size =
+                    measure_in(child, child_constraint, ctx, node, padding.horizontal())?;
                 if child_size.width > width {
                     width = child_size.width;
                 }
@@ -311,7 +317,8 @@ fn measure_container(
                 SizeConstraint::new(Size::ZERO, Size::new(child_max_w, inner_max_h));
 
             for (i, child) in children.iter().enumerate() {
-                let child_size = measure_node(child, child_constraint, ctx)?;
+                let child_size =
+                    measure_in(child, child_constraint, ctx, node, padding.horizontal())?;
                 width += child_size.width;
                 if child_size.height > height {
                     height = child_size.height;
@@ -383,7 +390,8 @@ pub(crate) fn grid_track_sizes(
                 child,
                 SizeConstraint::new(Size::ZERO, Size::new(col_sizes[c], Pt(i128::MAX))),
                 ctx,
-            )?;
+            )
+            .map_err(|e| note_column(e, c, col_sizes[c]))?;
             if measured.height > row_auto[r] {
                 row_auto[r] = measured.height;
             }
@@ -391,4 +399,35 @@ pub(crate) fn grid_track_sizes(
     }
     let row_sizes = resolve_tracks_with_intrinsics(rows, row_gap, available_h, &row_auto)?;
     Ok((col_sizes, row_sizes))
+}
+
+fn measure_in(
+    child: &SemanticNode,
+    constraint: SizeConstraint,
+    ctx: &LayoutContext,
+    parent: &SemanticNode,
+    pad_h: Pt,
+) -> Result<Size, String> {
+    measure_node(child, constraint, ctx).map_err(|e| note_inside(e, parent, pad_h))
+}
+
+fn note_inside(err: String, node: &SemanticNode, pad_h: Pt) -> String {
+    if !err.contains("does not fit") {
+        return err;
+    }
+    let marker = format!("inside '{}'", node.id);
+    if err.contains(&marker) {
+        return err;
+    }
+    format!(
+        "{err}; inside '{}' (role '{}', horizontal padding {} millipt)",
+        node.id, node.role, pad_h.0
+    )
+}
+
+fn note_column(err: String, column: usize, width: Pt) -> String {
+    if !err.contains("does not fit") {
+        return err;
+    }
+    format!("{err}; grid column {column} is {} millipt wide", width.0)
 }

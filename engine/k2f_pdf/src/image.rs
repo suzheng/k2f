@@ -16,32 +16,91 @@ pub struct ImageRes {
     pub h: u32,
 }
 
-pub fn embed_rgb(
+pub fn embed_rgba(
     pdf: &mut Pdf,
     alloc: &mut Alloc,
     w: u32,
     h: u32,
-    rgb: &[u8],
+    rgba: &[u8],
     name: &str,
-) -> ImageRes {
+) -> Result<ImageRes, PdfError> {
+    let expect = (w as usize).saturating_mul(h as usize).saturating_mul(4);
+    if w == 0 || h == 0 || rgba.len() != expect {
+        return Err(PdfError::Write("rgba slice size mismatch".into()));
+    }
+    let mut rgb = Vec::with_capacity((w as usize) * (h as usize) * 3);
+    let mut alpha = Vec::with_capacity((w as usize) * (h as usize));
+    for px in rgba.chunks_exact(4) {
+        rgb.extend_from_slice(&px[..3]);
+        alpha.push(px[3]);
+    }
     let level = CompressionLevel::DefaultLevel as u8;
-    let encoded = compress_to_vec_zlib(rgb, level);
+    let mask_id = alloc.bump();
     let id = alloc.bump();
     {
+        let encoded = compress_to_vec_zlib(&alpha, level);
+        let mut s = pdf.image_xobject(mask_id, &encoded);
+        s.filter(Filter::FlateDecode);
+        s.width(w as i32);
+        s.height(h as i32);
+        s.color_space().device_gray();
+        s.bits_per_component(8);
+        s.finish();
+    }
+    {
+        let encoded = compress_to_vec_zlib(&rgb, level);
         let mut x = pdf.image_xobject(id, &encoded);
         x.filter(Filter::FlateDecode);
         x.width(w as i32);
         x.height(h as i32);
         x.color_space().device_rgb();
         x.bits_per_component(8);
+        x.s_mask(mask_id);
         x.finish();
     }
-    ImageRes {
+    Ok(ImageRes {
         id,
         name: name.to_string(),
         w,
         h,
+    })
+}
+
+/// One-page PDF whose only image is `rgba`. Used to assert `/SMask` wiring.
+pub fn pdf_embedding_rgba(w: u32, h: u32, rgba: &[u8]) -> Result<Vec<u8>, PdfError> {
+    use pdf_writer::Content;
+
+    let mut pdf = Pdf::new();
+    pdf.set_version(1, 7);
+    let mut alloc = Alloc::new();
+    let catalog_id = alloc.bump();
+    let pages_id = alloc.bump();
+    let page_id = alloc.bump();
+    let content_id = alloc.bump();
+    let img = embed_rgba(&mut pdf, &mut alloc, w, h, rgba, "Im0")?;
+    pdf.catalog(catalog_id).pages(pages_id);
+    pdf.pages(pages_id).kids([page_id]).count(1);
+    {
+        let mut p = pdf.page(page_id);
+        p.parent(pages_id);
+        p.media_box(pdf_writer::Rect::new(0.0, 0.0, w as f32, h as f32));
+        p.contents(content_id);
+        p.resources()
+            .x_objects()
+            .pair(Name(img.name.as_bytes()), img.id);
     }
+    let mut content = Content::new();
+    content.save_state();
+    content.transform([w as f32, 0.0, 0.0, h as f32, 0.0, 0.0]);
+    content.x_object(Name(img.name.as_bytes()));
+    content.restore_state();
+    let compressed = compress_to_vec_zlib(
+        content.finish().as_ref(),
+        CompressionLevel::DefaultLevel as u8,
+    );
+    pdf.stream(content_id, &compressed)
+        .filter(Filter::FlateDecode);
+    Ok(pdf.finish())
 }
 
 pub fn embed_images(

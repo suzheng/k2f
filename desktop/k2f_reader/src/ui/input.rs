@@ -11,6 +11,7 @@ pub enum Action {
     Export,
     Open,
     Save,
+    Reload,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -27,7 +28,7 @@ pub fn accept_key(repeat: bool, action: Action) -> bool {
     !repeat
         || !matches!(
             action,
-            Action::Copy | Action::Export | Action::Open | Action::Save
+            Action::Copy | Action::Export | Action::Open | Action::Save | Action::Reload
         )
 }
 
@@ -48,6 +49,9 @@ pub fn key_action(bind: KeyBind, ctrl: bool, shift: bool, super_key: bool) -> Op
         }
         KeyBind::Char(c) if c.eq_ignore_ascii_case(&'o') && (ctrl || super_key) && !shift => {
             Some(Action::Open)
+        }
+        KeyBind::Char(c) if c.eq_ignore_ascii_case(&'r') && (ctrl || super_key) && !shift => {
+            Some(Action::Reload)
         }
         _ => None,
     }

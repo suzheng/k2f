@@ -1,5 +1,6 @@
 use k2f_core::Rect;
-use pdf_writer::Content;
+use pdf_writer::{Content, Name};
+use std::collections::BTreeSet;
 
 /// Content stream plus lock-geometry notes parsed back by tests.
 pub struct PageDraw {
@@ -7,6 +8,8 @@ pub struct PageDraw {
     pub page_h: f64,
     pub content: Content,
     pub notes: String,
+    /// Non-opaque fill alphas referenced as ExtGState `/ca{alpha}`.
+    pub fill_alphas: BTreeSet<u8>,
 }
 
 impl PageDraw {
@@ -16,6 +19,25 @@ impl PageDraw {
             page_h,
             content: Content::new(),
             notes: String::new(),
+            fill_alphas: BTreeSet::new(),
+        }
+    }
+
+    /// Save state and select `/ca{a}` when the fill is translucent.
+    pub fn push_fill_alpha(&mut self, a: u8) -> bool {
+        if a == 255 {
+            return false;
+        }
+        self.fill_alphas.insert(a);
+        let name = format!("ca{a}");
+        self.content.save_state();
+        self.content.set_parameters(Name(name.as_bytes()));
+        true
+    }
+
+    pub fn pop_fill_alpha(&mut self, pushed: bool) {
+        if pushed {
+            self.content.restore_state();
         }
     }
 
@@ -47,14 +69,6 @@ impl PageDraw {
             rect.width.as_f64_pt(),
             rect.height.as_f64_pt()
         ));
-    }
-
-    pub fn note_image_full(&mut self, w_px: u32, h_px: u32) {
-        self.notes.push_str(&format!(
-            "% k2f.i 0.000 0.000 {:.3} {:.3}\n",
-            self.page_w, self.page_h
-        ));
-        let _ = (w_px, h_px);
     }
 
     pub fn finish(self) -> Vec<u8> {

@@ -163,47 +163,15 @@ fn stroke_rect(buf: &mut [u32], win_w: u32, win_h: u32, r: Rect, color: u32) {
     let y1 = r.y.saturating_add(r.h as i32).saturating_sub(1);
     let t = 1.5;
     stroke_line(
-        buf,
-        win_w,
-        win_h,
-        r.x as f32,
-        r.y as f32,
-        x1 as f32,
-        r.y as f32,
-        t,
-        color,
+        buf, win_w, win_h, r.x as f32, r.y as f32, x1 as f32, r.y as f32, t, color,
     );
     stroke_line(
-        buf,
-        win_w,
-        win_h,
-        r.x as f32,
-        y1 as f32,
-        x1 as f32,
-        y1 as f32,
-        t,
-        color,
+        buf, win_w, win_h, r.x as f32, y1 as f32, x1 as f32, y1 as f32, t, color,
     );
     stroke_line(
-        buf,
-        win_w,
-        win_h,
-        r.x as f32,
-        r.y as f32,
-        r.x as f32,
-        y1 as f32,
-        t,
-        color,
+        buf, win_w, win_h, r.x as f32, r.y as f32, r.x as f32, y1 as f32, t, color,
     );
     stroke_line(
-        buf,
-        win_w,
-        win_h,
-        x1 as f32,
-        r.y as f32,
-        x1 as f32,
-        y1 as f32,
-        t,
-        color,
+        buf, win_w, win_h, x1 as f32, r.y as f32, x1 as f32, y1 as f32, t, color,
     );
 }

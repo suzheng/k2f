@@ -17,7 +17,7 @@ mod wrap;
 mod wrap_fit;
 mod wrap_tokenize;
 
-pub use layout::layout_text;
+pub use layout::{layout_text, tag_node};
 pub(crate) use metrics::line_height_for_style;
 pub use metrics::measure_text_run_width;
 pub use preformatted::layout_code_block;

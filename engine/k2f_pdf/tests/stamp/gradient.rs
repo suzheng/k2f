@@ -39,4 +39,8 @@ fn linear_gradient_fixture_exports() {
     let doc = OpenedDocument::open(&bytes).unwrap();
     let pdf = export_opened(&doc, PdfScale::DEFAULT).unwrap();
     assert!(pdf.starts_with(b"%PDF-"));
+    assert!(
+        pdf.windows(6).any(|w| w == b"/SMask"),
+        "gradient pages embed an alpha slice"
+    );
 }

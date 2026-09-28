@@ -8,8 +8,8 @@ use common::{
 use k2f_reader::export::ExportFormat;
 use k2f_reader::ui::{
     accept_key, copy_hit, default_pdf_path, ensure_pdf_path, export_hit, export_label_x,
-    export_menu_hit, export_menu_item_hit, key_action, overlay_label, pdf_file_name, Action, KeyBind,
-    Session, COPY_ALL_TOOLTIP, EXPORT_ACTION_LABEL, HUD_HEIGHT,
+    export_menu_hit, export_menu_item_hit, key_action, overlay_label, pdf_file_name, Action,
+    KeyBind, Session, COPY_ALL_TOOLTIP, EXPORT_ACTION_LABEL, HUD_HEIGHT,
 };
 use k2f_reader::AppState;
 use std::path::{Path, PathBuf};
@@ -35,7 +35,7 @@ fn ctrl_shift_s_maps_to_export() {
     assert_eq!(
         key_action(KeyBind::Char('s'), true, false, false),
         Some(Action::Save),
-        "Ctrl+S saves dirty form fields (relock), not a generic document save"
+        "Ctrl+S writes the open .K2F (node relock or dirty form fields)"
     );
     assert_eq!(key_action(KeyBind::Char('s'), false, true, false), None);
     assert!(
@@ -332,7 +332,9 @@ fn export_idml_to_writes_package_dir() {
     let out = scratch("gui-export-idml").join("pkg");
     app.export_to(ExportFormat::Idml, &out).unwrap();
     assert!(
-        out.join("Document Fonts").join("Roboto-Regular.ttf").is_file(),
+        out.join("Document Fonts")
+            .join("Roboto-Regular.ttf")
+            .is_file(),
         "Document Fonts face"
     );
     let idml = std::fs::read_dir(&out)

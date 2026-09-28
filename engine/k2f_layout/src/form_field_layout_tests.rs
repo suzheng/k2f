@@ -407,11 +407,9 @@ fn plan_section_7_minimal_json_compiles() {
     assert!(field.width.0 > 0);
     assert!(field.height.0 > 0);
     assert!(field.glyphs.is_empty());
-    assert!(
-        field_ops(&lock, "doc.name")
-            .iter()
-            .any(|op| matches!(op, PaintOp::DrawBox { .. }))
-    );
+    assert!(field_ops(&lock, "doc.name")
+        .iter()
+        .any(|op| matches!(op, PaintOp::DrawBox { .. })));
 }
 
 #[test]

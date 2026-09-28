@@ -1,5 +1,8 @@
 import { boxToCss } from "./coords.js";
 
+/** Role, Variant, and Copy node stay in the save and clipboard path. */
+export const SHOW_META_FIELDS = false;
+
 /** On-page editor anchored to the hit box. Relock happens in `onRelock`. */
 
 export function bindPopover({
@@ -10,11 +13,13 @@ export function bindPopover({
   editorOf,
   zoomOf,
   highlight,
+  root,
   onRelock,
   onError,
 }) {
   let selectedId = null;
   let textDisabled = true;
+  let originalText = "";
   const pop = document.createElement("div");
   pop.className = "k2f-popover";
   pop.hidden = true;
@@ -24,15 +29,31 @@ export function bindPopover({
   const text = bareTextarea();
   const role = field("Role", "input");
   const variant = field("Variant", "input");
+  const cancel = button("Cancel", "cancel");
   const save = button("Save and relock", "save");
   const copy = button("Copy node", "copy");
+  const actions = document.createElement("div");
+  actions.className = "k2f-popover-actions";
+  actions.append(cancel, save);
   save.disabled = true;
   copy.disabled = true;
-  pop.append(text.wrap, role.wrap, variant.wrap, save, copy);
+  const parts = [text.wrap];
+  if (SHOW_META_FIELDS) parts.push(role.wrap, variant.wrap);
+  parts.push(actions);
+  if (SHOW_META_FIELDS) parts.push(copy);
+  pop.append(...parts);
+
+  const prompt = discardPrompt(root);
+
+  function closePrompt() {
+    prompt.backdrop.hidden = true;
+  }
 
   function clear() {
+    closePrompt();
     selectedId = null;
     textDisabled = true;
+    originalText = "";
     pop.hidden = true;
     pop.remove();
     save.disabled = true;
@@ -42,11 +63,13 @@ export function bindPopover({
 
   function show(sel) {
     if (!sel || !sel.id || !editingOf()) return;
+    closePrompt();
     selectedId = sel.id;
     textDisabled = sel.text == null;
+    originalText = sel.text || "";
     role.input.value = sel.role || "";
     variant.input.value = sel.variant || "";
-    text.input.value = sel.text || "";
+    text.input.value = originalText;
     const editing = editingOf();
     role.input.disabled = !editing;
     variant.input.disabled = !editing;
@@ -75,6 +98,18 @@ export function bindPopover({
     pop.style.top = `${css.top + css.height + 6}px`;
   }
 
+  function textDirty() {
+    return !textDisabled && text.input.value !== originalText;
+  }
+
+  function cancelEdit() {
+    if (textDirty()) {
+      prompt.backdrop.hidden = false;
+      return;
+    }
+    clear();
+  }
+
   async function saveEdit() {
     const ed = editorOf();
     if (!ed || !selectedId) return;
@@ -101,10 +136,42 @@ export function bindPopover({
     }
   }
 
+  cancel.addEventListener("click", () => cancelEdit());
   save.addEventListener("click", () => saveEdit());
   copy.addEventListener("click", () => copyNode());
+  prompt.keep.addEventListener("click", () => closePrompt());
+  prompt.discard.addEventListener("click", () => clear());
+  prompt.backdrop.addEventListener("click", (e) => {
+    if (e.target === prompt.backdrop) closePrompt();
+  });
 
   return { id: () => selectedId, clear, show, save: saveEdit, copy: copyNode, el: pop };
+}
+
+function discardPrompt(root) {
+  const backdrop = document.createElement("div");
+  backdrop.className = "k2f-dialog-backdrop";
+  backdrop.hidden = true;
+
+  const dialog = document.createElement("div");
+  dialog.className = "k2f-dialog";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  dialog.addEventListener("click", (e) => e.stopPropagation());
+
+  const title = document.createElement("h2");
+  title.className = "k2f-dialog-title";
+  title.textContent = "Discard unsaved changes?";
+
+  const actions = document.createElement("div");
+  actions.className = "k2f-dialog-actions";
+  const keep = button("Keep editing", "cancel");
+  const discard = button("Discard", "confirm");
+  actions.append(keep, discard);
+  dialog.append(title, actions);
+  backdrop.append(dialog);
+  root.append(backdrop);
+  return { backdrop, keep, discard };
 }
 
 function bareTextarea() {

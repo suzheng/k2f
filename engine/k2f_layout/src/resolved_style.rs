@@ -123,11 +123,7 @@ pub fn resolve_box_decoration(
 /// How an image role maps its bitmap into the laid-out box. Omit = contain.
 pub fn resolve_image_fit(role: &str, variant: Option<&str>, theme: &Theme) -> k2f_core::ImageFit {
     use k2f_core::ImageFit;
-    let Some(role_style) = theme
-        .roles
-        .get(role)
-        .or_else(|| theme.roles.get("default"))
-    else {
+    let Some(role_style) = theme.roles.get(role).or_else(|| theme.roles.get("default")) else {
         return ImageFit::Contain;
     };
     if let Some(variant_name) = variant {

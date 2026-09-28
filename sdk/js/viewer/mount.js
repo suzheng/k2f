@@ -141,6 +141,7 @@ export async function mountK2fViewer(host, bytes, options = {}) {
     editorOf: () => editor,
     zoomOf: () => zoom,
     highlight,
+    root: els.root,
     onRelock: async (nextBytes, id) => {
       await open(nextBytes);
       if (!id || !viewer) return;

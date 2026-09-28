@@ -8,6 +8,14 @@ use super::run_split::split_runs;
 use super::types::{TextLayout, TextLine};
 use super::wrap::wrap_runs;
 
+/// Attach the author node to a text-fit failure. Other errors pass through.
+pub fn tag_node(err: String, id: &str, role: &str) -> String {
+    if err.contains("(node '") || !err.contains("does not fit") {
+        return err;
+    }
+    format!("{err} (node '{id}', role '{role}')")
+}
+
 /// Text layout: run splitting + deterministic wrapping.
 ///
 /// - Uses the role base style from `Theme`.

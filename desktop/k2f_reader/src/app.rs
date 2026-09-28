@@ -195,10 +195,7 @@ impl AppState {
 
     fn export_idml_to(&self, path: &Path) -> anyhow::Result<()> {
         let pkg = k2f_idml::export_handoff(&self.doc)?;
-        let ext = path
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("");
+        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
         if ext.eq_ignore_ascii_case("idml") {
             k2f_idml::write_handoff_output(&pkg, path, true)?;
         } else if ext.eq_ignore_ascii_case("zip") {
@@ -280,13 +277,31 @@ impl AppState {
     }
 
     /// `replace_text` each dirty id, then relock. Does not compile on open — only on Save.
-    pub fn relock_form_values(
-        &self,
-        dirty: &BTreeMap<String, String>,
-    ) -> anyhow::Result<Vec<u8>> {
+    pub fn relock_form_values(&self, dirty: &BTreeMap<String, String>) -> anyhow::Result<Vec<u8>> {
         let mut editor = Editor::open(&self.export_k2f_bytes()?)?;
         for (id, value) in dirty {
             editor.replace_text(id, value)?;
+        }
+        Ok(editor.save_bytes()?)
+    }
+
+    /// Surgical edit: `set_role` when role is non-empty, `replace_text` when the node has text, then relock.
+    pub fn relock_node_edit(
+        &self,
+        id: &str,
+        role: &str,
+        variant: &str,
+        text: Option<&str>,
+    ) -> anyhow::Result<Vec<u8>> {
+        let mut editor = Editor::open(&self.export_k2f_bytes()?)?;
+        let role = role.trim();
+        if !role.is_empty() {
+            let variant = variant.trim();
+            let variant = (!variant.is_empty()).then_some(variant);
+            editor.set_role(id, role, variant)?;
+        }
+        if let Some(text) = text {
+            editor.replace_text(id, text)?;
         }
         Ok(editor.save_bytes()?)
     }

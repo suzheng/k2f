@@ -5,8 +5,10 @@
 mod blit;
 mod chrome;
 mod coords;
+mod discard_dialog;
 pub mod display_scale;
 mod draw;
+mod edit;
 mod empty;
 mod event_loop;
 mod font;
@@ -19,10 +21,15 @@ mod macos;
 mod open_path;
 mod page_slot;
 mod pdf_dialog;
+mod persist;
+mod popover;
 mod raster;
+mod reload;
 mod scroll;
 mod session;
 mod stack;
+mod wake;
+mod watch;
 mod zoom;
 
 pub use crate::export::{
@@ -33,7 +40,7 @@ pub use chrome::{banner_copy, overlay_label, page_inset_y, window_chrome_h, wind
 pub use coords::PageView;
 pub use hud::{
     copy_hit, export_hit, export_label_x, export_menu_hit, export_menu_item_hit, open_hit,
-    COPY_ALL_TOOLTIP, EXPORT_ACTION_LABEL, HUD_HEIGHT, STATUS_HEIGHT,
+    reload_hit, ChromeHit, COPY_ALL_TOOLTIP, EXPORT_ACTION_LABEL, HUD_HEIGHT, STATUS_HEIGHT,
 };
 pub use input::{accept_key, key_action, next_zoom_step, Action, KeyBind};
 pub use open_path::path_from_open_string;

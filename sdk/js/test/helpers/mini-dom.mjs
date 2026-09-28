@@ -21,6 +21,7 @@ function makeEl(tag) {
     attributes: {},
     listeners: {},
     hidden: false,
+    textContent: "",
     value: "",
     checked: false,
     type: "",
@@ -37,7 +38,13 @@ function makeEl(tag) {
       return child;
     },
     append(...nodes) {
-      for (const n of nodes) el.appendChild(n);
+      for (const n of nodes) {
+        if (n == null || typeof n !== "object") {
+          el.textContent += String(n ?? "");
+          continue;
+        }
+        el.appendChild(n);
+      }
     },
     remove() {
       if (!el.parent) return;

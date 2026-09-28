@@ -173,6 +173,49 @@ pub fn stroke_line(
     }
 }
 
+/// Circular arc in the standard math sense (`y` down): angles in radians, `atan2` range.
+pub fn stroke_arc(
+    buf: &mut [u32],
+    width: u32,
+    height: u32,
+    cx: f32,
+    cy: f32,
+    radius: f32,
+    thickness: f32,
+    start: f32,
+    end: f32,
+    color: u32,
+) {
+    let half = thickness * 0.5 + 0.75;
+    let x0 = (cx - radius - half).floor().max(0.0) as i32;
+    let y0 = (cy - radius - half).floor().max(0.0) as i32;
+    let x1 = (cx + radius + half).ceil().min(width as f32) as i32;
+    let y1 = (cy + radius + half).ceil().min(height as f32) as i32;
+    for y in y0..y1 {
+        for x in x0..x1 {
+            let px = x as f32 + 0.5;
+            let py = y as f32 + 0.5;
+            let theta = (py - cy).atan2(px - cx);
+            if !angle_on_arc(theta, start, end) {
+                continue;
+            }
+            let dist = ((px - cx).hypot(py - cy) - radius).abs() - thickness * 0.5;
+            let a = (1.0 - dist).clamp(0.0, 1.0);
+            if a > 0.0 {
+                blend_pixel(buf, width, height, x, y, color, (a * 255.0).round() as u8);
+            }
+        }
+    }
+}
+
+fn angle_on_arc(theta: f32, start: f32, end: f32) -> bool {
+    if start <= end {
+        theta >= start && theta <= end
+    } else {
+        theta >= start || theta <= end
+    }
+}
+
 #[allow(dead_code)]
 pub fn stroke_circle(
     buf: &mut [u32],

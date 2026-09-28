@@ -19,6 +19,13 @@ fn form_field(id: &str, spec: FormFieldSpec, variant: &str) -> SemanticNode {
     }
 }
 
+fn on_disk(bytes: &[u8], name: &str) -> (Session, std::path::PathBuf) {
+    let path = common::write_k2f(&common::scratch(name), bytes);
+    let mut session = Session::new(AppState::open(bytes).unwrap()).unwrap();
+    session.set_source_path(Some(path.clone()));
+    (session, path)
+}
+
 fn packed_form() -> Vec<u8> {
     let mut ed = Editor::open_dir(&common::repo_root().join("templates/blank")).unwrap();
     let json = |n: &SemanticNode| serde_json::to_string(n).unwrap();
@@ -108,16 +115,16 @@ fn form_fill_save_relock_writes_value_and_keeps_sibling() {
     assert_eq!(app.form_fields().len(), 2);
     assert!(app.form_fields().iter().all(|f| f.value.is_empty()));
 
-    let mut session = Session::new(app).unwrap();
-    session.toggle_fill();
+    let (mut session, path) = on_disk(&bytes, "form-save");
+    session.toggle_edit();
     assert!(session.is_filling());
     assert!(session.fill_click_id("root.name"));
     session.fill_insert("Alice");
     assert!(session.fill_click_id("root.agree"));
-    let next = session.save_fill().unwrap();
+    session.save_fill().unwrap();
     assert!(!session.is_filling());
 
-    let doc = OpenedDocument::open(&next).unwrap();
+    let doc = OpenedDocument::open(&std::fs::read(&path).unwrap()).unwrap();
     let fields = doc.form_fields();
     let name = fields.iter().find(|f| f.id == "root.name").unwrap();
     let agree = fields.iter().find(|f| f.id == "root.agree").unwrap();
@@ -139,10 +146,10 @@ fn form_fill_empty_save_preserves_package() {
     let bytes = packed_form();
     let before = OpenedDocument::open(&bytes).unwrap();
     let hash_before = before.content_hash();
-    let mut session = Session::new(AppState::open(&bytes).unwrap()).unwrap();
-    session.toggle_fill();
-    let next = session.save_fill().unwrap();
-    let after = OpenedDocument::open(&next).unwrap();
+    let (mut session, path) = on_disk(&bytes, "form-empty");
+    session.toggle_edit();
+    session.save_fill().unwrap();
+    let after = OpenedDocument::open(&std::fs::read(&path).unwrap()).unwrap();
     assert_eq!(
         after.content_hash(),
         hash_before,
@@ -155,7 +162,7 @@ fn form_fill_unsaved_does_not_change_package() {
     let bytes = packed_form();
     let app = AppState::open(&bytes).unwrap();
     let mut session = Session::new(app).unwrap();
-    session.toggle_fill();
+    session.toggle_edit();
     session.fill_click_id("root.name");
     session.fill_insert("Bob");
     assert_eq!(
@@ -171,12 +178,12 @@ fn form_fill_application_example_relock() {
         .unwrap()
         .save_bytes()
         .unwrap();
-    let mut session = Session::new(AppState::open(&bytes).unwrap()).unwrap();
-    session.toggle_fill();
+    let (mut session, path) = on_disk(&bytes, "form-app");
+    session.toggle_edit();
     assert!(session.fill_click_id("app.name"));
     session.fill_insert("Alice");
-    let next = session.save_fill().unwrap();
-    let doc = OpenedDocument::open(&next).unwrap();
+    session.save_fill().unwrap();
+    let doc = OpenedDocument::open(&std::fs::read(&path).unwrap()).unwrap();
     let name = doc
         .form_fields()
         .into_iter()

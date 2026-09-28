@@ -159,9 +159,7 @@ fn deep_ocean_toolbar_title_has_no_tofu() {
     );
     if ink_cols < 24 {
         if !cfg!(any(target_os = "macos", target_os = "windows")) {
-            eprintln!(
-                "skip full 谧 coverage on this host ({ink_cols} cols; need OS CJK face)"
-            );
+            eprintln!("skip full 谧 coverage on this host ({ink_cols} cols; need OS CJK face)");
             return;
         }
         panic!("深海静谧 must paint all four glyphs (no tofu), got {ink_cols} ink columns");

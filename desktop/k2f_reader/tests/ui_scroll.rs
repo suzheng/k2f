@@ -3,7 +3,7 @@ mod common;
 use common::published_invoice_bytes;
 use k2f_reader::ui::{
     clamp_scroll, content_height, line_delta_px, page_at_scroll, page_inset_y, page_tops,
-    wheel_y_to_scroll, window_chrome_h, Action, Session, LINE_PX, PAGE_GAP,
+    wheel_y_to_scroll, window_chrome_h, Action, Session, LINE_PX, PAGE_GAP, STATUS_HEIGHT,
 };
 use k2f_reader::AppState;
 
@@ -80,6 +80,21 @@ fn scroll_changes_current_page_on_published_invoice() {
     assert_eq!(
         session.app().unwrap().page(),
         session.app().unwrap().page_count() - 1
+    );
+}
+
+#[test]
+fn max_scroll_keeps_stack_bottom_above_status_bar() {
+    let mut session = Session::new(AppState::open(&published_invoice_bytes()).unwrap()).unwrap();
+    let (w, h) = session.scaled_size();
+    session.set_window_size(w, h);
+    session.scroll_by(f64::MAX);
+    let inset = f64::from(page_inset_y(session.app().unwrap()));
+    let stack_bottom = inset + session.content_height() - session.scroll_y();
+    let status_top = f64::from(h.saturating_sub(STATUS_HEIGHT));
+    assert!(
+        stack_bottom <= status_top + 1.0,
+        "bottom of stack {stack_bottom} must sit above status bar at {status_top}"
     );
 }
 

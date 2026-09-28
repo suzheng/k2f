@@ -43,10 +43,18 @@ fn export_card(variant: &str) -> Vec<u8> {
 fn card_raised_exports_via_stamp() {
     let pdf = export_card("raised");
     assert!(pdf.starts_with(b"%PDF-"));
+    assert!(
+        pdf.windows(6).any(|w| w == b"/SMask"),
+        "raised card shadow must be an alpha slice"
+    );
 }
 
 #[test]
 fn card_glass_exports_via_stamp() {
     let pdf = export_card("glass");
     assert!(pdf.starts_with(b"%PDF-"));
+    assert!(
+        pdf.windows(6).any(|w| w == b"/SMask"),
+        "glass blur must be an alpha slice"
+    );
 }

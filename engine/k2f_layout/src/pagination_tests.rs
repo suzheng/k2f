@@ -769,6 +769,9 @@ fn root_horizontal_stack_layout_is_an_error() {
         size: FixedSizeHint::default(),
     });
     let err = LayoutEngine::layout(&paged_manifest(root), &ctx).unwrap_err();
-    assert!(err.contains("root layout type stack direction horizontal"), "{err}");
+    assert!(
+        err.contains("root layout type stack direction horizontal"),
+        "{err}"
+    );
     assert!(err.contains("content/root.json"), "{err}");
 }

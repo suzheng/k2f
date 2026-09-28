@@ -23,10 +23,10 @@ That PDF matches the lock pages. Underscores or `[____]` in Markdown are **not**
 k2f export-pdf file.K2F -o out.pdf
 k2f export-pdf ./out/doc/doc.K2F -o ./out/doc/doc.pdf
 k2f export-pdf file.K2F -o out.pdf --flatten          # glyphs, no AcroForm
-k2f export-pdf file.K2F -o out.pdf --scale 4          # stamp pages only (default 4)
+k2f export-pdf file.K2F -o out.pdf --scale 4          # effect slices only (default 4)
 ```
 
-`--scale` is `2`, `3`, or `4` and applies only to stamp pages (blur, shadow, or gradient). Default export has the **same page count as the lock** — that is the customer PDF. `--trust-pack` adds captions and a verify page; do not use it for customer delivery. `--trust-pack` with fillable fields fails (`FILLABLE_EXCLUSIVE`).
+`--scale` is `2`, `3`, or `4` and applies only to effect slices (blur, shadow, gradient, or translucent fills). Text on those effects stays vector. Default export has the **same page count as the lock** — that is the customer PDF. `--trust-pack` adds captions and a verify page; do not use it for customer delivery. `--trust-pack` with fillable fields fails (`FILLABLE_EXCLUSIVE`).
 
 Do not fall back to html2pdf, jsPDF, browser print, or React-PDF.
 
@@ -52,7 +52,7 @@ Word and PowerPoint export those boxes as lock drawings — not Word content con
 | JS `@openk2f/k2f` | `exportPdf(bytes, scale?, flatten?)` after `initWasm` | Editor has **no** PDF export — `save()` then `exportPdf(bytes)`. |
 | Viewer | Export PDF / `handle.exportPdf()` | [Web viewer](web-viewer.md) |
 
-Unlocked input fails with `UNLOCKED`. Byte-level stamp vs vector contract: Skill [pdf-contract.md](../../skills/k2f/references/exporting-pdf/pdf-contract.md).
+Unlocked input fails with `UNLOCKED`. Byte-level effect-slice and vector contract: Skill [pdf-contract.md](../../skills/k2f/references/exporting-pdf/pdf-contract.md).
 
 ## Common mistakes
 

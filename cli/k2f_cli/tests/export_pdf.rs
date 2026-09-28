@@ -10,6 +10,14 @@ fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
+fn check_pdf_script() -> PathBuf {
+    let in_repo = repo_root().join("skills/k2f/scripts/check-pdf.py");
+    if in_repo.is_file() {
+        return in_repo;
+    }
+    repo_root().join("../k2f-skills/skills/core/k2f/scripts/check-pdf.py")
+}
+
 #[test]
 fn export_pdf_draws_invoice_lock_not_a_second_layout() {
     let dir = std::env::temp_dir().join(format!("k2f-pdf-{}", std::process::id()));
@@ -46,7 +54,7 @@ fn export_pdf_draws_invoice_lock_not_a_second_layout() {
         !pdf.windows(9).any(|w| w == b"/AcroForm"),
         "invoice has no form fields so default PDF must not write /AcroForm"
     );
-    let checker = repo_root().join("skills/k2f/scripts/check-pdf.py");
+    let checker = check_pdf_script();
     let check = Command::new("python3")
         .args([checker.to_str().unwrap(), out.to_str().unwrap()])
         .output()

@@ -1,15 +1,21 @@
 use super::hud::{ChromeHit, DEFAULT_INNER_H, DEFAULT_INNER_W, MIN_INNER_H, MIN_INNER_W};
 use super::input::{accept_key, key_action, Action, KeyBind};
 use super::pdf_dialog::PdfDialogHit;
+use super::reload::{Decision, DiskState, FileIdentity};
 use super::scroll::{line_delta_px, wheel_y_to_scroll};
-use super::session::{PointerCursor, Session};
+use super::session::{PointerCursor, Session, StagedSave};
+use super::wake::Wake;
+use super::watch::SourceWatch;
 use super::zoom::{zoom_after_ctrl_wheel, zoom_after_pinch};
-use crate::export::{ensure_extension, pick_folder_path, pick_open_path, pick_save_path, ExportFormat};
+use crate::export::{
+    ensure_extension, pick_folder_path, pick_open_path, pick_save_path, ExportFormat,
+};
 use crate::AppState;
 use softbuffer::{Context, Surface};
 use std::num::NonZeroU32;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Instant;
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalPosition, LogicalSize};
 use winit::event::{ElementState, Ime, MouseButton, MouseScrollDelta, WindowEvent};
@@ -17,25 +23,26 @@ use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::keyboard::{Key, NamedKey};
 use winit::window::{CursorIcon, Window, WindowId};
 
-#[cfg(target_os = "macos")]
-use super::macos::Wake;
-
-#[cfg(not(target_os = "macos"))]
-#[derive(Clone, Copy, Debug)]
-struct Wake;
-
 pub fn run(app: Option<AppState>, source: Option<PathBuf>) -> anyhow::Result<()> {
     let event_loop = EventLoop::<Wake>::with_user_event().build()?;
     event_loop.set_control_flow(ControlFlow::Wait);
+    let proxy = event_loop.create_proxy();
     #[cfg(target_os = "macos")]
-    super::macos::install(event_loop.create_proxy());
+    super::macos::install(proxy.clone());
+    let watch = match SourceWatch::start(proxy) {
+        Ok(watch) => Some(watch),
+        Err(e) => {
+            eprintln!("file watch unavailable: {e:#}");
+            None
+        }
+    };
     let session = match app {
         Some(app) => Session::new(app)?,
         None => Session::empty(),
     };
     let mut gui = Gui {
         session,
-        source,
+        source: source.clone(),
         window: None,
         context: None,
         surface: None,
@@ -43,7 +50,11 @@ pub fn run(app: Option<AppState>, source: Option<PathBuf>) -> anyhow::Result<()>
         cursor: (0.0, 0.0),
         clipboard: None,
         ime_on: false,
+        disk: DiskState::new(),
+        watch,
     };
+    gui.session.set_source_path(source);
+    gui.bind_loaded_file();
     event_loop.run_app(&mut gui)?;
     Ok(())
 }
@@ -58,6 +69,8 @@ struct Gui {
     cursor: (f64, f64),
     clipboard: Option<arboard::Clipboard>,
     ime_on: bool,
+    disk: DiskState,
+    watch: Option<SourceWatch>,
 }
 
 impl Gui {
@@ -113,7 +126,9 @@ impl Gui {
     fn load_document(&mut self, path: PathBuf) {
         match self.session.load_path(&path) {
             Ok(()) => {
+                self.session.set_source_path(Some(path.clone()));
                 self.source = Some(path);
+                self.bind_loaded_file();
                 if let Some(window) = &self.window {
                     window.set_title(&self.session.window_title());
                 }
@@ -124,6 +139,102 @@ impl Gui {
             }
         }
         self.redraw();
+    }
+
+    fn bind_loaded_file(&mut self) {
+        let Some(path) = self.source.clone() else {
+            self.disk.clear();
+            self.session.set_disk_newer(false);
+            return;
+        };
+        if let Some(id) = FileIdentity::from_path(&path) {
+            self.disk.note_loaded(id);
+        }
+        self.session.set_disk_newer(false);
+        if let Some(watch) = &mut self.watch {
+            if let Err(e) = watch.retarget(&path) {
+                eprintln!("watch {}: {e:#}", path.display());
+            }
+        }
+    }
+
+    fn reload_from_disk(&mut self, manual: bool) {
+        let Some(path) = self.source.clone() else {
+            return;
+        };
+        let before = FileIdentity::from_path(&path);
+        let bytes = match std::fs::read(&path) {
+            Ok(bytes) => bytes,
+            Err(e) => {
+                eprintln!("reload {}: {e:#}", path.display());
+                if let Some(id) = before {
+                    self.disk.note_failed(id);
+                }
+                return;
+            }
+        };
+        let after = FileIdentity::from_path(&path);
+        if !manual && before != after {
+            return;
+        }
+        if let Err(e) = self.session.reload_bytes(&bytes) {
+            eprintln!("reload {}: {e:#}", path.display());
+            if let Some(id) = after.or(before) {
+                self.disk.note_failed(id);
+            }
+            return;
+        }
+        if let Some(id) = after.or(before) {
+            self.disk.note_loaded(id);
+        }
+        self.session.set_disk_newer(false);
+        if let Some(window) = &self.window {
+            window.set_title(&self.session.window_title());
+        }
+        self.sync_ime();
+        self.redraw();
+    }
+
+    fn poll_disk(&mut self) {
+        let Some(path) = self.source.clone() else {
+            return;
+        };
+        if self.session.app().is_none() {
+            return;
+        }
+        let current = FileIdentity::from_path(&path);
+        match self
+            .disk
+            .poll(Instant::now(), current, self.session.is_fill_dirty())
+        {
+            Decision::Idle => {
+                if self.session.disk_newer() {
+                    self.session.set_disk_newer(false);
+                    self.redraw();
+                }
+            }
+            Decision::Waiting => {}
+            Decision::Hold => {
+                if !self.session.disk_newer() {
+                    self.session.set_disk_newer(true);
+                    self.redraw();
+                }
+            }
+            Decision::Reload => self.reload_from_disk(false),
+        }
+    }
+
+    fn arm_wait(&self, event_loop: &ActiveEventLoop) {
+        let now = Instant::now();
+        let active = self.source.is_some() && self.session.app().is_some();
+        let disk = self.disk.wake_at(now, active);
+        let lod = self.session.display_wake_at();
+        match (lod, disk) {
+            (Some(a), Some(b)) => event_loop.set_control_flow(ControlFlow::WaitUntil(a.min(b))),
+            (Some(a), None) => event_loop.set_control_flow(ControlFlow::WaitUntil(a)),
+            (None, Some(b)) => event_loop.set_control_flow(ControlFlow::WaitUntil(b)),
+            (None, None) => event_loop.set_control_flow(ControlFlow::Wait),
+        }
     }
 
     fn begin_export(&mut self) {
@@ -171,24 +282,83 @@ impl Gui {
 
     fn save_fill(&mut self) {
         match self.session.save_fill() {
-            Ok(bytes) => {
-                if let Some(path) = &self.source {
-                    if let Err(e) = std::fs::write(path, &bytes) {
-                        eprintln!("save {}: {e:#}", path.display());
-                        self.session
-                            .set_open_error(format!("save failed: {e:#}"));
-                    }
-                }
-                if let Some(window) = &self.window {
-                    window.set_title(&self.session.window_title());
-                }
-            }
+            Ok(_) => self.apply_staged_save(),
             Err(e) => {
                 eprintln!("save fill: {e:#}");
                 self.session.set_open_error(format!("save failed: {e:#}"));
             }
         }
         self.sync_ime();
+    }
+
+    fn save_open_node(&mut self) {
+        match self.session.save_node() {
+            Ok(_) => self.apply_staged_save(),
+            Err(e) => {
+                eprintln!("save node: {e:#}");
+                self.session.set_edit_error(format!("{e:#}"));
+            }
+        }
+        self.sync_ime();
+    }
+
+    fn apply_staged_save(&mut self) {
+        let Some(staged) = self.session.take_staged_save() else {
+            return;
+        };
+        match staged {
+            StagedSave::Written => self.note_saved(),
+            StagedSave::NeedsPath(bytes) => self.save_package_as(bytes),
+        }
+    }
+
+    fn note_saved(&mut self) {
+        self.bind_loaded_file();
+        if let Some(window) = &self.window {
+            window.set_title(&self.session.window_title());
+        }
+    }
+
+    fn save_package_as(&mut self, bytes: Vec<u8>) {
+        let (title, pages) = {
+            let Some(app) = self.session.app() else {
+                return;
+            };
+            (app.title().to_string(), app.page_count())
+        };
+        let Some(path) = pick_save_path(ExportFormat::K2f, &title, pages, self.source.as_deref())
+        else {
+            return;
+        };
+        if let Err(e) = super::persist::replace_file(&path, &bytes) {
+            eprintln!("save {}: {e:#}", path.display());
+            self.fail_save(format!("save failed: {e:#}"));
+            return;
+        }
+        if let Err(e) = self.session.commit_package(&bytes) {
+            eprintln!("save {}: {e:#}", path.display());
+            self.fail_save(format!("save failed: {e:#}"));
+            return;
+        }
+        self.session.set_source_path(Some(path.clone()));
+        self.source = Some(path);
+        self.note_saved();
+    }
+
+    fn fail_save(&mut self, msg: String) {
+        if self.session.popover_open() {
+            self.session.set_edit_error(msg);
+        } else {
+            self.session.set_open_error(msg);
+        }
+    }
+
+    fn save_shortcut(&mut self) {
+        if self.session.popover_open() {
+            self.save_open_node();
+        } else {
+            self.save_fill();
+        }
     }
 
     fn sync_ime(&self) {
@@ -255,20 +425,20 @@ impl ApplicationHandler<Wake> for Gui {
         self.redraw();
     }
 
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, _event: Wake) {
-        self.drain_os_open();
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: Wake) {
+        match event {
+            Wake::Os => self.drain_os_open(),
+            Wake::Disk => self.poll_disk(),
+        }
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         self.drain_os_open();
+        self.poll_disk();
         if self.session.tick_display_lod() {
             self.redraw();
         }
-        if let Some(wake) = self.session.display_wake_at() {
-            event_loop.set_control_flow(ControlFlow::WaitUntil(wake));
-        } else {
-            event_loop.set_control_flow(ControlFlow::Wait);
-        }
+        self.arm_wait(event_loop);
     }
 
     fn window_event(
@@ -291,6 +461,7 @@ impl ApplicationHandler<Wake> for Gui {
                     window.set_cursor(match self.session.pointer_cursor(position.x, position.y) {
                         PointerCursor::Pointer => CursorIcon::Pointer,
                         PointerCursor::Text => CursorIcon::Text,
+                        PointerCursor::NsResize => CursorIcon::NsResize,
                         PointerCursor::Default => CursorIcon::Default,
                     });
                 }
@@ -333,14 +504,16 @@ impl ApplicationHandler<Wake> for Gui {
                                 self.session.close_export_menu();
                                 self.begin_open();
                             }
-                            ChromeHit::Fill => {
+                            ChromeHit::Edit => {
                                 self.session.close_export_menu();
-                                self.session.toggle_fill();
+                                self.session.toggle_edit();
                                 self.sync_ime();
                             }
                             ChromeHit::Save => {
                                 self.session.close_export_menu();
-                                self.save_fill();
+                                if self.session.is_fill_dirty() {
+                                    self.save_fill();
+                                }
                             }
                             ChromeHit::Export => {
                                 self.session.close_export_menu();
@@ -372,13 +545,20 @@ impl ApplicationHandler<Wake> for Gui {
                                 self.session.close_export_menu();
                                 self.session.apply(Action::ZoomOut);
                             }
+                            ChromeHit::Reload => {
+                                self.session.close_export_menu();
+                                self.reload_from_disk(true);
+                            }
                         }
                         self.redraw();
                         return;
                     }
                     if let Some(payload) = self.session.pointer_up(self.cursor.0, self.cursor.1) {
                         self.copy_to_clipboard(payload.plain);
+                    } else if let Some(json) = self.session.take_node_clipboard() {
+                        self.copy_to_clipboard(json);
                     }
+                    self.apply_staged_save();
                     self.sync_ime();
                     self.redraw();
                 }
@@ -400,8 +580,13 @@ impl ApplicationHandler<Wake> for Gui {
                 if !event.state.is_pressed() {
                     return;
                 }
+                if self.session.discard_prompt_open()
+                    && !matches!(event.logical_key, Key::Named(NamedKey::Escape))
+                {
+                    return;
+                }
                 if matches!(event.logical_key, Key::Named(NamedKey::Escape)) {
-                    if self.session.fill_escape()
+                    if self.session.edit_escape()
                         || self.session.close_pdf_dialog()
                         || self.session.close_export_menu()
                     {
@@ -410,27 +595,51 @@ impl ApplicationHandler<Wake> for Gui {
                     }
                     return;
                 }
-                if self.session.fill_editing() {
+                if self.session.popover_open() || self.session.fill_editing() {
+                    if matches!(event.logical_key, Key::Named(NamedKey::Tab))
+                        && self.session.popover_open()
+                    {
+                        self.session.edit_tab();
+                        self.redraw();
+                        return;
+                    }
                     let ctrl = self.modifiers.control_key();
                     let super_key = self.modifiers.super_key();
                     if let Some(bind) = bind_key(&event.logical_key) {
-                        if let Some(Action::Save) = key_action(
-                            bind,
-                            ctrl,
-                            self.modifiers.shift_key(),
-                            super_key,
-                        ) {
-                            if accept_key(event.repeat, Action::Save) {
-                                self.save_fill();
+                        if let Some(action) =
+                            key_action(bind, ctrl, self.modifiers.shift_key(), super_key)
+                        {
+                            if action == Action::Save && accept_key(event.repeat, Action::Save) {
+                                self.save_shortcut();
                                 self.redraw();
+                                return;
                             }
-                            return;
+                            if action == Action::Reload && accept_key(event.repeat, Action::Reload)
+                            {
+                                self.reload_from_disk(true);
+                                return;
+                            }
+                            if matches!(action, Action::Save | Action::Reload) {
+                                return;
+                            }
                         }
                     }
                     if !self.ime_on {
                         match &event.logical_key {
                             Key::Named(NamedKey::Backspace) => self.session.fill_backspace(),
                             Key::Named(NamedKey::Enter) => self.session.fill_newline(),
+                            Key::Named(NamedKey::ArrowLeft) if self.session.popover_open() => {
+                                self.session.edit_arrow(-1);
+                            }
+                            Key::Named(NamedKey::ArrowRight) if self.session.popover_open() => {
+                                self.session.edit_arrow(1);
+                            }
+                            Key::Named(NamedKey::ArrowUp) if self.session.popover_open() => {
+                                self.session.edit_line(-1);
+                            }
+                            Key::Named(NamedKey::ArrowDown) if self.session.popover_open() => {
+                                self.session.edit_line(1);
+                            }
                             _ => {
                                 if let Some(text) = event.text.as_ref() {
                                     if !text.is_empty()
@@ -480,8 +689,12 @@ impl ApplicationHandler<Wake> for Gui {
                     return;
                 }
                 if action == Action::Save {
-                    self.save_fill();
+                    self.save_shortcut();
                     self.redraw();
+                    return;
+                }
+                if action == Action::Reload {
+                    self.reload_from_disk(true);
                     return;
                 }
                 let copied = self.session.apply(action);
@@ -499,7 +712,10 @@ impl ApplicationHandler<Wake> for Gui {
                     let z = self.session.app().map(|a| a.zoom()).unwrap_or(1.0);
                     let next = zoom_after_ctrl_wheel(z, wheel_y);
                     self.session.set_zoom_about(next, Some(self.cursor.1));
-                } else {
+                } else if !self
+                    .session
+                    .scroll_text_field(self.cursor.0, self.cursor.1, wheel_y)
+                {
                     self.session.scroll_by(wheel_y_to_scroll(wheel_y));
                 }
                 self.redraw();

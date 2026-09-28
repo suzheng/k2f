@@ -396,6 +396,11 @@ export const VIEWER_CSS = `
   padding: 6px 8px;
   font: inherit;
 }
+.k2f-popover-actions {
+  display: flex;
+  gap: 8px;
+}
+.k2f-popover-actions button { flex: 1; }
 .k2f-popover button {
   background: var(--k2f-primary);
   color: #fff;
@@ -407,6 +412,7 @@ export const VIEWER_CSS = `
   font-size: 13px;
   font-weight: 500;
 }
+.k2f-popover button[data-act="cancel"],
 .k2f-popover button[data-act="copy"] {
   background: var(--k2f-hover);
   color: var(--k2f-text);

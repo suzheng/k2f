@@ -11,3 +11,5 @@ mod detect;
 mod gradient;
 #[path = "stamp/scale.rs"]
 mod scale;
+#[path = "stamp/slice.rs"]
+mod slice;

@@ -267,7 +267,10 @@ mod tests {
 
     #[test]
     fn cjk_char_paints_ink() {
-        assert!(ink_for_char('对', 18.0), "NotoSansSC fallback must paint CJK");
+        assert!(
+            ink_for_char('对', 18.0),
+            "NotoSansSC fallback must paint CJK"
+        );
     }
 
     #[test]

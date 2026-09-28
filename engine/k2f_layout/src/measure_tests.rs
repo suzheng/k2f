@@ -34,6 +34,34 @@ fn test_measure_text_node() {
 }
 
 #[test]
+fn text_in_zero_width_names_the_node() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+
+    let node = SemanticNode {
+        id: "slide.stdout.label".into(),
+        role: "body".into(),
+        variant: None,
+        preserve_whitespace: None,
+        list_id: None,
+        depth: None,
+        marker_type: None,
+        content: NodeContent::Text("STDOUT".into()),
+        modifiers: vec![],
+        layout: None,
+        ..Default::default()
+    };
+
+    let constraint = SizeConstraint::new(Size::ZERO, Size::new(Pt::ZERO, Pt(i128::MAX)));
+    let err = measure_node(&node, constraint, &ctx).unwrap_err();
+    assert!(
+        err.contains("slide.stdout.label") && err.contains("does not fit"),
+        "got {err}"
+    );
+}
+
+#[test]
 fn test_measure_list_item_is_marker_independent() {
     let fonts = crate::test_utils::test_fonts();
 

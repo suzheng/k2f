@@ -35,6 +35,14 @@ pub(crate) fn wrap_runs(
     }
 
     let infinite_width = max_width.0 == i128::MAX;
+    if !infinite_width && max_width.0 <= 0 {
+        if let Some(sample) = visible_sample(runs) {
+            return Err(format!(
+                "UNSPLITTABLE_OVERFLOW: text {sample} does not fit because the line width is {} millipt. A grid cell, fixed width, or padding left no room",
+                max_width.0
+            ));
+        }
+    }
 
     let mut out_lines: Vec<TextLine> = Vec::new();
 
@@ -52,8 +60,23 @@ pub(crate) fn wrap_runs(
         }
     };
 
+    let text_budget: usize = runs.iter().map(|r| r.text.len()).sum();
+    let step_cap = text_budget.saturating_mul(8).saturating_add(32);
+    let mut steps: usize = 0;
     let mut i: usize = 0;
     while i < frags.len() {
+        steps += 1;
+        if steps > step_cap {
+            let sample = frags
+                .get(i)
+                .and_then(|f| f.run.as_ref())
+                .map(|r| text_sample(&r.text))
+                .unwrap_or_else(|| "\"\"".to_string());
+            return Err(format!(
+                "UNSPLITTABLE_OVERFLOW: text {sample} does not fit because wrapping made no progress (line width {} millipt)",
+                max_width.0
+            ));
+        }
         let frag = frags[i].clone();
         match frag.kind {
             FragKind::Newline => {
@@ -219,10 +242,19 @@ pub(crate) fn wrap_runs(
                     continue;
                 }
 
-                let split_at =
-                    fit_prefix_boundary(&run.text, &run.style, line_limit(is_first_line), ctx)?;
+                let limit = line_limit(is_first_line);
+                let split_at = fit_prefix_boundary(&run.text, &run.style, limit, ctx)?;
                 let head_text = run.text[..split_at].to_string();
                 let tail_text = run.text[split_at..].to_string();
+                let head_w = measure_text_run_width(&head_text, &run.style, ctx)?;
+                if head_w > limit {
+                    return Err(format!(
+                        "UNSPLITTABLE_OVERFLOW: text {} does not fit because it is wider than the line ({} > {} millipt)",
+                        text_sample(&head_text),
+                        head_w.0,
+                        limit.0
+                    ));
+                }
 
                 let head = TextRun {
                     start: run.start,
@@ -268,6 +300,31 @@ pub(crate) fn wrap_runs(
     );
 
     Ok(out_lines)
+}
+
+fn text_sample(text: &str) -> String {
+    let sample: String = text.chars().take(40).collect();
+    format!("{sample:?}")
+}
+
+fn visible_sample(runs: &[TextRun]) -> Option<String> {
+    let mut sample = String::new();
+    for run in runs {
+        for ch in run.text.chars() {
+            if ch.is_whitespace() {
+                continue;
+            }
+            sample.push(ch);
+            if sample.chars().count() >= 40 {
+                return Some(format!("{sample:?}"));
+            }
+        }
+    }
+    if sample.is_empty() {
+        None
+    } else {
+        Some(format!("{sample:?}"))
+    }
 }
 
 fn next_line_width(line: &[Piece], line_width: Pt, piece_width: Pt, run: &TextRun) -> Pt {

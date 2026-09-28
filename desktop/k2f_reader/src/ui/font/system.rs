@@ -62,16 +62,13 @@ fn candidates() -> Vec<(PathBuf, u32)> {
             ("/System/Library/Fonts/AppleSDGothicNeo.ttc", 0),
             ("/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc", 0),
         ];
-        return FACES
-            .iter()
-            .map(|(p, i)| (PathBuf::from(p), *i))
-            .collect();
+        return FACES.iter().map(|(p, i)| (PathBuf::from(p), *i)).collect();
     }
     #[cfg(target_os = "windows")]
     {
         let fonts = windows_fonts_dir();
         const NAMES: &[(&str, u32)] = &[
-            ("msyh.ttc", 0),    // Microsoft YaHei
+            ("msyh.ttc", 0), // Microsoft YaHei
             ("msyh.ttf", 0),
             ("msjh.ttc", 0),    // Microsoft JhengHei
             ("malgun.ttf", 0),  // Malgun Gothic
@@ -89,20 +86,20 @@ fn candidates() -> Vec<(PathBuf, u32)> {
     {
         const FACES: &[(&str, u32)] = &[
             ("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", 0),
-            ("/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf", 0),
-            ("/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc", 0),
-            ("/usr/share/fonts/noto-cjk/NotoSansCJKsc-Regular.otf", 0),
             (
-                "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf",
                 0,
             ),
+            ("/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc", 0),
+            ("/usr/share/fonts/noto-cjk/NotoSansCJKsc-Regular.otf", 0),
+            ("/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc", 0),
             ("/usr/share/fonts/truetype/wqy/wqy-microhei.ttc", 0),
-            ("/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf", 0),
+            (
+                "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+                0,
+            ),
         ];
-        return FACES
-            .iter()
-            .map(|(p, i)| (PathBuf::from(p), *i))
-            .collect();
+        return FACES.iter().map(|(p, i)| (PathBuf::from(p), *i)).collect();
     }
     #[cfg(not(any(
         target_os = "macos",

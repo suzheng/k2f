@@ -36,7 +36,10 @@ fn display_lod_upgrades_visible_page_bucket() {
         3.0,
         "1.5× UI zoom needs paint bucket 3"
     );
-    assert!(session.flush_display_lod(), "visible page should gain a display raster");
+    assert!(
+        session.flush_display_lod(),
+        "visible page should gain a display raster"
+    );
     assert_eq!(session.display_bucket_at(0), Some(3.0));
 
     session.set_zoom(1.0);

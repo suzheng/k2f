@@ -267,3 +267,28 @@ fn unbreakable_word_still_splits_by_character() {
         "emergency split should keep letters, got {first:?}"
     );
 }
+
+#[test]
+fn text_wider_than_the_line_fails_fast() {
+    let fonts = crate::test_utils::test_fonts();
+    let theme = Theme::default();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let modifiers: Vec<Modifier> = vec![];
+
+    let zero = SizeConstraint::new(Size::ZERO, Size::new(Pt::ZERO, Pt(i128::MAX)));
+    let err = crate::text_layout::layout_text("STDOUT", "body", None, &modifiers, zero, &ctx)
+        .unwrap_err();
+    assert!(
+        err.contains("UNSPLITTABLE_OVERFLOW") && err.contains("does not fit"),
+        "got {err}"
+    );
+    assert!(err.contains("STDOUT"), "got {err}");
+
+    let tiny = SizeConstraint::new(Size::ZERO, Size::new(Pt(1), Pt(i128::MAX)));
+    let err = crate::text_layout::layout_text("STDOUT", "body", None, &modifiers, tiny, &ctx)
+        .unwrap_err();
+    assert!(
+        err.contains("does not fit"),
+        "a line narrower than one glyph must error, got {err}"
+    );
+}

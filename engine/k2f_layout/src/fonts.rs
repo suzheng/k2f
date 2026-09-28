@@ -59,12 +59,7 @@ pub fn validate_theme_fonts(theme: &Theme, fonts: &FontLibrary) -> Result<(), St
             let Some(stem) = stem.map(str::trim).filter(|s| !s.is_empty()) else {
                 continue;
             };
-            check_family(
-                stem,
-                theme,
-                fonts,
-                &format!("font_faces '{family}' {slot}"),
-            )?;
+            check_family(stem, theme, fonts, &format!("font_faces '{family}' {slot}"))?;
         }
     }
     let default = theme.roles.get("default");
@@ -297,8 +292,7 @@ mod tests {
                 }
             }
         }"#;
-        let json = crate::compile_chunk_with_fonts(content, theme, &fonts, None)
-            .expect("compile");
+        let json = crate::compile_chunk_with_fonts(content, theme, &fonts, None).expect("compile");
         let lock: k2f_core::LockFile = serde_json::from_str(&json).unwrap();
         let mut families = std::collections::BTreeMap::<String, (String, bool)>::new();
         for page in &lock.render_plan.pages {
@@ -360,8 +354,7 @@ mod tests {
             "content": { "type": "text", "value": "ab" },
             "modifiers": [{ "range": [0, 1], "type": "emphasis", "intent": "strong" }]
         }"#;
-        let json = crate::compile_chunk_with_fonts(content, theme, &fonts, None)
-            .expect("compile");
+        let json = crate::compile_chunk_with_fonts(content, theme, &fonts, None).expect("compile");
         let lock: k2f_core::LockFile = serde_json::from_str(&json).unwrap();
         let mut run_faces: Vec<(String, bool)> = Vec::new();
         for page in &lock.render_plan.pages {
@@ -411,8 +404,7 @@ mod tests {
             "role": "h1",
             "content": { "type": "text", "value": "Hello" }
         }"#;
-        let json = crate::compile_chunk_with_fonts(content, theme, &fonts, None)
-            .expect("compile");
+        let json = crate::compile_chunk_with_fonts(content, theme, &fonts, None).expect("compile");
         let lock: k2f_core::LockFile = serde_json::from_str(&json).unwrap();
         let mut found = false;
         for page in &lock.render_plan.pages {

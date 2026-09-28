@@ -6,15 +6,13 @@ use std::sync::Mutex;
 
 use winit::event_loop::EventLoopProxy;
 
+use super::wake::Wake;
 use crate::copy::CopyFormat;
 
 mod menu;
 mod open_docs;
 
 pub use menu::{install_menus, sync_copy_format_menu};
-
-#[derive(Clone, Copy, Debug)]
-pub struct Wake;
 
 static PROXY: Mutex<Option<EventLoopProxy<Wake>>> = Mutex::new(None);
 static OPEN_PATHS: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
@@ -43,7 +41,7 @@ pub fn take_copy_format() -> Option<CopyFormat> {
 
 fn wake() {
     if let Some(proxy) = PROXY.lock().expect("open proxy").as_ref() {
-        let _ = proxy.send_event(Wake);
+        let _ = proxy.send_event(Wake::Os);
     }
 }
 

@@ -10,7 +10,7 @@ Native lock executor for `.K2F` files. Same rules as the web viewer:
 
 Packaged builds: [k2f.dev/download](https://k2f.dev/download).
 
-Links `k2f_paint` + `k2f_package` plus the PDF / PPTX / DOCX / Markdown exporters. The official raster is `render_page` at `OFFICIAL_PNG_SCALE` (2×) — baseline, export, and golden comparisons. UI zoom is continuous (buttons still use steps); the screen may re-paint visible pages at a quantized display scale (LOD) after a short debounce. Documents with `form_field` nodes show Fill / Save: overlay IME on lock boxes, then `replace_text` + relock. A Tiptap writing UI is not in v0.
+Links `k2f_paint` + `k2f_package` plus the PDF / PPTX / DOCX / Markdown exporters. The official raster is `render_page` at `OFFICIAL_PNG_SCALE` (2×) — baseline, export, and golden comparisons. UI zoom is continuous (buttons still use steps); the screen may re-paint visible pages at a quantized display scale (LOD) after a short debounce. **Edit** / **Done** toggles surgical edit: click a node for the popover (text, role, variant, Save and relock). Save and relock writes the new package back to the open `.K2F` before the window shows it. Form documents also show **Save**: overlay IME on lock boxes, then `replace_text` + relock, written to that same file. A Tiptap writing UI is not in v0.
 
 This crate is a workspace member but **not a default-member** (same pattern as `k2f_py`), so root `cargo test` does not pull GUI crates. CI runs `cargo test -p k2f_reader`.
 
@@ -40,7 +40,7 @@ cargo run -p k2f_reader --release -- examples/published/invoice.K2F
 
 Debug `cargo run -p k2f_reader --` also works; `--release` is snappier for first paint. Zoom updates layout immediately; display LOD re-paints after idle when a denser bucket is needed.
 
-Title: document title for `UNSIGNED`; `K2F Reader — Signed — {title}` or `K2F Reader — Draft — {title}` when applicable; `BROKEN_INTEGRITY` / `SIGNED_BUT_BROKEN` keep the raw codes (with `status_code` under broken). Packaged app: clicking the icon opens an empty window (no Open dialog). **Open** on the toolbar, **File → Open** on macOS, or Ctrl/Cmd+O picks a `.K2F`. Double-clicking a `.K2F` (or passing it on the command line) loads that lock in the window. Toolbar with a document: Open, Fill / Save when the lock has `form_field` nodes, title, zoom `−` / `%` / `+`, copy format, **Export as** split button (last format) plus a caret menu of **Export as K2F** / **PDF** / PowerPoint / Word (**DOCX**) / Markdown / PNG / JPG — choosing a row exports immediately (same as the web viewer). Integrity chrome matches web `banner: "auto"`: quiet for `UNSIGNED`; compact Signed / Draft strips; plain-language warning for broken locks (not a full-width `BROKEN_INTEGRITY` ticker). Status bar: page, zoom, format. Pages stack vertically; the wheel scrolls them. Left/Right jump so the next sheet sits under the toolbar. Zoom scales the lock bitmap inside a stable window (default 1280×820, min 960×640).
+Title: document title for `UNSIGNED`; `K2F Reader — Signed — {title}` or `K2F Reader — Draft — {title}` when applicable; `BROKEN_INTEGRITY` / `SIGNED_BUT_BROKEN` keep the raw codes (with `status_code` under broken). Packaged app: clicking the icon opens an empty window (no Open dialog). **Open** on the toolbar, **File → Open** on macOS, or Ctrl/Cmd+O picks a `.K2F`. Double-clicking a `.K2F` (or passing it on the command line) loads that lock in the window. Toolbar with a document: Open, **Edit** / **Done**, **Save** while editing a form, title, zoom `−` / `%` / `+`, a reload icon, copy format, **Export as** split button (last format) plus a caret menu of **Export as K2F** / **PDF** / PowerPoint / Word (**DOCX**) / Markdown / PNG / JPG — choosing a row exports immediately (same as the web viewer). When the open file changes on disk and stays unchanged for a short moment, the window re-reads that lock and keeps zoom and scroll. Unsaved form values block the automatic re-read; the status bar says `Updated on disk` until Reload. Integrity chrome matches web `banner: "auto"`: quiet for `UNSIGNED`; compact Signed / Draft strips; plain-language warning for broken locks (not a full-width `BROKEN_INTEGRITY` ticker). Status bar: page, zoom, format. Pages stack vertically; the wheel scrolls them. Left/Right jump so the next sheet sits under the toolbar. Zoom scales the lock bitmap inside a stable window (default 1280×820, min 960×640).
 
 | Key / gesture | Action |
 | --- | --- |
@@ -51,8 +51,9 @@ Title: document title for `UNSIGNED`; `K2F Reader — Signed — {title}` or `K2
 | `+` / `-` | Stepped zoom (0.1–3.0); scroll offset kept, then clamped |
 | Drag on lock text | Select characters (I-beam cursor, blue highlight like the web viewer) |
 | Ctrl/Cmd+O | Open a `.K2F` (native Open dialog) |
+| Ctrl/Cmd+R | Re-read the open `.K2F` from disk (keeps zoom and scroll) |
 | Ctrl/Cmd+C | Copy the selection (`text/plain`) |
-| Ctrl/Cmd+S | Save dirty form-field values (relock) |
+| Ctrl/Cmd+S | Write the open `.K2F`: the node popover (Save and relock), or dirty form-field values |
 | Ctrl/Cmd+Shift+S | Export in the selected format (native Save) |
 
 Pinch is a macOS/iOS winit event (`PinchGesture`); Windows and Linux use **Ctrl+wheel** for the same continuous zoom. Trackpad two-finger scroll never zooms unless Ctrl is held.

@@ -13,7 +13,8 @@ pub fn draw_glyph(page: &mut PageDraw, faces: &HashMap<String, Face<'_>>, g: &Pl
         return;
     }
     page.note_glyph(g.origin_x_pt, g.origin_y_pt, g.glyph_id);
-    let [r, green, blue, _] = g.rgba;
+    let [r, green, blue, a] = g.rgba;
+    let pushed = page.push_fill_alpha(a);
     page.content
         .set_fill_rgb(r as f32 / 255.0, green as f32 / 255.0, blue as f32 / 255.0);
     let scale = (g.font_size_pt / g.units_per_em) as f32;
@@ -38,6 +39,7 @@ pub fn draw_glyph(page: &mut PageDraw, faces: &HashMap<String, Face<'_>>, g: &Pl
     } else {
         page.content.fill_nonzero();
     }
+    page.pop_fill_alpha(pushed);
 }
 
 pub fn draw_decoration_line(page: &mut PageDraw, line: &TextDecorationLine) {
@@ -45,7 +47,8 @@ pub fn draw_decoration_line(page: &mut PageDraw, line: &TextDecorationLine) {
         return;
     }
     page.note_decoration(line.x0_pt, line.y_pt, line.x1_pt, line.thickness_pt);
-    let [r, g, b, _] = line.rgba;
+    let [r, g, b, a] = line.rgba;
+    let pushed = page.push_fill_alpha(a);
     let y = pdf_y(page.page_h, line.y_pt);
     page.content
         .set_stroke_rgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0);
@@ -54,6 +57,7 @@ pub fn draw_decoration_line(page: &mut PageDraw, line: &TextDecorationLine) {
     page.content.move_to(line.x0_pt as f32, y);
     page.content.line_to(line.x1_pt as f32, y);
     page.content.stroke();
+    page.pop_fill_alpha(pushed);
 }
 
 struct PdfOutline<'a> {

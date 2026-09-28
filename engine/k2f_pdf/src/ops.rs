@@ -34,40 +34,52 @@ pub fn paint_page(
     k2f_paint::index_geometry_multi_str(&page.root, &mut geo_by_id);
     let mut out = PageDraw::new(page.width.as_f64_pt(), page.height.as_f64_pt());
     for op in &plan.ops {
-        match op {
-            PaintOp::BackdropBlur { .. } => return Err(PdfError::RasterOp("backdrop_blur")),
-            PaintOp::DrawBox {
-                rect, decoration, ..
-            } => draw_box(&mut out, rect, decoration)?,
-            PaintOp::DrawText {
-                node_id,
-                rect,
-                runs,
-            } => {
-                if skip_text.contains(node_id) {
-                    continue;
-                }
-                let geo = k2f_paint::geo_for_op_str(&geo_by_id, node_id, rect)
-                    .ok_or_else(|| PaintError::MissingGeometry(node_id.clone()))?;
-                for g in placed_glyphs(faces, geo, rect, runs)? {
-                    draw_glyph(&mut out, faces, &g);
-                }
-                for line in decoration_lines(faces, geo, rect, runs) {
-                    draw_decoration_line(&mut out, &line);
-                }
-            }
-            PaintOp::DrawImage {
-                rect,
-                src,
-                fit,
-                corner_radius_pt,
-                ..
-            } => {
-                draw_image(&mut out, rect, src, images, *fit, *corner_radius_pt)?;
-            }
-            PaintOp::DrawTableReference { rect, .. } => draw_placeholder(&mut out, rect),
-            PaintOp::Unknown => return Err(PdfError::UnknownOp),
-        }
+        paint_vector_op(&mut out, faces, images, skip_text, &geo_by_id, op)?;
     }
     Ok(out)
+}
+
+pub(crate) fn paint_vector_op(
+    out: &mut PageDraw,
+    faces: &HashMap<String, Face<'_>>,
+    images: &BTreeMap<String, ImageRes>,
+    skip_text: &HashSet<String>,
+    geo_by_id: &HashMap<&str, Vec<&k2f_core::GeometryNode>>,
+    op: &PaintOp,
+) -> Result<(), PdfError> {
+    match op {
+        PaintOp::BackdropBlur { .. } => return Err(PdfError::RasterOp("backdrop_blur")),
+        PaintOp::DrawBox {
+            rect, decoration, ..
+        } => draw_box(out, rect, decoration)?,
+        PaintOp::DrawText {
+            node_id,
+            rect,
+            runs,
+        } => {
+            if skip_text.contains(node_id) {
+                return Ok(());
+            }
+            let geo = k2f_paint::geo_for_op_str(geo_by_id, node_id, rect)
+                .ok_or_else(|| PaintError::MissingGeometry(node_id.clone()))?;
+            for g in placed_glyphs(faces, geo, rect, runs)? {
+                draw_glyph(out, faces, &g);
+            }
+            for line in decoration_lines(faces, geo, rect, runs) {
+                draw_decoration_line(out, &line);
+            }
+        }
+        PaintOp::DrawImage {
+            rect,
+            src,
+            fit,
+            corner_radius_pt,
+            ..
+        } => {
+            draw_image(out, rect, src, images, *fit, *corner_radius_pt)?;
+        }
+        PaintOp::DrawTableReference { rect, .. } => draw_placeholder(out, rect),
+        PaintOp::Unknown => return Err(PdfError::UnknownOp),
+    }
+    Ok(())
 }

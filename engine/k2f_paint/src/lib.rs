@@ -25,7 +25,8 @@ pub use decoration::{decoration_lines, TextDecorationLine};
 pub use document::{OpenedDocument, OFFICIAL_PNG_SCALE};
 pub use error::PaintError;
 pub use executor::{
-    load_faces, render_lockfile_page_rgb, render_lockfile_page_to_png, single_font_map,
+    load_faces, render_lockfile_page_rgba, render_lockfile_page_rgb, render_lockfile_page_to_png,
+    single_font_map,
 };
 pub use export::{
     document_markdown, export_pages_jpeg, export_pages_jpeg_official, export_pages_png,
@@ -43,5 +44,5 @@ pub use image::{
     cover_src, cover_src_rect_100000, decode_raster, letterbox_dest, letterbox_rect, lookup_image,
 };
 pub use query::LocatedBox;
-pub use rgb::pixmap_to_rgb8;
+pub use rgb::{pixmap_to_rgb8, pixmap_to_rgba8};
 pub use text_layer::{spans_for_page, TextSpan};

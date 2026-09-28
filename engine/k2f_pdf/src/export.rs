@@ -1,16 +1,16 @@
 use k2f_paint::{load_faces, OpenedDocument};
 use miniz_oxide::deflate::{compress_to_vec_zlib, CompressionLevel};
 use pdf_writer::{Filter, Finish, Name, Pdf, Rect, Ref, TextStr};
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use crate::acroform;
 use crate::error::PdfError;
 use crate::ids::Alloc;
-use crate::image::{collect_image_srcs, embed_images, embed_rgb, ImageRes};
+use crate::image::{collect_image_srcs, embed_images, ImageRes};
 use crate::ops::paint_page;
 use crate::select::{self, FontSet};
 use crate::source::{draw_source_caption, source_line};
-use crate::stamp::{draw_full_page_stamp, page_needs_stamp, PdfScale};
+use crate::stamp::{compose_page, slices_for_page, PdfScale};
 use crate::verify_page;
 
 /// PDF export settings. By default exports only the lock pages (no captions or verify page).
@@ -132,7 +132,7 @@ pub fn export_opened(
 
     let paint_scale = options.scale.as_f32();
     let mut gid_maps = vec![BTreeMap::new(); fonts.slots.len()];
-    let mut pages: Vec<(f64, f64, Vec<u8>, Vec<ImageRes>)> = Vec::with_capacity(total);
+    let mut pages: Vec<BuiltPage> = Vec::with_capacity(total);
     for i in 0..n {
         let page = &lock.geometry.pages[i];
         let plan = lock
@@ -141,18 +141,24 @@ pub fn export_opened(
             .iter()
             .find(|p| p.index == page.index)
             .ok_or(k2f_paint::PaintError::MissingRenderPlan(page.index))?;
-        let stamp_ops = page_needs_stamp(&plan.ops);
-        let mut page_stamps = Vec::new();
-        let mut page_draw = if stamp_ops {
-            let (w_px, h_px, rgb) = doc.render_page_rgb(i, paint_scale)?;
-            let stamp = embed_rgb(&mut pdf, &mut alloc, w_px, h_px, &rgb, &format!("St{i}"));
-            let mut out =
-                crate::draw::PageDraw::new(page.width.as_f64_pt(), page.height.as_f64_pt());
-            draw_full_page_stamp(&mut out, &stamp);
-            page_stamps.push(stamp);
-            out
+        let slices = slices_for_page(&plan.ops, page.width, page.height)?;
+        let (mut page_draw, page_stamps) = if slices.is_empty() {
+            (
+                paint_page(lock, i, &faces, &images, &skip_text)?,
+                Vec::new(),
+            )
         } else {
-            paint_page(lock, i, &faces, &images, &skip_text)?
+            compose_page(
+                doc,
+                i,
+                &faces,
+                &images,
+                &skip_text,
+                &mut pdf,
+                &mut alloc,
+                paint_scale,
+                &slices,
+            )?
         };
         if options.trust_pack {
             draw_source_caption(&mut page_draw, &faces, hash);
@@ -163,16 +169,24 @@ pub fn export_opened(
         }
         select::merge_gid_maps(&fonts, &glyphs, &mut gid_maps);
         select::emit_page(&mut page_draw, &glyphs, &fonts);
-        pages.push((
-            page_draw.page_w,
-            page_draw.page_h,
-            page_draw.finish(),
-            page_stamps,
-        ));
+        let fill_alphas = page_draw.fill_alphas.clone();
+        pages.push(BuiltPage {
+            w: page_draw.page_w,
+            h: page_draw.page_h,
+            raw: page_draw.finish(),
+            stamps: page_stamps,
+            fill_alphas,
+        });
     }
     if options.trust_pack {
         let verify = verify_page::build_page(doc, &faces, &fonts, &mut gid_maps)?;
-        pages.push((verify.0, verify.1, verify.2, Vec::new()));
+        pages.push(BuiltPage {
+            w: verify.0,
+            h: verify.1,
+            raw: verify.2,
+            stamps: Vec::new(),
+            fill_alphas: BTreeSet::new(),
+        });
     }
 
     select::write(&mut pdf, &fonts, doc.fonts(), &faces, &gid_maps);
@@ -188,28 +202,39 @@ pub fn export_opened(
         None => vec![Vec::new(); total],
     };
 
-    for (i, (w, h, raw, stamps)) in pages.into_iter().enumerate() {
+    for (i, page) in pages.into_iter().enumerate() {
         write_page(
             &mut pdf,
+            &mut alloc,
             pages_id,
             page_ids[i],
             content_ids[i],
-            w,
-            h,
-            &raw,
+            page.w,
+            page.h,
+            &page.raw,
             &images,
-            &stamps,
+            &page.stamps,
             &fonts,
             annots.get(i).map(Vec::as_slice).unwrap_or(&[]),
+            &page.fill_alphas,
         );
     }
 
     Ok(pdf.finish())
 }
 
+struct BuiltPage {
+    w: f64,
+    h: f64,
+    raw: Vec<u8>,
+    stamps: Vec<ImageRes>,
+    fill_alphas: BTreeSet<u8>,
+}
+
 #[allow(clippy::too_many_arguments)]
 fn write_page(
     pdf: &mut Pdf,
+    alloc: &mut Alloc,
     pages_id: Ref,
     page_id: Ref,
     content_id: Ref,
@@ -220,7 +245,17 @@ fn write_page(
     stamps: &[ImageRes],
     fonts: &FontSet,
     annots: &[Ref],
+    fill_alphas: &BTreeSet<u8>,
 ) {
+    let mut graphics = Vec::with_capacity(fill_alphas.len());
+    for alpha in fill_alphas {
+        let id = alloc.bump();
+        let ca = f32::from(*alpha) / 255.0;
+        pdf.ext_graphics(id)
+            .non_stroking_alpha(ca)
+            .stroking_alpha(ca);
+        graphics.push((format!("ca{alpha}"), id));
+    }
     {
         let mut p = pdf.page(page_id);
         p.parent(pages_id);
@@ -235,6 +270,12 @@ fn write_page(
                 }
                 for stamp in stamps {
                     xo.pair(Name(stamp.name.as_bytes()), stamp.id);
+                }
+            }
+            if !graphics.is_empty() {
+                let mut gs = res.ext_g_states();
+                for (name, id) in &graphics {
+                    gs.pair(Name(name.as_bytes()), *id);
                 }
             }
             if !fonts.slots.is_empty() {

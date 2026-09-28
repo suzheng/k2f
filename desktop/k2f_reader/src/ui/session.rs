@@ -1,10 +1,10 @@
 use super::blit::{blend_rect, blit_raster, page_in_window, LETTERBOX};
 use super::chrome::{page_inset_y_at, window_chrome_h_at, window_title};
 use super::coords::PageView;
-use super::display_scale::{
-    needed_paint_scale, quantize_paint_scale, DISPLAY_PAINT_DEBOUNCE,
-};
+use super::discard_dialog::{self, DiscardHit, DiscardPrompt};
+use super::display_scale::{needed_paint_scale, quantize_paint_scale, DISPLAY_PAINT_DEBOUNCE};
 use super::draw::{fill_rect, Rect};
+use super::edit::{EditState, PopoverField};
 use super::empty;
 use super::form_fill::FillState;
 use super::form_overlay::{draw_fields, hit_field};
@@ -17,6 +17,7 @@ use super::page_slot::PageSlot;
 use super::pdf_dialog::{
     draw as draw_pdf_dialog, hit_at as pdf_dialog_hit_at, PdfDialogHit, PdfDialogState,
 };
+use super::popover::{self, anchor_rect, PopoverHit};
 use super::raster::{decode_png, Raster};
 use super::scroll::clamp_scroll;
 use super::stack::{content_height, hit_index, origin_y, page_at_scroll, page_tops, page_view};
@@ -25,8 +26,17 @@ use crate::copy::{slices_at, span_contains, CopyPayload, RectPt};
 use crate::AppState;
 use anyhow::Context;
 use k2f_paint::OFFICIAL_PNG_SCALE;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Instant;
+
+/// Result of a relock that the window still has to finish.
+#[derive(Debug)]
+pub enum StagedSave {
+    /// Package bytes are already the file at the open path, and the session shows them.
+    Written,
+    /// No open path. The window must pick a file, write these bytes, then [`Session::commit_package`].
+    NeedsPath(Vec<u8>),
+}
 
 /// I-beam over lock text, pointer on chrome — same cues as the web viewer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -34,6 +44,14 @@ pub enum PointerCursor {
     Default,
     Pointer,
     Text,
+    /// Vertical resize, for the node text box's bottom edge.
+    NsResize,
+}
+
+#[derive(Clone, Copy)]
+struct TextResize {
+    y: f64,
+    px: u32,
 }
 
 /// Window-independent viewer: stacked pages, zoom, drag-select, PNG blit.
@@ -55,9 +73,23 @@ pub struct Session {
     scale: f32,
     export_menu_open: bool,
     pdf_dialog: PdfDialogState,
+    discard_prompt: DiscardPrompt,
     fill: FillState,
+    edit: EditState,
+    popover_press: Option<PopoverHit>,
+    /// Design-pixel height of the node text box. Dragging its bottom edge changes this.
+    text_box_px: u32,
+    /// Vertical scroll of the node text box, in window pixels.
+    text_scroll_px: f64,
+    text_resize: Option<TextResize>,
+    node_clipboard: Option<String>,
+    /// Open `.K2F`. Save and relock replaces this file before the session reloads.
+    source_path: Option<PathBuf>,
+    staged_save: Option<StagedSave>,
     /// Last UI zoom change; display LOD waits [`DISPLAY_PAINT_DEBOUNCE`] after this.
     zoom_changed_at: Option<Instant>,
+    /// Disk copy is newer and unsaved form values blocked an automatic reload.
+    disk_newer: bool,
 }
 
 impl Session {
@@ -80,8 +112,18 @@ impl Session {
             scale: 1.0,
             export_menu_open: false,
             pdf_dialog: PdfDialogState::new(),
+            discard_prompt: DiscardPrompt::default(),
             fill: FillState::default(),
+            edit: EditState::default(),
+            popover_press: None,
+            text_box_px: popover::TEXT_H,
+            text_scroll_px: 0.0,
+            text_resize: None,
+            node_clipboard: None,
+            source_path: None,
+            staged_save: None,
             zoom_changed_at: None,
+            disk_newer: false,
         }
     }
 
@@ -100,8 +142,77 @@ impl Session {
         self.load(&bytes)
     }
 
+    /// Replace the open lock from `bytes` without jumping back to the top.
+    /// Zoom, page, scroll, and copy/export format stay. Selection and unsaved
+    /// form values are dropped. A bad package leaves the current document.
+    pub fn reload_bytes(&mut self, bytes: &[u8]) -> anyhow::Result<()> {
+        let Some(current) = self.app.as_ref() else {
+            return self.load(bytes);
+        };
+        let zoom = current.zoom();
+        let page = current.page();
+        let copy_format = current.copy_format();
+        let export_format = current.export_format();
+        let scroll = self.scroll_y;
+        let mut app = AppState::open(bytes)?;
+        app.set_zoom(zoom);
+        app.set_copy_format(copy_format);
+        app.set_export_format(export_format);
+        if app.page_count() > 0 {
+            app.set_page(page.min(app.page_count() - 1));
+        }
+        self.app = Some(app);
+        self.open_error = None;
+        self.clear_drag();
+        self.scroll_y = scroll;
+        self.hover = None;
+        self.pressed = None;
+        self.export_menu_open = false;
+        self.pdf_dialog = PdfDialogState::new();
+        self.discard_prompt = DiscardPrompt::default();
+        self.edit.leave();
+        self.fill.reset();
+        self.popover_press = None;
+        self.reset_text_box();
+        self.node_clipboard = None;
+        self.disk_newer = false;
+        self.reload_pages()?;
+        self.clamp_scroll();
+        self.sync_page();
+        Ok(())
+    }
+
+    pub fn disk_newer(&self) -> bool {
+        self.disk_newer
+    }
+
+    pub fn set_disk_newer(&mut self, newer: bool) {
+        self.disk_newer = newer;
+    }
+
     pub fn set_open_error(&mut self, msg: String) {
         self.open_error = Some(msg);
+    }
+
+    pub fn set_edit_error(&mut self, msg: String) {
+        self.edit.set_error(msg);
+    }
+
+    pub fn edit_error(&self) -> Option<&str> {
+        self.edit.error()
+    }
+
+    pub fn set_source_path(&mut self, path: Option<PathBuf>) {
+        self.source_path = path;
+    }
+
+    pub fn take_staged_save(&mut self) -> Option<StagedSave> {
+        self.staged_save.take()
+    }
+
+    /// Show package bytes that were just written by a Save As.
+    pub fn commit_package(&mut self, bytes: &[u8]) -> anyhow::Result<()> {
+        self.load(bytes)
     }
 
     pub fn open_error(&self) -> Option<&str> {
@@ -117,7 +228,12 @@ impl Session {
         self.pressed = None;
         self.export_menu_open = false;
         self.pdf_dialog = PdfDialogState::new();
+        self.discard_prompt = DiscardPrompt::default();
+        self.edit.leave();
         self.fill.reset();
+        self.popover_press = None;
+        self.reset_text_box();
+        self.node_clipboard = None;
         self.reload_pages()?;
         let (w, h) = self.scaled_size();
         self.win_w = w;
@@ -320,7 +436,7 @@ impl Session {
                 None
             }
             Action::Copy => self.active_copy(),
-            Action::Export | Action::Open | Action::Save => None,
+            Action::Export | Action::Open | Action::Save | Action::Reload => None,
         }
     }
 
@@ -334,6 +450,11 @@ impl Session {
                 pdf_dialog_hit_at(&self.pdf_dialog, self.win_w, self.win_h, x, y, self.scale);
             return;
         }
+        if self.discard_prompt.open {
+            self.discard_prompt.pressed =
+                discard_dialog::hit_at(true, self.win_w, self.win_h, x, y, self.scale);
+            return;
+        }
         let app = self.app.as_ref().expect("document");
         if in_chrome(
             app,
@@ -343,6 +464,7 @@ impl Session {
             y,
             self.scale,
             self.export_menu_open,
+            self.edit.is_editing(),
         ) {
             self.pressed = chrome_hit_at(
                 app,
@@ -352,6 +474,7 @@ impl Session {
                 y,
                 self.scale,
                 self.export_menu_open,
+                self.edit.is_editing(),
             );
             return;
         }
@@ -360,18 +483,34 @@ impl Session {
             self.pressed = None;
             return;
         }
-        if self.fill.is_filling() {
-            self.pressed = None;
-            let views = self.all_views(self.win_w, self.win_h);
-            let fields = self.app.as_ref().map(|a| a.form_fields()).unwrap_or_default();
-            if let Some(field) = hit_field(&fields, &views, x, y) {
-                self.fill.click(field);
-            } else {
-                self.fill.blur();
-            }
-            return;
-        }
         self.pressed = None;
+        self.popover_press = None;
+        self.text_resize = None;
+        if self.edit.is_editing() {
+            if let Some(hit) = self.popover_hit_at(x, y) {
+                self.popover_press = Some(hit);
+                if hit == PopoverHit::Resize {
+                    self.text_resize = Some(TextResize {
+                        y,
+                        px: self.text_box_px,
+                    });
+                }
+                return;
+            }
+            if self.fill.is_filling() {
+                let views = self.all_views(self.win_w, self.win_h);
+                let fields = self
+                    .app
+                    .as_ref()
+                    .map(|a| a.form_fields())
+                    .unwrap_or_default();
+                if let Some(field) = hit_field(&fields, &views, x, y) {
+                    self.edit.clear_popover();
+                    self.fill.click(field);
+                    return;
+                }
+            }
+        }
         let views = self.all_views(self.win_w, self.win_h);
         self.drag_page = hit_index(x, y, &views);
         self.drag_from = Some((x, y));
@@ -399,6 +538,10 @@ impl Session {
             }
             return false;
         }
+        if self.text_resize.is_some() {
+            self.drag_text_resize(y);
+            return true;
+        }
         if self.drag_from.is_some() {
             self.drag_to = Some((x, y));
             return true;
@@ -412,6 +555,7 @@ impl Session {
             y,
             self.scale,
             self.export_menu_open,
+            self.edit.is_editing(),
         );
         if next != self.hover {
             self.hover = next;
@@ -422,15 +566,32 @@ impl Session {
     }
 
     pub fn pointer_up(&mut self, x: f64, y: f64) -> Option<CopyPayload> {
-        if self.app.is_none() || self.pdf_dialog.open || self.pressed.is_some() {
+        if self.take_discard_click(x, y) {
             return None;
         }
-        if self.fill.is_filling() {
+        let resizing = self.text_resize.take().is_some();
+        if let Some(pressed) = self.popover_press.take() {
+            if !resizing
+                && pressed != PopoverHit::Resize
+                && self.popover_hit_at(x, y) == Some(pressed)
+            {
+                self.activate_popover(pressed, x, y);
+            }
+            return None;
+        }
+        if self.app.is_none() || self.pdf_dialog.open || self.pressed.is_some() {
             return None;
         }
         let from = self.drag_from.take()?;
         self.drag_to = None;
         let page = self.drag_page.take()?;
+        if self.edit.is_editing() && click_not_drag(from, (x, y)) {
+            self.sel_from = None;
+            self.sel_to = None;
+            self.selection_page = None;
+            self.open_node_at(page, x, y);
+            return None;
+        }
         let view = self.view_at(page, self.win_w, self.win_h);
         let (ax, ay) = view.window_to_pt(from.0, from.1);
         let (bx, by) = view.window_to_pt(x, y);
@@ -460,6 +621,7 @@ impl Session {
                 y,
                 self.scale,
                 self.export_menu_open,
+                self.edit.is_editing(),
             )
         };
         (now == Some(pressed)).then_some(pressed)
@@ -538,59 +700,430 @@ impl Session {
         self.fill.active().is_some()
     }
 
-    pub fn toggle_fill(&mut self) {
-        if self.app.as_ref().is_some_and(|a| a.has_form_fields()) {
-            self.fill.toggle_filling();
+    pub fn is_editing(&self) -> bool {
+        self.edit.is_editing()
+    }
+
+    pub fn popover_id(&self) -> Option<&str> {
+        self.edit.popover().map(|p| p.id.as_str())
+    }
+
+    pub fn popover_open(&self) -> bool {
+        self.edit.popover().is_some()
+    }
+
+    pub fn toggle_edit(&mut self) {
+        if self.app.is_none() {
+            return;
         }
+        if self.edit.is_editing() {
+            self.leave_edit();
+            return;
+        }
+        self.edit.enter();
+        if self.app.as_ref().is_some_and(|a| a.has_form_fields()) {
+            self.fill.set_filling(true);
+        }
+    }
+
+    pub fn chrome_hit(&self, x: f64, y: f64) -> Option<ChromeHit> {
+        let app = self.app.as_ref()?;
+        chrome_hit_at(
+            app,
+            self.win_w,
+            self.win_h,
+            x,
+            y,
+            self.scale,
+            self.export_menu_open,
+            self.edit.is_editing(),
+        )
+    }
+
+    pub fn popover_save_point(&self) -> Option<(f64, f64)> {
+        let layout = self.popover_layout()?;
+        Some(rect_center(layout.save))
+    }
+
+    pub fn popover_copy_point(&self) -> Option<(f64, f64)> {
+        let layout = self.popover_layout()?;
+        layout.copy.map(rect_center)
+    }
+
+    pub fn popover_cancel_point(&self) -> Option<(f64, f64)> {
+        let layout = self.popover_layout()?;
+        Some(rect_center(layout.cancel))
+    }
+
+    pub fn discard_prompt_open(&self) -> bool {
+        self.discard_prompt.open
+    }
+
+    pub fn discard_keep_point(&self) -> Option<(f64, f64)> {
+        self.discard_prompt
+            .open
+            .then(|| discard_dialog::keep_point(self.win_w, self.win_h, self.scale))
+    }
+
+    pub fn discard_discard_point(&self) -> Option<(f64, f64)> {
+        self.discard_prompt
+            .open
+            .then(|| discard_dialog::discard_point(self.win_w, self.win_h, self.scale))
+    }
+
+    /// A point on the text box's bottom edge, where a drag grows the box.
+    pub fn popover_resize_point(&self) -> Option<(f64, f64)> {
+        let rect = self.popover_layout()?.resize?;
+        Some((
+            rect.x as f64 + rect.w as f64 / 2.0,
+            rect.y as f64 + rect.h as f64 / 2.0,
+        ))
+    }
+
+    pub fn popover_text_scroll(&self) -> f64 {
+        self.text_scroll_px
+    }
+
+    /// Scroll the node text box when the pointer is over it and the text overflows.
+    /// Returns whether the wheel was consumed.
+    pub fn scroll_text_field(&mut self, x: f64, y: f64, wheel_y: f64) -> bool {
+        if !matches!(
+            self.popover_hit_at(x, y),
+            Some(PopoverHit::Text | PopoverHit::Resize)
+        ) {
+            return false;
+        }
+        let Some(metrics) = self.text_metrics() else {
+            return false;
+        };
+        if metrics.line_count <= metrics.visible {
+            return false;
+        }
+        self.text_scroll_px = popover::scroll_by_wheel(
+            self.text_scroll_px,
+            wheel_y,
+            metrics.line_h,
+            metrics.line_count,
+            metrics.visible,
+        );
+        true
+    }
+
+    /// A point inside the node text box, near the first glyph.
+    pub fn popover_text_point(&self) -> Option<(f64, f64)> {
+        let rect = self.popover_layout()?.text?;
+        Some((rect.x as f64 + 8.0, rect.y as f64 + 12.0))
+    }
+
+    pub fn popover_role_point(&self) -> Option<(f64, f64)> {
+        let layout = self.popover_layout()?;
+        layout.role.map(rect_center)
+    }
+
+    /// Clipboard JSON for the open node. The Copy node button is hidden;
+    /// the save path still uses this.
+    pub fn copy_open_node(&mut self) -> Option<String> {
+        let json = self.node_clipboard_json()?;
+        self.node_clipboard = Some(json.clone());
+        Some(json)
+    }
+
+    pub fn type_text(&mut self, text: &str) {
+        self.fill_insert(text);
+    }
+
+    pub fn save_node(&mut self) -> anyhow::Result<Vec<u8>> {
+        let (id, role, variant, text) = {
+            let pop = self.edit.popover_mut().context("no node")?;
+            pop.commit_fields();
+            (
+                pop.id.clone(),
+                pop.role_text().to_string(),
+                pop.variant_text().to_string(),
+                pop.saved_text(),
+            )
+        };
+        let bytes = self.app.as_ref().context("no document")?.relock_node_edit(
+            &id,
+            &role,
+            &variant,
+            text.as_deref(),
+        )?;
+        self.finish_package(bytes)
+    }
+
+    /// Write `bytes` to the open `.K2F`, then load them. With no path, stage a Save As
+    /// and leave the current document on screen.
+    fn finish_package(&mut self, bytes: Vec<u8>) -> anyhow::Result<Vec<u8>> {
+        if let Some(path) = self.source_path.clone() {
+            super::persist::replace_file(&path, &bytes)
+                .with_context(|| format!("write {}", path.display()))?;
+            self.load(&bytes)?;
+            self.staged_save = Some(StagedSave::Written);
+            return Ok(bytes);
+        }
+        self.staged_save = Some(StagedSave::NeedsPath(bytes.clone()));
+        Ok(bytes)
+    }
+
+    pub fn take_node_clipboard(&mut self) -> Option<String> {
+        self.node_clipboard.take()
+    }
+
+    fn leave_edit(&mut self) {
+        self.edit.leave();
+        self.fill.reset();
+        self.popover_press = None;
+        self.reset_text_box();
+        self.discard_prompt = DiscardPrompt::default();
+    }
+
+    fn reset_text_box(&mut self) {
+        self.text_box_px = popover::TEXT_H;
+        self.text_scroll_px = 0.0;
+        self.text_resize = None;
+    }
+
+    fn drag_text_resize(&mut self, y: f64) {
+        let Some(drag) = self.text_resize else {
+            return;
+        };
+        let scale = if self.scale.is_finite() && self.scale > 0.0 {
+            self.scale
+        } else {
+            1.0
+        };
+        let delta = ((y - drag.y) / f64::from(scale)).round() as i32;
+        let raw = drag.px as i32 + delta;
+        let requested = popover::clamp_text_px(raw, scale, self.win_h);
+        self.text_box_px = requested;
+        let shown = self
+            .popover_layout()
+            .and_then(|l| l.text)
+            .map(|r| (r.h as f32 / scale).round() as u32)
+            .unwrap_or(requested)
+            .max(popover::TEXT_H);
+        self.text_box_px = shown;
+        if shown as i32 != raw {
+            self.text_resize = Some(TextResize { y, px: shown });
+        }
+    }
+
+    fn text_metrics(&self) -> Option<popover::TextMetrics> {
+        let (value, caret) = {
+            let pop = self.edit.popover()?;
+            if !pop.text_enabled() {
+                return None;
+            }
+            let caret = if pop.focus() == PopoverField::Text {
+                pop.caret()
+            } else {
+                0
+            };
+            (pop.shown(PopoverField::Text), caret)
+        };
+        let rect = self.popover_layout()?.text?;
+        Some(popover::text_metrics(&value, rect, caret, self.scale))
+    }
+
+    fn reveal_text_caret(&mut self) {
+        let focus_text = self
+            .edit
+            .popover()
+            .is_some_and(|p| p.focus() == PopoverField::Text && p.text_enabled());
+        if !focus_text {
+            return;
+        }
+        let Some(metrics) = self.text_metrics() else {
+            return;
+        };
+        self.text_scroll_px = popover::reveal_scroll_px(
+            self.text_scroll_px,
+            metrics.caret_line,
+            metrics.visible,
+            metrics.line_h,
+            metrics.line_count,
+        );
+    }
+
+    fn cancel_popover(&mut self) {
+        if let Some(pop) = self.edit.popover_mut() {
+            pop.commit_fields();
+        }
+        if self.edit.popover().is_some_and(|p| p.text_dirty()) {
+            self.discard_prompt.open = true;
+            self.discard_prompt.pressed = None;
+            return;
+        }
+        self.edit.clear_popover();
+    }
+
+    fn keep_popover_edits(&mut self) {
+        self.discard_prompt = DiscardPrompt::default();
+    }
+
+    fn discard_popover(&mut self) {
+        self.discard_prompt = DiscardPrompt::default();
+        self.edit.clear_popover();
+    }
+
+    fn take_discard_click(&mut self, x: f64, y: f64) -> bool {
+        if !self.discard_prompt.open {
+            return false;
+        }
+        let pressed = self.discard_prompt.pressed.take();
+        let now = discard_dialog::hit_at(true, self.win_w, self.win_h, x, y, self.scale);
+        if pressed.is_some() && pressed == now {
+            match pressed {
+                Some(DiscardHit::Keep) => self.keep_popover_edits(),
+                Some(DiscardHit::Discard) => self.discard_popover(),
+                None => {}
+            }
+        }
+        true
     }
 
     pub fn save_fill(&mut self) -> anyhow::Result<Vec<u8>> {
         self.fill.commit_active();
         let dirty = self.fill.dirty().clone();
         let app = self.app.as_ref().context("no document")?;
-        if dirty.is_empty() {
-            self.fill.reset();
-            return Ok(app.export_k2f_bytes()?);
-        }
-        let bytes = app.relock_form_values(&dirty)?;
-        self.load(&bytes)?;
-        Ok(bytes)
+        let bytes = if dirty.is_empty() {
+            app.export_k2f_bytes()?
+        } else {
+            app.relock_form_values(&dirty)?
+        };
+        self.finish_package(bytes)
     }
 
     pub fn fill_insert(&mut self, text: &str) {
-        self.fill.insert_text(text);
+        if self.discard_prompt.open {
+            return;
+        }
+        if let Some(pop) = self.edit.popover_mut() {
+            pop.insert(text);
+        } else {
+            self.fill.insert_text(text);
+        }
+        self.reveal_text_caret();
     }
 
     pub fn fill_backspace(&mut self) {
-        self.fill.backspace();
+        if self.discard_prompt.open {
+            return;
+        }
+        if let Some(pop) = self.edit.popover_mut() {
+            pop.backspace();
+        } else {
+            self.fill.backspace();
+        }
+        self.reveal_text_caret();
     }
 
     pub fn fill_newline(&mut self) {
-        self.fill.insert_newline();
+        if self.discard_prompt.open {
+            return;
+        }
+        if let Some(pop) = self.edit.popover_mut() {
+            pop.newline();
+        } else {
+            self.fill.insert_newline();
+        }
+        self.reveal_text_caret();
     }
 
-    pub fn fill_escape(&mut self) -> bool {
+    pub fn edit_tab(&mut self) {
+        if self.discard_prompt.open {
+            return;
+        }
+        if let Some(pop) = self.edit.popover_mut() {
+            pop.tab();
+        }
+    }
+
+    pub fn edit_arrow(&mut self, delta: isize) {
+        if self.discard_prompt.open {
+            return;
+        }
+        if let Some(pop) = self.edit.popover_mut() {
+            pop.move_caret(delta);
+        }
+        self.reveal_text_caret();
+    }
+
+    /// Move the text-box caret up or down one visual line.
+    pub fn edit_line(&mut self, delta: isize) {
+        if self.discard_prompt.open {
+            return;
+        }
+        let (value, caret) = {
+            let Some(pop) = self.edit.popover() else {
+                return;
+            };
+            if pop.focus() != PopoverField::Text || !pop.text_enabled() {
+                return;
+            }
+            (pop.shown(PopoverField::Text), pop.caret())
+        };
+        let Some(rect) = self.popover_layout().and_then(|l| l.text) else {
+            return;
+        };
+        let next = popover::caret_after_line(&value, rect, caret, self.scale, delta);
+        if let Some(pop) = self.edit.popover_mut() {
+            pop.place_caret(PopoverField::Text, next);
+        }
+        self.reveal_text_caret();
+    }
+
+    pub fn edit_escape(&mut self) -> bool {
+        if self.discard_prompt.open {
+            self.discard_popover();
+            return true;
+        }
+        if self.edit.popover().is_some() {
+            self.edit.clear_popover();
+            return true;
+        }
         if self.fill.active().is_some() {
             self.fill.blur();
             return true;
         }
-        if self.fill.is_filling() {
-            self.fill.set_filling(false);
+        if self.edit.is_editing() {
+            self.leave_edit();
             return true;
         }
         false
     }
 
     pub fn fill_set_preedit(&mut self, preedit: String) {
-        self.fill.set_preedit(preedit);
+        if self.discard_prompt.open {
+            return;
+        }
+        if let Some(pop) = self.edit.popover_mut() {
+            pop.set_preedit(preedit);
+        } else {
+            self.fill.set_preedit(preedit);
+        }
+        self.reveal_text_caret();
     }
 
     pub fn fill_commit_ime(&mut self, text: String) {
-        self.fill.commit_ime(text);
+        if self.discard_prompt.open {
+            return;
+        }
+        if let Some(pop) = self.edit.popover_mut() {
+            pop.commit_ime(text);
+        } else {
+            self.fill.commit_ime(text);
+        }
+        self.reveal_text_caret();
     }
 
     pub fn fill_cancel_ime(&mut self) {
-        self.fill.cancel_ime();
+        if let Some(pop) = self.edit.popover_mut() {
+            pop.cancel_ime();
+        } else {
+            self.fill.cancel_ime();
+        }
     }
 
     pub fn fill_click_id(&mut self, id: &str) -> bool {
@@ -608,7 +1141,11 @@ impl Session {
     }
 
     /// Window-pixel caret box for IME, if a text field is focused.
+    /// The popover must report one: macOS only delivers typed text while IME is allowed.
     pub fn ime_cursor_area(&self) -> Option<(f64, f64, f64, f64)> {
+        if let Some(area) = self.popover_ime_area() {
+            return Some(area);
+        }
         let active = self.fill.active()?;
         let app = self.app.as_ref()?;
         let field = app.form_fields().into_iter().find(|f| f.id == active.id)?;
@@ -640,14 +1177,29 @@ impl Session {
                 PointerCursor::Default
             };
         }
-        if self.pdf_dialog.open {
+        if self.pdf_dialog.open || self.discard_prompt.open {
             return PointerCursor::Pointer;
+        }
+        if self.text_resize.is_some() {
+            return PointerCursor::NsResize;
+        }
+        match self.popover_hit_at(x, y) {
+            Some(PopoverHit::Resize) => return PointerCursor::NsResize,
+            Some(PopoverHit::Text | PopoverHit::Role | PopoverHit::Variant) => {
+                return PointerCursor::Text;
+            }
+            Some(_) => return PointerCursor::Pointer,
+            None => {}
         }
         if self.chrome_hot() && !self.is_dragging() {
             PointerCursor::Pointer
         } else if self.fill.is_filling() {
             let views = self.all_views(self.win_w, self.win_h);
-            let fields = self.app.as_ref().map(|a| a.form_fields()).unwrap_or_default();
+            let fields = self
+                .app
+                .as_ref()
+                .map(|a| a.form_fields())
+                .unwrap_or_default();
             match hit_field(&fields, &views, x, y) {
                 Some(f) if f.kind.is_checkbox() => PointerCursor::Pointer,
                 Some(_) => PointerCursor::Text,
@@ -729,13 +1281,7 @@ impl Session {
                         .filter(|f| f.page == page)
                         .collect();
                     draw_fields(
-                        &mut buf,
-                        win_w,
-                        win_h,
-                        &views,
-                        &fields,
-                        &self.fill,
-                        self.scale,
+                        &mut buf, win_w, win_h, &views, &fields, &self.fill, self.scale,
                     );
                 }
             }
@@ -745,6 +1291,7 @@ impl Session {
                 blend_rect(&mut buf, win_w, win_h, x0, y0, x1, y1);
             }
         }
+        self.paint_popover(&mut buf, win_w, win_h);
         draw_scrollbar(
             &mut buf,
             win_w,
@@ -764,14 +1311,185 @@ impl Session {
                 hover: self.hover,
                 pressed: self.pressed,
                 export_menu_open: self.export_menu_open,
-                show_fill: app.has_form_fields(),
-                filling: self.fill.is_filling(),
+                editing: self.edit.is_editing(),
                 dirty: self.fill.is_dirty(),
+                disk_newer: self.disk_newer,
+                note: self.edit.error().map(str::to_string),
             },
             self.scale,
         );
+        discard_dialog::draw(&mut buf, win_w, win_h, &self.discard_prompt, self.scale);
         draw_pdf_dialog(&mut buf, win_w, win_h, &self.pdf_dialog, self.scale);
         buf
+    }
+
+    fn paint_popover(&self, buf: &mut [u32], win_w: u32, win_h: u32) {
+        let Some(pop) = self.edit.popover() else {
+            return;
+        };
+        let id = pop.id.clone();
+        let Some(app) = self.app.as_ref() else {
+            return;
+        };
+        for b in app.doc().boxes_for(&id) {
+            let view = self.view_at(b.page, win_w, win_h);
+            let rect = anchor_rect(&view, &b);
+            blend_rect(
+                buf,
+                win_w,
+                win_h,
+                rect.x as f64,
+                rect.y as f64,
+                (rect.x + rect.w as i32) as f64,
+                (rect.y + rect.h as i32) as f64,
+            );
+        }
+        let Some(layout) = self.popover_layout_at(win_w, win_h) else {
+            return;
+        };
+        let Some(pop) = self.edit.popover() else {
+            return;
+        };
+        popover::draw(
+            buf,
+            win_w,
+            win_h,
+            pop,
+            &layout,
+            self.popover_press,
+            self.scale,
+            self.text_scroll_px,
+        );
+    }
+
+    fn popover_layout(&self) -> Option<popover::PopoverLayout> {
+        self.popover_layout_at(self.win_w, self.win_h)
+    }
+
+    fn popover_layout_at(&self, win_w: u32, win_h: u32) -> Option<popover::PopoverLayout> {
+        let pop = self.edit.popover()?;
+        let id = pop.id.clone();
+        let page = pop.page;
+        let text_on = pop.text_enabled();
+        let app = self.app.as_ref()?;
+        let boxes = app.doc().boxes_for(&id);
+        let b = boxes.iter().find(|b| b.page == page).or(boxes.first())?;
+        let view = self.view_at(b.page, win_w, win_h);
+        Some(popover::layout_at(
+            anchor_rect(&view, b),
+            text_on,
+            self.scale,
+            win_w,
+            win_h,
+            self.text_box_px,
+        ))
+    }
+
+    fn popover_hit_at(&self, x: f64, y: f64) -> Option<PopoverHit> {
+        popover::hit(&self.popover_layout()?, x, y)
+    }
+
+    fn popover_ime_area(&self) -> Option<(f64, f64, f64, f64)> {
+        let (field, caret, value) = {
+            let pop = self.edit.popover()?;
+            let field = pop.focus();
+            (field, pop.caret(), pop.shown(field))
+        };
+        let layout = self.popover_layout()?;
+        popover::input_caret_area(
+            &layout,
+            field,
+            &value,
+            caret,
+            self.scale,
+            self.text_scroll_px,
+        )
+    }
+
+    fn place_popover_caret(&mut self, field: PopoverField, x: f64, y: f64) {
+        let (value, caret) = {
+            let Some(pop) = self.edit.popover() else {
+                return;
+            };
+            let caret = if pop.focus() == field { pop.caret() } else { 0 };
+            (pop.shown(field), caret)
+        };
+        let Some(layout) = self.popover_layout() else {
+            return;
+        };
+        let Some(index) = popover::input_click_index(
+            &layout,
+            field,
+            &value,
+            caret,
+            x,
+            y,
+            self.scale,
+            self.text_scroll_px,
+        ) else {
+            return;
+        };
+        if let Some(pop) = self.edit.popover_mut() {
+            pop.place_caret(field, index);
+        }
+        self.reveal_text_caret();
+    }
+
+    fn activate_popover(&mut self, hit: PopoverHit, x: f64, y: f64) {
+        match hit {
+            PopoverHit::Text => self.place_popover_caret(PopoverField::Text, x, y),
+            PopoverHit::Role => self.place_popover_caret(PopoverField::Role, x, y),
+            PopoverHit::Variant => self.place_popover_caret(PopoverField::Variant, x, y),
+            PopoverHit::Panel | PopoverHit::Resize => {}
+            PopoverHit::Cancel => self.cancel_popover(),
+            PopoverHit::Save => {
+                if let Err(err) = self.save_node() {
+                    self.edit.set_error(format!("{err:#}"));
+                }
+            }
+            PopoverHit::Copy => {
+                if let Some(json) = self.node_clipboard_json() {
+                    self.node_clipboard = Some(json);
+                }
+            }
+        }
+    }
+
+    fn node_clipboard_json(&self) -> Option<String> {
+        let id = self.edit.popover()?.id.clone();
+        let clip = self.app.as_ref()?.doc().clipboard(&id)?;
+        serde_json::to_string(&clip).ok()
+    }
+
+    fn open_node_at(&mut self, page: usize, x: f64, y: f64) {
+        let Some(app) = self.app.as_ref() else {
+            return;
+        };
+        let view = self.view_at(page, self.win_w, self.win_h);
+        let (px, py) = view.window_to_pt(x, y);
+        let Some(hit) = app.doc().hit_test(page, milli_pt(px), milli_pt(py)) else {
+            self.fill.blur();
+            self.edit.clear_popover();
+            return;
+        };
+        let Some(sel) = app.doc().selection_from_hit(&hit) else {
+            self.fill.blur();
+            self.edit.clear_popover();
+            return;
+        };
+        if app.form_fields().iter().any(|f| f.id == sel.id) {
+            let field = app.form_fields().into_iter().find(|f| f.id == sel.id);
+            self.edit.clear_popover();
+            if let Some(field) = field {
+                self.fill.click(&field);
+            }
+            return;
+        }
+        self.fill.blur();
+        self.text_scroll_px = 0.0;
+        self.text_resize = None;
+        self.edit.show(&sel, page);
+        self.reveal_text_caret();
     }
 
     fn live_slices(&self, page: usize, view: &PageView) -> Vec<k2f_paint::TextSpan> {
@@ -802,9 +1520,12 @@ impl Session {
         };
         for i in 0..app.page_count() {
             match app.render_page_png(i) {
-                Ok(png) => self
-                    .pages
-                    .push(PageSlot::from_baseline(Raster::from_rgba(&decode_png(&png)?))),
+                Ok(png) => {
+                    self.pages
+                        .push(PageSlot::from_baseline(Raster::from_rgba(&decode_png(
+                            &png,
+                        )?)))
+                }
                 Err(_) => break,
             }
         }
@@ -884,13 +1605,18 @@ impl Session {
     }
 
     fn viewport_h(&self) -> f64 {
-        let top = match self.app.as_ref() {
-            Some(app) => super::chrome::chrome_top_at(app, self.scale),
-            None => dip(super::hud::TOOLBAR_HEIGHT, self.scale),
+        let Some(app) = self.app.as_ref() else {
+            let top = dip(super::hud::TOOLBAR_HEIGHT, self.scale);
+            return f64::from(
+                self.win_h
+                    .saturating_sub(top.saturating_add(dip(STATUS_HEIGHT, self.scale))),
+            );
         };
+        // Scroll range must match the painted stage: page_inset_y .. status bar top.
+        let inset = page_inset_y_at(app, self.scale);
         f64::from(
             self.win_h
-                .saturating_sub(top.saturating_add(dip(STATUS_HEIGHT, self.scale))),
+                .saturating_sub(inset.saturating_add(dip(STATUS_HEIGHT, self.scale))),
         )
     }
 
@@ -945,4 +1671,21 @@ impl Session {
         self.sel_to = None;
         self.selection_page = None;
     }
+}
+
+fn rect_center(rect: super::draw::Rect) -> (f64, f64) {
+    (
+        rect.x as f64 + rect.w as f64 * 0.5,
+        rect.y as f64 + rect.h as f64 * 0.5,
+    )
+}
+
+fn milli_pt(pt: f64) -> i64 {
+    (pt * 1000.0).round() as i64
+}
+
+fn click_not_drag(from: (f64, f64), to: (f64, f64)) -> bool {
+    let dx = from.0 - to.0;
+    let dy = from.1 - to.1;
+    dx * dx + dy * dy < 16.0
 }

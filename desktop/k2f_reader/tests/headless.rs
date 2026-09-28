@@ -32,7 +32,9 @@ fn headless_export_idml() {
         String::from_utf8_lossy(&out.stdout)
     );
     assert!(
-        pkg.join("Document Fonts").join("Roboto-Regular.ttf").is_file(),
+        pkg.join("Document Fonts")
+            .join("Roboto-Regular.ttf")
+            .is_file(),
         "headless export must write Document Fonts"
     );
     let idml = std::fs::read_dir(&pkg)

@@ -33,6 +33,14 @@ fn stamp_page_keeps_invisible_selectable_text() {
         common::extract::page_content_has(&pdf, 0, "3 Tr"),
         "stamp pages must keep invisible selectable text"
     );
+    assert!(
+        common::extract::page_content_has(&pdf, 0, "\nf\n"),
+        "effect text must be visible glyph outlines, not only the invisible layer"
+    );
+    assert!(
+        pdf.windows(6).any(|w| w == b"/SMask"),
+        "effect slices use a soft mask"
+    );
     let sample = doc
         .text_layer(0)
         .into_iter()
