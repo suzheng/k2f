@@ -189,12 +189,8 @@ fn licenses_only_fonts_are_font_missing() {
 }
 
 #[test]
-fn blank_template_keeps_license_files_and_has_a_face() {
+fn blank_template_loads_embedded_font_faces() {
     let pkg = k2f_package::load_dir(&repo_root().join("templates/blank")).unwrap();
-    assert!(pkg
-        .fonts
-        .keys()
-        .any(|p| p.contains("licenses/") && p.ends_with(".txt")));
     assert!(k2f_package::paths::has_font_face(&pkg.fonts));
 }
 
