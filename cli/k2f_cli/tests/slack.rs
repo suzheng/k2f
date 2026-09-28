@@ -42,11 +42,13 @@ fn write_starter_package(src: &std::path::Path, root_json: &str) {
         src.join("styles/theme.json"),
     )
     .unwrap();
-    fs::copy(
-        starter.join("assets/fonts/Roboto-Regular.ttf"),
-        src.join("assets/fonts/Roboto-Regular.ttf"),
-    )
-    .unwrap();
+    for entry in fs::read_dir(starter.join("assets/fonts")).unwrap() {
+        let path = entry.unwrap().path();
+        if path.extension().is_some_and(|e| e == "ttf" || e == "otf") {
+            let name = path.file_name().unwrap();
+            fs::copy(&path, src.join("assets/fonts").join(name)).unwrap();
+        }
+    }
     fs::write(
         src.join("manifest.json"),
         r#"{
