@@ -16,9 +16,22 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 INVOICE = ROOT / "examples/published/invoice.K2F"
-CATALOG = ROOT / "skills/k2f/catalog"
-PACK_VERIFY = ROOT / "skills/k2f/scripts/pack_verify.py"
-INIT_PACKAGE = ROOT / "skills/k2f/scripts/init_package.py"
+
+
+def _skill_tree() -> Path:
+    in_repo = ROOT / "skills/k2f"
+    if (in_repo / "scripts" / "init_package.py").is_file():
+        return in_repo
+    external = ROOT.parent / "k2f-skills" / "skills" / "core" / "k2f"
+    if (external / "scripts" / "init_package.py").is_file():
+        return external
+    pytest.skip("k2f skill tree missing (clone k2f-skills beside k2f)")
+
+
+SKILL = _skill_tree()
+CATALOG = SKILL / "catalog"
+PACK_VERIFY = SKILL / "scripts/pack_verify.py"
+INIT_PACKAGE = SKILL / "scripts/init_package.py"
 
 
 def resolve_k2f() -> str:
