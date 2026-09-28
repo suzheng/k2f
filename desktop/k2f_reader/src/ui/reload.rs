@@ -41,9 +41,9 @@ fn inode_of(meta: &Metadata) -> u64 {
 }
 
 #[cfg(windows)]
-fn inode_of(meta: &Metadata) -> u64 {
-    use std::os::windows::fs::MetadataExt;
-    meta.file_index().unwrap_or(0)
+fn inode_of(_meta: &Metadata) -> u64 {
+    // Stable Rust: `MetadataExt::file_index` is still unstable; mtime+len identify changes.
+    0
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
