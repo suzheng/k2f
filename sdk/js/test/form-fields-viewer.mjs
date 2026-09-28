@@ -43,19 +43,17 @@ for (const [page, wrap] of pages) {
 assert.equal(controls, fields.length);
 viewer.free();
 
-const catalogBytes = compileAuthorDir(k2f, "skills/k2f/catalog");
-const catalog = new k2f.Viewer(catalogBytes);
-const catalogFields = JSON.parse(catalog.form_fields());
-assert.equal(catalogFields.length, 5);
-const kinds = new Map(catalogFields.map((f) => [f.id, f.kind]));
-assert.equal(kinds.get("ex.form.name"), "text");
-assert.equal(kinds.get("ex.form.address"), "multiline");
-assert.equal(kinds.get("ex.form.agree"), "checkbox");
-for (const need of ["ex.form.sign.name", "ex.form.sign.date"]) {
-  assert.equal(kinds.get(need), "text");
-}
-catalog.free();
+const formBytes = compileAuthorDir(k2f, "examples/form_application");
+const formViewer = new k2f.Viewer(formBytes);
+const formFields = JSON.parse(formViewer.form_fields());
+assert.equal(formFields.length, 4);
+const kinds = new Map(formFields.map((f) => [f.id, f.kind]));
+assert.equal(kinds.get("app.name"), "text");
+assert.equal(kinds.get("app.address"), "multiline");
+assert.equal(kinds.get("app.agree"), "checkbox");
+assert.equal(kinds.get("app.date"), "text");
+formViewer.free();
 
 console.log(
-  `ok form-fields-viewer contract fields=${fields.length} pages=${pages.size} catalog=${catalogFields.length}`,
+  `ok form-fields-viewer contract fields=${fields.length} pages=${pages.size} form=${formFields.length}`,
 );
