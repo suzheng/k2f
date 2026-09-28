@@ -10,6 +10,17 @@ Entries follow [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-09-28
+
+### Added
+
+- **Desktop reader:** in-app editing, file reload/watch, popover chrome, form fill, discard/save flows, and layout fixes. Packaged preview builds remain on [k2f.dev/download](https://k2f.dev/download).
+- **PDF export:** effect-slice rasterization for blur, shadows, gradients, and translucent fills (scale 2–4; default 4). Non-effect pages stay vector outlines with text rendering mode 3.
+
+### Changed
+
+- **Project status** docs: desktop reader listed under Preview; signing/notarization stay on the roadmap.
+
 ## [0.3.1] - 2026-09-19
 
 ### Fixed
