@@ -189,8 +189,8 @@ fn licenses_only_fonts_are_font_missing() {
 }
 
 #[test]
-fn starter_keeps_license_files_and_has_a_face() {
-    let pkg = k2f_package::load_dir(&repo_root().join("skills/k2f/starter")).unwrap();
+fn blank_template_keeps_license_files_and_has_a_face() {
+    let pkg = k2f_package::load_dir(&repo_root().join("templates/blank")).unwrap();
     assert!(pkg
         .fonts
         .keys()

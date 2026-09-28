@@ -109,8 +109,8 @@ fn load_faces_rejects_invalid_ttf() {
 }
 
 #[test]
-fn starter_with_license_txt_renders() {
-    let mut pkg = k2f_package::load_dir(&common::repo_root().join("skills/k2f/starter")).unwrap();
+fn blank_template_with_license_txt_renders() {
+    let mut pkg = k2f_package::load_dir(&common::repo_root().join("templates/blank")).unwrap();
     let assets: std::collections::HashMap<_, _> = pkg.assets.clone().into_iter().collect();
     let lock = k2f_layout::compile_manifest(
         pkg.engine_manifest(),

@@ -36,7 +36,7 @@ fn write_starter_package(src: &std::path::Path, root_json: &str) {
     fs::create_dir_all(src.join("content")).unwrap();
     fs::create_dir_all(src.join("styles")).unwrap();
     fs::create_dir_all(src.join("assets/fonts")).unwrap();
-    let starter = repo_root().join("skills/k2f/starter");
+    let starter = repo_root().join("templates/blank");
     fs::copy(
         starter.join("styles/theme.json"),
         src.join("styles/theme.json"),

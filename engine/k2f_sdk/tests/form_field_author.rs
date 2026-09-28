@@ -1,4 +1,4 @@
-//! Step 4: real catalog/example authoring — compile, markdown emit, no `____` import.
+//! Step 4: real example authoring — compile, markdown emit, no `____` import.
 
 use k2f_core::{for_each_form_field, for_each_node, NodeContent, SemanticNode};
 use k2f_package::{unpack_bytes, validate_content_json};
@@ -31,10 +31,10 @@ fn root_of(bytes: &[u8]) -> SemanticNode {
     unpack_bytes(bytes).unwrap().root
 }
 
-fn load_ex_form() -> SemanticNode {
-    let path = repo_root().join("skills/k2f/catalog/content/ex_form.json");
+fn load_form_application_root() -> SemanticNode {
+    let path = repo_root().join("examples/form_application/content/root.json");
     let json = fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
-    serde_json::from_str(&json).unwrap_or_else(|e| panic!("ex_form.json: {e}"))
+    serde_json::from_str(&json).unwrap_or_else(|e| panic!("form_application root.json: {e}"))
 }
 
 fn underscore_body_nodes(root: &SemanticNode) -> Vec<(String, String)> {
@@ -50,37 +50,34 @@ fn underscore_body_nodes(root: &SemanticNode) -> Vec<(String, String)> {
 }
 
 #[test]
-fn catalog_ex_form_field_json_is_a_real_application() {
-    let node = load_ex_form();
+fn form_application_root_json_is_a_real_application() {
+    let node = load_form_application_root();
     k2f_core::validate_semantic_tree(&node).unwrap();
-    assert_eq!(node.id, "ex.form");
+    assert_eq!(node.id, "root");
     let ids = field_ids(&node);
-    assert!(ids.iter().any(|id| id == "ex.form.name"), "name: {ids:?}");
+    assert!(ids.iter().any(|id| id == "app.name"), "name: {ids:?}");
     assert!(
-        ids.iter().any(|id| id == "ex.form.address"),
+        ids.iter().any(|id| id == "app.address"),
         "address: {ids:?}"
     );
     assert!(
-        ids.iter().any(|id| id == "ex.form.agree"),
+        ids.iter().any(|id| id == "app.agree"),
         "checkbox: {ids:?}"
     );
-    assert_eq!(
-        ids.iter()
-            .filter(|id| id.starts_with("ex.form.sign."))
-            .count(),
-        2,
-        "signature_block must hold name+date fields, got {ids:?}"
+    assert!(
+        ids.iter().any(|id| id == "app.date"),
+        "date: {ids:?}"
     );
 }
 
 #[test]
-fn catalog_ex_form_field_compiles_inside_real_catalog() {
-    let mut ed = open_dir("skills/k2f/catalog");
+fn form_application_compiles_from_example_tree() {
+    let mut ed = open_dir("examples/form_application");
     let bytes = pack(&mut ed);
     let doc = OpenedDocument::open(&bytes).unwrap();
     let fields = doc.form_fields();
     let ids: Vec<_> = fields.iter().map(|f| f.id.as_str()).collect();
-    for need in ["ex.form.name", "ex.form.address", "ex.form.agree"] {
+    for need in ["app.name", "app.address", "app.agree", "app.date"] {
         assert!(ids.contains(&need), "missing {need} in {ids:?}");
     }
     for f in &fields {
@@ -125,12 +122,12 @@ fn contract_signatures_are_form_fields_on_one_page() {
 
 #[test]
 fn k2f_to_markdown_from_filled_form_field_includes_id_and_value() {
-    let mut ed = open_dir("skills/k2f/catalog");
-    ed.replace_text("ex.form.name", "Alice").unwrap();
+    let mut ed = open_dir("examples/form_application");
+    ed.replace_text("app.name", "Alice").unwrap();
     let bytes = pack(&mut ed);
     let md = k2f_to_markdown(&bytes).unwrap();
     assert!(
-        md.contains("<!-- k2f: form_field kind=text id=ex.form.name -->"),
+        md.contains("<!-- k2f: form_field kind=text id=app.name -->"),
         "missing emit hint: {md}"
     );
     assert!(md.contains("Alice"), "missing value: {md}");
@@ -168,10 +165,14 @@ fn markdown_underscores_are_not_imported_as_form_fields() {
 }
 
 #[test]
-fn catalog_ex_form_passes_package_nodes_schema() {
-    let node = load_ex_form();
+fn form_application_root_passes_package_nodes_schema() {
+    let node = load_form_application_root();
     let value = serde_json::to_value(&node).unwrap();
-    validate_content_json(&value, "skills/k2f/catalog/content/ex_form.json").unwrap();
+    validate_content_json(
+        &value,
+        "examples/form_application/content/root.json",
+    )
+    .unwrap();
 }
 
 #[test]

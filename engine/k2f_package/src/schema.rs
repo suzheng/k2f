@@ -520,9 +520,9 @@ mod tests {
     }
 
     #[test]
-    fn official_starter_theme_accepts_form_field_role() {
+    fn official_blank_theme_accepts_form_field_role() {
         let theme: Value = serde_json::from_str(include_str!(
-            "../../../skills/k2f/starter/styles/theme.json"
+            "../../../templates/blank/styles/theme.json"
         ))
         .unwrap();
         assert!(theme["roles"]["form_field"]["variants"]["underline"].is_object());
