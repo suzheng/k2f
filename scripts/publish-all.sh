@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 # Release cheat sheet — does not upload anything. Prints the supported publish flow.
 #
+# Docs: ../k2f-private/scripts/publish-all.md
 # Full docs: scripts/archive/local-publish/README.md
 # Workflow:  .github/workflows/publish.yml
 set -euo pipefail
 
 cat <<'EOF'
 K2F release (GitHub Actions — do not publish from a laptop)
+
+  0. Git: be on main, synced with origin/main; squash-merge feature work into main
+     before bump/tag/push. Do not tag from an unmerged feature branch.
+     Docs: ../k2f-private/scripts/publish-all.md
 
   1. Bump versions + CHANGELOG.md
   2. bash scripts/publish-preflight.sh
@@ -20,8 +25,8 @@ K2F release (GitHub Actions — do not publish from a laptop)
   6. Optional: ../k2f-private/scripts/pypi-linux-smoke.sh --from-pypi
 
   *** k2f-site — bump @openk2f/k2f (tag publish does NOT update the website) ***
-  After npm has the new @openk2f/k2f: bump dependencies.k2f in k2f-site/package.json,
-  npm install, npm test, commit lockfile, push (Vercel deploy).
+  After npm has the new @openk2f/k2f (on k2f-site main): bump dependencies.k2f in
+  k2f-site/package.json, npm install, npm test, commit lockfile, push (Vercel deploy).
   Checklist: ../k2f-site/docs/maintainer/release-sdk-dependency.md
   (Full maintainer flow incl. desktop: ../k2f-private/scripts/publish-all.sh)
 

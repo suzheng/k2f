@@ -61,11 +61,11 @@ Your agent writes semantic JSON. The engine compiles a locked layout. You ship a
 A `.K2F` file is a ZIP: editable JSON plus a compiled page. Official readers paint that compiled page; they do not reflow the body. PDF is a locked drawing, so an agent cannot safely rewrite “clause 4.” K2F is a semantic tree *and* a locked page. Longer comparison: [Why K2F](https://k2f.dev/why).
 
 <p align="center">
-  <a href="https://k2f.dev/gallery/aurora-data">
-    <img src=".github/assets/hero-preview.png" alt="Aurora Data cover page rendered by the K2F engine" width="800" />
+  <a href="https://k2f.dev/gallery/k2f-hero">
+    <img src=".github/assets/hero-preview.png" alt="K2F Ecosystem Hero Deck cover rendered by the K2F engine" width="800" />
   </a>
   <br />
-  <em>Example K2F file — the Aurora Data gallery template. Try it in the <a href="https://k2f.dev/playground">Playground</a>.</em>
+  <em>Example K2F file — the K2F Ecosystem Hero Deck. Try it in the <a href="https://k2f.dev/playground">Playground</a>.</em>
 </p>
 
 ## Gallery
@@ -76,7 +76,7 @@ Reports, presentations, posters, CVs, forms, invoices, planners, and more.
 
 <p align="center">
   <a href="https://k2f.dev/gallery">
-    <img src=".github/assets/gallery-mosaic.png" alt="K2F Gallery templates across reports, slides, posters, CVs, and forms" width="800" />
+    <img src=".github/assets/gallery-mosaic.jpg" alt="K2F Gallery browse page showing template thumbnails across reports, slides, posters, CVs, and forms" width="800" />
   </a>
   <br />
   <em>Browse the <a href="https://k2f.dev/gallery">Gallery</a>.</em>
@@ -245,3 +245,5 @@ SDKs: [Python](sdk/python/README.md) · [JavaScript](sdk/js/README.md) · [Rust]
 Format spec **v0.3** is the on-disk contract, aligned with SDK **0.3.x**. Packaged desktop builds are on [k2f.dev/download](https://k2f.dev/download); OS code signing is still roadmap. Remote HTTP MCP is not shipped (stdio is). Full list: [status](docs/guide/status.md).
 
 Licensed under **Apache-2.0**. See [LICENSE](LICENSE).
+
+Trademark: K2F™ is a brand identifier of the K2F project. See the [K2F Trademark Policy](https://k2f.dev/trademark).

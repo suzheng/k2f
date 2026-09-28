@@ -6,6 +6,7 @@
 
 Publish through **GitHub Actions** — [`.github/workflows/publish.yml`](../../../.github/workflows/publish.yml):
 
+0. **Git:** squash-merge feature work into **`main`**; release from **`main`** synced with `origin/main` (no release tags from unmerged feature branches). See `k2f-private/scripts/publish-all.md`.
 1. Bump versions and update `CHANGELOG.md`.
 2. Run preflight locally: `bash scripts/publish-preflight.sh`
 3. Optional wheel-only dry run: `bash scripts/trigger-publish-dry-run.sh`
