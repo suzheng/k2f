@@ -33,7 +33,7 @@ K2F release (GitHub Actions — do not publish from a laptop)
   npm @openk2f/k2f must not embed templates/. Agents create packages with
   init_package.py / unpack / Gallery; the SDK opens dirs or .K2F bytes.
 
-  Optional: gh release create vX.Y.Z --notes-file ...
+  gh release create vX.Y.Z (notes from CHANGELOG — tag push does not create a GitHub Release)
 
   *** Modal billing ***
   pypi-linux-smoke.sh uses `modal run` and stops when the script exits.

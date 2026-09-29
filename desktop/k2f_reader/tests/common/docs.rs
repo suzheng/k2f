@@ -91,6 +91,20 @@ pub fn assert_not_packaged_binary(from: &str, text: &str) {
     );
 }
 
+/// Paths from `src=".github/assets/..."` in HTML (root README embeds).
+pub fn github_asset_srcs(text: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let needle = "src=\".github/assets/";
+    let mut rest = text;
+    while let Some(start) = rest.find(needle) {
+        let after = &rest[start + needle.len()..];
+        let Some(end) = after.find('"') else { break };
+        out.push(format!(".github/assets/{}", &after[..end]));
+        rest = &after[end..];
+    }
+    out
+}
+
 pub fn walk_files(dir: &Path, out: &mut Vec<std::path::PathBuf>) {
     if !dir.is_dir() {
         return;

@@ -4,7 +4,7 @@ mod common;
 
 use common::docs::{
     assert_desktop_readme_linked, assert_not_packaged_binary, desktop_readme_links,
-    markdown_section, read_repo,
+    github_asset_srcs, markdown_section, read_repo,
 };
 
 #[test]
@@ -53,6 +53,23 @@ fn status_does_not_claim_signed_desktop_binary() {
             || roadmap.to_ascii_lowercase().contains("signing"),
         "desktop signing / notarization stay not shipped"
     );
+}
+
+#[test]
+fn root_readme_github_assets_exist() {
+    let readme = read_repo("README.md");
+    let assets = github_asset_srcs(&readme);
+    assert!(
+        !assets.is_empty(),
+        "root README should embed .github/assets images"
+    );
+    for rel in assets {
+        let path = common::repo_root().join(&rel);
+        assert!(
+            path.is_file(),
+            "README references missing repo file: {rel} (check .gitignore for *.jpg)"
+        );
+    }
 }
 
 #[test]

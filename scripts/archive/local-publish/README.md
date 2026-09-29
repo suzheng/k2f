@@ -23,7 +23,7 @@ Publish through **GitHub Actions** — [`.github/workflows/publish.yml`](../../.
 
    Or use `workflow_dispatch` in the GitHub Actions UI / `gh workflow run publish.yml` with `upload_pypi`, `publish_crates`, and `publish_npm` set to `true`.
 
-6. Optional: create a [GitHub Release](https://docs.github.com/en/repositories/releasing-projects-on-github) for the same tag so release notes and wheel artifacts are visible on the Releases page. Registry upload still happens in the workflow; the GitHub Release is for changelog and discovery.
+6. Create a [GitHub Release](https://docs.github.com/en/repositories/releasing-projects-on-github) for the same tag (`gh release create vX.Y.Z` with notes from `CHANGELOG.md`). The publish workflow does not create it; without this step the Releases page can stay on the previous version while registries are already updated.
 
 7. **k2f-site:** after `@openk2f/k2f` is on npm, bump the site’s `package.json` dependency, refresh `package-lock.json`, run tests, and push so Vercel deploys the new SDK/WASM. See `k2f-site/docs/maintainer/release-sdk-dependency.md`.
 

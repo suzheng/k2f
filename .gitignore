@@ -68,7 +68,9 @@ golden.json
 !templates/**/assets/fonts/*.otf
 !.github/assets/**
 *.jpg
+!.github/assets/**/*.jpg
 *.jpeg
+!.github/assets/**/*.jpeg
 *.gif
 *.svg
 !tests/fixtures/**/*.svg

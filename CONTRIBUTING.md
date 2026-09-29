@@ -135,7 +135,7 @@ When changing format `schema/*.json`:
 3. `bash scripts/publish-preflight.sh`
 4. Optional: `bash scripts/trigger-publish-dry-run.sh` (wheels only, no registry upload)
 5. `git tag vX.Y.Z && git push origin vX.Y.Z` — publishes crates.io, npm, and PyPI
-6. Optional: `gh release create vX.Y.Z` for release notes on GitHub
+6. `gh release create vX.Y.Z` with notes from `CHANGELOG.md` (tag push does not create a GitHub Release)
 7. **Website:** bump `dependencies.k2f` (`npm:@openk2f/k2f@^…`) in **k2f-site**, `npm install`, test, and deploy — the tag workflow does not update [k2f.dev](https://k2f.dev)
 
 Full maintainer checklist (including Linux smoke and site steps): `bash scripts/publish-all.sh`. Background: [scripts/archive/local-publish/README.md](scripts/archive/local-publish/README.md).
