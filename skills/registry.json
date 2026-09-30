@@ -1,0 +1,335 @@
+{
+  "version": 1,
+  "description": "Machine index for K2F task and expert skills (paths relative to skills/).",
+  "skills": [
+    {
+      "id": "k2f",
+      "layer": "core",
+      "category": "core",
+      "path": "core/k2f",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-template-finder",
+      "layer": "discovery",
+      "category": "discovery",
+      "path": "discovery/k2f-template-finder",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-fillable-pdf",
+      "layer": "expert",
+      "category": "expert",
+      "path": "expert/k2f-fillable-pdf",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-idml",
+      "layer": "expert",
+      "category": "expert",
+      "path": "expert/k2f-idml",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-research-poster",
+      "layer": "task",
+      "category": "academic",
+      "path": "academic/k2f-research-poster",
+      "status": "active"
+    },
+    {
+      "id": "k2f-academic-paper",
+      "layer": "task",
+      "category": "academic",
+      "path": "academic/k2f-academic-paper",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-thesis",
+      "layer": "task",
+      "category": "academic",
+      "path": "academic/k2f-thesis",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-grant-proposal",
+      "layer": "task",
+      "category": "academic",
+      "path": "academic/k2f-grant-proposal",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-conference-handout",
+      "layer": "task",
+      "category": "academic",
+      "path": "academic/k2f-conference-handout",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-lesson-plan",
+      "layer": "task",
+      "category": "education",
+      "path": "education/k2f-lesson-plan",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-syllabus",
+      "layer": "task",
+      "category": "education",
+      "path": "education/k2f-syllabus",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-worksheet",
+      "layer": "task",
+      "category": "education",
+      "path": "education/k2f-worksheet",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-exam-paper",
+      "layer": "task",
+      "category": "education",
+      "path": "education/k2f-exam-paper",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-invoice",
+      "layer": "task",
+      "category": "business",
+      "path": "business/k2f-invoice",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-quotation",
+      "layer": "task",
+      "category": "business",
+      "path": "business/k2f-quotation",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-purchase-order",
+      "layer": "task",
+      "category": "business",
+      "path": "business/k2f-purchase-order",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-receipt",
+      "layer": "task",
+      "category": "business",
+      "path": "business/k2f-receipt",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-business-report",
+      "layer": "task",
+      "category": "business",
+      "path": "business/k2f-business-report",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-case-study",
+      "layer": "task",
+      "category": "business",
+      "path": "business/k2f-case-study",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-business-proposal",
+      "layer": "task",
+      "category": "business",
+      "path": "business/k2f-business-proposal",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-pitch-deck",
+      "layer": "task",
+      "category": "presentation",
+      "path": "presentation/k2f-pitch-deck",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-company-deck",
+      "layer": "task",
+      "category": "presentation",
+      "path": "presentation/k2f-company-deck",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-sales-deck",
+      "layer": "task",
+      "category": "presentation",
+      "path": "presentation/k2f-sales-deck",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-research-deck",
+      "layer": "task",
+      "category": "presentation",
+      "path": "presentation/k2f-research-deck",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-portfolio",
+      "layer": "task",
+      "category": "presentation",
+      "path": "presentation/k2f-portfolio",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-flyer",
+      "layer": "task",
+      "category": "marketing",
+      "path": "marketing/k2f-flyer",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-brochure",
+      "layer": "task",
+      "category": "marketing",
+      "path": "marketing/k2f-brochure",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-event-poster",
+      "layer": "task",
+      "category": "marketing",
+      "path": "marketing/k2f-event-poster",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-menu",
+      "layer": "task",
+      "category": "marketing",
+      "path": "marketing/k2f-menu",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-one-pager",
+      "layer": "task",
+      "category": "marketing",
+      "path": "marketing/k2f-one-pager",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-media-kit",
+      "layer": "task",
+      "category": "marketing",
+      "path": "marketing/k2f-media-kit",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-resume",
+      "layer": "task",
+      "category": "personal",
+      "path": "personal/k2f-resume",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-cv",
+      "layer": "task",
+      "category": "personal",
+      "path": "personal/k2f-cv",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-cover-letter",
+      "layer": "task",
+      "category": "personal",
+      "path": "personal/k2f-cover-letter",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-travel-planner",
+      "layer": "task",
+      "category": "personal",
+      "path": "personal/k2f-travel-planner",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-contract",
+      "layer": "task",
+      "category": "legal",
+      "path": "legal/k2f-contract",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-nda",
+      "layer": "task",
+      "category": "legal",
+      "path": "legal/k2f-nda",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-legal-notice",
+      "layer": "task",
+      "category": "legal",
+      "path": "legal/k2f-legal-notice",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-policy-document",
+      "layer": "task",
+      "category": "legal",
+      "path": "legal/k2f-policy-document",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-invitation",
+      "layer": "task",
+      "category": "events",
+      "path": "events/k2f-invitation",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-certificate",
+      "layer": "task",
+      "category": "events",
+      "path": "events/k2f-certificate",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-award",
+      "layer": "task",
+      "category": "events",
+      "path": "events/k2f-award",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-event-program",
+      "layer": "task",
+      "category": "events",
+      "path": "events/k2f-event-program",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-application-form",
+      "layer": "task",
+      "category": "forms",
+      "path": "forms/k2f-application-form",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-intake-form",
+      "layer": "task",
+      "category": "forms",
+      "path": "forms/k2f-intake-form",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-checklist",
+      "layer": "task",
+      "category": "forms",
+      "path": "forms/k2f-checklist",
+      "status": "placeholder"
+    },
+    {
+      "id": "k2f-survey-form",
+      "layer": "task",
+      "category": "forms",
+      "path": "forms/k2f-survey-form",
+      "status": "placeholder"
+    }
+  ]
+}

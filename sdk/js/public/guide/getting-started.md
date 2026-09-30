@@ -7,13 +7,13 @@ To look at a file first, open the [Playground](https://k2f.dev/playground) or a 
 ## Use an agent
 
 ```bash
-npx skills add suzheng/k2f-skills --skill k2f
+npx skills add suzheng/k2f --skill k2f
 pip install k2f
 ```
 
-Works with Cursor, Claude Code, Codex, and other agents that support [`npx skills`](https://github.com/vercel-labs/skills). `pip install k2f` puts the CLI on PATH; the skill scripts call it. If `npx skills` is not available, copy [`skills/core/k2f`](https://github.com/suzheng/k2f-skills/tree/main/skills/core/k2f) into your agent skills path as `k2f/` ([skills/README.md](../../skills/README.md)).
+Works with Cursor, Claude Code, Codex, and other agents that support [`npx skills`](https://github.com/vercel-labs/skills). `pip install k2f` puts the CLI on PATH; the skill scripts call it. If `npx skills` is not available, copy [`skills/core/k2f`](https://github.com/suzheng/k2f/tree/main/skills/core/k2f) into your agent skills path as `k2f/` ([skills/README.md](../../skills/README.md)).
 
-Then ask for a document, for example *Write a one-page monthly report.* The agent follows [K2F Skill](https://github.com/suzheng/k2f-skills/blob/main/skills/core/k2f/SKILL.md).
+Then ask for a document, for example *Write a one-page monthly report.* The agent follows [K2F Skill](https://github.com/suzheng/k2f/blob/main/skills/core/k2f/SKILL.md).
 
 ## Write JSON yourself
 
@@ -27,7 +27,7 @@ Python 3.9+. This installs the `k2f` CLI and the Python SDK. Optional: `cargo in
 
 ### 2. Get the skill folder
 
-Starter package, catalog shapes, and helper scripts live in [`skills/core/k2f`](https://github.com/suzheng/k2f-skills/tree/main/skills/core/k2f) in [k2f-skills](https://github.com/suzheng/k2f-skills). Clone or copy that folder. Run the Python scripts from it (`k2f` must be on `PATH`).
+Starter package, catalog shapes, and helper scripts live in [`skills/core/k2f`](https://github.com/suzheng/k2f/tree/main/skills/core/k2f) in [k2f](https://github.com/suzheng/k2f). Clone or copy that folder. Run the Python scripts from it (`k2f` must be on `PATH`).
 
 ### 3. Create a package
 
@@ -39,7 +39,7 @@ Writes `./out/doc/source/` (empty `content/root.json`, starter theme, Roboto) an
 
 ### 4. Add content
 
-Edit `source/content/root.json`. Keep `id: "root"` and paste catalog nodes into `children`. Do not replace `root.json` with a fragment. Start with [`ex_heading.json`](../../skills/k2f/catalog/content/ex_heading.json).
+Edit `source/content/root.json`. Keep `id: "root"` and paste catalog nodes into `children`. Do not replace `root.json` with a fragment. Start with [`ex_heading.json`](../../skills/core/k2f/catalog/content/ex_heading.json).
 
 ### 5. Pack and preview
 
@@ -47,7 +47,7 @@ Edit `source/content/root.json`. Keep `id: "root"` and paste catalog nodes into 
 python scripts/pack_verify.py ./out/doc/source -o ./out/doc/doc.K2F --render preview.png
 ```
 
-Expect `UNSIGNED`. Open `./out/doc/tmp/preview.png`. If the bottom third of the PNG is blank paper, you are not done — see [visual check](../../skills/k2f/references/writing.md#visual-check).
+Expect `UNSIGNED`. Open `./out/doc/tmp/preview.png`. If the bottom third of the PNG is blank paper, you are not done — see [visual check](../../skills/core/k2f/references/writing.md#visual-check).
 
 Export from the lock (optional):
 

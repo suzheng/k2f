@@ -1,0 +1,69 @@
+{
+  "id": "ex.banner_header",
+  "role": "page_shell",
+  "variant": "flush",
+  "break_inside": "avoid",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.banner_header.banner",
+          "role": "section",
+          "variant": "banner",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.banner_header.banner.title",
+                  "role": "h1",
+                  "variant": "on_dark",
+                  "content": { "type": "text", "value": "Bleed header ({auto:true})." }
+                },
+                {
+                  "id": "ex.banner_header.banner.meta",
+                  "role": "body",
+                  "variant": "on_dark",
+                  "content": {
+                    "type": "text",
+                    "value": "Outer page_shell flush hits the trim. Title+meta may nest ex_split_bar."
+                  }
+                }
+              ]
+            }
+          },
+          "layout": { "type": "stack", "gap": 8000 }
+        },
+        {
+          "id": "ex.banner_header.body",
+          "role": "page_shell",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.banner_header.body.text",
+                  "role": "body",
+                  "content": {
+                    "type": "text",
+                    "value": "Inset body ({fr:1}). Default page_shell padding — not a negative margin, not a padded outer shell."
+                  }
+                }
+              ]
+            }
+          },
+          "layout": { "type": "stack", "gap": 8000 }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "grid",
+    "columns": [{ "fr": 1 }],
+    "rows": [{ "auto": true }, { "fr": 1 }],
+    "gap": 0,
+    "height": 240000,
+    "cell_align": { "x": "stretch", "y": "stretch" }
+  }
+}

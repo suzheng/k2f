@@ -30,7 +30,7 @@ Python 3.9+. Optional: `npm i @openk2f/k2f` for the [web viewer](guide/web-viewe
 ## Authoring
 
 1. Copy golden nodes from the [catalog](reference/catalog.md) into `content/root.json` `children` (keep `id: "root"`; do not replace the file with a catalog fragment).
-2. Look up allowed keys in [Allowed keys](reference/keys.md), then the matching file under [`schema/`](../skills/k2f/schema/).
+2. Look up allowed keys in [Allowed keys](reference/keys.md), then the matching file under [`schema/`](../skills/core/k2f/schema/).
 
 Topic guides:
 
@@ -61,11 +61,11 @@ Markdown or JSON → packed `.K2F` → PDF, PowerPoint, Word, or InDesign. The l
 - [Markdown conversion](guide/markdown.md) — Markdown ↔ K2F
 - [Web viewer](guide/web-viewer.md) — embed `<k2f-viewer>` (serve packages over HTTP, not `file://`)
 
-Permanent publish links (`/v/{appearance_hash}`) are documented in the [K2F Skill](https://github.com/suzheng/k2f-skills/blob/main/skills/core/k2f/SKILL.md) (`references/publishing.md`).
+Permanent publish links (`/v/{appearance_hash}`) are documented in the [K2F Skill](https://github.com/suzheng/k2f/blob/main/skills/core/k2f/SKILL.md) (`references/publishing.md`).
 
 ## Agents and tools
 
-- [K2F Skill](https://github.com/suzheng/k2f-skills/blob/main/skills/core/k2f/SKILL.md) — `npx skills add suzheng/k2f-skills --skill k2f`; workflows for create, convert, export, and embed · [k2f.dev/skills/k2f](https://k2f.dev/skills/k2f)
+- [K2F Skill](https://github.com/suzheng/k2f/blob/main/skills/core/k2f/SKILL.md) — `npx skills add suzheng/k2f --skill k2f`; workflows for create, convert, export, and embed · [k2f.dev/skills/k2f](https://k2f.dev/skills/k2f)
 - [Playground](https://k2f.dev/playground) — compile and preview in the browser
 - [Verify](https://k2f.dev/verify) — check a `.K2F` file for integrity banners
 

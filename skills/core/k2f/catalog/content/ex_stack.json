@@ -1,0 +1,54 @@
+{
+  "id": "ex.stack",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.stack.v1",
+          "role": "body",
+          "content": { "type": "text", "value": "Vertical stack item one." }
+        },
+        {
+          "id": "ex.stack.v2",
+          "role": "body",
+          "content": { "type": "text", "value": "Vertical stack item two." }
+        },
+        {
+          "id": "ex.stack.hrow",
+          "role": "section",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.stack.h1",
+                  "role": "body",
+                  "content": { "type": "text", "value": "Left" }
+                },
+                {
+                  "id": "ex.stack.h2",
+                  "role": "body",
+                  "content": { "type": "text", "value": "Right" }
+                }
+              ]
+            }
+          },
+          "layout": {
+            "type": "stack",
+            "direction": "horizontal",
+            "gap": 12000,
+            "align_items": "center"
+          }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "stack",
+    "direction": "vertical",
+    "gap": 8000,
+    "justify_content": "start"
+  }
+}

@@ -2,7 +2,7 @@
 
 An image is a node with `content.type: "image"` and `role: "image"`. The engine does not read width or height from the file — you declare them in `content.value` as millipt (1 pt = 1000).
 
-Copy [`ex_image.json`](../../skills/k2f/catalog/content/ex_image.json) into `content/root.json` `children` (keep `id: "root"` on the document; the catalog file is a small section, not a full root). Put the bytes at `value.src` under `assets/images/` before `k2f pack`.
+Copy [`ex_image.json`](../../skills/core/k2f/catalog/content/ex_image.json) into `content/root.json` `children` (keep `id: "root"` on the document; the catalog file is a small section, not a full root). Put the bytes at `value.src` under `assets/images/` before `k2f pack`.
 
 ## Asset files
 
@@ -33,13 +33,13 @@ Do not put `image_fit` or `self_align` on the image node. See [Theme and fonts](
 
 | Need | File |
 |------|------|
-| Fixed-width figure + flowing copy | [`ex_media_row.json`](../../skills/k2f/catalog/content/ex_media_row.json) ([grid](layout.md)) |
-| Title + logo / trailing image | [`ex_split_bar.json`](../../skills/k2f/catalog/content/ex_split_bar.json) |
-| Full-bleed background image | [`ex_overlay.json`](../../skills/k2f/catalog/content/ex_overlay.json) ([layout](layout.md)) |
+| Fixed-width figure + flowing copy | [`ex_media_row.json`](../../skills/core/k2f/catalog/content/ex_media_row.json) ([grid](layout.md)) |
+| Title + logo / trailing image | [`ex_split_bar.json`](../../skills/core/k2f/catalog/content/ex_split_bar.json) |
+| Full-bleed background image | [`ex_overlay.json`](../../skills/core/k2f/catalog/content/ex_overlay.json) ([layout](layout.md)) |
 
 ## Allowed keys
 
-[Allowed keys](../reference/keys.md) (image row) and [`nodes.schema.json`](../../skills/k2f/schema/nodes.schema.json).
+[Allowed keys](../reference/keys.md) (image row) and [`nodes.schema.json`](../../skills/core/k2f/schema/nodes.schema.json).
 
 ## Common mistakes
 

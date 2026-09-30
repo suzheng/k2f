@@ -35,7 +35,7 @@ Do not fall back to html2pdf, jsPDF, browser print, or React-PDF.
 Markdown → K2F does **not** parse `form_field` comments or treat underscore runs as blanks. After import (or when authoring JSON):
 
 1. Unpack if you only have the packed file: `k2f unpack ./out/doc/doc.K2F -o ./out/doc/source` (skip `--include-lock`).
-2. Copy nodes from [`ex_form.json`](../../skills/k2f/catalog/content/ex_form.json) into `content/root.json` `children`. Role and `content.type` must both be `form_field`. Never draw `____` or `□` in body text.
+2. Copy nodes from [`ex_form.json`](../../skills/core/k2f/catalog/content/ex_form.json) into `content/root.json` `children`. Role and `content.type` must both be `form_field`. Never draw `____` or `□` in body text.
 3. Pack: `python scripts/pack_verify.py ./out/doc/source -o ./out/doc/doc.K2F`
 4. Export: `k2f export-pdf ./out/doc/doc.K2F -o ./out/doc/doc.pdf`
 
@@ -52,7 +52,7 @@ Word and PowerPoint export those boxes as lock drawings — not Word content con
 | JS `@openk2f/k2f` | `exportPdf(bytes, scale?, flatten?)` after `initWasm` | Editor has **no** PDF export — `save()` then `exportPdf(bytes)`. |
 | Viewer | Export PDF / `handle.exportPdf()` | [Web viewer](web-viewer.md) |
 
-Unlocked input fails with `UNLOCKED`. Byte-level effect-slice and vector contract: Skill [pdf-contract.md](../../skills/k2f/references/exporting-pdf/pdf-contract.md).
+Unlocked input fails with `UNLOCKED`. Byte-level effect-slice and vector contract: Skill [pdf-contract.md](../../skills/core/k2f/references/exporting-pdf/pdf-contract.md).
 
 ## Common mistakes
 

@@ -1,0 +1,41 @@
+{
+  "id": "ex.columns",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.columns.banner",
+          "role": "body",
+          "column_span": "all",
+          "content": {
+            "type": "text",
+            "value": "Full-width banner above flowing columns."
+          }
+        },
+        {
+          "id": "ex.columns.col1",
+          "role": "body",
+          "content": {
+            "type": "text",
+            "value": "Column flow packs siblings left-to-right. Short paragraph one."
+          }
+        },
+        {
+          "id": "ex.columns.col2",
+          "role": "body",
+          "content": {
+            "type": "text",
+            "value": "Short paragraph two continues in the next column when space runs out."
+          }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "columns",
+    "count": 2,
+    "gap": 16000
+  }
+}

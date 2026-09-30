@@ -8,6 +8,6 @@ Do **not**:
 - Export `official_templates`, `copy_template`, `resolve_template`, or `Editor.open_template` / `openTemplate`
 - Teach agents to `open("invoice")` by name, or to assume `k2f/templates/` exists on their machine
 
-The agent skill (`skills/k2f/`) never sees this folder. Create a shell with `init_package.py` + `skills/k2f/starter/`, unpack a `.K2F`, or Gallery; then `Editor.open_dir` / `Editor.open` / `open_bytes`. Markdown `--template` is an **author directory path**, not an id like `report`.
+The agent skill (`skills/core/k2f/`) never sees this folder. Create a shell with `init_package.py` + `skills/core/k2f/starter/`, unpack a `.K2F`, or Gallery; then `Editor.open_dir` / `Editor.open` / `open_bytes`. Markdown `--template` is an **author directory path**, not an id like `report`.
 
 Keep these files in git so engine tests can `open_dir` them. Do **not** gitignore `templates/**` — ignoring the tree would break CI. Fonts here are fixtures, not a reason to bake them into WASM.

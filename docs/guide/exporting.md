@@ -36,4 +36,4 @@ Unlocked packages fail with `UNLOCKED`. Compile or `pack_verify.py` first.
 - [Markdown conversion](markdown.md) — Markdown ↔ K2F
 - [Getting started](getting-started.md) — author shell and pack loop
 - [Web viewer](web-viewer.md) — in-browser export
-- [K2F Skill](../../skills/k2f/SKILL.md) — agent workflows
+- [K2F Skill](../../skills/core/k2f/SKILL.md) — agent workflows

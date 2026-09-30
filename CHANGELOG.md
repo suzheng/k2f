@@ -70,7 +70,7 @@ Entries follow [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - `init_package.py` page presets `square` (1:1, 600pt), `portrait-45` (4:5), and `card` (US 3.5×2", 252×144pt), default margin 0. Same paged `ex_poster_shell` as slides; set `layout.height` to the page height. Duplex cards: two shells, back `break_before: page`, `--expect-pages 2`.
-- `PAGE_UNDERFILL` compile diagnostic when a page content box is ≥25% empty at the bottom (not the last page of a multi-page flow). Warning only — `pack_verify.py` does not fail. Catalog [`ex_filled_page.json`](skills/k2f/catalog/content/ex_filled_page.json). `--render` also writes `preview-N.png` for extra pages.
+- `PAGE_UNDERFILL` compile diagnostic when a page content box is ≥25% empty at the bottom (not the last page of a multi-page flow). Warning only — `pack_verify.py` does not fail. Catalog [`ex_filled_page.json`](skills/core/k2f/catalog/content/ex_filled_page.json). `--render` also writes `preview-N.png` for extra pages.
 
 ### Changed
 
@@ -110,7 +110,7 @@ Entries follow [Keep a Changelog](https://keepachangelog.com/).
 - `k2f compile` prints `LAYOUT_SLACK` when a large stretched box is empty at the bottom — usually a `{fr:1}` grower packed with an auto-height stack, not the page shell (warning, exit 0, lock unchanged).
 - Grid tracks `{ "auto": true }` — content-sized from measured cells; leftover space goes to `fr`. Table `column_widths` stay `{pt}` / `{fr}` only.
 - Optional grid `rows`: omit → `{auto:true}` tracks `ceil(n_children / n_columns)`. Declared rows do not grow. `fr` rows still need a finite outer height.
-- Catalog [`ex_glass.json`](skills/k2f/catalog/content/ex_glass.json) — `card` variant `glass` via named `box_decoration.blur` and a translucent surface (not a radial gradient).
+- Catalog [`ex_glass.json`](skills/core/k2f/catalog/content/ex_glass.json) — `card` variant `glass` via named `box_decoration.blur` and a translucent surface (not a radial gradient).
 - Line wrap: hyphen-minus and U+00AD are break opportunities (hyphen stays at the line end). A word still wider than the line is character-split. No hyphenation dictionary, no auto-shrink.
 
 ### Changed
@@ -118,7 +118,7 @@ Entries follow [Keep a Changelog](https://keepachangelog.com/).
 - Font load/render parse only `.ttf`/`.otf`. License/sidecar files under `assets/fonts/` stay in the ZIP and `Package.fonts` (appearance hash unchanged) but are skipped at `Face::parse`. Invalid faces report `FONT_INVALID` with the path, not `UnknownMagic`. Auto-`default` and “at least one font” count faces only. PDF/DOCX/PPTX export apply the same face-path filter (do not embed or resolve license `.txt` as a font).
 - SVG `<text>` / `<tspan>` / `<textPath>` / `<foreignObject>` detection strips XML comments and CDATA first, then matches real elements. Pack and compile reject them (`IMAGE_SIZE`); paint still fail-closed. Agent skill writing Rule 4 states the same at the writing-loop gate.
 - Agent skill: flowing articles use **one** unpadded `columns` container with `column_span: all` (do not `break_before: page` on figures). Variant text fields stay under `text_overrides`. Compact tables: widen columns, lower role `font_size`, or insert U+00AD.
-- Agent skill: poster/slide page shell is a pinned-height **grid** with `{auto:true}` header/footer and a `{fr:1}` grower ([`ex_poster_shell.json`](skills/k2f/catalog/content/ex_poster_shell.json)); fill the grower with nested `{fr:1}` rows ([`ex_poster_growers.json`](skills/k2f/catalog/content/ex_poster_growers.json)), not an auto-height stack. Zero-padding vertical stacks split by child when the page remainder is too small.
+- Agent skill: poster/slide page shell is a pinned-height **grid** with `{auto:true}` header/footer and a `{fr:1}` grower ([`ex_poster_shell.json`](skills/core/k2f/catalog/content/ex_poster_shell.json)); fill the grower with nested `{fr:1}` rows ([`ex_poster_growers.json`](skills/core/k2f/catalog/content/ex_poster_growers.json)), not an auto-height stack. Zero-padding vertical stacks split by child when the page remainder is too small.
 - **`export-docx` / `export-pptx`:** First major Office export pass — lock fonts and tracking, Dark Mode–safe theme colors and text-box underlays, card folding, wrap/alignment heuristics, hyperlinks, table row height and borders, running headers in the body for LibreOffice, and related DrawingML fixes. Slight host reflow remains expected; exports are not sources.
 
 ### Removed
@@ -144,7 +144,7 @@ Entries follow [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
-- Unified six agent skills into one `skills/k2f/` skill with workflow references (writing, converting-markdown, exporting-pdf, publishing, embedding-viewer)
+- Unified six agent skills into one `skills/core/k2f/` skill with workflow references (writing, converting-markdown, exporting-pdf, publishing, embedding-viewer)
 - Agent skill: merged **generating** and **editing** into a single **writing** workflow (JSON + `k2f unpack` / `pack_verify.py`); optional Python `Editor` moved to `references/writing/sdk.md`
 - Public creation path is `Editor.open_template` / `open_dir` / `open_bytes` plus `insert_node` JSON (superseded in 0.2.2 — use `init_package.py` / Gallery / unpack)
 

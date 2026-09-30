@@ -1,0 +1,48 @@
+{
+  "id": "ex.list",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.list.i0",
+          "role": "list_item",
+          "list_id": "ex.list.bullet",
+          "depth": 0,
+          "marker_type": "bullet",
+          "content": { "type": "text", "value": "First bullet item." }
+        },
+        {
+          "id": "ex.list.i1",
+          "role": "list_item",
+          "list_id": "ex.list.bullet",
+          "depth": 0,
+          "marker_type": "bullet",
+          "content": { "type": "text", "value": "Second bullet item." }
+        },
+        {
+          "id": "ex.list.n0",
+          "role": "list_item",
+          "list_id": "ex.list.number",
+          "depth": 0,
+          "marker_type": "number",
+          "content": { "type": "text", "value": "First numbered item." }
+        },
+        {
+          "id": "ex.list.n1",
+          "role": "list_item",
+          "list_id": "ex.list.number",
+          "depth": 0,
+          "marker_type": "number",
+          "content": { "type": "text", "value": "Second numbered item." }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "stack",
+    "direction": "vertical",
+    "gap": 4000
+  }
+}

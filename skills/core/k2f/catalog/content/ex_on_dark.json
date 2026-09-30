@@ -1,0 +1,48 @@
+{
+  "id": "ex.on_dark",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.on_dark.band",
+          "role": "card",
+          "variant": "on_dark",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.on_dark.band.title",
+                  "role": "h2",
+                  "variant": "on_dark",
+                  "content": { "type": "text", "value": "Dark cover band" }
+                },
+                {
+                  "id": "ex.on_dark.band.body",
+                  "role": "body",
+                  "variant": "on_dark",
+                  "content": {
+                    "type": "text",
+                    "value": "Same h2/body/card roles as the interior. Contrast is variant on_dark, not th_dark_* role clones."
+                  }
+                }
+              ]
+            }
+          },
+          "layout": { "type": "stack", "direction": "vertical", "gap": 8000 }
+        },
+        {
+          "id": "ex.on_dark.interior",
+          "role": "body",
+          "content": {
+            "type": "text",
+            "value": "Interior copy uses the default (light) skins of the same roles."
+          }
+        }
+      ]
+    }
+  },
+  "layout": { "type": "stack", "direction": "vertical", "gap": 16000 }
+}

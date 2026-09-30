@@ -7,9 +7,9 @@ Map of the K2F repository for contributors: crates, compile vs execute, and wher
 
 ## Skill audience (non-negotiable)
 
-**The agent skill under [`skills/k2f/`](../../skills/k2f/SKILL.md) is for external developers.** They copy that folder into Cursor (or another agent) and **never see this repository**: no crates, no `templates/`, no repo-root `schema/`, no `engine/`, no `target/debug/k2f`.
+**The agent skill under [`skills/core/k2f/`](../../skills/core/k2f/SKILL.md) is for external developers.** They copy that folder into Cursor (or another agent) and **never see this repository**: no crates, no `templates/`, no repo-root `schema/`, no `engine/`, no `target/debug/k2f`.
 
-Everything the skill says, and every path it links to, must work in that world. Allowed references: files **inside the skill folder** (including read-only `skills/k2f/schema/*.schema.json`), plus **published** packages (`pip install k2f` puts the CLI on PATH, `npm i @openk2f/k2f`, optional `cargo install k2f`). Forbidden: repo-relative paths, checkout assumptions, “rebuild the engine,” MCP that is not on a registry, or “open `k2f/templates/` on disk.”
+Everything the skill says, and every path it links to, must work in that world. Allowed references: files **inside the skill folder** (including read-only `skills/core/k2f/schema/*.schema.json`), plus **published** packages (`pip install k2f` puts the CLI on PATH, `npm i @openk2f/k2f`, optional `cargo install k2f`). Forbidden: repo-relative paths, checkout assumptions, “rebuild the engine,” MCP that is not on a registry, or “open `k2f/templates/` on disk.”
 
 This architecture document is for **contributors**. Do not treat it as something the skill may cite. When you change engine behavior, update the skill’s **starter/catalog/scripts/schema** so an agent with only that folder can still succeed.
 

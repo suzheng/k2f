@@ -1,0 +1,54 @@
+{
+  "id": "ex.glass",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.glass.bg",
+          "role": "warning",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.glass.bg.pad",
+                  "role": "body",
+                  "content": { "type": "text", "value": " " }
+                }
+              ]
+            }
+          },
+          "layout": { "type": "stack", "height": 80000 }
+        },
+        {
+          "id": "ex.glass.card",
+          "role": "card",
+          "variant": "glass",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.glass.card.label",
+                  "role": "body",
+                  "content": {
+                    "type": "text",
+                    "value": "Glass — named blur plus a translucent surface, not a radial fill."
+                  }
+                }
+              ]
+            }
+          },
+          "layout": { "type": "stack", "width": 280000 }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "overlay",
+    "height": 80000
+  },
+  "break_inside": "avoid"
+}

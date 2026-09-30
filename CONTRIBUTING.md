@@ -10,7 +10,7 @@ Thank you for helping. We care about **deterministic layout**, **honest integrit
 | --- | --- | --- |
 | **Bugs and ideas** | [GitHub Issues](https://github.com/suzheng/k2f/issues) (use the templates) | Minimal `.K2F`, repro steps, spec impact for format changes |
 | **Author docs and spec** | [`docs/`](docs/README.md) in this repo | Guides, spec (`docs/spec/`), architecture notes for contributors |
-| **Agent skill** | [k2f-skills](https://github.com/suzheng/k2f-skills) — [`skills/core/k2f/`](https://github.com/suzheng/k2f-skills/tree/main/skills/core/k2f) | Workflows, catalog (`ex_*.json`), skill schemas, scripts |
+| **Agent skill** | [k2f](https://github.com/suzheng/k2f) — [`skills/core/k2f/`](https://github.com/suzheng/k2f/tree/main/skills/core/k2f) | Workflows, catalog (`ex_*.json`), skill schemas, scripts |
 | **Engine, CLI, exporters, viewer** | This repo (`engine/`, `cli/`, `export/`, `sdk/`) | Rust/Python/JS changes with tests |
 
 Security vulnerabilities: [SECURITY.md](SECURITY.md) — not public issues.
@@ -48,8 +48,8 @@ cargo test
 | Content | Edit here | Published as |
 | --- | --- | --- |
 | Human docs (guides, authoring, spec) | [`docs/`](docs/README.md) | Copied into [`sdk/js/public/`](sdk/js/public/) via symlinks; shipped in `@openk2f/k2f` and shown on [k2f.dev/docs](https://k2f.dev/docs) |
-| Agent skill (catalog, `SKILL.md`, skill `schema/`) | [k2f-skills](https://github.com/suzheng/k2f-skills) | `npx skills add suzheng/k2f-skills --skill k2f` · [k2f.dev/skills/k2f](https://k2f.dev/skills/k2f) |
-| Install pointer only | [`skills/README.md`](skills/README.md) in this repo | Links to k2f-skills (do not duplicate skill content here) |
+| Agent skill (catalog, `SKILL.md`, skill `schema/`) | [`skills/core/k2f/`](skills/core/k2f/) in this repo | `npx skills add suzheng/k2f --skill k2f` · [k2f.dev/skills/k2f](https://k2f.dev/skills/k2f) |
+| Install pointer | [`skills/README.md`](skills/README.md) | Registry and install overview |
 | Format JSON Schema | [`schema/`](schema/) at repo root | Validators in Rust; skill schemas should stay in sync |
 
 Do **not** edit files under `sdk/js/public/` by hand — in a git checkout they symlink to `docs/`, `schema/`, `skills/README.md`, and `meta/`; `npm pack` materializes copies into the tarball.
@@ -114,7 +114,7 @@ When changing format `schema/*.json`:
 1. Update Rust validators in the same PR
 2. Update [`docs/spec/k2f-v0.3.md`](docs/spec/k2f-v0.3.md)
 3. Regenerate committed examples if needed (`bash scripts/build-published-examples.sh`)
-4. Keep [k2f-skills](https://github.com/suzheng/k2f-skills) skill `schema/` aligned when the format contract changes
+4. Keep [k2f](https://github.com/suzheng/k2f) skill `schema/` aligned when the format contract changes
 
 ## Pull request checklist
 

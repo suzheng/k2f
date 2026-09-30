@@ -37,7 +37,7 @@ jobs:
           pip install ../../target/wheels/k2f-*.whl
           k2f --help
           pytest -q
-          python3 ../../skills/k2f/scripts/pack_verify.py ../../skills/k2f/catalog -o /tmp/k2f-skill-catalog.K2F
+          python3 ../../skills/core/k2f/scripts/pack_verify.py ../../skills/core/k2f/catalog -o /tmp/k2f-skill-catalog.K2F
 
       - name: Run golden suite (5x determinism)
         run: cargo run -p k2f-test-runner -- run --dataset-runs 5

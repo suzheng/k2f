@@ -64,4 +64,4 @@ Do not use bare `cargo test` for this crate; it is not in `default-members`.
 
 1. Remove the directory `k2f/export/k2f_pptx/`
 2. Remove `"export/k2f_pptx"` from the `members` list in `k2f/Cargo.toml` (do not touch `default-members`)
-3. Revert `k2f export-pptx` wiring in `cli/k2f_cli`, this README, `CHANGELOG.md`, and `skills/k2f` (`export-pptx` / `exporting-pptx.md`)
+3. Revert `k2f export-pptx` wiring in `cli/k2f_cli`, this README, `CHANGELOG.md`, and `skills/core/k2f` (`export-pptx` / `exporting-pptx.md`)

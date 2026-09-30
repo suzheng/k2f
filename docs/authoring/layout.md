@@ -4,7 +4,7 @@
 
 Omit `layout` or use a vertical `stack` for ordinary top-to-bottom flow. Sibling paragraphs are separate text nodes; space between them is the parent `layout.gap` (see [Text](text.md)).
 
-Copy [`ex_stack.json`](../../skills/k2f/catalog/content/ex_stack.json) and [`ex_grid.json`](../../skills/k2f/catalog/content/ex_grid.json) into `content/root.json` `children`. Keep `id: "root"` — do not replace `root.json` with a catalog fragment.
+Copy [`ex_stack.json`](../../skills/core/k2f/catalog/content/ex_stack.json) and [`ex_grid.json`](../../skills/core/k2f/catalog/content/ex_grid.json) into `content/root.json` `children`. Keep `id: "root"` — do not replace `root.json` with a catalog fragment.
 
 ## Root rule
 
@@ -22,7 +22,7 @@ Copy [`ex_stack.json`](../../skills/k2f/catalog/content/ex_stack.json) and [`ex_
 | `justify_content` | Main-axis: `start`, `center`, `end` — not CSS `space-between` |
 | `width` / `height` | Optional fixed outer size, millipt |
 
-Title on the left and logo, meta, or amount on the right is a **two-column grid**, not a flex row: [`ex_split_bar.json`](../../skills/k2f/catalog/content/ex_split_bar.json). A block pinned to the trailing edge with left-aligned lines uses [`ex_end_block.json`](../../skills/k2f/catalog/content/ex_end_block.json).
+Title on the left and logo, meta, or amount on the right is a **two-column grid**, not a flex row: [`ex_split_bar.json`](../../skills/core/k2f/catalog/content/ex_split_bar.json). A block pinned to the trailing edge with left-aligned lines uses [`ex_end_block.json`](../../skills/core/k2f/catalog/content/ex_end_block.json).
 
 ## Grid
 
@@ -44,7 +44,7 @@ Tracks are always objects — never bare integers:
 | `fr` **rows** | The grid needs a finite outer **height** (`layout.height` or a fixed-height parent) |
 | `fr` **columns** | The grid needs a finite outer **width** (or a bounded parent) |
 
-Optional: `gap`, `row_gap`, `column_gap`, `cell_align` (default stretch), `width`, `height`. Working example: [`ex_grid.json`](../../skills/k2f/catalog/content/ex_grid.json).
+Optional: `gap`, `row_gap`, `column_gap`, `cell_align` (default stretch), `width`, `height`. Working example: [`ex_grid.json`](../../skills/core/k2f/catalog/content/ex_grid.json).
 
 ## Page size and spacing
 
@@ -54,15 +54,15 @@ All layout numbers are **millipt** (1 pt = 1000). Page width, height, and margin
 
 | Need | File |
 | --- | --- |
-| Magazine image + copy | [`ex_media_row.json`](../../skills/k2f/catalog/content/ex_media_row.json) |
-| Page-height shell (slide, poster, filled page) | [`ex_poster_shell.json`](../../skills/k2f/catalog/content/ex_poster_shell.json), [`ex_filled_page.json`](../../skills/k2f/catalog/content/ex_filled_page.json) |
-| Background under content | [`ex_overlay.json`](../../skills/k2f/catalog/content/ex_overlay.json) |
-| Flowing multi-column article | [`ex_columns.json`](../../skills/k2f/catalog/content/ex_columns.json) |
+| Magazine image + copy | [`ex_media_row.json`](../../skills/core/k2f/catalog/content/ex_media_row.json) |
+| Page-height shell (slide, poster, filled page) | [`ex_poster_shell.json`](../../skills/core/k2f/catalog/content/ex_poster_shell.json), [`ex_filled_page.json`](../../skills/core/k2f/catalog/content/ex_filled_page.json) |
+| Background under content | [`ex_overlay.json`](../../skills/core/k2f/catalog/content/ex_overlay.json) |
+| Flowing multi-column article | [`ex_columns.json`](../../skills/core/k2f/catalog/content/ex_columns.json) |
 | All constructs | [Catalog](../reference/catalog.md) |
 
 ## Allowed keys
 
-[Allowed keys](../reference/keys.md) and [`nodes.schema.json`](../../skills/k2f/schema/nodes.schema.json) → `layout`.
+[Allowed keys](../reference/keys.md) and [`nodes.schema.json`](../../skills/core/k2f/schema/nodes.schema.json) → `layout`.
 
 ## Common mistakes
 

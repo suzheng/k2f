@@ -19,13 +19,10 @@ INVOICE = ROOT / "examples/published/invoice.K2F"
 
 
 def _skill_tree() -> Path:
-    in_repo = ROOT / "skills/k2f"
+    in_repo = ROOT / "skills" / "core" / "k2f"
     if (in_repo / "scripts" / "init_package.py").is_file():
         return in_repo
-    external = ROOT.parent / "k2f-skills" / "skills" / "core" / "k2f"
-    if (external / "scripts" / "init_package.py").is_file():
-        return external
-    pytest.skip("k2f skill tree missing (clone k2f-skills beside k2f)")
+    pytest.skip("k2f skill tree missing in repo (skills/core/k2f)")
 
 
 SKILL = _skill_tree()

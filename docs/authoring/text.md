@@ -13,9 +13,9 @@ Copy catalog fragments into `content/root.json` `children`. Do not replace `root
 | A line break inside one paragraph | `\n` in `content.value` |
 | A heading | A separate node with role `h1`–`h4` |
 
-Copy [`ex_heading.json`](../../skills/k2f/catalog/content/ex_heading.json). It sets `keep_with_next` on the title so the heading does not sit alone at the bottom of a page.
+Copy [`ex_heading.json`](../../skills/core/k2f/catalog/content/ex_heading.json). It sets `keep_with_next` on the title so the heading does not sit alone at the bottom of a page.
 
-A quotation is the same shape with `role: "quote"`. A code listing is `role: "code"` with `content.type: "text"` — copy [`ex_code.json`](../../skills/k2f/catalog/content/ex_code.json). Do not author `content.type: "code_block"`.
+A quotation is the same shape with `role: "quote"`. A code listing is `role: "code"` with `content.type: "text"` — copy [`ex_code.json`](../../skills/core/k2f/catalog/content/ex_code.json). Do not author `content.type: "code_block"`.
 
 There is no HTML `<br>` node and no per-node margin. `preserve_whitespace` is for code-like text, not ordinary body copy.
 
@@ -27,18 +27,18 @@ Each modifier needs `type`, `intent`, and a UTF-8 **byte** `range` (`[start, end
 
 `intent` is a key under `theme.modifiers.styles[type]` for most types (`strong`, `default`, `keyword`). For `link`, `intent` is the URL (look comes from `link.default`). For `math`, `intent` is the TeX; put U+FFFC in the string and mark that character.
 
-Always compute `range` with [`scripts/modifier_range.py`](../../skills/k2f/scripts/modifier_range.py) — do not hand-count:
+Always compute `range` with [`scripts/modifier_range.py`](../../skills/core/k2f/scripts/modifier_range.py) — do not hand-count:
 
 ```bash
 python scripts/modifier_range.py --text "Do not sign." --find "Do not"
 # [0, 6]
 ```
 
-Copy [`ex_modifiers.json`](../../skills/k2f/catalog/content/ex_modifiers.json). Starter already defines the style keys that example uses. `$…$` is Markdown import only — see [Markdown conversion](../guide/markdown.md).
+Copy [`ex_modifiers.json`](../../skills/core/k2f/catalog/content/ex_modifiers.json). Starter already defines the style keys that example uses. `$…$` is Markdown import only — see [Markdown conversion](../guide/markdown.md).
 
 ## Lists
 
-A list is sibling nodes with `role: "list_item"`, a shared `list_id`, optional `depth` (nesting; default 0), and `marker_type` (`bullet` or `number`). Copy [`ex_list.json`](../../skills/k2f/catalog/content/ex_list.json). Marker look lives on the `list_item` role in the [theme](theme.md).
+A list is sibling nodes with `role: "list_item"`, a shared `list_id`, optional `depth` (nesting; default 0), and `marker_type` (`bullet` or `number`). Copy [`ex_list.json`](../../skills/core/k2f/catalog/content/ex_list.json). Marker look lives on the `list_item` role in the [theme](theme.md).
 
 Do not fake bullets with `•` in a body string.
 
@@ -46,13 +46,13 @@ Do not fake bullets with `•` in a body string.
 
 | Need | File |
 |------|------|
-| Display equation | [`ex_math.json`](../../skills/k2f/catalog/content/ex_math.json) (`content.type: "math"`; add Noto Sans Math and `font_aliases`) |
-| Numbered equation | [`ex_math_numbered.json`](../../skills/k2f/catalog/content/ex_math_numbered.json) (not `\\tag`) |
-| Fillable blank or checkbox | [`ex_form.json`](../../skills/k2f/catalog/content/ex_form.json) (`form_field` — never `____` or `□`) |
+| Display equation | [`ex_math.json`](../../skills/core/k2f/catalog/content/ex_math.json) (`content.type: "math"`; add Noto Sans Math and `font_aliases`) |
+| Numbered equation | [`ex_math_numbered.json`](../../skills/core/k2f/catalog/content/ex_math_numbered.json) (not `\\tag`) |
+| Fillable blank or checkbox | [`ex_form.json`](../../skills/core/k2f/catalog/content/ex_form.json) (`form_field` — never `____` or `□`) |
 
 ## Allowed keys
 
-[Allowed keys](../reference/keys.md) and [`nodes.schema.json`](../../skills/k2f/schema/nodes.schema.json).
+[Allowed keys](../reference/keys.md) and [`nodes.schema.json`](../../skills/core/k2f/schema/nodes.schema.json).
 
 ## Common mistakes
 

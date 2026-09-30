@@ -49,7 +49,7 @@ Listen for `k2f-open` on the host (`bubbles`, `composed`): `detail.banner`, `det
 
 ## WASM setup
 
-1. Copy WASM into a public URL. From [`skills/k2f/`](../../skills/k2f/):
+1. Copy WASM into a public URL. From [`skills/core/k2f/`](../../skills/core/k2f/):
 
 ```bash
 node scripts/copy-wasm.mjs --dest ./public
@@ -131,7 +131,7 @@ Use `banner: "full"` for legacy verbose strips. Use `no-banner` / `banner: "off"
 
 ## Paint and zoom contract
 
-1. **No `fillText` or CSS flow** for document body text — the lock is the only layout source ([Contributing](/contributing)).
+1. **No `fillText` or CSS flow** for document body text — the lock is the only layout source ([Contributing](https://k2f.dev/contributing)).
 2. UI zoom is continuous CSS size (`page_pt × zoom`). Official paint is **2×** (`Viewer.official_scale()`). The screen may re-paint visible pages at a quantized display scale after a short debounce — that is not a second layout engine.
 3. Page size comes from lock `page_config`, not the viewport.
 
@@ -161,9 +161,9 @@ Use `banner: "full"` for legacy verbose strips. Use `no-banner` / `banner: "off"
 
 - [Getting started](getting-started.md) — produce a `.K2F` to embed
 - [Markdown conversion](markdown.md) — quick content from Markdown
-- [Integrity banners](/integrity) — UI tiers and verify codes
-- [Publishing](../../skills/k2f/references/publishing.md) — permanent `/v/{appearance_hash}` viewer URLs
+- [Integrity banners](https://k2f.dev/integrity) — UI tiers and verify codes
+- [Publishing](../../skills/core/k2f/references/publishing.md) — permanent `/v/{appearance_hash}` viewer URLs
 - [Export](exporting.md) — PDF, PowerPoint, Word, InDesign from the lock
 - [Export PDF](exporting-pdf.md) — fillable AcroForm and flatten
 - [Desktop reader](../../desktop/k2f_reader/README.md) — native lock executor (same paint rules)
-- [K2F Skill](../../skills/k2f/SKILL.md) — agent workflows (`editable` / popover: [writing/sdk.md](../../skills/k2f/references/writing/sdk.md))
+- [K2F Skill](../../skills/core/k2f/SKILL.md) — agent workflows (`editable` / popover: [writing/sdk.md](../../skills/core/k2f/references/writing/sdk.md))

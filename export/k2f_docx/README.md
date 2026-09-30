@@ -71,4 +71,4 @@ Independent crate. Do not `use k2f_pptx`. Do not extract a shared `k2f_office` c
 
 1. Remove the directory `k2f/export/k2f_docx/`
 2. Remove `"export/k2f_docx"` from the `members` list in `k2f/Cargo.toml` (do not touch `default-members`)
-3. Revert `k2f export-docx` wiring in `cli/k2f_cli`, this README, `CHANGELOG.md`, and `skills/k2f` (`export-docx` / `exporting-docx.md`)
+3. Revert `k2f export-docx` wiring in `cli/k2f_cli`, this README, `CHANGELOG.md`, and `skills/core/k2f` (`export-docx` / `exporting-docx.md`)

@@ -1,0 +1,92 @@
+{
+  "id": "ex.card_bands",
+  "role": "section",
+  "break_inside": "avoid",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.card_bands.left",
+          "role": "card",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.card_bands.left.head",
+                  "role": "h2",
+                  "content": { "type": "text", "value": "01 Title ({auto:true})." }
+                },
+                {
+                  "id": "ex.card_bands.left.mid",
+                  "role": "body",
+                  "content": {
+                    "type": "text",
+                    "value": "{fr:1} absorbs leftover height — not a top-packed stack."
+                  }
+                },
+                {
+                  "id": "ex.card_bands.left.foot",
+                  "role": "body",
+                  "content": { "type": "text", "value": "Spec / footnote ({auto:true})." }
+                }
+              ]
+            }
+          },
+          "layout": {
+            "type": "grid",
+            "columns": [{ "fr": 1 }],
+            "rows": [{ "auto": true }, { "fr": 1 }, { "auto": true }],
+            "gap": 8000,
+            "cell_align": { "x": "stretch", "y": "stretch" }
+          }
+        },
+        {
+          "id": "ex.card_bands.right",
+          "role": "card",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.card_bands.right.head",
+                  "role": "h2",
+                  "content": { "type": "text", "value": "02 Sibling card." }
+                },
+                {
+                  "id": "ex.card_bands.right.mid",
+                  "role": "body",
+                  "content": {
+                    "type": "text",
+                    "value": "Same equal-height row. Sparse KPI may use stack justify_content center instead."
+                  }
+                },
+                {
+                  "id": "ex.card_bands.right.foot",
+                  "role": "body",
+                  "content": { "type": "text", "value": "Footer band." }
+                }
+              ]
+            }
+          },
+          "layout": {
+            "type": "grid",
+            "columns": [{ "fr": 1 }],
+            "rows": [{ "auto": true }, { "fr": 1 }, { "auto": true }],
+            "gap": 8000,
+            "cell_align": { "x": "stretch", "y": "stretch" }
+          }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "grid",
+    "columns": [{ "fr": 1 }, { "fr": 1 }],
+    "rows": [{ "pt": 180000 }],
+    "gap": 8000,
+    "height": 180000,
+    "cell_align": { "x": "stretch", "y": "stretch" }
+  }
+}

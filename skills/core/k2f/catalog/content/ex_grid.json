@@ -1,0 +1,31 @@
+{
+  "id": "ex.grid",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.grid.cell0",
+          "role": "body",
+          "content": { "type": "text", "value": "Top cell (fr row)." }
+        },
+        {
+          "id": "ex.grid.cell1",
+          "role": "body",
+          "content": { "type": "text", "value": "Bottom cell (fixed pt row)." }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "grid",
+    "columns": [{ "fr": 1 }, { "fr": 1 }],
+    "rows": [{ "fr": 1 }, { "pt": 48000 }],
+    "gap": 8000,
+    "row_gap": 12000,
+    "column_gap": 16000,
+    "height": 120000,
+    "cell_align": { "x": "stretch", "y": "start" }
+  }
+}

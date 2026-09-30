@@ -1,0 +1,44 @@
+{
+  "id": "ex.end_block",
+  "role": "section",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": [
+        {
+          "id": "ex.end_block.meta",
+          "role": "section",
+          "content": {
+            "type": "container",
+            "value": {
+              "children": [
+                {
+                  "id": "ex.end_block.meta.line1",
+                  "role": "body",
+                  "content": { "type": "text", "value": "Sender name" }
+                },
+                {
+                  "id": "ex.end_block.meta.line2",
+                  "role": "body",
+                  "content": { "type": "text", "value": "Street address" }
+                },
+                {
+                  "id": "ex.end_block.meta.line3",
+                  "role": "body",
+                  "content": { "type": "text", "value": "City, postcode" }
+                }
+              ]
+            }
+          },
+          "layout": { "type": "stack", "direction": "vertical", "gap": 2000 }
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "stack",
+    "direction": "horizontal",
+    "gap": 0,
+    "justify_content": "end"
+  }
+}

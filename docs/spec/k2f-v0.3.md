@@ -4,7 +4,7 @@
 
 K2F (Key-to-Flow) is a ZIP document format. Authors write **meaning** as JSON. One reference engine compiles that meaning into geometry. Every viewer and every export paints the compiled lock, so output matches.
 
-This page is the readable contract: container layout, processing, integrity, and rules JSON Schema cannot express. Exact fields live in the format JSON Schemas (`schema/*.json` in the repo). How to write a package: [Authoring](../authoring/text.md) and [Allowed keys](../../skills/k2f/references/writing/fields.md). Engine matching: [COMPATIBILITY.md](../../COMPATIBILITY.md).
+This page is the readable contract: container layout, processing, integrity, and rules JSON Schema cannot express. Exact fields live in the format JSON Schemas (`schema/*.json` in the repo). How to write a package: [Authoring](../authoring/text.md) and [Allowed keys](../../skills/core/k2f/references/writing/fields.md). Engine matching: [COMPATIBILITY.md](../../COMPATIBILITY.md).
 
 This spec line is released with **K2F SDK 0.3.x** (Rust engine, Python `k2f`, npm `@openk2f/k2f`). SDK patch releases keep this document unless embedded schemas or the lock format change. Each compiled lock still records **`engine_version`** (full compiler semver) for `appearance_hash` — that is provenance, not a second public spec number.
 
@@ -78,7 +78,7 @@ The tree lives in `content/root.json`. At pack time, `{ "include": "content/....
 
 State A must not contain layout coordinates, arbitrary vector paths, inline CSS, or executable content. Style fields (`color`, `font_size`, `font_family`, `padding`, `text_align`, `box_decoration`, …) belong on the theme role, never on the node.
 
-Contract: [`nodes.schema.json`](../../schema/nodes.schema.json). Human index: [Allowed keys](../../skills/k2f/references/writing/fields.md).
+Contract: [`nodes.schema.json`](../../schema/nodes.schema.json). Human index: [Allowed keys](../../skills/core/k2f/references/writing/fields.md).
 
 ### Nodes
 
@@ -271,7 +271,7 @@ Repo copies: [`schema/nodes.schema.json`](../../schema/nodes.schema.json) and th
 | [Introduction](../README.md) | Package model and doc map |
 | [Getting started](../guide/getting-started.md) | First `.K2F` |
 | [Text](../authoring/text.md) · [Images](../authoring/images.md) · [Tables](../authoring/tables.md) · [Layout](../authoring/layout.md) · [Theme](../authoring/theme.md) | How to author |
-| [Allowed keys](../../skills/k2f/references/writing/fields.md) | Field cheat sheet |
-| [Catalog](../../skills/k2f/catalog/README.md) | Packable examples |
+| [Allowed keys](../../skills/core/k2f/references/writing/fields.md) | Field cheat sheet |
+| [Catalog](../../skills/core/k2f/catalog/README.md) | Packable examples |
 | [COMPATIBILITY.md](../../COMPATIBILITY.md) | Engine matching |
 | [Integrity](https://k2f.dev/integrity) · [Verify](https://k2f.dev/verify) | Banner UI and in-browser check |

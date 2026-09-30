@@ -1,0 +1,12 @@
+{
+  "id": "ex.rule",
+  "role": "rule",
+  "content": {
+    "type": "container",
+    "value": { "children": [] }
+  },
+  "layout": {
+    "type": "stack",
+    "height": 1500
+  }
+}

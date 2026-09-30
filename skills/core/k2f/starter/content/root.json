@@ -1,0 +1,10 @@
+{
+  "id": "root",
+  "role": "document",
+  "content": {
+    "type": "container",
+    "value": {
+      "children": []
+    }
+  }
+}

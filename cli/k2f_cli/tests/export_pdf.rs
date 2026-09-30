@@ -11,11 +11,7 @@ fn repo_root() -> PathBuf {
 }
 
 fn check_pdf_script() -> PathBuf {
-    let in_repo = repo_root().join("skills/k2f/scripts/check-pdf.py");
-    if in_repo.is_file() {
-        return in_repo;
-    }
-    repo_root().join("../k2f-skills/skills/core/k2f/scripts/check-pdf.py")
+    repo_root().join("skills/core/k2f/scripts/check-pdf.py")
 }
 
 #[test]

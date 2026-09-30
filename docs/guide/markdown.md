@@ -12,7 +12,7 @@ For full control (footnotes, fillable fields, custom layout), author JSON after 
 | --- | --- |
 | You already have Markdown notes or READMEs | You need footnotes, MDX, or task lists as real content |
 | A quick first `.K2F` before patching nodes | PDF or HTML is the source (not Markdown) |
-| Export semantics to Markdown for diff or copy | Fillable blanks — use [`ex_form.json`](../../skills/k2f/catalog/content/ex_form.json) in the tree, not `____` in MD |
+| Export semantics to Markdown for diff or copy | Fillable blanks — use [`ex_form.json`](../../skills/core/k2f/catalog/content/ex_form.json) in the tree, not `____` in MD |
 
 The bridge accepts normal paragraphs, headings, lists, GFM tables, fenced code, blockquotes, thematic breaks, strikethrough, links, and `$…$` / `$$…$$` math. It **skips** footnotes, YAML front matter, raw HTML, task-list checkboxes, remote images, and several edge cases (listed below).
 
@@ -133,7 +133,7 @@ Do not tell users the conversion was lossless when any of the above applied. Ext
 2. Open a rendered preview if layout matters ([Getting started](getting-started.md#write-json-yourself) — `pack_verify.py --render` or `k2f render`).
 3. On `FONT_MISSING_GLYPH`, re-run CLI `k2f markdown` with `--font` or add fonts to the author shell — do not rewrite the document language to English.
 4. Patch roles, theme, and layout in `content/` and `styles/theme.json` as needed ([Authoring](../authoring/text.md)).
-5. Export from the lock: [PDF](exporting-pdf.md) (fillable AcroForm), [PowerPoint](exporting-pptx.md), [Word](exporting-docx.md), [InDesign](exporting-idml.md). Markdown does not create fillable fields — add `form_field` nodes from [`ex_form.json`](../../skills/k2f/catalog/content/ex_form.json) before packing.
+5. Export from the lock: [PDF](exporting-pdf.md) (fillable AcroForm), [PowerPoint](exporting-pptx.md), [Word](exporting-docx.md), [InDesign](exporting-idml.md). Markdown does not create fillable fields — add `form_field` nodes from [`ex_form.json`](../../skills/core/k2f/catalog/content/ex_form.json) before packing.
 
 ## Common mistakes
 
@@ -153,4 +153,4 @@ Do not tell users the conversion was lossless when any of the above applied. Ext
 - [Theme and fonts](../authoring/theme.md) — roles and embedded fonts
 - [Allowed keys](../reference/keys.md) — node and theme fields
 - [Export](exporting.md) — PDF, PowerPoint, Word, InDesign from the lock
-- [K2F Skill](../../skills/k2f/SKILL.md) — agent workflows (`writing.md` for JSON-only authoring)
+- [K2F Skill](../../skills/core/k2f/SKILL.md) — agent workflows (`writing.md` for JSON-only authoring)

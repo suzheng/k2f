@@ -1,12 +1,12 @@
 # Allowed keys
 
-Quick lookup for **what may appear** in `content/*.json`, `styles/theme.json`, and `manifest.json`. This page summarizes the author contract; the matching JSON Schema under [`schema/`](../../skills/k2f/schema/) is normative when they differ.
+Quick lookup for **what may appear** in `content/*.json`, `styles/theme.json`, and `manifest.json`. This page summarizes the author contract; the matching JSON Schema under [`schema/`](../../skills/core/k2f/schema/) is normative when they differ.
 
 **Workflow:** skim the section you are editing → open the schema file (`nodes`, `styles` + `visual_primitives`, or `manifest`) → copy shapes from the [Catalog](catalog.md) instead of inventing layout or CSS-like fields.
 
 Topic walkthroughs: [Text](../authoring/text.md) · [Images](../authoring/images.md) · [Tables](../authoring/tables.md) · [Layout](../authoring/layout.md) · [Theme and fonts](../authoring/theme.md).
 
-Agents also use the compact mirror in [`fields.md`](../../skills/k2f/references/writing/fields.md) inside the skill folder.
+Agents also use the compact mirror in [`fields.md`](../../skills/core/k2f/references/writing/fields.md) inside the skill folder.
 
 ## Node (`content/*.json`)
 
@@ -30,16 +30,16 @@ Do not put theme or paint on a node: `color`, `font_size`, `font_family`, `paddi
 | --- | --- |
 | `text` | Default body copy, headings, code as text (`role: "code"`) |
 | `math` | Display or inline LaTeX in `value` |
-| `image` | `value.src` (not `path`), `width`, `height` in millipt — [Images](../authoring/images.md), [`ex_image.json`](../../skills/k2f/catalog/content/ex_image.json) |
+| `image` | `value.src` (not `path`), `width`, `height` in millipt — [Images](../authoring/images.md), [`ex_image.json`](../../skills/core/k2f/catalog/content/ex_image.json) |
 | `container` | `children` + optional `layout` — [Layout](../authoring/layout.md) |
 | `table` | Inline table — [Tables](../authoring/tables.md) |
 | `form_field` | Fillable blank or checkbox — see below |
 
-This authoring path does not use `code_block` or `table_reference` (schema-legal elsewhere). See [package.md](../../skills/k2f/references/writing/package.md).
+This authoring path does not use `code_block` or `table_reference` (schema-legal elsewhere). See [package.md](../../skills/core/k2f/references/writing/package.md).
 
 **Root rule:** `content/root.json` must omit `layout` or use a **vertical** `stack` only. Put `grid`, `overlay`, `columns`, or a horizontal stack on a **nested** child.
 
-**Layout `type`:** `stack` \| `grid` \| `overlay` \| `columns` (omit `type` → stack). Grid `rows` is optional; omit → auto rows. `fr` / `pt` row tracks must be written explicitly. Contract: [`nodes.schema.json`](../../skills/k2f/schema/nodes.schema.json).
+**Layout `type`:** `stack` \| `grid` \| `overlay` \| `columns` (omit `type` → stack). Grid `rows` is optional; omit → auto rows. `fr` / `pt` row tracks must be written explicitly. Contract: [`nodes.schema.json`](../../skills/core/k2f/schema/nodes.schema.json).
 
 ### Form field (`content.type: "form_field"`)
 
@@ -55,7 +55,7 @@ Reserved box: empty `value` still occupies space; filling must not reflow follow
 | Placeholder | Metadata only — not painted |
 | Do not fake blanks | No `____`, `□`/`☐`, or spacer images in body text |
 
-Copy [`ex_form.json`](../../skills/k2f/catalog/content/ex_form.json). Minimal shape:
+Copy [`ex_form.json`](../../skills/core/k2f/catalog/content/ex_form.json). Minimal shape:
 
 ```json
 {
@@ -72,7 +72,7 @@ Copy [`ex_form.json`](../../skills/k2f/catalog/content/ex_form.json). Minimal sh
 
 ### Modifiers (text nodes)
 
-Required: `range`, `type`, **`intent`**. `range` is UTF-8 **bytes** (`\n` = 1 byte; CJK and emoji are multi-byte). Always run `python scripts/modifier_range.py --text "<exact value>" --find "…"` from the skill directory. `intent` must exist under `theme.modifiers.styles[type]`. Example nodes: [`ex_modifiers.json`](../../skills/k2f/catalog/content/ex_modifiers.json).
+Required: `range`, `type`, **`intent`**. `range` is UTF-8 **bytes** (`\n` = 1 byte; CJK and emoji are multi-byte). Always run `python scripts/modifier_range.py --text "<exact value>" --find "…"` from the skill directory. `intent` must exist under `theme.modifiers.styles[type]`. Example nodes: [`ex_modifiers.json`](../../skills/core/k2f/catalog/content/ex_modifiers.json).
 
 ## Catalog recipes
 
@@ -82,21 +82,21 @@ Copy catalog JSON into your package’s `children`. Do not invent CSS-like keys.
 
 | Goal | Example | Notes |
 | --- | --- | --- |
-| Horizontal divider | [`ex_rule.json`](../../skills/k2f/catalog/content/ex_rule.json) | `role: "rule"` in a **vertical** stack at default `align_items` stretch — not inside a hugging `align_items: start` title stack; sibling the rule or nest the title group separately |
-| Title + logo / space-between row | [`ex_split_bar.json`](../../skills/k2f/catalog/content/ex_split_bar.json) | 2-col `{fr:1}` + `{auto:true}`; right cell may be an image — not overlay |
-| Magazine image + copy | [`ex_media_row.json`](../../skills/k2f/catalog/content/ex_media_row.json) | `{pt:N}` + `{fr:1}` |
-| Trailing-edge block (sender / right-flush) | [`ex_end_block.json`](../../skills/k2f/catalog/content/ex_end_block.json) | |
-| Cover (logo + nested title groups + year) | [`ex_cover.json`](../../skills/k2f/catalog/content/ex_cover.json) | |
-| Filled page (invoice, CV, poster, slide, one-pager) | [`ex_filled_page.json`](../../skills/k2f/catalog/content/ex_filled_page.json), [`ex_poster_shell.json`](../../skills/k2f/catalog/content/ex_poster_shell.json) | Role `page_shell`; set `height` to the content box |
-| Bleed header + inset body | [`ex_banner_header.json`](../../skills/k2f/catalog/content/ex_banner_header.json) | `--margin 0`; `page_shell` `flush` + nested `page_shell` — no negative margin |
-| Grower for leftover space | [`ex_poster_growers.json`](../../skills/k2f/catalog/content/ex_poster_growers.json) | `{fr:1}` on figure/dense cards, not a short quote |
-| Background image under content | [`ex_overlay.json`](../../skills/k2f/catalog/content/ex_overlay.json) | Image child first — not `page_config` |
-| Glass card | [`ex_glass.json`](../../skills/k2f/catalog/content/ex_glass.json) | `variant: "glass"` (catalog theme) |
-| Dark band on a light document | [`ex_on_dark.json`](../../skills/k2f/catalog/content/ex_on_dark.json) | `variant: "on_dark"` on existing roles |
-| Fillable blanks | [`ex_form.json`](../../skills/k2f/catalog/content/ex_form.json) | `form_field` — never underscores in body text |
-| Badge / pill | [`ex_badge.json`](../../skills/k2f/catalog/content/ex_badge.json) | Stack wrapper (grid ignores `self_align` on a direct child) |
-| Running header / footer split | [`catalog/manifest.json`](../../skills/k2f/catalog/manifest.json) | Placeholders `{{page_current}}` / `{{page_total}}` only |
-| Numbered display math | [`ex_math_numbered.json`](../../skills/k2f/catalog/content/ex_math_numbered.json) | Not `\tag` |
+| Horizontal divider | [`ex_rule.json`](../../skills/core/k2f/catalog/content/ex_rule.json) | `role: "rule"` in a **vertical** stack at default `align_items` stretch — not inside a hugging `align_items: start` title stack; sibling the rule or nest the title group separately |
+| Title + logo / space-between row | [`ex_split_bar.json`](../../skills/core/k2f/catalog/content/ex_split_bar.json) | 2-col `{fr:1}` + `{auto:true}`; right cell may be an image — not overlay |
+| Magazine image + copy | [`ex_media_row.json`](../../skills/core/k2f/catalog/content/ex_media_row.json) | `{pt:N}` + `{fr:1}` |
+| Trailing-edge block (sender / right-flush) | [`ex_end_block.json`](../../skills/core/k2f/catalog/content/ex_end_block.json) | |
+| Cover (logo + nested title groups + year) | [`ex_cover.json`](../../skills/core/k2f/catalog/content/ex_cover.json) | |
+| Filled page (invoice, CV, poster, slide, one-pager) | [`ex_filled_page.json`](../../skills/core/k2f/catalog/content/ex_filled_page.json), [`ex_poster_shell.json`](../../skills/core/k2f/catalog/content/ex_poster_shell.json) | Role `page_shell`; set `height` to the content box |
+| Bleed header + inset body | [`ex_banner_header.json`](../../skills/core/k2f/catalog/content/ex_banner_header.json) | `--margin 0`; `page_shell` `flush` + nested `page_shell` — no negative margin |
+| Grower for leftover space | [`ex_poster_growers.json`](../../skills/core/k2f/catalog/content/ex_poster_growers.json) | `{fr:1}` on figure/dense cards, not a short quote |
+| Background image under content | [`ex_overlay.json`](../../skills/core/k2f/catalog/content/ex_overlay.json) | Image child first — not `page_config` |
+| Glass card | [`ex_glass.json`](../../skills/core/k2f/catalog/content/ex_glass.json) | `variant: "glass"` (catalog theme) |
+| Dark band on a light document | [`ex_on_dark.json`](../../skills/core/k2f/catalog/content/ex_on_dark.json) | `variant: "on_dark"` on existing roles |
+| Fillable blanks | [`ex_form.json`](../../skills/core/k2f/catalog/content/ex_form.json) | `form_field` — never underscores in body text |
+| Badge / pill | [`ex_badge.json`](../../skills/core/k2f/catalog/content/ex_badge.json) | Stack wrapper (grid ignores `self_align` on a direct child) |
+| Running header / footer split | [`catalog/manifest.json`](../../skills/core/k2f/catalog/manifest.json) | Placeholders `{{page_current}}` / `{{page_total}}` only |
+| Numbered display math | [`ex_math_numbered.json`](../../skills/core/k2f/catalog/content/ex_math_numbered.json) | Not `\tag` |
 
 ### Tables
 
@@ -104,10 +104,10 @@ Copy catalog JSON into your package’s `children`. Do not invent CSS-like keys.
 | --- | --- |
 | Cell vertical center | `variant: "center"` on the cell |
 | Numeric right-align | `variant: "end"` (`text_overrides` in theme, not node `text_align`) |
-| Dense metrics grid | [`ex_table_dense.json`](../../skills/k2f/catalog/content/ex_table_dense.json) — `compact` + weighted `fr` |
+| Dense metrics grid | [`ex_table_dense.json`](../../skills/core/k2f/catalog/content/ex_table_dense.json) — `compact` + weighted `fr` |
 | Three-line (ruled) table | Table `variant: "ruled"` + header row `bottom` |
-| No colspan — edge rules | Extra columns + cell `variant: "hbar"` / `"bottom"` — [`ex_table_edges.json`](../../skills/k2f/catalog/content/ex_table_edges.json) |
-| Composite cell (title + list / icon row) | [`ex_table_composite.json`](../../skills/k2f/catalog/content/ex_table_composite.json) |
+| No colspan — edge rules | Extra columns + cell `variant: "hbar"` / `"bottom"` — [`ex_table_edges.json`](../../skills/core/k2f/catalog/content/ex_table_edges.json) |
+| Composite cell (title + list / icon row) | [`ex_table_composite.json`](../../skills/core/k2f/catalog/content/ex_table_composite.json) |
 | Row/column spacing | `row_gap` / `column_gap` optional (omit → parent `gap`) |
 
 ### Typography and spacing (nodes vs theme)
@@ -135,9 +135,9 @@ Copy catalog JSON into your package’s `children`. Do not invent CSS-like keys.
 
 **`image_fit`:** `contain` \| `cover` (omit → `contain`).
 
-**Theme modifiers:** nest `modifiers.styles` as `type` → `intent` → patch — not flat keys. Example: `"emphasis": { "strong": { "bold": true } }`. Starter: [`starter/styles/theme.json`](../../skills/k2f/starter/styles/theme.json).
+**Theme modifiers:** nest `modifiers.styles` as `type` → `intent` → patch — not flat keys. Example: `"emphasis": { "strong": { "bold": true } }`. Starter: [`starter/styles/theme.json`](../../skills/core/k2f/starter/styles/theme.json).
 
-Contracts: [`styles.schema.json`](../../skills/k2f/schema/styles.schema.json), [`visual_primitives.schema.json`](../../skills/k2f/schema/visual_primitives.schema.json). Walkthrough: [Theme and fonts](../authoring/theme.md).
+Contracts: [`styles.schema.json`](../../skills/core/k2f/schema/styles.schema.json), [`visual_primitives.schema.json`](../../skills/core/k2f/schema/visual_primitives.schema.json). Walkthrough: [Theme and fonts](../authoring/theme.md).
 
 ## Manifest (`manifest.json`)
 
@@ -147,10 +147,10 @@ Contracts: [`styles.schema.json`](../../skills/k2f/schema/styles.schema.json), [
 | **Optional** | `author`, `created_at`, `generated_by`, `running_blocks` (text or grid node) |
 | **No sheet background in manifest** | Page fill is the **root** role’s `box_decoration.background` (full page, including margins) |
 
-Running blocks and page sizes: [`manifest.schema.json`](../../skills/k2f/schema/manifest.schema.json), [package.md](../../skills/k2f/references/writing/package.md).
+Running blocks and page sizes: [`manifest.schema.json`](../../skills/core/k2f/schema/manifest.schema.json), [package.md](../../skills/core/k2f/references/writing/package.md).
 
 ## See also
 
 - [Catalog](catalog.md) — all `ex_*.json` files and theme labels
 - [Format spec](../spec/k2f-v0.3.md)
-- [`schema/`](../../skills/k2f/schema/) — do not copy schema files into an author directory (`UNEXPECTED_PATH`)
+- [`schema/`](../../skills/core/k2f/schema/) — do not copy schema files into an author directory (`UNEXPECTED_PATH`)

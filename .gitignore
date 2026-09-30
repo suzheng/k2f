@@ -61,9 +61,9 @@ golden.json
 !tests/fixtures/cases/running_footer_page_numbers/page_*.png
 !tests/fixtures/**/assets/**/*.png
 !examples/**/assets/**/*.png
-!skills/k2f/**/*.png
-!skills/k2f/**/*.ttf
-!skills/k2f/**/*.otf
+!skills/core/k2f/**/*.png
+!skills/core/k2f/**/*.ttf
+!skills/core/k2f/**/*.otf
 !templates/**/assets/fonts/*.ttf
 !templates/**/assets/fonts/*.otf
 !.github/assets/**
@@ -191,5 +191,5 @@ ehthumbs.db
 # Do NOT add templates/ or templates/** below. Engine, CLI, and SDK tests
 # open_dir these author trees; gitignoring breaks CI. Published SDKs must
 # not include_dir! this tree into WASM (no official_templates / openTemplate).
-# External agents use skills/k2f/starter/ — see templates/README.md and
+# External agents use skills/core/k2f/starter/ — see templates/README.md and
 # docs/architecture/design.md.

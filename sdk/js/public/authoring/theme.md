@@ -4,7 +4,7 @@ Appearance lives only in `styles/theme.json`. Each node names a `role` (and opti
 
 Inline emphasis, links, and math use `modifiers` on the text node; the theme defines allowed `intent` values under `modifiers.styles` — see [Text](text.md).
 
-Copy [`ex_on_dark.json`](../../skills/k2f/catalog/content/ex_on_dark.json) into `content/root.json` `children` to see `variant: "on_dark"` on existing roles (not cloned `*_dark_*` roles).
+Copy [`ex_on_dark.json`](../../skills/core/k2f/catalog/content/ex_on_dark.json) into `content/root.json` `children` to see `variant: "on_dark"` on existing roles (not cloned `*_dark_*` roles).
 
 ## What is in the file
 
@@ -16,7 +16,7 @@ Copy [`ex_on_dark.json`](../../skills/k2f/catalog/content/ex_on_dark.json) into 
 | `modifiers` | `precedence` plus `styles[type][intent]` patches for text modifiers |
 | `roles` | Typography and decoration keyed by role name |
 
-Start from [`starter/styles/theme.json`](../../skills/k2f/starter/styles/theme.json). For a fuller palette and table/card roles, see [`catalog/styles/theme.json`](../../skills/k2f/catalog/styles/theme.json).
+Start from [`starter/styles/theme.json`](../../skills/core/k2f/starter/styles/theme.json). For a fuller palette and table/card roles, see [`catalog/styles/theme.json`](../../skills/core/k2f/catalog/styles/theme.json).
 
 Lengths in the theme (for example `font_size`, `padding_pt`, corner radii) are **millipt** (1 pt = 1000). Page size and margins stay in `manifest.json` `page_config`.
 
@@ -36,11 +36,11 @@ Table numeric cells use `variant: "end"` on the cell node (theme `text_overrides
 
 Define colors once in `palette`. Reference palette keys (or hex) from roles and from named entries under `primitives` (`surfaces`, `borders`, `corners`, `shadows`, …).
 
-On a role, `box_decoration` values are **named primitive strings** (`background`, `border`, `corner_radius`, `shadow`, `blur`, …) except `padding_pt` (millipt number or per-edge object). Inline fill or border objects on a role fail compile (`UNKNOWN_PRIMITIVE`). Contract: [`styles.schema.json`](../../skills/k2f/schema/styles.schema.json) and [`visual_primitives.schema.json`](../../skills/k2f/schema/visual_primitives.schema.json).
+On a role, `box_decoration` values are **named primitive strings** (`background`, `border`, `corner_radius`, `shadow`, `blur`, …) except `padding_pt` (millipt number or per-edge object). Inline fill or border objects on a role fail compile (`UNKNOWN_PRIMITIVE`). Contract: [`styles.schema.json`](../../skills/core/k2f/schema/styles.schema.json) and [`visual_primitives.schema.json`](../../skills/core/k2f/schema/visual_primitives.schema.json).
 
 ## Modifier styles
 
-Nest `modifiers.styles` as `type` → `intent` → patch (not flat keys). Example: `"emphasis": { "strong": { "bold": true } }`. Node usage: [`ex_modifiers.json`](../../skills/k2f/catalog/content/ex_modifiers.json).
+Nest `modifiers.styles` as `type` → `intent` → patch (not flat keys). Example: `"emphasis": { "strong": { "bold": true } }`. Node usage: [`ex_modifiers.json`](../../skills/core/k2f/catalog/content/ex_modifiers.json).
 
 ## Fonts
 
@@ -53,7 +53,7 @@ python scripts/init_package.py --workspace ./out/doc --title "…" --page a4 \
   --add-font /path/to/NotoSerif-Regular.ttf
 ```
 
-`--add-font` keeps Roboto and adds a fallback; `--font` replaces Roboto (use a face that covers Latin). Point `font_family` on the roles you need (`h1`, `body`, …) at the new alias. Catalog assets include Noto Serif and Noto Sans Math; copy [`ex_math.json`](../../skills/k2f/catalog/content/ex_math.json) only after aliases and files match.
+`--add-font` keeps Roboto and adds a fallback; `--font` replaces Roboto (use a face that covers Latin). Point `font_family` on the roles you need (`h1`, `body`, …) at the new alias. Catalog assets include Noto Serif and Noto Sans Math; copy [`ex_math.json`](../../skills/core/k2f/catalog/content/ex_math.json) only after aliases and files match.
 
 ## Page background
 
@@ -61,11 +61,11 @@ Sheet fill is the **root node's** `box_decoration.background` (full page, includ
 
 ## Allowed keys
 
-Role and theme fields: [Allowed keys](../reference/keys.md#theme-role-stylesthemejson--roles). Exact contract: [`styles.schema.json`](../../skills/k2f/schema/styles.schema.json).
+Role and theme fields: [Allowed keys](../reference/keys.md#theme-role-stylesthemejson--roles). Exact contract: [`styles.schema.json`](../../skills/core/k2f/schema/styles.schema.json).
 
 ## Common mistakes
 
 - Styling one node in `content/` instead of editing its role in the theme
 - `font_family` not listed in `font_aliases` / missing under `assets/fonts/`
-- Cloning dark roles (`th_dark_body`) instead of `variant: "on_dark"` — use [`ex_on_dark.json`](../../skills/k2f/catalog/content/ex_on_dark.json)
+- Cloning dark roles (`th_dark_body`) instead of `variant: "on_dark"` — use [`ex_on_dark.json`](../../skills/core/k2f/catalog/content/ex_on_dark.json)
 - Inline color or border objects on a role instead of `palette` + `primitives`
