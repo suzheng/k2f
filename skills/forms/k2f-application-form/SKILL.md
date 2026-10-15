@@ -78,4 +78,4 @@ Single blueprint for form content and design intent. Use labeled blocks (header,
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to instantiate sections and form fields from the blueprint, apply design intent, verify, and export the submission-ready form (typically fillable PDF or DOCX).
+Follow **k2f** skill to instantiate sections and form fields from the blueprint, apply design intent, verify, and export the submission-ready form (typically fillable PDF or DOCX).

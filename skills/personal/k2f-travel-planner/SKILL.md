@@ -78,4 +78,4 @@ One blueprint: semantic blocks per planner section plus explicit design intent. 
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to instantiate planner sections from the blueprint, apply roles from design intent, verify, and export (typically PDF or print-ready format).
+Follow **k2f** skill to instantiate planner sections from the blueprint, apply roles from design intent, verify, and export (typically PDF or print-ready format).

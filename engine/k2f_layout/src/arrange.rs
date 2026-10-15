@@ -568,7 +568,8 @@ fn arrange_container(
                 col += 1;
                 y_in_col = Pt::ZERO;
                 if col >= n {
-                    // Overflow past last column: still place in last column (deterministic clip risk).
+                    // Overflow past last column: still place in last column.
+                    // content_overflow_diags warns when the child box extends past this node.
                     col = n - 1;
                 }
             }

@@ -305,6 +305,35 @@ def test_init_package_add_font_serif_retargets_h1() -> None:
         assert out.is_file() and out.stat().st_size > 0
 
 
+def test_init_font_replaces_license_and_wires_faces() -> None:
+    roboto = SKILL / "starter/assets/fonts/Roboto-Regular.ttf"
+    if not roboto.is_file():
+        pytest.skip("starter Roboto-Regular.ttf missing")
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        regular = tmp_path / "OpenSauceSans-Regular.ttf"
+        bold = tmp_path / "OpenSauceSans-Bold.ttf"
+        shutil.copy(roboto, regular)
+        shutil.copy(roboto, bold)
+        (tmp_path / "OFL.txt").write_text("OFL\n", encoding="utf-8")
+        dest = tmp_path / "doc"
+        proc = _run_init(dest, ["--font", str(regular), "--add-font", str(bold)])
+        assert proc.returncode == 0, proc.stderr
+        fonts = dest / "assets" / "fonts"
+        assert (fonts / "OpenSauceSans-Regular.ttf").is_file()
+        assert (fonts / "OpenSauceSans-Bold.ttf").is_file()
+        assert not (fonts / "Roboto-Regular.ttf").exists()
+        assert not (fonts / "licenses" / "Roboto-Apache.txt").exists()
+        copied = fonts / "licenses" / "OpenSauceSans-Regular-OFL.txt"
+        assert copied.is_file()
+        assert copied.read_text(encoding="utf-8") == "OFL\n"
+        theme = json.loads((dest / "styles" / "theme.json").read_text(encoding="utf-8"))
+        faces = theme["font_faces"]["OpenSauceSans"]
+        assert faces["regular"] == "OpenSauceSans-Regular"
+        assert faces["bold"] == "OpenSauceSans-Bold"
+        assert "italic" not in faces
+
+
 def _run_init(dest: Path, extra: list[str] | None = None) -> subprocess.CompletedProcess[str]:
     cmd = [
         sys.executable,

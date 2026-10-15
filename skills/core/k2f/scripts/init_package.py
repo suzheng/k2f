@@ -74,10 +74,12 @@ def replace_font(out: Path, font: Path) -> str | None:
         old.unlink()
     for old in fonts_dir.glob("*.otf"):
         old.unlink()
+    clear_font_licenses(out)
     dest = fonts_dir / font.name
     err = copy_font_file(font, dest)
     if err:
         return err
+    copy_sibling_license(font, out)
     patch_theme_primary_font(out, font.stem)
     return None
 
@@ -94,6 +96,7 @@ def add_fonts(out: Path, fonts: list[Path]) -> str | None:
             err = copy_font_file(font, dest)
             if err:
                 return err
+        copy_sibling_license(font, out)
         stems.append(font.stem)
     patch_theme_add_font_aliases(out, stems)
     return None
@@ -123,6 +126,97 @@ def patch_theme_add_font_aliases(out: Path, stems: list[str]) -> None:
         aliases[stem] = stem
     theme["font_aliases"] = aliases
     path.write_text(json.dumps(theme, indent=2) + "\n", encoding="utf-8")
+
+
+LICENSE_FILENAMES = ("OFL.txt", "LICENSE", "LICENSE.txt", "LICENSE.md")
+
+# Filename suffixes only. Medium / Light / SemiBold are left for the author.
+_FACE_SUFFIXES = (
+    ("bold_italic", ("-BoldItalic", "-Bold-Italic", "-BoldOblique", "-Bold-Oblique")),
+    ("italic", ("-Italic", "-Oblique")),
+    ("bold", ("-Bold",)),
+    ("regular", ("-Regular", "-Book", "-Roman")),
+)
+
+
+def clear_font_licenses(out: Path) -> None:
+    """Drop the previous family's license when --font replaces its files."""
+    lic = out / "assets" / "fonts" / "licenses"
+    if not lic.is_dir():
+        return
+    for path in lic.iterdir():
+        if path.is_file():
+            path.unlink()
+
+
+def copy_sibling_license(font: Path, out: Path) -> None:
+    """Copy a license that sits next to the font. Missing license is not an error."""
+    src = None
+    for name in LICENSE_FILENAMES:
+        candidate = font.parent / name
+        if candidate.is_file():
+            src = candidate
+            break
+    if src is None:
+        return
+    dest_dir = out / "assets" / "fonts" / "licenses"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy(src, dest_dir / f"{font.stem}-{src.name}")
+
+
+def classify_face(stem: str) -> tuple[str, str] | None:
+    lower = stem.lower()
+    for style, suffixes in _FACE_SUFFIXES:
+        for suffix in suffixes:
+            if lower.endswith(suffix.lower()) and len(stem) > len(suffix):
+                family = stem[: -len(suffix)]
+                if family:
+                    return family, style
+    return None
+
+
+def sync_font_faces(out: Path) -> None:
+    """Fill missing font_faces slots for a family that has Regular plus Bold/Italic.
+
+    Existing slots are left alone. A Bold file with no Regular sibling is not guessed.
+    """
+    fonts_dir = out / "assets" / "fonts"
+    groups: dict[str, dict[str, str]] = {}
+    if fonts_dir.is_dir():
+        for path in sorted(fonts_dir.iterdir()):
+            if path.suffix.lower() not in {".ttf", ".otf"}:
+                continue
+            classified = classify_face(path.stem)
+            if classified is None:
+                continue
+            family, style = classified
+            groups.setdefault(family, {}).setdefault(style, path.stem)
+
+    path = out / "styles" / "theme.json"
+    theme = json.loads(path.read_text(encoding="utf-8"))
+    faces = theme.get("font_faces")
+    if not isinstance(faces, dict):
+        faces = {}
+    changed = False
+    for family in sorted(groups):
+        slots = groups[family]
+        if "regular" not in slots:
+            continue
+        if not any(slots.get(name) for name in ("bold", "italic", "bold_italic")):
+            continue
+        entry = faces.get(family)
+        if not isinstance(entry, dict):
+            entry = {}
+            faces[family] = entry
+            changed = True
+        for slot_name in ("regular", "bold", "italic", "bold_italic"):
+            stem = slots.get(slot_name)
+            if stem and not entry.get(slot_name):
+                entry[slot_name] = stem
+                changed = True
+    if changed:
+        theme["font_faces"] = faces
+        path.write_text(json.dumps(theme, indent=2) + "\n", encoding="utf-8")
 
 
 def require_font_file(font: Path) -> str | None:
@@ -376,6 +470,8 @@ def main() -> int:
         err = add_fonts(out, extra_fonts)
         if err:
             return fail(f"error: --add-font: {err}")
+
+    sync_font_faces(out)
 
     page = PAGES[args.page]
     width = args.width if args.width is not None else page["width"]

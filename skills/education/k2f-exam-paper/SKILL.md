@@ -72,4 +72,4 @@ One blueprint pairing **assessment content** with **aesthetic intent**. Register
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to instantiate the exam from the blueprint, apply student vs instructor roles from the design doc, verify, and export print-ready PDF or other deliverables.
+Follow **k2f** skill to instantiate the exam from the blueprint, apply student vs instructor roles from the design doc, verify, and export print-ready PDF or other deliverables.

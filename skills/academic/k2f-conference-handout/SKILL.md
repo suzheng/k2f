@@ -82,4 +82,4 @@ One blueprint pairing **semantic content** with **aesthetic intent**. Use labele
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to instantiate pages from the blueprint, apply roles from design intent, verify, and export the attendee-ready handout (typically PDF for print or sharing).
+Follow **k2f** skill to instantiate pages from the blueprint, apply roles from design intent, verify, and export the attendee-ready handout (typically PDF for print or sharing).

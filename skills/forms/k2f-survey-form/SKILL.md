@@ -78,4 +78,4 @@ Log **assumptions** (scale choice, demographics omitted) vs **open questions** (
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to instantiate sections and response fields from the blueprint, apply design intent, verify, and export the completion-ready survey (typically fillable PDF or DOCX).
+Follow **k2f** skill to instantiate sections and response fields from the blueprint, apply design intent, verify, and export the completion-ready survey (typically fillable PDF or DOCX).

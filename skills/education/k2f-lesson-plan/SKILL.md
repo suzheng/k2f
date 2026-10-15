@@ -73,4 +73,4 @@ One blueprint for **what** gets taught and **how** it should read and scan. Stru
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to instantiate the packet from the blueprint, apply roles from design intent, verify, and export the classroom-ready deliverables.
+Follow **k2f** skill to instantiate the packet from the blueprint, apply roles from design intent, verify, and export the classroom-ready deliverables.

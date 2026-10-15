@@ -69,4 +69,4 @@ One blueprint pairing **information architecture** with **design intent**. Long 
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to map the blueprint into the semantic tree, apply theme roles from design intent, verify, and export (typically PDF).
+Follow **k2f** skill to map the blueprint into the semantic tree, apply theme roles from design intent, verify, and export (typically PDF).

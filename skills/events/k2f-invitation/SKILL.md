@@ -88,4 +88,4 @@ One blueprint pairing **guest-facing copy** with **design intent**. Declare **pi
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to instantiate the invitation from the blueprint, map roles from design intent, verify, and export (typically PDF for print or PNG for digital sharing).
+Follow **k2f** skill to instantiate the invitation from the blueprint, map roles from design intent, verify, and export (typically PDF for print or PNG for digital sharing).

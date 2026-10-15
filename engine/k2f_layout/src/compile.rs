@@ -93,7 +93,18 @@ pub fn compile_outcome(
 
     let ctx = LayoutContext::new(&font_lib, &theme);
     let layout_result = LayoutEngine::layout(&manifest, &ctx)?;
-    let diags = crate::slack::layout_slack_diags(&manifest, &layout_result, &theme);
+    let mut diags = crate::slack::layout_slack_diags(&manifest, &layout_result, &theme);
+    diags.extend(crate::slack::content_overflow_diags(
+        &manifest,
+        &layout_result,
+        &theme,
+    ));
+    for warning in crate::fonts::font_synthetic_warnings(&theme, &font_lib) {
+        diags.push(crate::slack::font_synthetic_diag(
+            &warning.family,
+            &warning.unused_face,
+        ));
+    }
     let render_plan = crate::render_plan::build_render_plan(&manifest, &layout_result, &theme)?;
 
     let content_hash = hash_manifest_semantic(&manifest);

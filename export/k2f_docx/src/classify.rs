@@ -1052,6 +1052,7 @@ fn merge_labels_into_shell(
     // Quote/callout cards are also single-label (or quote+attribution) but
     // the copy is a wrapping paragraph. Centering + NBSP left one overflowing
     // line and hid the author below.
+    let mut l_ins_content = folded.l_ins_emu;
     if tbs.len() == 1 {
         folded.para_line_twips = Vec::new();
         folded.para_after_twips = Vec::new();
@@ -1110,6 +1111,7 @@ fn merge_labels_into_shell(
         folded.b_ins_emu = 0;
         // Widen the wrap column a little so host-bold one-liners (PASSBAND)
         // do not soft-wrap onto a clipped second row inside a tight card.
+        l_ins_content = folded.l_ins_emu;
         let trim = (folded.l_ins_emu / 10).min(folded.r_ins_emu / 10);
         folded.l_ins_emu = folded.l_ins_emu.saturating_sub(trim);
         folded.r_ins_emu = folded.r_ins_emu.saturating_sub(trim);
@@ -1138,7 +1140,7 @@ fn merge_labels_into_shell(
         // leftover-width row beside a checkbox sits further right; hosts
         // ignore w:ind in drawing boxes, so pad that gutter with NBSPs.
         if tbs.len() > 1 {
-            let extra_l = (tb.x_emu + tb.l_ins_emu - folded.x_emu - folded.l_ins_emu).max(0);
+            let extra_l = (tb.x_emu + tb.l_ins_emu - folded.x_emu - l_ins_content).max(0);
             // List items already paint a literal `•` / `{n}.` in the marker
             // gutter. NBSP-padding that same gutter double-indents the wrap
             // column so 8.5pt bullets look oversized and clip.
@@ -1257,7 +1259,13 @@ fn fold_stack_spacing(tbs: &[&crate::ir::TextBox]) -> (Vec<Option<i64>>, Vec<i64
         } else {
             0
         };
-        let line_pitch = if vpad > 0 || below > 0 { face } else { pitch };
+        // Centered compact pills (badges) keep box-height pitch; left-aligned
+        // heading rows keep face pitch and put shell slack in `after`.
+        let line_pitch = if vpad > 0 || (below > 0 && tb.align != crate::ir::TextAlign::Center) {
+            face
+        } else {
+            pitch
+        };
         let more = i + 1 < tbs.len();
         for p in 0..n {
             let is_last = p + 1 == n;
@@ -1276,14 +1284,16 @@ fn fold_stack_spacing(tbs: &[&crate::ir::TextBox]) -> (Vec<Option<i64>>, Vec<i64
             } else {
                 0
             };
-            let after = if vpad > 0 && is_last {
+            // Top-aligned last rows keep shell slack in the card box, not after.
+            // Centered / single-label rows still need symmetric vpad after.
+            let after = if vpad > 0 && is_last && (more || tb.vert_center || tbs.len() == 1) {
                 vpad
             } else if below > 0 && is_last {
                 below + gap_after
             } else {
                 gap_after
             };
-            if vpad > 0 && is_last {
+            if vpad > 0 && is_last && more {
                 gap_before_next = gap_after;
             }
             para_after.push(after);

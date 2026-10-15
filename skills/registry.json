@@ -31,6 +31,13 @@
       "status": "placeholder"
     },
     {
+      "id": "k2f-aesthetic-ms-word",
+      "layer": "expert",
+      "category": "expert",
+      "path": "expert/k2f-aesthetic-ms-word",
+      "status": "placeholder"
+    },
+    {
       "id": "k2f-research-poster",
       "layer": "task",
       "category": "academic",

@@ -1,6 +1,6 @@
 use crate::theme::Theme;
 use k2f_text::FontLibrary;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 const GENERIC_FAMILIES: &[&str] = &[
     "serif",
@@ -135,6 +135,215 @@ fn check_family(
         ));
     }
     Ok(())
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct FontSyntheticWarning {
+    pub family: String,
+    pub unused_face: String,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum FaceStyle {
+    Regular,
+    Bold,
+    Italic,
+    BoldItalic,
+}
+
+/// Bold/italic is still synthetic while a same-family Bold/Italic file sits
+/// unused. No warning when that file is absent (starter Roboto-Regular) or
+/// belongs to another family (a CJK Bold next to Roboto).
+pub(crate) fn font_synthetic_warnings(
+    theme: &Theme,
+    fonts: &FontLibrary,
+) -> Vec<FontSyntheticWarning> {
+    let faces = embedded_faces(fonts);
+    if faces.is_empty() {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    let mut seen = HashSet::new();
+    let default_role = theme.roles.get("default");
+    for style in theme.roles.values() {
+        let family = role_family(style, default_role);
+        if family.is_empty() {
+            continue;
+        }
+        consider_synthetic(
+            family,
+            style.bold,
+            style.italic,
+            theme,
+            &faces,
+            &mut seen,
+            &mut out,
+        );
+        for variant in style.variants.values() {
+            let Some(patch) = &variant.text_overrides else {
+                continue;
+            };
+            let bold = patch.bold.unwrap_or(style.bold);
+            let italic = patch.italic.unwrap_or(style.italic);
+            let patched = patch
+                .font_family
+                .as_deref()
+                .filter(|s| !s.is_empty())
+                .unwrap_or(family);
+            consider_synthetic(patched, bold, italic, theme, &faces, &mut seen, &mut out);
+        }
+    }
+    let default_family = default_role.map(|d| d.font_family.as_str()).unwrap_or("");
+    for styles in theme.modifiers.styles.values() {
+        for patch in styles.values() {
+            let bold = patch.bold.unwrap_or(false);
+            let italic = patch.italic.unwrap_or(false);
+            if !bold && !italic {
+                continue;
+            }
+            let family = patch
+                .font_family
+                .as_deref()
+                .filter(|s| !s.is_empty())
+                .unwrap_or(default_family);
+            consider_synthetic(family, bold, italic, theme, &faces, &mut seen, &mut out);
+        }
+    }
+    out.sort_by(|a, b| (&a.family, &a.unused_face).cmp(&(&b.family, &b.unused_face)));
+    out
+}
+
+fn role_family<'a>(
+    style: &'a crate::theme::RoleStyle,
+    default: Option<&'a crate::theme::RoleStyle>,
+) -> &'a str {
+    if !style.font_family.is_empty() {
+        style.font_family.as_str()
+    } else {
+        default.map(|d| d.font_family.as_str()).unwrap_or("")
+    }
+}
+
+fn consider_synthetic(
+    family: &str,
+    bold: bool,
+    italic: bool,
+    theme: &Theme,
+    faces: &[NamedFace],
+    seen: &mut HashSet<(String, String)>,
+    out: &mut Vec<FontSyntheticWarning>,
+) {
+    if !bold && !italic {
+        return;
+    }
+    let resolved = crate::style::resolve_face_key(family, bold, italic, theme);
+    if face_satisfies(&resolved, bold, italic) {
+        return;
+    }
+    let fam = face_family(&resolved);
+    for wanted in wanted_styles(bold, italic) {
+        let Some(unused) = faces
+            .iter()
+            .find(|face| face.family == fam && face.style == wanted)
+        else {
+            continue;
+        };
+        if unused.stem == resolved {
+            continue;
+        }
+        if seen.insert((fam.clone(), unused.stem.clone())) {
+            out.push(FontSyntheticWarning {
+                family: fam,
+                unused_face: unused.stem.clone(),
+            });
+        }
+        break;
+    }
+}
+
+fn wanted_styles(bold: bool, italic: bool) -> Vec<FaceStyle> {
+    match (bold, italic) {
+        (true, true) => vec![FaceStyle::BoldItalic, FaceStyle::Bold, FaceStyle::Italic],
+        (true, false) => vec![FaceStyle::Bold, FaceStyle::BoldItalic],
+        (false, true) => vec![FaceStyle::Italic, FaceStyle::BoldItalic],
+        (false, false) => Vec::new(),
+    }
+}
+
+fn face_satisfies(stem: &str, bold: bool, italic: bool) -> bool {
+    match classify_face(stem).map(|(_, style)| style) {
+        Some(FaceStyle::BoldItalic) => bold || italic,
+        Some(FaceStyle::Bold) => bold && !italic,
+        Some(FaceStyle::Italic) => italic && !bold,
+        _ => false,
+    }
+}
+
+fn face_family(stem: &str) -> String {
+    classify_face(stem)
+        .map(|(family, _)| family)
+        .unwrap_or_else(|| stem.to_string())
+}
+
+struct NamedFace {
+    stem: String,
+    family: String,
+    style: FaceStyle,
+}
+
+fn embedded_faces(fonts: &FontLibrary) -> Vec<NamedFace> {
+    let mut out = Vec::new();
+    for path in fonts.path_order() {
+        if !k2f_core::is_font_face_path(path) {
+            continue;
+        }
+        let Some(stem) = std::path::Path::new(path).file_stem() else {
+            continue;
+        };
+        let stem = stem.to_string_lossy();
+        if stem.is_empty() || stem.eq_ignore_ascii_case("default") {
+            continue;
+        }
+        let Some((family, style)) = classify_face(&stem) else {
+            continue;
+        };
+        if style == FaceStyle::Regular {
+            continue;
+        }
+        out.push(NamedFace {
+            stem: stem.into_owned(),
+            family,
+            style,
+        });
+    }
+    out
+}
+
+/// Filename suffix only. Medium / Light / SemiBold are not guessed.
+fn classify_face(stem: &str) -> Option<(String, FaceStyle)> {
+    const SUFFIXES: &[(&str, FaceStyle)] = &[
+        ("-BoldItalic", FaceStyle::BoldItalic),
+        ("-Bold-Italic", FaceStyle::BoldItalic),
+        ("-BoldOblique", FaceStyle::BoldItalic),
+        ("-Bold-Oblique", FaceStyle::BoldItalic),
+        ("-Italic", FaceStyle::Italic),
+        ("-Oblique", FaceStyle::Italic),
+        ("-Bold", FaceStyle::Bold),
+        ("-Regular", FaceStyle::Regular),
+        ("-Book", FaceStyle::Regular),
+        ("-Roman", FaceStyle::Regular),
+    ];
+    let lower = stem.to_ascii_lowercase();
+    for (suffix, style) in SUFFIXES {
+        let suffix_lower = suffix.to_ascii_lowercase();
+        if lower.ends_with(&suffix_lower) && stem.len() > suffix.len() {
+            let family = stem[..stem.len() - suffix.len()].to_string();
+            if !family.is_empty() {
+                return Some((family, *style));
+            }
+        }
+    }
+    None
 }
 
 fn check_face(
@@ -419,5 +628,115 @@ mod tests {
             }
         }
         assert!(found, "expected a text run");
+    }
+
+    fn roboto_bytes() -> Vec<u8> {
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../assets/fonts/Roboto-Regular.ttf");
+        std::fs::read(&path).expect("Roboto-Regular.ttf")
+    }
+
+    fn theme_with(roles_and_rest: &str) -> Theme {
+        serde_json::from_str(roles_and_rest).unwrap()
+    }
+
+    #[test]
+    fn synthetic_bold_warns_when_same_family_bold_is_unused() {
+        let bytes = roboto_bytes();
+        let mut fonts = BTreeMap::new();
+        fonts.insert(
+            "assets/fonts/OpenSauceSans-Regular.ttf".into(),
+            bytes.clone(),
+        );
+        fonts.insert("assets/fonts/OpenSauceSans-Bold.ttf".into(), bytes);
+        let lib = load_font_library(&fonts).unwrap();
+        let theme = theme_with(
+            r#"{
+              "palette": {},
+              "roles": {
+                "h1": {
+                  "font_family": "OpenSauceSans-Regular",
+                  "font_size": 24000,
+                  "line_height_mult": 1200,
+                  "color": "black",
+                  "bold": true
+                }
+              }
+            }"#,
+        );
+        let warnings = font_synthetic_warnings(&theme, &lib);
+        assert_eq!(warnings.len(), 1, "{warnings:?}");
+        assert_eq!(warnings[0].family, "OpenSauceSans");
+        assert_eq!(warnings[0].unused_face, "OpenSauceSans-Bold");
+    }
+
+    #[test]
+    fn synthetic_bold_silent_for_starter_and_other_family() {
+        let bytes = roboto_bytes();
+        let mut only = BTreeMap::new();
+        only.insert("assets/fonts/Roboto-Regular.ttf".into(), bytes.clone());
+        let theme = theme_with(
+            r#"{
+              "palette": {},
+              "modifiers": { "styles": { "emphasis": { "strong": { "bold": true } } } },
+              "roles": {
+                "default": {
+                  "font_family": "Roboto-Regular",
+                  "font_size": 12000,
+                  "line_height_mult": 1400,
+                  "color": "black"
+                },
+                "h1": {
+                  "font_family": "Roboto-Regular",
+                  "font_size": 24000,
+                  "line_height_mult": 1200,
+                  "color": "black",
+                  "bold": true
+                }
+              }
+            }"#,
+        );
+        assert!(font_synthetic_warnings(&theme, &load_font_library(&only).unwrap()).is_empty());
+
+        let mut mixed = BTreeMap::new();
+        mixed.insert("assets/fonts/Roboto-Regular.ttf".into(), bytes.clone());
+        mixed.insert("assets/fonts/NotoSansJP-Bold.otf".into(), bytes);
+        assert!(
+            font_synthetic_warnings(&theme, &load_font_library(&mixed).unwrap()).is_empty(),
+            "a CJK Bold face is not Roboto's bold"
+        );
+    }
+
+    #[test]
+    fn synthetic_bold_silent_when_font_faces_selects_it() {
+        let bytes = roboto_bytes();
+        let mut fonts = BTreeMap::new();
+        fonts.insert(
+            "assets/fonts/OpenSauceSans-Regular.ttf".into(),
+            bytes.clone(),
+        );
+        fonts.insert("assets/fonts/OpenSauceSans-Bold.ttf".into(), bytes);
+        let lib = load_font_library(&fonts).unwrap();
+        let theme = theme_with(
+            r#"{
+              "palette": {},
+              "font_faces": {
+                "OpenSauceSans": {
+                  "regular": "OpenSauceSans-Regular",
+                  "bold": "OpenSauceSans-Bold"
+                }
+              },
+              "roles": {
+                "h1": {
+                  "font_family": "OpenSauceSans-Regular",
+                  "font_size": 24000,
+                  "line_height_mult": 1200,
+                  "color": "black",
+                  "bold": true
+                }
+              }
+            }"#,
+        );
+        assert!(font_synthetic_warnings(&theme, &lib).is_empty());
     }
 }

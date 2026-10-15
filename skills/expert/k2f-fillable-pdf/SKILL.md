@@ -70,4 +70,4 @@ One blueprint merging **what readers see** (static) and **what they enter** (int
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to instantiate pages from the blueprint, bind field roles from the inventory, verify, and export the fillable PDF deliverable.
+Follow **k2f** skill to instantiate pages from the blueprint, bind field roles from the inventory, verify, and export the fillable PDF deliverable.

@@ -26,13 +26,14 @@ Fix the **semantic tree** or **theme**. Shapes: [`catalog/content/ex_*.json`](..
 
 ## Compile stderr (not AgentError)
 
-`k2f compile` may print `LAYOUT_SLACK` (hollow `{fr:1}` grower) or `PAGE_UNDERFILL page=… unused_below=… (%)`. Not stored in the lock; compile and `pack_verify.py` exit 0.
+`k2f compile` may print `LAYOUT_SLACK` (hollow `{fr:1}` grower), `PAGE_UNDERFILL page=… unused_below=… (%)`, `CONTENT_OVERFLOW id=… overflow=…`, or `FONT_SYNTHETIC id=… unused=…`. Not stored in the lock; compile and `pack_verify.py` exit 0.
 
-- **Designed sheet (invoice/CV/flyer/poster/one-page infographic):** treat `PAGE_UNDERFILL` as must-fix even when `pack_verify.py` exits 0 — copy [`ex_filled_page.json`](../../catalog/content/ex_filled_page.json); leftover on table/notes `{fr:1}`.
+- **Designed sheet (invoice/CV/flyer/poster/one-page infographic):** treat `PAGE_UNDERFILL` and `CONTENT_OVERFLOW` as must-fix even when `pack_verify.py` exits 0 — copy [`ex_filled_page.json`](../../catalog/content/ex_filled_page.json); leftover on table/notes `{fr:1}`. `CONTENT_OVERFLOW` means text or a child box paints past a fixed/`fr` cell, clamped stack, or `columns` — shorten the copy or grow the row. Form fields clip and do not warn.
+- **`FONT_SYNTHETIC`:** a same-family Bold/Italic file is embedded but not selected, so bold/italic stays synthetic. `--font` / `--add-font` fill `font_faces` for `-Bold` / `-Italic` / `-BoldItalic` next to `-Regular`; a hand-copied file needs the slot. No warning when that file is absent.
 - **Short letter / last page of a growing document:** empty bottom is allowed. `PAGE_UNDERFILL` is not emitted on the last page of a multi-page document.
 - **Non-last `PAGE_UNDERFILL`:** often a `p1`/`p2` page container. Merge into one tree. `break_before: page` on a chapter, annex, signature, slide 2+, or card back is correct (catalog demos can also trip this).
 - **`LAYOUT_SLACK`:** `{fr:1}` grew the **box**; text stayed top-packed. Leftover → figure or dense siblings ([`ex_poster_growers.json`](../../catalog/content/ex_poster_growers.json)). Equal-height **card** interiors → [`ex_card_bands.json`](../../catalog/content/ex_card_bands.json) (inner `{auto,fr,auto}`) or stack `justify_content: center` for sparse KPI — not dummy bullets. Auto-height stacks do not emit `LAYOUT_SLACK`.
-- **Mini canvas:** both warnings are omitted when the page content box is shorter than 180pt. Do not pad a business card with dummy copy to silence them.
+- **Mini canvas:** `LAYOUT_SLACK` and `PAGE_UNDERFILL` are omitted when the page content box is shorter than 180pt. Do not pad a business card with dummy copy to silence them.
 
 ## Math messages (not separate codes)
 

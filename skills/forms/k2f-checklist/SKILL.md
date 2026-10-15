@@ -81,4 +81,4 @@ Log **assumptions** (section order, omitted optionals) vs **open questions** (mi
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to instantiate sections and checkbox items from the blueprint, apply design intent, verify, and export the runnable checklist (typically fillable PDF or DOCX).
+Follow **k2f** skill to instantiate sections and checkbox items from the blueprint, apply design intent, verify, and export the runnable checklist (typically fillable PDF or DOCX).

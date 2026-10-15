@@ -86,4 +86,4 @@ Blueprint **semantic content** plus **design intent** in labeled section blocks 
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to build the single page from the blueprint, apply design roles, verify, and export (usually PDF).
+Follow **k2f** skill to build the single page from the blueprint, apply design roles, verify, and export (usually PDF).

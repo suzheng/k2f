@@ -222,7 +222,8 @@ fn measure_container(
         let total_w = sum_with_gaps(&col_sizes, col_gap_pt);
         let total_h = sum_with_gaps(&row_sizes, row_gap_pt);
 
-        // Measure children inside their cells (for determinism and future overflow checks)
+        // Measure children inside their cells. Vertical overflow is a
+        // CONTENT_OVERFLOW warning after arrange (slack.rs), not a hard error.
         for (idx, child) in children.iter().enumerate() {
             let c = idx % col_sizes.len();
             let r = idx / col_sizes.len();

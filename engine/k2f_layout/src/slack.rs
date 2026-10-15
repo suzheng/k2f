@@ -8,7 +8,7 @@ use k2f_core::{
     collect_boxes, for_each_node, GeometryNode, GridTrack, LayoutHint, LayoutResult, Manifest,
     NodeContent, Pt, SemanticNode,
 };
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 /// Minimum share of the page content box a box must occupy before unused
@@ -32,11 +32,18 @@ const PAGE_HINT_ONE: &str =
     "one-page form: copy ex_filled_page.json; set height to page_h − margins; leftover on table or notes {fr:1}";
 const PAGE_HINT_MID: &str =
     "do not pre-paginate with break_before; one flow tree, engine fills the page";
+/// Ignore sub-point rounding when comparing laid-out text to its box.
+const OVERFLOW_ABS: i128 = 1_000;
+const OVERFLOW_HINT: &str = "shorten copy or grow the row; text paints outside its box";
+const FONT_SYNTHETIC_HINT: &str =
+    "declare font_faces so this face is selected; otherwise bold/italic stays synthetic";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LayoutDiagKind {
     Slack,
     PageUnderfill,
+    ContentOverflow,
+    FontSynthetic,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -83,6 +90,16 @@ impl fmt::Display for LayoutDiag {
                 self.unused_pct(),
                 after,
                 self.hint
+            ),
+            LayoutDiagKind::ContentOverflow => write!(
+                f,
+                "CONTENT_OVERFLOW id={} overflow={} hint={}",
+                self.node_id, self.unused_below.0, self.hint
+            ),
+            LayoutDiagKind::FontSynthetic => write!(
+                f,
+                "FONT_SYNTHETIC id={} unused={} hint={}",
+                self.node_id, after, self.hint
             ),
         }
     }
@@ -308,5 +325,151 @@ fn consider_pages(
             hint,
             page: Some(i),
         });
+    }
+}
+
+struct SemSnap {
+    role: String,
+    variant: Option<String>,
+    check_glyphs: bool,
+}
+
+/// Text or a child box painting past the box it was given.
+///
+/// Grid cells clamp the child box, then text layout still draws every line.
+/// Fixed stacks and `columns` keep the child's measured height, so the box
+/// itself can extend past the parent. Form fields clip glyphs and are skipped.
+/// Warning only — not stored in the lock.
+pub fn content_overflow_diags(
+    manifest: &Manifest,
+    layout: &LayoutResult,
+    theme: &Theme,
+) -> Vec<LayoutDiag> {
+    let sem = index_semantic(manifest);
+    let mut diags = Vec::new();
+    let mut seen = HashSet::new();
+    for page in &layout.pages {
+        walk_overflow(&page.root, &sem, theme, &mut diags, &mut seen);
+    }
+    diags
+}
+
+pub(crate) fn font_synthetic_diag(family: &str, unused_face: &str) -> LayoutDiag {
+    LayoutDiag {
+        kind: LayoutDiagKind::FontSynthetic,
+        node_id: family.to_string(),
+        unused_below: Pt::ZERO,
+        unused_above: Pt::ZERO,
+        inner_height: Pt::ZERO,
+        after_id: Some(unused_face.to_string()),
+        hint: FONT_SYNTHETIC_HINT,
+        page: None,
+    }
+}
+
+fn index_semantic(manifest: &Manifest) -> HashMap<String, SemSnap> {
+    let mut map = HashMap::new();
+    let mut put = |node: &SemanticNode| {
+        map.insert(
+            node.id.clone(),
+            SemSnap {
+                role: node.role.clone(),
+                variant: node.variant.clone(),
+                check_glyphs: matches!(
+                    node.content,
+                    NodeContent::Text(_) | NodeContent::CodeBlock(_)
+                ),
+            },
+        );
+    };
+    for_each_node(&manifest.root, &mut put);
+    for block in &manifest.running_blocks {
+        for_each_node(&block.node, &mut put);
+    }
+    map
+}
+
+fn walk_overflow(
+    node: &GeometryNode,
+    sem: &HashMap<String, SemSnap>,
+    theme: &Theme,
+    diags: &mut Vec<LayoutDiag>,
+    seen: &mut HashSet<String>,
+) {
+    if let Some(snap) = sem.get(&node.id) {
+        if snap.check_glyphs {
+            if let Some(overflow) = glyph_overflow(node, snap, theme) {
+                push_overflow(&node.id, overflow, diags, seen);
+            }
+        }
+    }
+    let padding = sem
+        .get(&node.id)
+        .and_then(|snap| padding_for_role_variant(&snap.role, snap.variant.as_deref(), theme).ok())
+        .unwrap_or(crate::resolved_style::EdgeInsets::ZERO);
+    let inner_bottom = node.y.0 + node.height.0 - padding.bottom.0;
+    for child in &node.children {
+        let past = child.y.0 + child.height.0 - inner_bottom;
+        if past > OVERFLOW_ABS {
+            push_overflow(&child.id, past, diags, seen);
+        }
+        walk_overflow(child, sem, theme, diags, seen);
+    }
+}
+
+fn push_overflow(
+    id: &str,
+    overflow: i128,
+    diags: &mut Vec<LayoutDiag>,
+    seen: &mut HashSet<String>,
+) {
+    if !seen.insert(id.to_string()) {
+        return;
+    }
+    diags.push(LayoutDiag {
+        kind: LayoutDiagKind::ContentOverflow,
+        node_id: id.to_string(),
+        unused_below: Pt(overflow),
+        unused_above: Pt::ZERO,
+        inner_height: Pt::ZERO,
+        after_id: None,
+        hint: OVERFLOW_HINT,
+        page: None,
+    });
+}
+
+/// Bottom of the last line box minus the node height, when text was laid out
+/// past a clamped box. Line top is the y most glyphs on that line share, so a
+/// mark sitting off the baseline does not look like an extra line.
+fn glyph_overflow(node: &GeometryNode, snap: &SemSnap, theme: &Theme) -> Option<i128> {
+    let style =
+        crate::resolved_style::resolve_text_style(&snap.role, snap.variant.as_deref(), theme);
+    let line_h = crate::text_layout::line_height_for_style(&style).0;
+    if line_h <= 0 || node.glyphs.is_empty() {
+        return None;
+    }
+    let line_top = last_line_top(&node.glyphs)?;
+    let past = line_top + line_h - node.height.0;
+    if past > OVERFLOW_ABS {
+        Some(past)
+    } else {
+        None
+    }
+}
+
+fn last_line_top(glyphs: &[k2f_core::GlyphPosition]) -> Option<i128> {
+    let mut counts: HashMap<i128, usize> = HashMap::new();
+    for glyph in glyphs {
+        *counts.entry(glyph.y_offset.0).or_default() += 1;
+    }
+    let best = counts.values().copied().max().unwrap_or(1);
+    if best >= 2 {
+        counts
+            .into_iter()
+            .filter(|(_, n)| *n >= 2)
+            .map(|(y, _)| y)
+            .max()
+    } else {
+        counts.into_keys().max()
     }
 }

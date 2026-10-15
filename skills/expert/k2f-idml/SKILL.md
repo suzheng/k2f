@@ -69,4 +69,4 @@ One blueprint merging **reader path**, **page/spread roles**, **typed content bl
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to instantiate spreads from the blueprint, bind content roles from the inventory, verify, and export the IDML package for InDesign.
+Follow **k2f** skill to instantiate spreads from the blueprint, bind content roles from the inventory, verify, and export the IDML package for InDesign.

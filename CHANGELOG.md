@@ -10,8 +10,13 @@ Entries follow [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- `CONTENT_OVERFLOW` compile warning when text or a child box paints past a fixed or `{fr}` cell, a clamped stack, or `columns`. Warning only — pack still succeeds. `FONT_SYNTHETIC` warns when bold/italic stays synthetic while a same-family Bold/Italic file is embedded and not selected.
+
 ### Fixed
 
+- `init_package.py --font` removes the replaced family's license files and copies a sibling `OFL.txt` / `LICENSE` when the new font has one. `--font` / `--add-font` fill `font_faces` for same-family `-Bold` / `-Italic` / `-BoldItalic` filenames next to `-Regular`.
 - SVG images rasterize at the destination pixel size (the viewer paint scale, and 4 px per pt of the image box for PDF, DOCX, PPTX, and IDML) instead of the SVG file's own pixel size scaled up with nearest-neighbor. Lock hashes are unchanged; reopen or re-export to pick up sharper lines.
 
 ## [0.3.2] - 2026-09-28

@@ -88,4 +88,4 @@ One blueprint pairing **information architecture** with **design intent**. Label
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to build the policy from the blueprint, apply design-intent roles, verify, and export for HR/legal review (typically PDF or DOCX).
+Follow **k2f** skill to build the policy from the blueprint, apply design-intent roles, verify, and export for HR/legal review (typically PDF or DOCX).

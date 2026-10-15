@@ -75,4 +75,4 @@ One blueprint for **what** belongs in the syllabus and **how** it should read wh
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to instantiate the syllabus from the blueprint, apply roles from design intent, verify, and export the shareable syllabus (typically PDF).
+Follow **k2f** skill to instantiate the syllabus from the blueprint, apply roles from design intent, verify, and export the shareable syllabus (typically PDF).

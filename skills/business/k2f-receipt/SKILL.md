@@ -75,4 +75,4 @@ Single blueprint for semantic content and aesthetic intent. Use labeled blocks t
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to instantiate the receipt from the blueprint, apply roles from design intent, verify, and export the deliverable.
+Follow **k2f** skill to instantiate the receipt from the blueprint, apply roles from design intent, verify, and export the deliverable.

@@ -86,4 +86,4 @@ One blueprint pairing **publishable facts** with **design intent**. Document the
 
 ### Step 2. Use the content_and_design.md and k2f skill to generate a K2F file and export to an appropriate file format.
 
-Follow **k2f** to instantiate the program from the blueprint, map roles from design intent, verify, and export (typically PDF).
+Follow **k2f** skill to instantiate the program from the blueprint, map roles from design intent, verify, and export (typically PDF).

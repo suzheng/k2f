@@ -1,9 +1,9 @@
-use crate::slack::{layout_slack_diags, LayoutDiagKind};
+use crate::slack::{content_overflow_diags, layout_slack_diags, LayoutDiagKind};
 use crate::Theme;
 use crate::{LayoutContext, LayoutEngine};
 use k2f_core::{
-    BreakBefore, CanvasMode, FixedSizeHint, GridTrack, LayoutHint, Manifest, NodeContent,
-    PageConfig, Pt, SemanticNode, StackDirection,
+    BreakBefore, CanvasMode, FixedSizeHint, FormFieldKind, FormFieldSpec, GridTrack, LayoutHint,
+    Manifest, NodeContent, PageConfig, Pt, SemanticNode, StackDirection,
 };
 
 fn fonts_ctx() -> (k2f_text::FontLibrary, Theme) {
@@ -291,5 +291,123 @@ fn miniature_card_page_does_not_report_fill_diags() {
     assert!(
         diags.is_empty(),
         "252×144pt card leftover is inset, not a hollow grower: {diags:?}"
+    );
+}
+
+fn text_node(id: &str, value: &str) -> SemanticNode {
+    SemanticNode {
+        id: id.to_string(),
+        role: "body".to_string(),
+        content: NodeContent::Text(value.to_string()),
+        ..Default::default()
+    }
+}
+
+fn short_grid(children: Vec<SemanticNode>) -> SemanticNode {
+    SemanticNode {
+        id: "doc.grid".to_string(),
+        role: "section".to_string(),
+        content: NodeContent::Container { children },
+        layout: Some(LayoutHint::Grid {
+            columns: vec![GridTrack::Fr { fr: 1 }],
+            rows: vec![GridTrack::Fr { fr: 1 }, GridTrack::Pt { pt: 40_000 }],
+            gap: 0,
+            row_gap: None,
+            column_gap: None,
+            cell_align: None,
+            size: FixedSizeHint {
+                width: Some(Pt(400_000)),
+                height: Some(Pt(120_000)),
+            },
+        }),
+        ..Default::default()
+    }
+}
+
+fn overflow_ids(manifest: &Manifest) -> Vec<String> {
+    let (fonts, theme) = fonts_ctx();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let layout = LayoutEngine::layout(manifest, &ctx).expect("layout");
+    content_overflow_diags(manifest, &layout, &theme)
+        .into_iter()
+        .filter(|d| d.kind == LayoutDiagKind::ContentOverflow)
+        .map(|d| d.node_id)
+        .collect()
+}
+
+#[test]
+fn fr_row_text_overflow_warns_without_failing_layout() {
+    let long = "word ".repeat(80);
+    let manifest = wrap_root(short_grid(vec![
+        text_node("doc.body", &long),
+        image("doc.figure", 40_000),
+    ]));
+    let (fonts, theme) = fonts_ctx();
+    let ctx = LayoutContext::new(&fonts, &theme);
+    let layout = LayoutEngine::layout(&manifest, &ctx).expect("overflow still lays out");
+    let diags = content_overflow_diags(&manifest, &layout, &theme);
+    let hit = diags
+        .iter()
+        .find(|d| d.kind == LayoutDiagKind::ContentOverflow && d.node_id == "doc.body")
+        .unwrap_or_else(|| panic!("missing CONTENT_OVERFLOW: {diags:?}"));
+    let line = hit.to_string();
+    assert!(line.starts_with("CONTENT_OVERFLOW id=doc.body"), "{line}");
+    assert!(hit.unused_below.0 > 1_000, "{line}");
+}
+
+#[test]
+fn short_text_in_fr_row_does_not_warn() {
+    let manifest = wrap_root(short_grid(vec![
+        text_node("doc.body", "Hi"),
+        image("doc.figure", 40_000),
+    ]));
+    let ids = overflow_ids(&manifest);
+    assert!(ids.is_empty(), "fitted text warned: {ids:?}");
+}
+
+#[test]
+fn clipped_form_field_does_not_warn() {
+    let field = SemanticNode {
+        id: "doc.field".to_string(),
+        role: "form_field".to_string(),
+        content: NodeContent::FormField(FormFieldSpec {
+            kind: FormFieldKind::Multiline,
+            value: "word ".repeat(80),
+            placeholder: None,
+            width: Some(Pt(200_000)),
+            height: None,
+            lines: Some(2),
+            max_length: None,
+            required: false,
+        }),
+        ..Default::default()
+    };
+    let manifest = wrap_root(field);
+    let ids = overflow_ids(&manifest);
+    assert!(ids.is_empty(), "clipped form field warned: {ids:?}");
+}
+
+#[test]
+fn stack_child_past_clamped_cell_warns() {
+    let stack = SemanticNode {
+        id: "doc.stack".to_string(),
+        role: "section".to_string(),
+        content: NodeContent::Container {
+            children: vec![text_node("doc.body", &"word ".repeat(80))],
+        },
+        layout: Some(LayoutHint::Stack {
+            direction: StackDirection::Vertical,
+            gap: 0,
+            align_items: Default::default(),
+            justify_content: Default::default(),
+            size: FixedSizeHint::default(),
+        }),
+        ..Default::default()
+    };
+    let manifest = wrap_root(short_grid(vec![stack, image("doc.figure", 40_000)]));
+    let ids = overflow_ids(&manifest);
+    assert!(
+        ids.iter().any(|id| id == "doc.body"),
+        "child box past the cell did not warn: {ids:?}"
     );
 }
