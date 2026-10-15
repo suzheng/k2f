@@ -11,7 +11,10 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 pub(crate) enum Layer {
     Body,
-    Master { #[allow(dead_code)] total_pages: usize },
+    Master {
+        #[allow(dead_code)]
+        total_pages: usize,
+    },
 }
 
 pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, IdmlError> {
@@ -73,10 +76,7 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, IdmlError> {
     crate::autosize::apply(&mut master_els, page0.width.0);
     restore_fill_tracking(&mut master_els, &keep_master);
     let mut used = BTreeSet::new();
-    used.insert((
-        fonts.default_family().to_string(),
-        fonts.default_style(),
-    ));
+    used.insert((fonts.default_family().to_string(), fonts.default_style()));
     for page in &ir_pages {
         collect_fonts(&mut used, &page.elements);
     }
@@ -153,9 +153,7 @@ fn snapshot_fill_tracking(elements: &[PageElement]) -> Vec<Vec<i32>> {
     elements
         .iter()
         .map(|el| match el {
-            PageElement::TextBox(tb)
-                if tb.full_width_lock_line && tb.lock_line_count <= 1 =>
-            {
+            PageElement::TextBox(tb) if tb.full_width_lock_line && tb.lock_line_count <= 1 => {
                 tb.runs.iter().map(|r| r.tracking).collect()
             }
             _ => Vec::new(),

@@ -159,17 +159,16 @@ fn no_k2f_raster_yet() {
 
 #[test]
 fn missing_image_is_write_error() {
-    let err =
-        picture_from_draw(
-            "pic",
-            &sample_rect(),
-            "nope.png",
-            &BTreeMap::new(),
-            1,
-            k2f_core::ImageFit::Contain,
-            None,
-        )
-        .unwrap_err();
+    let err = picture_from_draw(
+        "pic",
+        &sample_rect(),
+        "nope.png",
+        &BTreeMap::new(),
+        1,
+        k2f_core::ImageFit::Contain,
+        None,
+    )
+    .unwrap_err();
     match err {
         IdmlError::Write(msg) => assert!(msg.contains("missing image"), "{msg}"),
         other => panic!("expected Write, got {other:?}"),
@@ -196,6 +195,36 @@ fn svg_encodes_as_png() {
         pic.bytes.starts_with(&[0x89, b'P', b'N', b'G']),
         "svg must become PNG bytes"
     );
+    let raster = image::load_from_memory(&pic.bytes).unwrap();
+    // 4×4 SVG contained in a 100×50 pt box → letterboxed square at 4 px/pt.
+    assert_eq!((raster.width(), raster.height()), (200, 200));
+}
+
+#[test]
+fn svg_contain_letterboxes_wide_vector() {
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10"><rect width="20" height="10" fill="#000"/></svg>"##;
+    let mut assets = BTreeMap::new();
+    assets.insert("wide.svg".into(), svg.to_vec());
+    let rect = Rect {
+        x: Pt(0),
+        y: Pt(0),
+        width: Pt(10_000),
+        height: Pt(10_000),
+    };
+    let pic = picture_from_draw(
+        "pic",
+        &rect,
+        "wide.svg",
+        &assets,
+        1,
+        k2f_core::ImageFit::Contain,
+        None,
+    )
+    .unwrap();
+    assert_eq!(pic.rect.width, Pt(10_000));
+    assert_eq!(pic.rect.height, Pt(5_000));
+    let raster = image::load_from_memory(&pic.bytes).unwrap();
+    assert_eq!((raster.width(), raster.height()), (40, 20));
 }
 
 #[test]
@@ -285,7 +314,11 @@ fn translucent_stroke_keeps_native_line_alpha() {
         ..Default::default()
     };
     let boxes = shapes_from_box("card.front", &sample_rect(), &dec).unwrap();
-    assert_eq!(boxes.len(), 1, "translucent four-side stroke stays one rectangle");
+    assert_eq!(
+        boxes.len(),
+        1,
+        "translucent four-side stroke stays one rectangle"
+    );
     assert_eq!(boxes[0].line_hex.as_deref(), Some("0E2A2A"));
     assert_eq!(boxes[0].line_alpha, 0x1A);
     assert_eq!(boxes[0].fill_hex.as_deref(), Some("F7FAFA"));

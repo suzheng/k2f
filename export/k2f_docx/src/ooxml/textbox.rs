@@ -142,7 +142,14 @@ fn txbx_content(
         ));
     }
     if paras.is_empty() {
-        xml.push_str(&paragraph_xml(tb, &[], 0, false, hyperlink_rids, font_embed));
+        xml.push_str(&paragraph_xml(
+            tb,
+            &[],
+            0,
+            false,
+            hyperlink_rids,
+            font_embed,
+        ));
     }
     xml
 }
@@ -268,11 +275,7 @@ fn paragraph_xml(
     // Literal list markers sit in the text. Continuation indent is NBSP pad
     // (U+2028 + NBSPs). Do not also emit w:ind hanging — hosts that honor it
     // would indent wrap lines twice.
-    let align = tb
-        .para_align
-        .get(para_idx)
-        .copied()
-        .unwrap_or(tb.align);
+    let align = tb.para_align.get(para_idx).copied().unwrap_or(tb.align);
     ppr.push_str(&format!(
         r#"                          <w:jc w:val="{}"/>
 "#,
@@ -526,7 +529,14 @@ mod tests {
 
     #[test]
     fn ppr_skips_numpr_for_literal_numbered_lists() {
-        let xml = paragraph_xml(&box_with(true, Some(240)), &[], 0, false, &BTreeMap::new(), &Default::default());
+        let xml = paragraph_xml(
+            &box_with(true, Some(240)),
+            &[],
+            0,
+            false,
+            &BTreeMap::new(),
+            &Default::default(),
+        );
         assert!(!xml.contains("<w:numPr>"), "{xml}");
         child_order(&xml, &["<w:spacing", "<w:jc "]);
     }
@@ -562,7 +572,8 @@ mod tests {
             tracking_twips: 0,
             field: None,
         }];
-        let xml = super::textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new(), &Default::default());
+        let xml =
+            super::textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new(), &Default::default());
         assert!(xml.contains(r#"anchor="ctr""#), "{xml}");
         assert!(
             xml.contains(r#"tIns="0""#),
@@ -591,8 +602,12 @@ mod tests {
             tracking_twips: 0,
             field: None,
         }];
-        let xml = super::textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new(), &Default::default());
-        assert!(xml.contains(r#"anchor="t""#), "Writer ignores ctr on tall wps, got {xml}");
+        let xml =
+            super::textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new(), &Default::default());
+        assert!(
+            xml.contains(r#"anchor="t""#),
+            "Writer ignores ctr on tall wps, got {xml}"
+        );
         assert!(
             xml.contains(r#"tIns="80000""#),
             "tall cell must keep lock first-line pad, got {xml}"
@@ -607,7 +622,7 @@ mod tests {
         tb.runs = vec![
             TextRun {
                 text: "•\u{00A0}".into(),
-            font_family_key: String::new(),
+                font_family_key: String::new(),
                 font_name: "Arial".into(),
                 sz_half_points: 19,
                 bold: false,
@@ -622,7 +637,7 @@ mod tests {
             },
             TextRun {
                 text: "Senior managers".into(),
-            font_family_key: String::new(),
+                font_family_key: String::new(),
                 font_name: "Roboto".into(),
                 sz_half_points: 19,
                 bold: false,
@@ -637,7 +652,7 @@ mod tests {
             },
             TextRun {
                 text: "\u{2028}".into(),
-            font_family_key: String::new(),
+                font_family_key: String::new(),
                 font_name: "Roboto".into(),
                 sz_half_points: 19,
                 bold: false,
@@ -652,7 +667,7 @@ mod tests {
             },
             TextRun {
                 text: "\u{00A0}\u{00A0}leads.".into(),
-            font_family_key: String::new(),
+                font_family_key: String::new(),
                 font_name: "Roboto".into(),
                 sz_half_points: 19,
                 bold: false,
@@ -680,7 +695,7 @@ mod tests {
         tb.runs = vec![
             TextRun {
                 text: "PHASE 01".into(),
-            font_family_key: String::new(),
+                font_family_key: String::new(),
                 font_name: "Roboto".into(),
                 sz_half_points: 16,
                 bold: true,
@@ -695,7 +710,7 @@ mod tests {
             },
             TextRun {
                 text: "\n".into(),
-            font_family_key: String::new(),
+                font_family_key: String::new(),
                 font_name: "Roboto".into(),
                 sz_half_points: 16,
                 bold: false,
@@ -710,7 +725,7 @@ mod tests {
             },
             TextRun {
                 text: "•\u{00A0}Cross-team roadmap \u{2028}\u{00A0}\u{00A0}calibration".into(),
-            font_family_key: String::new(),
+                font_family_key: String::new(),
                 font_name: "Roboto".into(),
                 sz_half_points: 16,
                 bold: false,
@@ -799,7 +814,10 @@ mod tests {
         let xml = textbox_wsp_xml(&tb, &BTreeMap::new(), &BTreeMap::new(), &Default::default());
         assert!(xml.contains(r#"<a:srgbClr val="DC2626"/>"#), "{xml}");
         assert!(xml.contains(r#"<a:ln w="12700">"#), "{xml}");
-        assert!(!xml.contains("<a:ln>\n                      <a:noFill/>"), "{xml}");
+        assert!(
+            !xml.contains("<a:ln>\n                      <a:noFill/>"),
+            "{xml}"
+        );
     }
 
     #[test]

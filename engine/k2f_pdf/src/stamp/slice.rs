@@ -2,9 +2,7 @@
 //! Copied in spirit from the PPTX/DOCX chrome filter, with a wider predicate
 //! because PDF has no native shadow, axial shading, or fill opacity.
 
-use k2f_core::{
-    Border, BoxDecoration, Fill, PaintOp, Pt, Rect, Shadow, ShadowRef,
-};
+use k2f_core::{Border, BoxDecoration, Fill, PaintOp, Pt, Rect, Shadow, ShadowRef};
 use k2f_paint::{parse_hex_rgba, resolve_fill};
 
 use crate::error::PdfError;
@@ -106,7 +104,11 @@ pub fn consume_following_box(ops: &[PaintOp], i: usize, node_id: &str) -> Option
     }
 }
 
-pub fn glass_crop(blur_rect: &Rect, ops: &[PaintOp], follow: Option<usize>) -> Result<Rect, PdfError> {
+pub fn glass_crop(
+    blur_rect: &Rect,
+    ops: &[PaintOp],
+    follow: Option<usize>,
+) -> Result<Rect, PdfError> {
     let mut crop = blur_rect.clone();
     if let Some(idx) = follow {
         if let PaintOp::DrawBox {

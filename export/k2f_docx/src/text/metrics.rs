@@ -407,7 +407,10 @@ mod tests {
         // That extra is the heading-rule gap, not header air.
         let geo = header_line_geo(21_200, 14_000, 0);
         let (_, top, _, _) = super::insets(Some(&geo), TextAlign::Left);
-        assert_eq!(top, 0, "underline padding must stay below glyphs, got {top}");
+        assert_eq!(
+            top, 0,
+            "underline padding must stay below glyphs, got {top}"
+        );
     }
 
     #[test]

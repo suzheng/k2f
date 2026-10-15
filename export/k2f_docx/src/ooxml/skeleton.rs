@@ -88,7 +88,10 @@ pub fn build_package(ir: &DocIR) -> BTreeMap<String, Vec<u8>> {
         "word/theme/theme1.xml".into(),
         xml_theme::theme_xml(hlink_hex.as_deref()).into_bytes(),
     );
-    files.insert("word/settings.xml".into(), settings_xml(embed_fonts).into_bytes());
+    files.insert(
+        "word/settings.xml".into(),
+        settings_xml(embed_fonts).into_bytes(),
+    );
     files.insert(
         "word/fontTable.xml".into(),
         if embed_fonts {
@@ -107,8 +110,14 @@ pub fn build_package(ir: &DocIR) -> BTreeMap<String, Vec<u8>> {
     if has_header {
         files.insert(
             "word/header1.xml".into(),
-            hdrftr_xml("hdr", &ir.header, &hyperlink_rids, &header_pic_rids, &font_embed)
-                .into_bytes(),
+            hdrftr_xml(
+                "hdr",
+                &ir.header,
+                &hyperlink_rids,
+                &header_pic_rids,
+                &font_embed,
+            )
+            .into_bytes(),
         );
         if let Some(xml) = part_rels_xml(&rids_used(&hyperlink_rids, &ir.header), &header_pic_rids)
         {
@@ -118,8 +127,14 @@ pub fn build_package(ir: &DocIR) -> BTreeMap<String, Vec<u8>> {
     if has_footer {
         files.insert(
             "word/footer1.xml".into(),
-            hdrftr_xml("ftr", &ir.footer, &hyperlink_rids, &footer_pic_rids, &font_embed)
-                .into_bytes(),
+            hdrftr_xml(
+                "ftr",
+                &ir.footer,
+                &hyperlink_rids,
+                &footer_pic_rids,
+                &font_embed,
+            )
+            .into_bytes(),
         );
         if let Some(xml) = part_rels_xml(&rids_used(&hyperlink_rids, &ir.footer), &footer_pic_rids)
         {

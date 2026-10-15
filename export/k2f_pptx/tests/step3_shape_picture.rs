@@ -124,9 +124,9 @@ fn images_are_separate_media_if_present() {
         .ops
         .iter()
         .find_map(|op| match op {
-            PaintOp::DrawImage { node_id, rect, src, .. } => {
-                Some((node_id.clone(), rect.clone(), src.clone()))
-            }
+            PaintOp::DrawImage {
+                node_id, rect, src, ..
+            } => Some((node_id.clone(), rect.clone(), src.clone())),
             _ => None,
         })
         .expect("invoice page 0 has DrawImage");
@@ -265,9 +265,7 @@ fn slide_bg_and_shape_fills_pin_exact_black_white() {
         "expected at least one non-textbox shape fill"
     );
     assert!(
-        !shape_fills
-            .iter()
-            .any(|c| *c == "000000" || *c == "FFFFFF"),
+        !shape_fills.iter().any(|c| *c == "000000" || *c == "FFFFFF"),
         "shape RGB 000000/FFFFFF remaps in Dark Mode, got {shape_fills:?}"
     );
 }

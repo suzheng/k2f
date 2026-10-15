@@ -1,7 +1,9 @@
 use crate::ir::PictureBox;
 use crate::IdmlError;
-use k2f_core::{ImageFit, Rect};
-use k2f_paint::{decode_raster, letterbox_rect, lookup_image};
+use k2f_core::{looks_like_svg, ImageFit, Rect};
+use k2f_paint::{
+    decode_raster, letterbox_rect, lookup_image, svg_intrinsic_px, svg_png_for_export,
+};
 use std::collections::BTreeMap;
 use std::io::Cursor;
 
@@ -18,9 +20,9 @@ pub fn picture_from_draw(
         .ok_or_else(|| IdmlError::Write(format!("missing image '{src}'")))?;
     let dest = match fit {
         ImageFit::Cover => rect.clone(),
-        ImageFit::Contain => dest_rect_for_image(rect, bytes),
+        ImageFit::Contain => dest_rect_for_image(rect, bytes)?,
     };
-    let (ext, payload) = encode_media(bytes)?;
+    let (ext, payload) = encode_media(bytes, rect, fit)?;
     Ok(PictureBox {
         node_id: node_id.to_string(),
         rect: dest,
@@ -32,21 +34,35 @@ pub fn picture_from_draw(
     })
 }
 
-fn dest_rect_for_image(rect: &Rect, bytes: &[u8]) -> Rect {
-    decode_raster(bytes)
+fn dest_rect_for_image(rect: &Rect, bytes: &[u8]) -> Result<Rect, IdmlError> {
+    if looks_like_svg(bytes) {
+        let (w, h) = svg_intrinsic_px(bytes).map_err(|e| IdmlError::Write(e.to_string()))?;
+        return letterbox_rect(w, h, rect)
+            .ok_or_else(|| IdmlError::Write("SVG letterbox failed".into()));
+    }
+    Ok(decode_raster(bytes)
         .ok()
         .and_then(|img| letterbox_rect(img.width(), img.height(), rect))
-        .unwrap_or_else(|| rect.clone())
+        .unwrap_or_else(|| rect.clone()))
 }
 
-fn encode_media(bytes: &[u8]) -> Result<(&'static str, Vec<u8>), IdmlError> {
+fn encode_media(
+    bytes: &[u8],
+    rect: &Rect,
+    fit: ImageFit,
+) -> Result<(&'static str, Vec<u8>), IdmlError> {
     if is_png(bytes) {
         return Ok(("png", bytes.to_vec()));
     }
     if is_jpeg(bytes) {
         return Ok(("jpg", bytes.to_vec()));
     }
-    if looks_like_svg(bytes) || is_webp(bytes) {
+    if looks_like_svg(bytes) {
+        let png =
+            svg_png_for_export(bytes, rect, fit).map_err(|e| IdmlError::Write(e.to_string()))?;
+        return Ok(("png", png));
+    }
+    if is_webp(bytes) {
         return raster_to_png(bytes);
     }
     match raster_to_png(bytes) {
@@ -75,12 +91,6 @@ fn is_jpeg(bytes: &[u8]) -> bool {
 
 fn is_webp(bytes: &[u8]) -> bool {
     bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP"
-}
-
-fn looks_like_svg(bytes: &[u8]) -> bool {
-    let s = String::from_utf8_lossy(bytes);
-    let trimmed = s.trim_start().to_ascii_lowercase();
-    trimmed.starts_with("<svg") || (trimmed.starts_with("<?xml") && trimmed.contains("<svg"))
 }
 
 #[cfg(test)]

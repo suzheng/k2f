@@ -2,9 +2,7 @@ use crate::ir::{DocIR, PageElement, PageIR};
 use crate::xml::word_hex_color;
 use std::collections::BTreeMap;
 
-use super::drawing::{
-    drawing_run, picture_anchor, raster_anchor, shape_anchor, textbox_anchor,
-};
+use super::drawing::{drawing_run, picture_anchor, raster_anchor, shape_anchor, textbox_anchor};
 use super::fonts::FontEmbedPlan;
 
 const NS: &str = r#"xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"

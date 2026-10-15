@@ -216,7 +216,12 @@ fn textbox_center_near_lock_rect() {
     let doc = common::invoice();
     let skip = running_ids(&doc);
     let lock = doc.lock().unwrap();
-    let plan = lock.render_plan.pages.iter().find(|p| p.index == 0).unwrap();
+    let plan = lock
+        .render_plan
+        .pages
+        .iter()
+        .find(|p| p.index == 0)
+        .unwrap();
     let page = &lock.geometry.pages[0];
     let (node_id, rect) = plan
         .ops
@@ -290,10 +295,9 @@ fn align_modes_fixture_writes_justification() {
     if !path.exists() {
         return;
     }
-    let idml = export_opened(
-        &k2f_paint::OpenedDocument::open(&std::fs::read(&path).unwrap()).unwrap(),
-    )
-    .unwrap();
+    let idml =
+        export_opened(&k2f_paint::OpenedDocument::open(&std::fs::read(&path).unwrap()).unwrap())
+            .unwrap();
     let names = common::unzip_names(&idml);
     for (id, want) in [
         ("txt_start", "LeftAlign"),
@@ -798,14 +802,8 @@ fn list_item_hangs_marker_column_not_body_inset() {
     );
     assert!(!tb.no_break, "lists must reflow so hanging wrap can apply");
     let xml = story_xml(&tb, "kSt0");
-    assert!(
-        xml.contains(r#"LeftIndent="7.000""#),
-        "got {xml}"
-    );
-    assert!(
-        xml.contains("FirstLineIndent="),
-        "got {xml}"
-    );
+    assert!(xml.contains(r#"LeftIndent="7.000""#), "got {xml}");
+    assert!(xml.contains("FirstLineIndent="), "got {xml}");
     let space = SpreadSpace {
         page_w: 595.0,
         page_h: 842.0,

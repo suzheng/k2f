@@ -119,7 +119,10 @@ fn shadow_crop_is_larger_than_the_box_and_clamped_to_the_page() {
     assert_eq!(slices.len(), 1);
     assert!(slices[0].crop.width.0 > 20_000);
     assert!(slices[0].crop.height.0 > 20_000);
-    assert!(slices[0].color_ops.iter().all(|op| !matches!(op, PaintOp::DrawText { .. })));
+    assert!(slices[0]
+        .color_ops
+        .iter()
+        .all(|op| !matches!(op, PaintOp::DrawText { .. })));
 
     let edge = vec![PaintOp::DrawBox {
         node_id: "plaque".into(),
@@ -158,9 +161,9 @@ fn glass_card_merges_blur_and_plate_and_keeps_its_text_vector() {
     let page = &lock.geometry.pages[0];
     let ops = page_ops(&doc, 0);
     let slices = slices_for_page(&ops, page.width, page.height).unwrap();
-    let blur_at = ops.iter().position(|op| {
-        matches!(op, PaintOp::BackdropBlur { node_id, .. } if node_id == "card1")
-    });
+    let blur_at = ops
+        .iter()
+        .position(|op| matches!(op, PaintOp::BackdropBlur { node_id, .. } if node_id == "card1"));
     let blur_at = blur_at.expect("card1 backdrop blur");
     let slice = slices
         .iter()
@@ -177,9 +180,9 @@ fn glass_card_merges_blur_and_plate_and_keeps_its_text_vector() {
             .all(|op| !matches!(op, PaintOp::DrawText { node_id, .. } if node_id == "card1")),
         "card text stays out of the chrome raster"
     );
-    let text_at = ops.iter().position(|op| {
-        matches!(op, PaintOp::DrawText { node_id, .. } if node_id == "card1")
-    });
+    let text_at = ops
+        .iter()
+        .position(|op| matches!(op, PaintOp::DrawText { node_id, .. } if node_id == "card1"));
     let text_at = text_at.expect("card1 text");
     assert!(!slice.consumed.contains(&text_at));
     assert!(
@@ -206,9 +209,9 @@ fn glass_slice_is_narrower_than_the_page_and_scales() {
     let slice = slices
         .iter()
         .find(|s| {
-            ops.get(s.anchor).is_some_and(|op| {
-                matches!(op, PaintOp::BackdropBlur { node_id, .. } if node_id == "card1")
-            })
+            ops.get(s.anchor).is_some_and(
+                |op| matches!(op, PaintOp::BackdropBlur { node_id, .. } if node_id == "card1"),
+            )
         })
         .expect("card slice");
     let (w2, _, _) = raster_slice(&doc, 0, slice, 2.0).unwrap();

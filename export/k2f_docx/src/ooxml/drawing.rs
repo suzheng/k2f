@@ -312,9 +312,15 @@ mod tests {
             xml.contains(r#"behindDoc="1""#),
             "overlapped plaque stays behind text, got {xml}"
         );
-        assert!(xml.contains("<a:solidFill>"), "fill must stay in OOXML, got {xml}");
+        assert!(
+            xml.contains("<a:solidFill>"),
+            "fill must stay in OOXML, got {xml}"
+        );
         assert!(xml.contains(r#"val="1F1F1F""#), "{xml}");
-        assert!(!xml.contains("txBox="), "behindDoc fill must not be an empty txBox, got {xml}");
+        assert!(
+            !xml.contains("txBox="),
+            "behindDoc fill must not be an empty txBox, got {xml}"
+        );
     }
 
     #[test]

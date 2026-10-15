@@ -76,10 +76,7 @@ pub(crate) fn textbox_from_draw_ctx(
     let pin = !is_list && should_pin_lock_breaks(geo, font_size, Some(raw), align, &node.modifiers);
     if pin {
         if let Some(g) = geo {
-            insert_lock_breaks(
-                &mut runs,
-                &lock_break_char_indices(g, raw, &node.modifiers),
-            );
+            insert_lock_breaks(&mut runs, &lock_break_char_indices(g, raw, &node.modifiers));
         }
     }
     if bullet {
@@ -162,8 +159,8 @@ pub(crate) fn textbox_from_draw_ctx(
             rect.height = ink;
         }
     }
-    let vert_center = vert_center(geo, &rect, font_size)
-        || symmetric_vertical_padding(inset_top, inset_bottom);
+    let vert_center =
+        vert_center(geo, &rect, font_size) || symmetric_vertical_padding(inset_top, inset_bottom);
     if vert_center {
         inset_top = 0.0;
         inset_bottom = 0.0;
@@ -379,11 +376,7 @@ pub(crate) fn infer_first_line_indent(
     if lines.len() < 2 {
         return 0.0;
     }
-    let first = lines[0]
-        .iter()
-        .map(|g| g.x_offset.0)
-        .min()
-        .unwrap_or(0);
+    let first = lines[0].iter().map(|g| g.x_offset.0).min().unwrap_or(0);
     let rest = lines[1..]
         .iter()
         .flat_map(|line| line.iter().map(|g| g.x_offset.0))
@@ -480,7 +473,9 @@ pub(crate) fn vert_center(
             // height is the remainder (line_height_mult > 1 still fits).
             if first_y >= 1_000 {
                 let line_h = h.saturating_sub(first_y.saturating_mul(2));
-                let max_h = (first_y + font_size.0).saturating_mul(2).saturating_add(2_000);
+                let max_h = (first_y + font_size.0)
+                    .saturating_mul(2)
+                    .saturating_add(2_000);
                 if line_h >= font_size.0.saturating_mul(8) / 10 && h <= max_h {
                     return true;
                 }

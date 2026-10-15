@@ -6,7 +6,7 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 use crate::acroform;
 use crate::error::PdfError;
 use crate::ids::Alloc;
-use crate::image::{collect_image_srcs, embed_images, ImageRes};
+use crate::image::{embed_images, ImageRes};
 use crate::ops::paint_page;
 use crate::select::{self, FontSet};
 use crate::source::{draw_source_caption, source_line};
@@ -93,8 +93,7 @@ pub fn export_opened(
     let mut pdf = Pdf::new();
     pdf.set_version(1, 7);
 
-    let srcs = collect_image_srcs(lock);
-    let images = embed_images(&mut pdf, &mut alloc, doc.assets(), &srcs)?;
+    let images = embed_images(&mut pdf, &mut alloc, doc.assets(), lock)?;
     let fonts = select::alloc_fonts(&mut alloc, doc.fonts());
 
     let n = lock.geometry.pages.len();
@@ -144,7 +143,7 @@ pub fn export_opened(
         let slices = slices_for_page(&plan.ops, page.width, page.height)?;
         let (mut page_draw, page_stamps) = if slices.is_empty() {
             (
-                paint_page(lock, i, &faces, &images, &skip_text)?,
+                paint_page(lock, i, &faces, doc.assets(), &images, &skip_text)?,
                 Vec::new(),
             )
         } else {

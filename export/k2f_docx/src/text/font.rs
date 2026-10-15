@@ -100,9 +100,7 @@ fn family_from_bytes(data: &[u8]) -> Option<String> {
     let face = Face::parse(data, 0).ok()?;
     name_english(&face, name_id::FAMILY, true)
         .or_else(|| name_english(&face, name_id::TYPOGRAPHIC_FAMILY, true))
-        .or_else(|| {
-            name_english(&face, name_id::FULL_NAME, true).and_then(family_from_full_name)
-        })
+        .or_else(|| name_english(&face, name_id::FULL_NAME, true).and_then(family_from_full_name))
         .or_else(|| name_english(&face, name_id::FULL_NAME, true))
 }
 

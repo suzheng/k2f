@@ -157,7 +157,7 @@ Writes `tmp/compare_overlay.png` and `tmp/compare_diff.png` (default `--align fi
 1. **Stable dotted ids** on every line, clause, party, and total you may edit later. **Never guess ids** — read the tree or grep `content/`.
 2. **Roles must exist** in **this package's** `styles/theme.json` (legal/contract packs often use `critical_warning`, not the SDK catalog name `warning`).
 3. **Theme-only styling** — no inline colors/font sizes on nodes.
-4. Image width only via declared millipt on image nodes; files under `assets/images/` (PNG/JPEG/WebP/SVG). SVG must be paths only — no `<text>` / `<tspan>` / `<textPath>` / `<foreignObject>` (XML comments/CDATA mentioning those tags are ignored); put labels in a K2F text node beside the image. To swap an image, replace bytes under `assets/images/` and update the node path — there is no in-place byte swap API.
+4. Image width only via declared millipt on image nodes; files under `assets/images/` (PNG/JPEG/WebP/SVG). SVG must be paths only — no `<text>` / `<tspan>` / `<textPath>` / `<foreignObject>` (XML comments/CDATA mentioning those tags are ignored); put labels in a K2F text node beside the image. Keep the SVG `width`/`height` at the art's point size: the engine rasterizes at the viewer paint scale, and at 4 px per pt of the image box for PDF, Word, PowerPoint, and IDML. Do not inflate the SVG header or pre-render a huge PNG to chase sharpness. To swap an image, replace bytes under `assets/images/` and update the node path — there is no in-place byte swap API.
 5. **Tables:** edit **cell** text node ids, never the table root id.
 6. **Text with modifiers:** required fields are `range`, `type`, **`intent`**. After changing `content.value`, recompute `range` with `modifier_range.py` — stale or hand-counted byte ranges fail compile or render wrong. `\n` in the value is 1 UTF-8 byte.
 7. Do not use system `unzip` on the ZIP and edit in place — use `k2f unpack` so lock/schema are omitted and includes stay on disk.
@@ -190,6 +190,8 @@ Not required. Do not install or configure MCP for this skill. If the user alread
 3. `download_template` returns `{ slug, packageUrl }`. Fetch that URL to a `.K2F` on disk, then `k2f unpack` as in step 2. Do not load the ZIP into context.
 
 Missing tools, empty list, kind mismatch, or fetch error → `init_package.py` / `starter/`; do not stop the task. After unpack, the loop is the same JSON + `pack_verify.py` path — do not use `Editor.insert_node` on that directory.
+
+If you hit a K2F issue (skill, gallery template, site MCP, or engine behavior) and need to tell the maintainers, call `submit_template_feedback` on the connected k2f site MCP (`https://k2f.dev/api/mcp`) with a short `title` and `description` (optional `template_slug`, `name`, `email`).
 
 ## Common mistakes
 

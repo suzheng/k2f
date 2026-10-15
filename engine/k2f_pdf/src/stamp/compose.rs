@@ -60,7 +60,15 @@ pub(crate) fn compose_page(
             stamps.push(img);
             continue;
         }
-        paint_vector_op(&mut out, faces, images, skip_text, &geo_by_id, op)?;
+        paint_vector_op(
+            &mut out,
+            faces,
+            doc.assets(),
+            images,
+            skip_text,
+            &geo_by_id,
+            op,
+        )?;
     }
     Ok((out, stamps))
 }

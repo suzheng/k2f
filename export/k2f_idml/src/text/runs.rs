@@ -307,7 +307,8 @@ mod tests {
         let text = "92% Complete — Final validation underway";
         let n = text.chars().count();
         let prefix = 15; // "92% Complete — "
-        let glyphs: Vec<GlyphPosition> = (0..n).map(|i| glyph(i as u32, i as i128 * 8000)).collect();
+        let glyphs: Vec<GlyphPosition> =
+            (0..n).map(|i| glyph(i as u32, i as i128 * 8000)).collect();
         let geo = GeometryNode {
             id: "c".into(),
             x: Pt(0),

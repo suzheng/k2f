@@ -218,10 +218,9 @@ fn drop_redundant_underline_on_bottom_rules(elements: &mut [SlideElement]) {
     let ruled: HashSet<String> = elements
         .iter()
         .filter_map(|el| match el {
-            SlideElement::Shape(s) if s.node_id.ends_with("::edge_bottom") => s
-                .node_id
-                .strip_suffix("::edge_bottom")
-                .map(str::to_string),
+            SlideElement::Shape(s) if s.node_id.ends_with("::edge_bottom") => {
+                s.node_id.strip_suffix("::edge_bottom").map(str::to_string)
+            }
             _ => None,
         })
         .collect();

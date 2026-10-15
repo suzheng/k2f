@@ -272,7 +272,11 @@ fn glass_fixture_has_raster_and_editable_title() {
         "blur+alpha glass must merge into one raster slice"
     );
     let png = first_raster_png(&idml);
-    assert_eq!(&png[..8], b"\x89PNG\r\n\x1a\n", "raster must embed PNG bytes");
+    assert_eq!(
+        &png[..8],
+        b"\x89PNG\r\n\x1a\n",
+        "raster must embed PNG bytes"
+    );
     assert!(png.len() > 64, "raster PNG should be non-trivial");
 }
 

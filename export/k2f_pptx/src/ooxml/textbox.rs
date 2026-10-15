@@ -193,9 +193,7 @@ fn paragraph_xml(
         p.push_str(&ln_spc_xml(pts, runs, wrap_pct));
     }
     if let Some(aft) = spc_aft_pts {
-        p.push_str(&format!(
-            r#"<a:spcAft><a:spcPts val="{aft}"/></a:spcAft>"#
-        ));
+        p.push_str(&format!(r#"<a:spcAft><a:spcPts val="{aft}"/></a:spcAft>"#));
     }
     // Markers are literal text runs (see prepend_literal_*). Native
     // a:buChar / a:buAutoNum in floating frames often collapse or renumber
@@ -594,11 +592,18 @@ mod tests {
         };
         let xml = textbox_sp_xml(&tb, 2, &BTreeMap::new());
         assert_eq!(xml.matches(r#"<a:spcPts val="2400"/>"#).count(), 2, "{xml}");
-        assert_eq!(xml.matches(r#"<a:spcAft><a:spcPts val="432"/>"#).count(), 1, "{xml}");
+        assert_eq!(
+            xml.matches(r#"<a:spcAft><a:spcPts val="432"/>"#).count(),
+            1,
+            "{xml}"
+        );
         assert!(!xml.contains(r#"<a:spcPts val="2832"/>"#), "{xml}");
         assert!(!xml.contains("spcPct"), "{xml}");
         let aft = xml.find(r#"<a:spcAft>"#).unwrap();
         let last_p = xml.rfind("<a:p>").unwrap();
-        assert!(aft < last_p, "spcAft belongs on the first paragraph, got {xml}");
+        assert!(
+            aft < last_p,
+            "spcAft belongs on the first paragraph, got {xml}"
+        );
     }
 }

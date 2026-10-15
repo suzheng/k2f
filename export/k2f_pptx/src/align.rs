@@ -147,14 +147,11 @@ pub(crate) fn host_wrap(geo: Option<&GeometryNode>, align: TextAlign, wrap: bool
         match align {
             // Right: only left leftover proves alignment; right may be a thin
             // pad (< MIN_SLACK) or flush. Same fill check as Right insets.
-            TextAlign::Right => {
-                left >= MIN_SLACK && !line_fills_padded_width(right, left, box_w)
-            }
+            TextAlign::Right => left >= MIN_SLACK && !line_fills_padded_width(right, left, box_w),
             TextAlign::Center | TextAlign::Justify => {
                 left >= MIN_SLACK
                     && right >= MIN_SLACK
-                    && (!line_fills_padded_width(left, right, box_w)
-                        || box_w >= WIDE_CENTER_MIN)
+                    && (!line_fills_padded_width(left, right, box_w) || box_w >= WIDE_CENTER_MIN)
             }
             TextAlign::Left => false,
         }

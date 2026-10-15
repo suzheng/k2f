@@ -168,7 +168,7 @@ fn deep_ocean_toolbar_title_has_no_tofu() {
 
 /// Prefer the gallery fixture; otherwise stamp the real title onto a tiny package.
 fn deep_ocean_title_bytes() -> Vec<u8> {
-    const GALLERY: &str = "/Users/suzheng/noBackupData/apps/others/gallary/poster/deep-ocean-calm-gradient/deep-ocean-calm-gradient.K2F";
+    const GALLERY: &str = "/Users/suzheng/noBackupData/apps/others/gallery/poster/deep-ocean-calm-gradient/deep-ocean-calm-gradient.K2F";
     if let Ok(bytes) = std::fs::read(GALLERY) {
         return bytes;
     }

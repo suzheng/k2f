@@ -460,10 +460,7 @@ mod tests {
             xml.contains(r#"FontStyle="Book""#),
             "Book faces must not be advertised as Regular, got {xml}"
         );
-        assert!(
-            !xml.contains(r#"FontStyle="Regular""#),
-            "got {xml}"
-        );
+        assert!(!xml.contains(r#"FontStyle="Regular""#), "got {xml}");
     }
 
     #[test]
@@ -480,10 +477,7 @@ mod tests {
             xml.contains(r#"FontStyle="Regular""#),
             "Regular-only packages must not advertise Bold Italic, got {xml}"
         );
-        assert!(
-            !xml.contains(r#"FontStyle="Bold Italic""#),
-            "got {xml}"
-        );
+        assert!(!xml.contains(r#"FontStyle="Bold Italic""#), "got {xml}");
         assert!(
             xml.contains(r#"Skew="12.000""#),
             "synthetic italic must shear like K2F paint, got {xml}"
@@ -507,7 +501,10 @@ mod tests {
         let mut hts = 0usize;
         let xml = write_paras(TextAlign::Left, &[run], &mut hts, false, 0.0, 0.0, false);
         assert!(xml.contains(r#"FontStyle="Italic""#), "got {xml}");
-        assert!(!xml.contains("Skew="), "real italic must not faux-skew, got {xml}");
+        assert!(
+            !xml.contains("Skew="),
+            "real italic must not faux-skew, got {xml}"
+        );
     }
 
     #[test]

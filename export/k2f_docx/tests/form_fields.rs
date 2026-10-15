@@ -76,7 +76,8 @@ fn xml_names(docx: &[u8]) -> String {
 fn has_drawing_name(xml: &str, name: &str) -> bool {
     let parsed = roxmltree::Document::parse(xml).unwrap();
     parsed.descendants().any(|n| {
-        (n.has_tag_name("docPr") || n.has_tag_name("cNvPr")) && common::local_attr(&n, "name") == Some(name)
+        (n.has_tag_name("docPr") || n.has_tag_name("cNvPr"))
+            && common::local_attr(&n, "name") == Some(name)
     })
 }
 
@@ -91,8 +92,7 @@ fn form_field_empty_keeps_border_shape() {
         "empty underline field must remain as a drawing, got no docPr for root.empty_name"
     );
     assert!(
-        has_drawing_name(&xml, "root.empty_box")
-            || xml.contains("root.empty_box"),
+        has_drawing_name(&xml, "root.empty_box") || xml.contains("root.empty_box"),
         "empty boxed field must remain as a drawing"
     );
 }
@@ -107,8 +107,7 @@ fn form_field_filled_exports_as_textbox() {
         "filled field value must appear in Word text, got no Alice"
     );
     assert!(
-        has_drawing_name(&xml, "root.filled_name")
-            || xml.contains("root.filled_name"),
+        has_drawing_name(&xml, "root.filled_name") || xml.contains("root.filled_name"),
         "filled field must keep a named drawing/textbox"
     );
 }
@@ -153,8 +152,7 @@ fn checked_checkbox_exports_x_not_true() {
         "checkbox value true must not appear as Word text"
     );
     assert!(
-        has_drawing_name(&xml, "root.nope")
-            || xml.contains("root.nope"),
+        has_drawing_name(&xml, "root.nope") || xml.contains("root.nope"),
         "unchecked box must remain a drawing"
     );
 }

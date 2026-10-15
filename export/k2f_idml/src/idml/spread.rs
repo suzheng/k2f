@@ -75,12 +75,7 @@ pub(crate) fn textframe_xml_on(
     };
     // InDesign ignores the four-value InsetSpacing attribute. The IDML list
     // (top, left, bottom, right) is what actually insets paint+padding boxes.
-    let insets = inset_spacing_xml(
-        tb.inset_top,
-        tb.inset_left,
-        tb.inset_bottom,
-        tb.inset_right,
-    );
+    let insets = inset_spacing_xml(tb.inset_top, tb.inset_left, tb.inset_bottom, tb.inset_right);
     format!(
         r#"    <TextFrame Self="{tf_self}" ParentStory="{story_self}" ContentType="TextType" ItemLayer="kLayer" FillColor="Swatch/None" StrokeWeight="0" ItemTransform="{tf}" Name="{name}" NextTextFrame="n" PreviousTextFrame="n">
 {geo}
@@ -130,7 +125,10 @@ pub(crate) fn rectangle_xml_on(
     let h = pt_val(shape.rect.height);
     let name = escape_xml(&shape.node_id);
     let (fill, geo) = if let Some(name) = shape.gradient_swatch_name() {
-        let g = shape.gradient.as_ref().expect("swatch name implies gradient");
+        let g = shape
+            .gradient
+            .as_ref()
+            .expect("swatch name implies gradient");
         let (sx, sy, len) = gradient_aabb_start_length(&shape.rect, g.angle_degrees);
         (
             format!(
@@ -582,7 +580,11 @@ mod tests {
             "{xml}"
         );
         assert!(
-            xml.contains(&format!("GradientFillStart=\"{} {}\"", fmt_pt(sx), fmt_pt(sy))),
+            xml.contains(&format!(
+                "GradientFillStart=\"{} {}\"",
+                fmt_pt(sx),
+                fmt_pt(sy)
+            )),
             "{xml}"
         );
         assert!(
@@ -599,7 +601,10 @@ mod tests {
             )),
             "{xml}"
         );
-        assert!(xml.contains("TopRightCornerOption=\"RoundedCorner\""), "{xml}");
+        assert!(
+            xml.contains("TopRightCornerOption=\"RoundedCorner\""),
+            "{xml}"
+        );
         assert!(!xml.contains("k2f-raster"), "{xml}");
     }
 
@@ -654,10 +659,7 @@ mod tests {
             page_h: 842.0,
         };
         let xml = rectangle_xml(&shape, &space, "kRect0");
-        assert!(
-            xml.contains("<FillTransparencySetting>"),
-            "{xml}"
-        );
+        assert!(xml.contains("<FillTransparencySetting>"), "{xml}");
         assert!(
             xml.contains("Opacity=\"26.667\""),
             "0x44 / 255 = 26.667%, got {xml}"

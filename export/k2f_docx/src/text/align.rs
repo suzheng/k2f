@@ -147,13 +147,10 @@ pub(crate) fn host_wrap(geo: Option<&GeometryNode>, align: TextAlign, wrap: bool
         match align {
             // Right: only left leftover proves alignment; right may be a thin
             // pad (< MIN_SLACK) or flush. Same fill check as Right insets.
-            TextAlign::Right => {
-                left >= MIN_SLACK && !line_fills_padded_width(right, left, box_w)
-            }
+            TextAlign::Right => left >= MIN_SLACK && !line_fills_padded_width(right, left, box_w),
             TextAlign::Center | TextAlign::Justify => {
                 let slack = left.saturating_add(right);
-                let balanced = slack > 0
-                    && (left - right).abs().saturating_mul(5) <= slack;
+                let balanced = slack > 0 && (left - right).abs().saturating_mul(5) <= slack;
                 left >= MIN_SLACK
                     && right >= MIN_SLACK
                     && (!line_fills_padded_width(left, right, box_w)
@@ -288,9 +285,7 @@ pub(crate) fn host_wrap_box(
     if para_align.is_empty() {
         host_wrap(geo, align, false)
     } else {
-        para_align
-            .iter()
-            .any(|&a| host_wrap(geo, a, false))
+        para_align.iter().any(|&a| host_wrap(geo, a, false))
     }
 }
 
@@ -423,19 +418,13 @@ mod tests {
         let mut g = with_font(
             geo(
                 199_048,
-                vec![
-                    glyph(0, 10_288, 178_471, 0),
-                    glyph(1, 0, 199_048, 24_700),
-                ],
+                vec![glyph(0, 10_288, 178_471, 0), glyph(1, 0, 199_048, 24_700)],
             ),
             19_000,
         );
         g.height = Pt(49_400);
         assert!(host_wrap(Some(&g), TextAlign::Center, false));
-        let paras = infer_para_align(
-            &g,
-            "EMMA ELEONORA\n& LIAM ALEXANDER",
-        );
+        let paras = infer_para_align(&g, "EMMA ELEONORA\n& LIAM ALEXANDER");
         assert_eq!(paras.len(), 2);
         assert_eq!(paras[0], TextAlign::Center);
         assert_eq!(paras[1], TextAlign::Left);

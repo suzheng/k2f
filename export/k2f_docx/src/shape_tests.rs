@@ -207,7 +207,11 @@ fn four_solid_edges_use_edge_bars() {
     };
     assert!(dec.border.as_ref().unwrap().is_full_rect_stroke());
     let boxes = shapes_from_box("card", &rect(), &dec, w, h, 10, "FFFFFF").unwrap();
-    assert_eq!(boxes.len(), 4, "solid rect outline → 4 thin bars, got {boxes:?}");
+    assert_eq!(
+        boxes.len(),
+        4,
+        "solid rect outline → 4 thin bars, got {boxes:?}"
+    );
     for b in &boxes {
         assert!(b.node_id.contains("::edge_"), "{}", b.node_id);
         assert_eq!(b.fill_hex.as_deref(), Some("FF0000"));
@@ -250,7 +254,11 @@ fn rounded_filled_card_merges_stroke_onto_fill() {
         ..Default::default()
     };
     let boxes = shapes_from_box("card.panel", &rect(), &dec, w, h, 10, "FFFFFF").unwrap();
-    assert_eq!(boxes.len(), 1, "roundRect merges a:ln onto fill, got {boxes:?}");
+    assert_eq!(
+        boxes.len(),
+        1,
+        "roundRect merges a:ln onto fill, got {boxes:?}"
+    );
     assert_eq!(boxes[0].fill_hex.as_deref(), Some("F8FAFC"));
     assert_eq!(boxes[0].line_hex.as_deref(), Some("FF0000"));
     assert!(boxes[0].corner_emu > 0);
@@ -275,12 +283,19 @@ fn rounded_paper_form_box_stays_in_front() {
         ..Default::default()
     };
     let boxes = shapes_from_box("q3.field", &field, &dec, w, h, 370, "FFFFFF").unwrap();
-    assert_eq!(boxes.len(), 1, "rounded form box stays one roundRect, got {boxes:?}");
+    assert_eq!(
+        boxes.len(),
+        1,
+        "rounded form box stays one roundRect, got {boxes:?}"
+    );
     assert!(
         !boxes[0].behind_doc,
         "roundRect a:ln cannot split to edge bars; behindDoc hid the rim"
     );
-    assert!(boxes[0].pin_empty_txbox, "empty form box must pin lock extent");
+    assert!(
+        boxes[0].pin_empty_txbox,
+        "empty form box must pin lock extent"
+    );
     assert_eq!(boxes[0].line_hex.as_deref(), Some("FF0000"));
     assert!(boxes[0].corner_emu > 0);
 }
@@ -303,7 +318,11 @@ fn translucent_border_keeps_lock_alpha() {
         ..Default::default()
     };
     let boxes = shapes_from_box("card", &rect(), &dec, w, h, 10, "FFFFFF").unwrap();
-    assert_eq!(boxes.len(), 4, "solid rect outline → edge bars, got {boxes:?}");
+    assert_eq!(
+        boxes.len(),
+        4,
+        "solid rect outline → edge bars, got {boxes:?}"
+    );
     assert_eq!(boxes[0].fill_hex.as_deref(), Some("1E3A8A"));
     assert_eq!(boxes[0].fill_alpha, 0x66);
 }
@@ -396,9 +415,16 @@ fn page_background_is_behind_doc() {
         ..Default::default()
     };
     let bg = shapes_from_box("root::page_0::background", &full, &dec, w, h, 0, "FFFFFF").unwrap();
-    assert_eq!(bg.len(), 1, "full-page solid is the page-paper drawing, got {bg:?}");
+    assert_eq!(
+        bg.len(),
+        1,
+        "full-page solid is the page-paper drawing, got {bg:?}"
+    );
     assert!(bg[0].behind_doc, "page paper is the only behindDoc fill");
-    assert!(!bg[0].pin_empty_txbox, "page paper must not be an empty txBox");
+    assert!(
+        !bg[0].pin_empty_txbox,
+        "page paper must not be an empty txBox"
+    );
     assert_eq!(bg[0].fill_hex.as_deref(), Some("FFFFFF"));
     let cell = shapes_from_box("invoice.th.item", &rect(), &dec, w, h, 10, "FFFFFF").unwrap();
     assert_eq!(cell.len(), 1);
@@ -455,7 +481,10 @@ fn dark_page_paper_is_behind_doc_wash() {
     let bg = shapes_from_box("root::page_0::background", &full, &dec, w, h, 0, paper).unwrap();
     assert_eq!(bg.len(), 1, "dark full-page solid is the wash, got {bg:?}");
     assert!(bg[0].behind_doc, "dark page paper must be behindDoc");
-    assert!(!bg[0].pin_empty_txbox, "page paper must not pin an empty txBox");
+    assert!(
+        !bg[0].pin_empty_txbox,
+        "page paper must not pin an empty txBox"
+    );
     assert_eq!(bg[0].fill_hex.as_deref(), Some("0B0F19"));
     let card = Rect {
         x: Pt(36_000),
@@ -520,8 +549,16 @@ fn contrasting_full_page_shell_stays_in_front() {
         })),
         ..Default::default()
     };
-    let wash =
-        shapes_from_box("root::page_3::background", &full, &paper_dec, w, h, 0, paper).unwrap();
+    let wash = shapes_from_box(
+        "root::page_3::background",
+        &full,
+        &paper_dec,
+        w,
+        h,
+        0,
+        paper,
+    )
+    .unwrap();
     assert!(wash[0].behind_doc);
     let slide_dec = BoxDecoration {
         background: Some(FillRef::Inline(Fill::Solid {

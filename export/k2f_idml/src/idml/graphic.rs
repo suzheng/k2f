@@ -101,14 +101,8 @@ mod tests {
             ("Roboto".into(), "Regular".into()),
             ("Roboto".into(), "Bold".into()),
         ]);
-        assert!(
-            xml.contains("FontStyleName=\"Regular\""),
-            "got {xml}"
-        );
-        assert!(
-            xml.contains("FontStyleName=\"Bold\""),
-            "got {xml}"
-        );
+        assert!(xml.contains("FontStyleName=\"Regular\""), "got {xml}");
+        assert!(xml.contains("FontStyleName=\"Bold\""), "got {xml}");
         assert_eq!(
             xml.matches("<FontFamily ").count(),
             1,
@@ -131,10 +125,7 @@ mod tests {
             xml.contains("Name=\"Book\""),
             "Font/@Name is the subfamily InDesign looks up, got {xml}"
         );
-        assert!(
-            xml.contains("DejaVu Serif-Book"),
-            "got {xml}"
-        );
+        assert!(xml.contains("DejaVu Serif-Book"), "got {xml}");
         assert!(xml.contains("FontStyleName=\"Regular\""));
         assert_eq!(
             xml.matches("<FontFamily ").count(),

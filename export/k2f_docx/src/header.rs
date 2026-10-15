@@ -75,8 +75,7 @@ pub(crate) fn collect_running(
                     continue;
                 };
                 let geo = find_geo(&page.root, node_id);
-                if let Some(tb) =
-                    textbox_from_draw_ctx(node, rect, runs, geo, fonts, rel, 0, 1, 1)
+                if let Some(tb) = textbox_from_draw_ctx(node, rect, runs, geo, fonts, rel, 0, 1, 1)
                 {
                     els.push(PageElement::TextBox(tb));
                 }

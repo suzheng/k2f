@@ -60,7 +60,10 @@ impl IdmlHandoff {
 
     pub fn to_zip_bytes(&self) -> Result<Vec<u8>, IdmlError> {
         let mut files = BTreeMap::new();
-        files.insert(format!("{}/{}.idml", self.stem, self.stem), self.idml.clone());
+        files.insert(
+            format!("{}/{}.idml", self.stem, self.stem),
+            self.idml.clone(),
+        );
         for (name, bytes) in &self.fonts {
             files.insert(
                 format!("{}/{DOCUMENT_FONTS}/{name}", self.stem),

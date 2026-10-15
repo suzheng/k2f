@@ -13,6 +13,7 @@ pub fn paint_page(
     lock: &LockFile,
     page_idx: usize,
     faces: &HashMap<String, Face<'_>>,
+    assets: &BTreeMap<String, Vec<u8>>,
     images: &BTreeMap<String, ImageRes>,
     skip_text: &HashSet<String>,
 ) -> Result<PageDraw, PdfError> {
@@ -34,7 +35,7 @@ pub fn paint_page(
     k2f_paint::index_geometry_multi_str(&page.root, &mut geo_by_id);
     let mut out = PageDraw::new(page.width.as_f64_pt(), page.height.as_f64_pt());
     for op in &plan.ops {
-        paint_vector_op(&mut out, faces, images, skip_text, &geo_by_id, op)?;
+        paint_vector_op(&mut out, faces, assets, images, skip_text, &geo_by_id, op)?;
     }
     Ok(out)
 }
@@ -42,6 +43,7 @@ pub fn paint_page(
 pub(crate) fn paint_vector_op(
     out: &mut PageDraw,
     faces: &HashMap<String, Face<'_>>,
+    assets: &BTreeMap<String, Vec<u8>>,
     images: &BTreeMap<String, ImageRes>,
     skip_text: &HashSet<String>,
     geo_by_id: &HashMap<&str, Vec<&k2f_core::GeometryNode>>,
@@ -76,7 +78,7 @@ pub(crate) fn paint_vector_op(
             corner_radius_pt,
             ..
         } => {
-            draw_image(out, rect, src, images, *fit, *corner_radius_pt)?;
+            draw_image(out, rect, src, assets, images, *fit, *corner_radius_pt)?;
         }
         PaintOp::DrawTableReference { rect, .. } => draw_placeholder(out, rect),
         PaintOp::Unknown => return Err(PdfError::UnknownOp),

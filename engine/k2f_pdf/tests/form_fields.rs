@@ -219,15 +219,15 @@ fn form_field_text_widget_sets_multiline_maxlen_and_required() {
     let doc = save_open(&mut blank_form());
     let pdf = export_opened(&doc, opts()).unwrap();
     let name = common::acroform::field_by_alt_name(&pdf, "root.name").expect("name field");
-    assert_eq!(
-        common::acroform::field_type(&name).as_deref(),
-        Some("Tx")
-    );
+    assert_eq!(common::acroform::field_type(&name).as_deref(), Some("Tx"));
     assert_eq!(common::acroform::field_int(&name, b"MaxLen"), Some(80));
-    assert_eq!(common::acroform::field_int(&name, b"Ff"), Some(2), "required bit");
+    assert_eq!(
+        common::acroform::field_int(&name, b"Ff"),
+        Some(2),
+        "required bit"
+    );
 
-    let address =
-        common::acroform::field_by_alt_name(&pdf, "root.address").expect("address field");
+    let address = common::acroform::field_by_alt_name(&pdf, "root.address").expect("address field");
     assert_eq!(
         common::acroform::field_type(&address).as_deref(),
         Some("Tx")
@@ -244,10 +244,7 @@ fn form_field_checkbox_widget_is_button_type() {
     let doc = save_open(&mut blank_form());
     let pdf = export_opened(&doc, opts()).unwrap();
     let agree = common::acroform::field_by_alt_name(&pdf, "root.agree").expect("checkbox");
-    assert_eq!(
-        common::acroform::field_type(&agree).as_deref(),
-        Some("Btn")
-    );
+    assert_eq!(common::acroform::field_type(&agree).as_deref(), Some("Btn"));
 }
 
 #[test]

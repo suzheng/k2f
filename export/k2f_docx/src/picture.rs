@@ -2,8 +2,11 @@ use crate::coord::{millipt_to_emu, pt_to_emu};
 use crate::ir::PictureBox;
 use crate::xml::escape_xml;
 use crate::DocxError;
-use k2f_core::{ImageFit, Rect};
-use k2f_paint::{cover_src_rect_100000, decode_raster, letterbox_rect, lookup_image};
+use k2f_core::{looks_like_svg, ImageFit, Rect};
+use k2f_paint::{
+    cover_src_rect_100000, decode_raster, letterbox_rect, lookup_image, svg_intrinsic_px,
+    svg_png_for_export,
+};
 use std::collections::BTreeMap;
 use std::io::Cursor;
 
@@ -19,8 +22,8 @@ pub(crate) fn picture_from_draw(
 ) -> Result<PictureBox, DocxError> {
     let bytes = lookup_image(assets, src)
         .ok_or_else(|| DocxError::Write(format!("missing image '{src}'")))?;
-    let (dest, src_crop) = dest_and_crop(rect, bytes, fit);
-    let (ext, payload) = encode_media(bytes)?;
+    let (dest, src_crop) = dest_and_crop(rect, bytes, fit)?;
+    let (ext, payload) = encode_media(bytes, rect, fit)?;
     Ok(PictureBox {
         node_id: node_id.to_string(),
         x_emu: pt_to_emu(dest.x),
@@ -39,11 +42,27 @@ pub(crate) fn picture_from_draw(
     })
 }
 
-fn dest_and_crop(rect: &Rect, bytes: &[u8], fit: ImageFit) -> (Rect, (i64, i64, i64, i64)) {
+fn dest_and_crop(
+    rect: &Rect,
+    bytes: &[u8],
+    fit: ImageFit,
+) -> Result<(Rect, (i64, i64, i64, i64)), DocxError> {
+    if looks_like_svg(bytes) {
+        return match fit {
+            ImageFit::Cover => Ok((rect.clone(), (0, 0, 0, 0))),
+            ImageFit::Contain => {
+                let (w, h) =
+                    svg_intrinsic_px(bytes).map_err(|e| DocxError::Write(e.to_string()))?;
+                let dest = letterbox_rect(w, h, rect)
+                    .ok_or_else(|| DocxError::Write("SVG letterbox failed".into()))?;
+                Ok((dest, (0, 0, 0, 0)))
+            }
+        };
+    }
     let Some(img) = decode_raster(bytes).ok() else {
-        return (rect.clone(), (0, 0, 0, 0));
+        return Ok((rect.clone(), (0, 0, 0, 0)));
     };
-    match fit {
+    Ok(match fit {
         ImageFit::Cover => {
             let bw = rect.width.0.max(1) as u32;
             let bh = rect.height.0.max(1) as u32;
@@ -55,20 +74,28 @@ fn dest_and_crop(rect: &Rect, bytes: &[u8], fit: ImageFit) -> (Rect, (i64, i64, 
             letterbox_rect(img.width(), img.height(), rect).unwrap_or_else(|| rect.clone()),
             (0, 0, 0, 0),
         ),
-    }
+    })
 }
 
-pub(crate) fn encode_media(bytes: &[u8]) -> Result<(&'static str, Vec<u8>), DocxError> {
+pub(crate) fn encode_media(
+    bytes: &[u8],
+    rect: &Rect,
+    fit: ImageFit,
+) -> Result<(&'static str, Vec<u8>), DocxError> {
     if is_png(bytes) {
         return Ok(("png", bytes.to_vec()));
     }
     if is_jpeg(bytes) {
         return Ok(("jpg", bytes.to_vec()));
     }
-    // SVG (and WebP / other decode_raster formats) → PNG. Office hosts often
-    // leave raw `image/svg+xml` blank (LibreOffice Writer; uneven Word support),
-    // while paint/PDF already rasterize via resvg. Same path for both exporters.
-    if looks_like_svg(bytes) || is_webp(bytes) {
+    // SVG → PNG at the image box × 4 px/pt. Office hosts often leave raw
+    // `image/svg+xml` blank (LibreOffice Writer; uneven Word support).
+    if looks_like_svg(bytes) {
+        let png =
+            svg_png_for_export(bytes, rect, fit).map_err(|e| DocxError::Write(e.to_string()))?;
+        return Ok(("png", png));
+    }
+    if is_webp(bytes) {
         return raster_to_png(bytes);
     }
     match raster_to_png(bytes) {
@@ -97,12 +124,6 @@ fn is_jpeg(bytes: &[u8]) -> bool {
 
 fn is_webp(bytes: &[u8]) -> bool {
     bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP"
-}
-
-fn looks_like_svg(bytes: &[u8]) -> bool {
-    let s = String::from_utf8_lossy(bytes);
-    let trimmed = s.trim_start().to_ascii_lowercase();
-    trimmed.starts_with("<svg") || (trimmed.starts_with("<?xml") && trimmed.contains("<svg"))
 }
 
 pub(crate) fn pic_xml(pic: &PictureBox, embed_rid: &str, cnv_id: u32) -> String {
@@ -247,15 +268,30 @@ mod tests {
     #[test]
     fn svg_encodes_as_png() {
         let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="#00f"/></svg>"##;
-        let (ext, payload) = encode_media(svg).expect("svg must rasterize");
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(4_000),
+            height: Pt(4_000),
+        };
+        let (ext, payload) =
+            encode_media(svg, &rect, ImageFit::Contain).expect("svg must rasterize");
         assert_eq!(ext, "png");
         assert!(is_png(&payload), "svg must become PNG bytes");
+        let img = image::load_from_memory(&payload).unwrap();
+        assert_eq!((img.width(), img.height()), (16, 16), "4pt box × 4 px/pt");
     }
 
     #[test]
     fn png_keeps_original_bytes() {
         let png = [0x89, b'P', b'N', b'G', 0, 0, 0, 0];
-        let (ext, payload) = encode_media(&png).unwrap();
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(1_000),
+            height: Pt(1_000),
+        };
+        let (ext, payload) = encode_media(&png, &rect, ImageFit::Contain).unwrap();
         assert_eq!(ext, "png");
         assert_eq!(payload, png);
     }
@@ -271,9 +307,65 @@ mod tests {
             0xd2, 0xe0, 0xfd, 0x2e, 0x0f, 0xd2, 0xe0, 0xff, 0xd2, 0x90, 0x00, 0x00,
         ];
         assert!(is_webp(webp));
-        let (ext, payload) = encode_media(webp).expect("webp must decode");
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(1_000),
+            height: Pt(1_000),
+        };
+        let (ext, payload) =
+            encode_media(webp, &rect, ImageFit::Contain).expect("webp must decode");
         assert_eq!(ext, "png");
         assert!(is_png(&payload), "webp must become PNG bytes");
+    }
+
+    #[test]
+    fn svg_cover_png_fills_box_without_src_rect() {
+        let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10"><rect width="20" height="10" fill="#000"/></svg>"##;
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(10_000),
+            height: Pt(10_000),
+        };
+        let (dest, crop) = dest_and_crop(&rect, svg, ImageFit::Cover).unwrap();
+        assert_eq!(dest, rect);
+        assert_eq!(crop, (0, 0, 0, 0));
+        let (ext, payload) = encode_media(svg, &rect, ImageFit::Cover).unwrap();
+        assert_eq!(ext, "png");
+        let img = image::load_from_memory(&payload).unwrap();
+        assert_eq!((img.width(), img.height()), (40, 40));
+    }
+
+    #[test]
+    fn svg_contain_letterboxes_from_vector_aspect() {
+        let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10"><rect width="20" height="10" fill="#000"/></svg>"##;
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(10_000),
+            height: Pt(10_000),
+        };
+        let dest = dest_and_crop(&rect, svg, ImageFit::Contain).unwrap().0;
+        assert_eq!(dest.width, Pt(10_000));
+        assert_eq!(dest.height, Pt(5_000));
+        assert_eq!(dest.y, Pt(2_500));
+        assert_eq!(dest.x, rect.x);
+    }
+
+    #[test]
+    fn huge_svg_header_letterboxes_instead_of_stretching() {
+        let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="9000" height="10" viewBox="0 0 9000 10"><rect width="9000" height="10" fill="#000"/></svg>"##;
+        let rect = Rect {
+            x: Pt(0),
+            y: Pt(0),
+            width: Pt(100_000),
+            height: Pt(100_000),
+        };
+        let dest = dest_and_crop(&rect, svg, ImageFit::Contain).unwrap().0;
+        assert_eq!(dest.width, rect.width);
+        assert_eq!(dest.height, Pt(10 * 100_000 / 9000));
+        assert!(dest.height.0 < rect.height.0);
     }
 
     #[test]
@@ -292,7 +384,7 @@ mod tests {
             width: Pt(200_000),
             height: Pt(100_000),
         };
-        let dest = dest_and_crop(&rect, &bytes, ImageFit::Contain).0;
+        let dest = dest_and_crop(&rect, &bytes, ImageFit::Contain).unwrap().0;
         assert_eq!(dest.width, Pt(50_000));
         assert_eq!(dest.x, Pt(75_000));
     }
@@ -313,7 +405,7 @@ mod tests {
             width: Pt(100_000),
             height: Pt(100_000),
         };
-        let (dest, crop) = dest_and_crop(&rect, &bytes, ImageFit::Cover);
+        let (dest, crop) = dest_and_crop(&rect, &bytes, ImageFit::Cover).unwrap();
         assert_eq!(dest, rect);
         assert_eq!(crop, (25_000, 0, 25_000, 0));
     }

@@ -62,12 +62,7 @@ pub fn letterbox_rect(img_w: u32, img_h: u32, rect: &Rect) -> Option<Rect> {
 
 /// Centered cover crop in source pixels: (sx, sy, sw, sh).
 /// The cropped region scaled to the box fills it without letterbox bars.
-pub fn cover_src(
-    img_w: u32,
-    img_h: u32,
-    box_w: u32,
-    box_h: u32,
-) -> Option<(u32, u32, u32, u32)> {
+pub fn cover_src(img_w: u32, img_h: u32, box_w: u32, box_h: u32) -> Option<(u32, u32, u32, u32)> {
     if img_w == 0 || img_h == 0 || box_w == 0 || box_h == 0 {
         return None;
     }

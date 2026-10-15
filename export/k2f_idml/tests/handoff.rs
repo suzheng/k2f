@@ -27,10 +27,7 @@ fn invoice_handoff_dir_matches_export_opened() {
     let dir = std::env::temp_dir().join(format!("k2f-idml-handoff-dir-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     pkg.clone().with_stem("invoice").write_dir(&dir).unwrap();
-    assert_eq!(
-        std::fs::read(dir.join("invoice.idml")).unwrap(),
-        pkg.idml
-    );
+    assert_eq!(std::fs::read(dir.join("invoice.idml")).unwrap(), pkg.idml);
     assert_eq!(
         std::fs::read(dir.join(DOCUMENT_FONTS).join("Roboto-Regular.ttf")).unwrap(),
         *roboto

@@ -431,10 +431,7 @@ mod tests {
         // Shrink-wrapped pill (~7.5% padding each side): balanced slack
         // dominates box width even when left alone does not.
         assert_eq!(
-            infer_text_align(
-                &geo(60_104, vec![glyph(0, 4_500, 51_022, 0)]),
-                "VIP PASS"
-            ),
+            infer_text_align(&geo(60_104, vec![glyph(0, 4_500, 51_022, 0)]), "VIP PASS"),
             TextAlign::Center
         );
         // Nearly-full table cell with 8pt inset: not a centered pill.
@@ -656,10 +653,7 @@ mod tests {
         }
         glyphs.push(glyph(13, 0, 41_375, 52_200));
         let g = geo(w, glyphs);
-        assert!(
-            has_full_width_lock_line(&g),
-            "first line fills the column"
-        );
+        assert!(has_full_width_lock_line(&g), "first line fills the column");
         assert!(
             has_midword_lock_wrap(&g, text, &[]),
             "wrap starts at N on a spaceless line"
@@ -690,10 +684,13 @@ mod tests {
                 intent: "default".into(),
             },
         ];
-        let g = geo(483_000, vec![
-            glyph(21, 193_583, 8_000, -4_950),
-            glyph(0, 71_997, 8_000, 0),
-        ]);
+        let g = geo(
+            483_000,
+            vec![
+                glyph(21, 193_583, 8_000, -4_950),
+                glyph(0, 71_997, 8_000, 0),
+            ],
+        );
         assert!(
             !should_pin_lock_breaks(Some(&g), Pt(11_000), Some(text), TextAlign::Right, &mods),
             "superscript rows must not insert a lock break at char 0"

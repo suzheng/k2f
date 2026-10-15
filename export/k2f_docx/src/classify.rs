@@ -1,11 +1,11 @@
 use crate::coord::{pt_to_emu, pt_to_twips};
-use crate::ooxml::collect_package_fonts;
 use crate::effect::{
     box_is_effect, consume_following_box, effect_box_crop, glass_crop, is_math_node, is_rule_id,
     keep_for_effect, math_crop, rasterize_slice,
 };
 use crate::geo::{find_geo, page_bg_hex};
 use crate::ir::{DocIR, LineDash, PageElement, PageIR, PictureBox, ShapeBox, TextRun};
+use crate::ooxml::collect_package_fonts;
 use crate::picture::picture_from_draw;
 use crate::shape::shapes_from_box;
 use crate::table::table_ref_placeholder;
@@ -190,20 +190,10 @@ pub fn classify_opened(doc: &OpenedDocument) -> Result<DocIR, DocxError> {
         }
         // Locks without a full-page paper DrawBox still need a behindDoc wash:
         // Word Dark Mode remaps/hides w:background alone (legal white pages).
-        ensure_page_paper_wash(
-            &mut elements,
-            page.width,
-            page.height,
-            page_idx,
-            &bg_hex,
-        );
+        ensure_page_paper_wash(&mut elements, page.width, page.height, page_idx, &bg_hex);
         assign_textbox_underlays(&mut elements, &bg_hex);
         absorb_self_fill_shapes(&mut elements);
-        fold_shell_label_stacks(
-            &mut elements,
-            pt_to_emu(page.width),
-            pt_to_emu(page.height),
-        );
+        fold_shell_label_stacks(&mut elements, pt_to_emu(page.width), pt_to_emu(page.height));
         drop_redundant_underline_on_bottom_rules(&mut elements);
         drop_shells_covered_by_later_media(&mut elements);
         raise_hairline_borders_above_covers(&mut elements);
@@ -385,10 +375,9 @@ fn drop_redundant_underline_on_bottom_rules(elements: &mut [PageElement]) {
     let ruled: HashSet<String> = elements
         .iter()
         .filter_map(|el| match el {
-            PageElement::Shape(s) if s.node_id.ends_with("::edge_bottom") => s
-                .node_id
-                .strip_suffix("::edge_bottom")
-                .map(str::to_string),
+            PageElement::Shape(s) if s.node_id.ends_with("::edge_bottom") => {
+                s.node_id.strip_suffix("::edge_bottom").map(str::to_string)
+            }
             _ => None,
         })
         .collect();
@@ -576,7 +565,8 @@ fn fold_shell_label_stacks(elements: &mut Vec<PageElement>, page_w_emu: i64, pag
         let leftover_picture = !side_pics.is_empty()
             && side_pics.iter().all(|&pj| {
                 labels.iter().all(|&lj| {
-                    let (Some(pb), Some(lb)) = (element_aabb(&elements[pj]), element_aabb(&elements[lj]))
+                    let (Some(pb), Some(lb)) =
+                        (element_aabb(&elements[pj]), element_aabb(&elements[lj]))
                     else {
                         return false;
                     };
@@ -607,8 +597,7 @@ fn fold_shell_label_stacks(elements: &mut Vec<PageElement>, page_w_emu: i64, pag
             picture_on_right,
             leftover_picture,
             left_icon_clear,
-        )
-        else {
+        ) else {
             i += 1;
             continue;
         };
@@ -639,8 +628,7 @@ fn fold_shell_label_stacks(elements: &mut Vec<PageElement>, page_w_emu: i64, pag
 }
 
 fn is_shell_companion(shell_id: &str, other: &str) -> bool {
-    other == format!("{shell_id}::stroke")
-        || other.starts_with(&format!("{shell_id}::edge_"))
+    other == format!("{shell_id}::stroke") || other.starts_with(&format!("{shell_id}::edge_"))
 }
 
 /// Thickness of `{id}::edge_*` bars (EMU). Square rims split to these after
@@ -650,9 +638,7 @@ fn edge_bar_thickness(elements: &[PageElement], shell_id: &str) -> i64 {
     elements
         .iter()
         .filter_map(|el| match el {
-            PageElement::Shape(s) if s.node_id.starts_with(&prefix) => {
-                Some(s.cx_emu.min(s.cy_emu))
-            }
+            PageElement::Shape(s) if s.node_id.starts_with(&prefix) => Some(s.cx_emu.min(s.cy_emu)),
             _ => None,
         })
         .max()
@@ -900,11 +886,7 @@ fn x_overlap(a: (i64, i64, i64, i64), b: (i64, i64, i64, i64)) -> bool {
 /// column). Left icons must not take this path — the empty remainder after a
 /// glyph-tight title is padding, not a photo.
 /// How far `lIns` must stay so leftover left icons are not covered.
-fn leftover_left_icon_clear(
-    elements: &[PageElement],
-    side_pics: &[usize],
-    shell_x: i64,
-) -> i64 {
+fn leftover_left_icon_clear(elements: &[PageElement], side_pics: &[usize], shell_x: i64) -> i64 {
     side_pics
         .iter()
         .filter_map(|&pj| element_aabb(&elements[pj]))
@@ -913,11 +895,7 @@ fn leftover_left_icon_clear(
         .unwrap_or(0)
 }
 
-fn pics_right_of_labels(
-    elements: &[PageElement],
-    side_pics: &[usize],
-    labels: &[usize],
-) -> bool {
+fn pics_right_of_labels(elements: &[PageElement], side_pics: &[usize], labels: &[usize]) -> bool {
     let Some(labels_right) = labels
         .iter()
         .filter_map(|&j| element_aabb(&elements[j]))
@@ -933,17 +911,10 @@ fn pics_right_of_labels(
     })
 }
 
-fn aabb_contains(
-    outer: (i64, i64, i64, i64),
-    inner: (i64, i64, i64, i64),
-    tol: i64,
-) -> bool {
+fn aabb_contains(outer: (i64, i64, i64, i64), inner: (i64, i64, i64, i64), tol: i64) -> bool {
     let (ox, oy, ow, oh) = outer;
     let (ix, iy, iw, ih) = inner;
-    ix + tol >= ox
-        && iy + tol >= oy
-        && ix + iw <= ox + ow + tol
-        && iy + ih <= oy + oh + tol
+    ix + tol >= ox && iy + tol >= oy && ix + iw <= ox + ow + tol && iy + ih <= oy + oh + tol
 }
 
 fn labels_are_vertical_stack(elements: &[PageElement], idxs: &[usize]) -> bool {
@@ -1091,12 +1062,9 @@ fn merge_labels_into_shell(
             // and tIns from the body's lock origin (padding + any inner
             // centering). Same-AABB white cells (table/card content) can
             // still use the body's `vert_center`.
-            let same_box = (first.y_emu - y).abs() <= 12_700
-                && (first.cy_emu - cy).abs() <= 12_700;
+            let same_box = (first.y_emu - y).abs() <= 12_700 && (first.cy_emu - cy).abs() <= 12_700;
             folded.vert_center = same_box && first.vert_center;
-            let pitch = first
-                .line_twips
-                .unwrap_or_else(|| label_line_twips(first));
+            let pitch = first.line_twips.unwrap_or_else(|| label_line_twips(first));
             folded.line_twips = Some(pitch);
             folded.last_line_twips = Some(pitch);
         } else {
@@ -1187,10 +1155,7 @@ fn merge_labels_into_shell(
     // Writer paints this opaque txBox over sibling `::edge_*` bars that share
     // the shell AABB (menu title frames, exhibition cards). Inset the fill so
     // the bars keep the lock rim.
-    inset_textbox_inside_edge_bars(
-        &mut folded,
-        edge_bar_thickness(elements, &shell_id),
-    );
+    inset_textbox_inside_edge_bars(&mut folded, edge_bar_thickness(elements, &shell_id));
     Some(folded)
 }
 
@@ -1269,9 +1234,7 @@ fn fold_label_align(
 }
 
 /// Per-paragraph line pitch + inter-label `after` from lock y gaps.
-fn fold_stack_spacing(
-    tbs: &[&crate::ir::TextBox],
-) -> (Vec<Option<i64>>, Vec<i64>, Vec<i64>) {
+fn fold_stack_spacing(tbs: &[&crate::ir::TextBox]) -> (Vec<Option<i64>>, Vec<i64>, Vec<i64>) {
     let mut para_line = Vec::new();
     let mut para_after = Vec::new();
     let mut para_before = Vec::new();
@@ -1298,11 +1261,7 @@ fn fold_stack_spacing(
         let more = i + 1 < tbs.len();
         for p in 0..n {
             let is_last = p + 1 == n;
-            para_before.push(if p == 0 {
-                vpad + gap_before_next
-            } else {
-                0
-            });
+            para_before.push(if p == 0 { vpad + gap_before_next } else { 0 });
             gap_before_next = 0;
             // Full pitch on every para (including the stack's last). Face-only
             // last pitch + bodyPr bIns was clipping PASSBAND / last desc lines
@@ -2074,7 +2033,11 @@ mod tests {
             PageElement::TextBox(label),
         ];
         fold_shell_label_stacks(&mut elements, 12_240_000, 15_840_000);
-        assert_eq!(elements.len(), 2, "fill folds; edge bar stays, got {elements:?}");
+        assert_eq!(
+            elements.len(),
+            2,
+            "fill folds; edge bar stays, got {elements:?}"
+        );
         let got = elements
             .iter()
             .find_map(PageElement::textbox)
@@ -2092,7 +2055,9 @@ mod tests {
         let edge = elements
             .iter()
             .find_map(|el| match el {
-                PageElement::Shape(s) if s.node_id.ends_with("::edge_top") => Some(s.relative_height),
+                PageElement::Shape(s) if s.node_id.ends_with("::edge_top") => {
+                    Some(s.relative_height)
+                }
                 _ => None,
             })
             .expect("edge");
@@ -2175,7 +2140,11 @@ mod tests {
         absorb_self_fill_shapes(&mut elements);
         assert_eq!(elements.len(), 1, "gradient pill + label → one text box");
         let got = elements[0].textbox().expect("chip");
-        assert!(got.gradient.is_some(), "same-node gradient must fold, got {:?}", got.gradient);
+        assert!(
+            got.gradient.is_some(),
+            "same-node gradient must fold, got {:?}",
+            got.gradient
+        );
         assert!(got.fill_hex.is_none());
         assert!(got.wrap, "gradient pill must pin lock extent");
         assert_eq!(got.corner_emu, 50_000);
@@ -2238,7 +2207,8 @@ mod tests {
         assert!(
             matches!(
                 elements.iter().find(|el| match el {
-                    PageElement::Raster(p) | PageElement::Picture(p) => p.node_id.ends_with(".icon"),
+                    PageElement::Raster(p) | PageElement::Picture(p) =>
+                        p.node_id.ends_with(".icon"),
                     _ => false,
                 }),
                 Some(PageElement::Raster(_))
@@ -2420,7 +2390,10 @@ mod tests {
             got.para_after_twips
         );
         assert_eq!(got.para_after_twips[1], 0);
-        assert_eq!(got.l_ins_emu, 180_000, "multi-label fold trims side pad 10% for wrap slack");
+        assert_eq!(
+            got.l_ins_emu, 180_000,
+            "multi-label fold trims side pad 10% for wrap slack"
+        );
         assert_eq!(got.r_ins_emu, 180_000, "mirrored side pad after trim");
         assert_eq!(got.b_ins_emu, 0);
     }
@@ -2469,7 +2442,7 @@ mod tests {
         body.runs = vec![
             TextRun {
                 text: "Line one of the metric body".into(),
-            font_family_key: String::new(),
+                font_family_key: String::new(),
                 font_name: "Roboto".into(),
                 sz_half_points: 20,
                 bold: false,
@@ -2484,7 +2457,7 @@ mod tests {
             },
             TextRun {
                 text: "\n".into(),
-            font_family_key: String::new(),
+                font_family_key: String::new(),
                 font_name: "Roboto".into(),
                 sz_half_points: 20,
                 bold: false,
@@ -2499,7 +2472,7 @@ mod tests {
             },
             TextRun {
                 text: "Line two".into(),
-            font_family_key: String::new(),
+                font_family_key: String::new(),
                 font_name: "Roboto".into(),
                 sz_half_points: 20,
                 bold: false,
@@ -2816,7 +2789,10 @@ mod tests {
             .map(|r| r.text.replace('\u{00A0}', " "))
             .collect();
         assert!(text.contains("Enterprise Core Modernization"));
-        assert!(!text.contains("PRIORITY"), "chip label must not merge into the card");
+        assert!(
+            !text.contains("PRIORITY"),
+            "chip label must not merge into the card"
+        );
     }
 
     #[test]
@@ -3018,7 +2994,7 @@ mod tests {
         meta.runs = vec![
             TextRun {
                 text: "PASSBAND: impulse".into(),
-            font_family_key: String::new(),
+                font_family_key: String::new(),
                 font_name: "Roboto".into(),
                 sz_half_points: 12,
                 bold: false,
@@ -3033,7 +3009,7 @@ mod tests {
             },
             TextRun {
                 text: "\n".into(),
-            font_family_key: String::new(),
+                font_family_key: String::new(),
                 font_name: "Roboto".into(),
                 sz_half_points: 12,
                 bold: false,
@@ -3048,7 +3024,7 @@ mod tests {
             },
             TextRun {
                 text: "spatialization".into(),
-            font_family_key: String::new(),
+                font_family_key: String::new(),
                 font_name: "Roboto".into(),
                 sz_half_points: 12,
                 bold: false,
@@ -3182,7 +3158,11 @@ mod tests {
         let got = elements[0].textbox().expect("folded pull");
         assert!(got.wrap);
         assert!(!got.vert_center);
-        assert!(got.t_ins_emu > 0, "keep lock top pad, got {}", got.t_ins_emu);
+        assert!(
+            got.t_ins_emu > 0,
+            "keep lock top pad, got {}",
+            got.t_ins_emu
+        );
         let blob: String = got.runs.iter().map(|r| r.text.as_str()).collect();
         assert!(blob.contains(' ') && !blob.contains('\u{00A0}'), "{blob:?}");
         assert_eq!(got.line_twips, Some(240));
@@ -3220,7 +3200,10 @@ mod tests {
         fold_shell_label_stacks(&mut elements, 12_240_000, 15_840_000);
         let got = elements[0].textbox().expect("folded card body");
         assert!(got.wrap);
-        assert!(!got.vert_center, "taller shell must stay top-aligned, got ctr");
+        assert!(
+            !got.vert_center,
+            "taller shell must stay top-aligned, got ctr"
+        );
         assert_eq!(
             got.t_ins_emu, 330_000,
             "body origin 250k + inner pad 80k, got {}",
@@ -3255,8 +3238,14 @@ mod tests {
         let mut elements = vec![PageElement::Shape(cell), PageElement::TextBox(body)];
         fold_shell_label_stacks(&mut elements, 12_240_000, 15_840_000);
         let got = elements[0].textbox().expect("folded cell");
-        assert!(got.vert_center, "same-AABB wrapping cell must stay centered");
-        assert_eq!(got.t_ins_emu, 50_000, "keep lock first-line pad for Writer tIns");
+        assert!(
+            got.vert_center,
+            "same-AABB wrapping cell must stay centered"
+        );
+        assert_eq!(
+            got.t_ins_emu, 50_000,
+            "keep lock first-line pad for Writer tIns"
+        );
     }
 
     #[test]
@@ -3367,7 +3356,12 @@ mod tests {
         let below = pitch - face;
         let gap = crate::coord::emu_to_twips(320_000 - 269_240);
         let (para_line, para_after, para_before) = super::fold_stack_spacing(&[&heading, &body]);
-        assert_eq!(para_line[0], Some(face), "heading must use face pitch, got {:?}", para_line);
+        assert_eq!(
+            para_line[0],
+            Some(face),
+            "heading must use face pitch, got {:?}",
+            para_line
+        );
         assert_eq!(para_before[0], 0);
         assert_eq!(
             para_after[0],
@@ -3567,7 +3561,11 @@ mod tests {
             PageElement::TextBox(sub),
         ];
         fold_shell_label_stacks(&mut elements, 12_240_000, 15_840_000);
-        assert_eq!(elements.len(), 1, "blur raster + labels must be one text box");
+        assert_eq!(
+            elements.len(),
+            1,
+            "blur raster + labels must be one text box"
+        );
         let got = elements[0].textbox().expect("folded");
         assert_eq!(got.node_id, "doc.hero");
         assert_eq!(
@@ -3720,7 +3718,11 @@ mod tests {
             PageElement::Picture(pic),
         ];
         fold_shell_label_stacks(&mut elements, 12_240_000, 15_840_000);
-        assert_eq!(elements.len(), 3, "fold keeps rule + pic:pic, got {elements:?}");
+        assert_eq!(
+            elements.len(),
+            3,
+            "fold keeps rule + pic:pic, got {elements:?}"
+        );
         let got = elements
             .iter()
             .find_map(PageElement::textbox)
@@ -3731,8 +3733,12 @@ mod tests {
             "wrap column must stay left of the photo, r_ins={}",
             got.r_ins_emu
         );
-        assert!(elements.iter().any(|el| matches!(el, PageElement::Picture(_))));
-        assert!(elements.iter().any(|el| matches!(el, PageElement::Shape(s) if s.node_id.ends_with(".rule"))));
+        assert!(elements
+            .iter()
+            .any(|el| matches!(el, PageElement::Picture(_))));
+        assert!(elements
+            .iter()
+            .any(|el| matches!(el, PageElement::Shape(s) if s.node_id.ends_with(".rule"))));
     }
 
     #[test]
@@ -3904,10 +3910,14 @@ mod tests {
         ];
         fold_shell_label_stacks(&mut elements, 12_240_000, 15_840_000);
         assert!(
-            elements.iter().any(|el| el.textbox().is_some_and(|t| t.fill_blip.is_some())),
+            elements
+                .iter()
+                .any(|el| el.textbox().is_some_and(|t| t.fill_blip.is_some())),
             "halo overlap with a later card must not block the title fold, got {elements:?}"
         );
-        assert!(elements.iter().any(|el| matches!(el, PageElement::Shape(s) if s.node_id == "doc.date_box")));
+        assert!(elements
+            .iter()
+            .any(|el| matches!(el, PageElement::Shape(s) if s.node_id == "doc.date_box")));
     }
 
     #[test]
@@ -4089,5 +4099,4 @@ mod tests {
             "overlapped frost still drops the empty txBox pin"
         );
     }
-
 }

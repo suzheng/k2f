@@ -138,7 +138,10 @@ mod tests {
     #[test]
     fn translucent_stroke_emits_alpha() {
         let xml = line_xml(&stroke(0x66));
-        assert!(xml.contains(r#"<a:srgbClr val="1E3A8A"><a:alpha val="40000"/>"#), "{xml}");
+        assert!(
+            xml.contains(r#"<a:srgbClr val="1E3A8A"><a:alpha val="40000"/>"#),
+            "{xml}"
+        );
     }
 
     #[test]

@@ -91,7 +91,9 @@ fn embedded_family(bytes: &BTreeMap<String, Vec<u8>>) -> Option<String> {
             return Some(n.family);
         }
     }
-    bytes.values().find_map(|b| names_from_bytes(b).map(|n| n.family))
+    bytes
+        .values()
+        .find_map(|b| names_from_bytes(b).map(|n| n.family))
 }
 
 struct FaceNames {
@@ -140,8 +142,8 @@ mod tests {
     use std::path::PathBuf;
 
     fn roboto_bytes() -> Vec<u8> {
-        let p = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../assets/fonts/Roboto-Regular.ttf");
+        let p =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts/Roboto-Regular.ttf");
         std::fs::read(p).expect("Roboto test fixture")
     }
 

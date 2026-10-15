@@ -25,7 +25,7 @@ pub use decoration::{decoration_lines, TextDecorationLine};
 pub use document::{OpenedDocument, OFFICIAL_PNG_SCALE};
 pub use error::PaintError;
 pub use executor::{
-    load_faces, render_lockfile_page_rgba, render_lockfile_page_rgb, render_lockfile_page_to_png,
+    load_faces, render_lockfile_page_rgb, render_lockfile_page_rgba, render_lockfile_page_to_png,
     single_font_map,
 };
 pub use export::{
@@ -42,6 +42,8 @@ pub use glyphs::{
 };
 pub use image::{
     cover_src, cover_src_rect_100000, decode_raster, letterbox_dest, letterbox_rect, lookup_image,
+    raster_for_embed, render_svg_uniform, svg_export_raster_px, svg_intrinsic_px,
+    svg_png_for_export, SVG_EXPORT_PX_PER_PT, SVG_RASTER_MAX_PX,
 };
 pub use query::LocatedBox;
 pub use rgb::{pixmap_to_rgb8, pixmap_to_rgba8};

@@ -40,7 +40,9 @@ pub(crate) struct FontEmbedPlan {
     key_to_face: BTreeMap<String, usize>,
 }
 
-pub(crate) fn collect_package_fonts(fonts: &BTreeMap<String, Vec<u8>>) -> BTreeMap<String, Vec<u8>> {
+pub(crate) fn collect_package_fonts(
+    fonts: &BTreeMap<String, Vec<u8>>,
+) -> BTreeMap<String, Vec<u8>> {
     let mut out = BTreeMap::new();
     for (key, bytes) in fonts {
         if key.eq_ignore_ascii_case("default") {
@@ -155,10 +157,7 @@ impl FontEmbedPlan {
     pub(crate) fn font_table_xml(&self) -> String {
         let mut by_family: BTreeMap<String, Vec<&EmbeddedFace>> = BTreeMap::new();
         for face in &self.faces {
-            by_family
-                .entry(face.family.clone())
-                .or_default()
-                .push(face);
+            by_family.entry(face.family.clone()).or_default().push(face);
         }
         let mut body = String::new();
         for (family, slots) in by_family {
@@ -213,7 +212,8 @@ fn family_from_bytes(data: &[u8]) -> Option<String> {
     name_english(&face, ttf_parser::name_id::FAMILY, true)
         .or_else(|| name_english(&face, ttf_parser::name_id::TYPOGRAPHIC_FAMILY, true))
         .or_else(|| {
-            name_english(&face, ttf_parser::name_id::FULL_NAME, true).and_then(family_from_full_name)
+            name_english(&face, ttf_parser::name_id::FULL_NAME, true)
+                .and_then(family_from_full_name)
         })
         .or_else(|| name_english(&face, ttf_parser::name_id::FULL_NAME, true))
 }
@@ -346,7 +346,10 @@ mod tests {
     #[test]
     fn nameless_face_uses_package_stem_not_k2f_font() {
         let mut fonts = BTreeMap::new();
-        fonts.insert("assets/fonts/Bradley Hand Bold.ttf".into(), vec![0, 1, 2, 3]);
+        fonts.insert(
+            "assets/fonts/Bradley Hand Bold.ttf".into(),
+            vec![0, 1, 2, 3],
+        );
         let plan = build_font_embed_plan(&fonts);
         let table = plan.font_table_xml();
         assert!(

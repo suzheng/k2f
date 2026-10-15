@@ -99,7 +99,7 @@ Every node has:
 |----------------|---------|
 | `text` | String `value`. Headings, body, quotes, and inline code differ by `role` |
 | `math` | Display TeX subset in `value`. Role must be `math` |
-| `image` | `value.src` under `assets/images/`, plus millipt `width` and `height`. PNG, JPEG, WebP, or SVG (rasterized at paint). Not GIF. SVG `<text>` / `<tspan>` / `<textPath>` / `<foreignObject>` fail (`SVG_TEXT`) |
+| `image` | `value.src` under `assets/images/`, plus millipt `width` and `height`. PNG, JPEG, WebP, or SVG. Not GIF. SVG is rasterized at the destination pixel size: the page paint scale in viewers, or 4 px per pt of the image box on PDF, DOCX, PPTX, and IDML export — not the SVG file's `width`/`height`. SVG `<text>` / `<tspan>` / `<textPath>` / `<foreignObject>` fail (`SVG_TEXT`) |
 | `container` | Optional `children` (nodes or `{ "include": "content/...." }` stubs) |
 | `table` | Native table: `column_widths` (`{pt}` / `{fr}` only) and `data` (`inline` rows of cell nodes, or `asset` under `assets/data/`). Optional `header_rows`, `gap`, `row_gap`, `column_gap`. Cell `colspan` (default 1) occupies that many tracks in the same row. No `rowspan` |
 | `form_field` | Reserved fillable box — [Form fields](#form-fields) |

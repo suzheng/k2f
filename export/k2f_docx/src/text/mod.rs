@@ -27,7 +27,17 @@ pub fn textbox_from_draw(
     geo: Option<&GeometryNode>,
     fonts: &BTreeMap<String, Vec<u8>>,
 ) -> Option<TextBox> {
-    textbox_from_draw_ctx(node, rect, paint_runs, geo, &FontCtx::new(fonts), 0, 0, 1, 1)
+    textbox_from_draw_ctx(
+        node,
+        rect,
+        paint_runs,
+        geo,
+        &FontCtx::new(fonts),
+        0,
+        0,
+        1,
+        1,
+    )
 }
 
 pub(crate) fn textbox_from_draw_ctx(

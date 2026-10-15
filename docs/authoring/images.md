@@ -12,6 +12,7 @@ Copy [`ex_image.json`](../../skills/core/k2f/catalog/content/ex_image.json) into
 | `src` | Field name is `src`, not `path`; not an `http://` URL |
 | Formats | PNG, JPEG, WebP, SVG — **not GIF** |
 | SVG text | Rasterized without system fonts. `<text>`, `<tspan>`, `<textPath>`, and `<foreignObject>` fail at pack — use `<path>` or a sibling K2F text node |
+| SVG resolution | The file's `width`/`height` are the vector size (usually the art's point size). Viewers rasterize at the page paint scale. PDF, Word, PowerPoint, and IDML embed a PNG at 4 px per pt of the image box. Do not inflate the SVG header or pre-render a huge PNG to chase sharpness |
 
 ## Node shape
 

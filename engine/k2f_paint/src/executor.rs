@@ -169,9 +169,18 @@ fn render_lockfile_page_to_pixmap_clear(
 
     let mut geo_by_id: HashMap<String, Vec<&GeometryNode>> = HashMap::new();
     crate::geo_index::index_geometry_multi(&page.root, &mut geo_by_id);
+    let mut image_cache = crate::image::ImagePaintCache::default();
 
     for op in &plan.ops {
-        execute_op(&mut pixmap, faces, images, &geo_by_id, op, scale)?;
+        execute_op(
+            &mut pixmap,
+            faces,
+            images,
+            &geo_by_id,
+            op,
+            scale,
+            &mut image_cache,
+        )?;
     }
 
     Ok(pixmap)
@@ -184,6 +193,7 @@ fn execute_op(
     geo_by_id: &HashMap<String, Vec<&GeometryNode>>,
     op: &PaintOp,
     scale: f32,
+    image_cache: &mut crate::image::ImagePaintCache,
 ) -> Result<(), PaintError> {
     match op {
         PaintOp::BackdropBlur {
@@ -217,6 +227,7 @@ fn execute_op(
             scale,
             *fit,
             *corner_radius_pt,
+            image_cache,
         ),
         PaintOp::DrawTableReference { rect, .. } => {
             draw_table_placeholder(pixmap, rect, scale);

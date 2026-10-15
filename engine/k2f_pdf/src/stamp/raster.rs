@@ -18,9 +18,10 @@ pub fn raster_slice(
         if plate.len() != color.len() {
             return Err(PdfError::Write("slice passes differ in size".into()));
         }
-        let cover = slice.cover.as_ref().ok_or_else(|| {
-            PdfError::Write("blur slice missing cover rect".into())
-        })?;
+        let cover = slice
+            .cover
+            .as_ref()
+            .ok_or_else(|| PdfError::Write("blur slice missing cover rect".into()))?;
         composite_blur(&color, &plate, w, h, cover, scale)
     };
     crop_rgba(&rgba, w, h, &slice.crop, scale)
