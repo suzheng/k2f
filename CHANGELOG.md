@@ -10,6 +10,8 @@ Entries follow [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-10-15
+
 ### Added
 
 - `CONTENT_OVERFLOW` compile warning when text or a child box paints past a fixed or `{fr}` cell, a clamped stack, or `columns`. Warning only — pack still succeeds. `FONT_SYNTHETIC` warns when bold/italic stays synthetic while a same-family Bold/Italic file is embedded and not selected.
