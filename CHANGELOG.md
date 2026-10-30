@@ -10,6 +10,11 @@ Entries follow [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- Spec [EBNF appendix](docs/spec/k2f-v0.3.ebnf) for package paths, semantic node skeleton, and theme outline (JSON Schema remains the field contract).
+- SchemaStore export under `schema/schemastore/` and [ecosystem guide](docs/ecosystem/schemastore.md) for IDE catalog submission.
+
 ## [0.3.3] - 2026-10-15
 
 ### Added

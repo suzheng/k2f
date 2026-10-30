@@ -115,6 +115,7 @@ When changing format `schema/*.json`:
 2. Update [`docs/spec/k2f-v0.3.md`](docs/spec/k2f-v0.3.md)
 3. Regenerate committed examples if needed (`bash scripts/build-published-examples.sh`)
 4. Keep [k2f](https://github.com/suzheng/k2f) skill `schema/` aligned when the format contract changes
+5. Run `./scripts/export-schemastore.sh` and sync [SchemaStore](docs/ecosystem/schemastore.md) when publishing a spec bump
 
 ## Pull request checklist
 

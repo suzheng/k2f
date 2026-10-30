@@ -47,6 +47,8 @@ Writes `./out/doc/source/` (empty `content/root.json`, starter theme, Roboto) an
 
 Edit `source/content/root.json`. Keep `id: "root"` and paste catalog nodes into `children`. Do not replace `root.json` with a fragment. Start with [`ex_heading.json`](../../skills/core/k2f/catalog/content/ex_heading.json).
 
+Optional: add `"$schema": "https://www.schemastore.org/k2f-nodes.json"` at the top of content JSON and matching URLs for `manifest.json` / `styles/theme.json` (see [SchemaStore](../ecosystem/schemastore.md)). In this repo checkout, [`.vscode/settings.json`](../../.vscode/settings.json) maps the same schemas locally.
+
 ### 5. Pack and preview
 
 ```bash

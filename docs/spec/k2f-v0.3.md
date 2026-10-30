@@ -274,4 +274,5 @@ Repo copies: [`schema/nodes.schema.json`](../../schema/nodes.schema.json) and th
 | [Allowed keys](../../skills/core/k2f/references/writing/fields.md) | Field cheat sheet |
 | [Catalog](../../skills/core/k2f/catalog/README.md) | Packable examples |
 | [COMPATIBILITY.md](../../COMPATIBILITY.md) | Engine matching |
+| [Formal grammar (EBNF appendix)](k2f-v0.3.ebnf) | Syntax skeleton; JSON Schema remains normative for fields |
 | [Integrity](https://k2f.dev/integrity) · [Verify](https://k2f.dev/verify) | Banner UI and in-browser check |

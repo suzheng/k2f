@@ -25,7 +25,7 @@ Python 3.9+. Optional: `npm i @openk2f/k2f` for the [web viewer](guide/web-viewe
 ## Get started
 
 - [Getting started](guide/getting-started.md) — agent skill or CLI, first `.K2F`
-- [Format spec](spec/k2f-v0.3.md) — normative contract (container, processing, integrity)
+- [Format spec](spec/k2f-v0.3.md) — normative contract (container, processing, integrity); [EBNF appendix](spec/k2f-v0.3.ebnf)
 
 ## Authoring
 

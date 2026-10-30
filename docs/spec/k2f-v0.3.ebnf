@@ -1,0 +1,193 @@
+; K2F format specification v0.3 — formal grammar appendix
+;
+; Normative semantics: k2f-v0.3.md and schema/*.schema.json in the k2f repository.
+; This file is a readable skeleton for tooling, agents, and documentation.
+; It does not replace JSON Schema validation or engine compile rules.
+
+; ---------------------------------------------------------------------------
+; 1. Lexical
+; ---------------------------------------------------------------------------
+
+; Author-facing files are JSON documents (RFC 8259).
+; Numeric lengths in semantic and manifest fields are millipt integers (1 pt = 1000).
+
+Millipt     ::= integer ; minimum constraints per JSON Schema
+
+; ---------------------------------------------------------------------------
+; 2. Package layout (ABNF-style path grammar, packed .K2F ZIP)
+; ---------------------------------------------------------------------------
+
+; Allowed top-level and nested paths (unexpected paths → UNEXPECTED_PATH):
+
+PackagePath ::= ManifestPath
+              | ContentPath
+              | StylesPath
+              | ChangelogPath
+              | LockPath
+              | SignaturesPath
+              | SchemaPath
+              | AssetsPath
+
+ManifestPath    ::= "manifest.json"
+ContentPath     ::= "content/root.json" / ContentIncludePath
+ContentIncludePath ::= "content/" 1*( segment "/" ) segment ".json"
+                    ; segment = 1*VCHAR except "/" ; must not equal "root.json" as sole segment for include target rules
+StylesPath      ::= "styles/theme.json" / "styles/tokens.json"
+ChangelogPath   ::= "changelog.json"
+LockPath        ::= "document.K2F.lock"
+SignaturesPath  ::= "signatures/v1.json"
+SchemaPath      ::= "schema/manifest.schema.json"
+                    / "schema/nodes.schema.json"
+                    / "schema/styles.schema.json"
+                    / "schema/visual_primitives.schema.json"
+                    / "schema/signatures.schema.json"
+AssetsPath      ::= "assets/fonts/" *path
+                    / "assets/images/" *path
+                    / "assets/data/" *path
+
+; Author directories may omit schema/ and changelog.json (pack injects or writes them).
+; Only content JSON files reachable from content/root.json via includes are allowed under content/.
+
+; ---------------------------------------------------------------------------
+; 3. Manifest (manifest.json)
+; ---------------------------------------------------------------------------
+
+Manifest ::= "{" ManifestFields "}"
+
+ManifestFields ::= TitleField ","
+                   CanvasModeField ","
+                   PageConfigField ","
+                   EngineVersionField
+                   [ "," OptionalManifestFields ]
+
+TitleField           ::= "\"title\"" ":" string
+CanvasModeField      ::= "\"canvas_mode\"" ":" "\"paged\"" ; v0.3 paged only
+PageConfigField      ::= "\"page_config\"" ":" PageConfig
+EngineVersionField   ::= "\"engine_version\"" ":" string
+
+PageConfig ::= "{" "\"width\"" ":" Millipt ","
+                     "\"height\"" ":" Millipt ","
+                     "\"margin\"" ":" MarginQuad "}"
+MarginQuad   ::= "[" Millipt "," Millipt "," Millipt "," Millipt "]" ; top, right, bottom, left
+
+OptionalManifestFields ::= AuthorField / CreatedAtField / GeneratedByField / RunningBlocksField
+
+RunningBlocksField ::= "\"running_blocks\"" ":" "[" RunningBlock *( "," RunningBlock ) "]"
+RunningBlock       ::= "{" "\"position\"" ":" ("\"header\"" / "\"footer\"") ","
+                           "\"node\"" ":" SemanticNode "}"
+
+; ---------------------------------------------------------------------------
+; 4. Semantic node (content/*.json — one node per file; root.json is tree entry)
+; ---------------------------------------------------------------------------
+
+SemanticNode ::= "{" NodeFields "}"
+
+NodeFields ::= "\"id\"" ":" NodeId ","
+               "\"role\"" ":" string ","
+               ContentField
+               [ "," NodeOptionalFields ]
+
+NodeId ::= string ; pattern ^[A-Za-z0-9][A-Za-z0-9_]*(\.[A-Za-z0-9][A-Za-z0-9_]*)*$
+
+NodeOptionalFields ::= VariantField / ModifiersField / LayoutField
+                       / PaginationField / ListItemFields
+
+ContentField ::= "\"content\"" ":" Content
+
+Content ::= TextContent / MathContent / ImageContent / ContainerContent
+          / TableContent / FormFieldContent / CodeBlockContent
+          / TableReferenceContent
+
+TextContent           ::= "{" "\"type\"" ":" "\"text\"" "," "\"value\"" ":" string "}"
+MathContent           ::= "{" "\"type\"" ":" "\"math\"" "," "\"value\"" ":" string "}"
+CodeBlockContent      ::= "{" "\"type\"" ":" "\"code_block\"" "," CodeBlockValue "}"
+ImageContent          ::= "{" "\"type\"" ":" "\"image\"" "," ImageValue "}"
+ContainerContent      ::= "{" "\"type\"" ":" "\"container\"" [ "," ContainerValue ] "}"
+TableContent          ::= "{" "\"type\"" ":" "\"table\"" "," TableValue "}"
+FormFieldContent      ::= "{" "\"type\"" ":" "\"form_field\"" "," FormFieldValue "}"
+TableReferenceContent ::= "{" "\"type\"" ":" "\"table_reference\"" "," TableRefValue "}"
+
+ContainerValue ::= "\"value\"" ":" "{" [ "\"children\"" ":" ContainerChildren ] "}"
+ContainerChildren ::= "[" ContainerChild *( "," ContainerChild ) "]"
+ContainerChild    ::= SemanticNode / IncludeRef
+
+IncludeRef ::= "{" "\"include\"" ":" IncludePath "}"
+IncludePath ::= string ; must match content/<segments>.json ; not content/root.json
+
+; Pack replaces each IncludeRef stub with the referenced file's SemanticNode (transitive).
+
+ListItemFields ::= "\"list_id\"" ":" string [ "," "\"depth\"" ":" integer ] [ "," "\"marker_type\"" ":" string ]
+
+; ---------------------------------------------------------------------------
+; 5. Layout (containers only; root.json: omit layout or vertical stack only)
+; ---------------------------------------------------------------------------
+
+LayoutField ::= "\"layout\"" ":" Layout
+
+Layout ::= StackLayout / GridLayout / OverlayLayout / ColumnsLayout
+
+StackLayout    ::= "{" "\"type\"" ":" "\"stack\"" "," StackFields "}"
+GridLayout     ::= "{" "\"type\"" ":" "\"grid\"" "," GridFields "}"
+OverlayLayout  ::= "{" "\"type\"" ":" "\"overlay\"" "," OverlayFields "}"
+ColumnsLayout  ::= "{" "\"type\"" ":" "\"columns\"" "," ColumnsFields "}"
+
+StackFields    ::= "\"direction\"" ":" ("\"vertical\"" / "\"horizontal\"") [ "," StackOptional ]
+GridFields     ::= "\"columns\"" ":" GridTrackList [ "," GridOptional ]
+GridTrackList  ::= "[" GridTrack *( "," GridTrack ) "]"
+GridTrack      ::= PtTrack / FrTrack / AutoTrack
+PtTrack        ::= "{" "\"pt\"" ":" Millipt "}"
+FrTrack        ::= "{" "\"fr\"" ":" integer "}"
+AutoTrack      ::= "{" "\"auto\"" ":" true "}"
+
+; ---------------------------------------------------------------------------
+; 6. Modifiers (text nodes; closed set; max 50)
+; ---------------------------------------------------------------------------
+
+ModifiersField ::= "\"modifiers\"" ":" "[" Modifier *( "," Modifier ) "]"
+Modifier       ::= "{" "\"type\"" ":" ModifierType ","
+                       "\"intent\"" ":" string ","
+                       "\"range\"" ":" ByteRange "}"
+ModifierType   ::= "\"emphasis\"" / "\"link\"" / "\"underline\"" / "\"strikethrough\""
+                   / "\"subscript\"" / "\"superscript\"" / "\"math\"" / "\"syntax_highlight\""
+ByteRange      ::= "[" integer "," integer ")" ; UTF-8 byte offsets, half-open
+
+; ---------------------------------------------------------------------------
+; 7. Pagination (optional on any node)
+; ---------------------------------------------------------------------------
+
+PaginationField ::= BreakInsideField / KeepWithNextField / BreakBeforeField
+BreakInsideField  ::= "\"break_inside\"" ":" ("\"auto\"" / "\"avoid\"")
+KeepWithNextField ::= "\"keep_with_next\"" ":" boolean
+BreakBeforeField  ::= "\"break_before\"" ":" ("\"auto\"" / "\"page\"")
+
+; ---------------------------------------------------------------------------
+; 8. Theme (styles/theme.json) — outline
+; ---------------------------------------------------------------------------
+
+Theme ::= "{" ThemeTopLevel "}"
+
+ThemeTopLevel ::= PaletteField ","
+                  PrimitivesField ","
+                  RolesField ","
+                  FontAliasesField
+                  [ "," FontFacesField ] [ "," ModifiersThemeField ]
+
+PaletteField        ::= "\"palette\"" ":" object
+PrimitivesField     ::= "\"primitives\"" ":" object
+RolesField          ::= "\"roles\"" ":" object
+FontAliasesField    ::= "\"font_aliases\"" ":" object
+FontFacesField      ::= "\"font_faces\"" ":" object
+ModifiersThemeField ::= "\"modifiers\"" ":" object
+
+; Role keys and primitive names are package-defined; role "default" is required with
+; font_family, font_size, line_height_mult, color. Details: styles.schema.json.
+
+; ---------------------------------------------------------------------------
+; 9. State A prohibitions (not expressible as EBNF productions — engine rejects)
+; ---------------------------------------------------------------------------
+
+; - No layout coordinates, arbitrary vector paths, inline CSS, or executable content on nodes.
+; - No style fields (color, font_size, box_decoration, …) on semantic nodes — theme only.
+; - No scripts (JavaScript, WASM, …) inside the package.
+; - No PDF/PPTX/DOCX/IDML as authoring source.
+; - No system fonts — embedded assets/fonts only.
