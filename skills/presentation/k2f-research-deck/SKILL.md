@@ -5,6 +5,11 @@ description: Turn papers, study notes, and preliminary data into decision-grade 
 
 # K2F Research Deck — AI-Native Aesthetic Design
 
+Turn papers, study notes, and early data into a research deck for a lab meeting, a PI review, a grant talk, or a seminar. Numbers stay faithful, the evidence chain is visible, and caveats sit on the slide. The deck stays elegant when the science is dense—decision-grade, not a stylized social carousel. Faithful numbers and stated limits stay on the slide, not in a speaker script. K2F handles layout and typography.
+
+- One claim and a figure path a listener can check without hunting the paper
+- Honest complexity: methods, results, and limits stay designed instead of dumped as paragraphs
+
 ## Purpose
 
 Teach agents to blueprint **research decks** before layout: one scientific claim per slide, traceable evidence, explicit caveats before the close, and no numbers or figures redrawn from memory.

@@ -5,6 +5,11 @@ description: Turn research questions, data, and literature into submission-ready
 
 # K2F Academic Paper — AI-Native Aesthetic Design
 
+Turn a research question, data, and literature into a manuscript you can submit: structure that matches the venue, claims tied to evidence, and a hierarchy a reader can scan. A full paper stays elegant when the argument, the figures, and the citations are complex, from a journal article to a conference paper. Figures, notes, and references stay in one visual system a reviewer can move through. K2F handles layout and typography.
+
+- A contribution a reviewer can state back: the question, the result, and why it matters
+- Submission-ready design: sections, figures, and references that read as one document
+
 ## Purpose
 
 Teach agents to blueprint publishable manuscripts before layout: a sharp contribution claim, venue-appropriate structure, mapped evidence, and design intent that reads like a serious journal—not a generic essay or oversized blog post.

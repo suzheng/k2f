@@ -5,6 +5,11 @@ description: Design printable, fill-in-ready worksheets—practice sets, graphic
 
 # K2F Worksheet — AI-Native Aesthetic Design
 
+Design a worksheet students can complete: practice, a graphic organizer, a lab record, or a reflection, drawn from a learning goal and the source you have. The page stays elegant and ready to fill in, including sets with many items for class or home. The page is one task, with instructions and room to write that stay consistent. K2F handles layout and typography.
+
+- One task on the page: instructions, items, and room to write
+- Classroom design: prompts you can scan and answer space that stays consistent
+
 ## Purpose
 
 Teach agents to blueprint a **worksheet** before layout: a single learner-facing task surface with scannable instructions, well-scoped items, and intentional response space—without essay dumps, duplicate prompts, or items that cannot be answered from what the sheet provides.

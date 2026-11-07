@@ -5,6 +5,11 @@ description: Create payment-ready invoices from line items, rates, client detail
 
 # K2F Invoice — AI-Native Aesthetic Design
 
+Create an invoice someone can pay from: line items, rates, tax, and terms that reconcile, with what is owed, by when, and how to pay easy to see. A branded bill stays elegant even when the lines, the taxes, and the notes run long, including a pro forma. Tax lines, notes, and a long item list do not bury the amount due. K2F handles layout and typography.
+
+- Totals that match the lines, so accounts payable does not have to write back
+- A designed payment page: amount, due date, and method in a clear hierarchy
+
 ## Purpose
 
 Teach agents to blueprint invoices before layout: legally and operationally complete party and reference data, a reconciled line-item and tax math story, and visual hierarchy that surfaces **what is owed, by when, and how to pay**—without inventing banking, tax IDs, or amounts the user did not supply.

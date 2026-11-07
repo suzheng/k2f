@@ -5,6 +5,11 @@ description: Turn an accepted talk, slide outline, or session notes into a print
 
 # K2F Conference Handout — AI-Native Aesthetic Design
 
+Turn an accepted talk, a slide outline, or session notes into a handout attendees can keep: takeaways they can act on, a short spine of the talk, and where to follow up. The page stays elegant as a companion to the session—not a dump of slides or a speaker script. Takeaways, the talk spine, and follow-up links share one calm page. K2F handles layout and typography.
+
+- What to remember after the room clears, in a form people will actually carry
+- A designed one-sitting read: talk structure and resources without pasting every slide
+
 ## Purpose
 
 Teach agents to author `content_and_design.md` for **attendee reference**: what to keep from the talk, how to layer it for reading on paper or PDF, and how to express design intent (tone, hierarchy, density)—not how to build or export K2F packages.

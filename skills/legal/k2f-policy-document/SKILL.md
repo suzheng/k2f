@@ -5,6 +5,11 @@ description: Draft employee- and organization-facing policy documents—handbook
 
 # K2F Policy Document — AI-Native Aesthetic Design
 
+Draft a policy people in the organization can follow: handbook sections, HR rules, conduct, benefits summaries, and compliance procedures, from your source text or an outline. The page stays elegant when the rules are long—scannable headings, not a legacy policy pasted as one block. Employees can find who it covers and what to do, even when the rules run long. K2F handles layout and typography.
+
+- Rules an employee can find: the purpose, who it covers, and what to do
+- Dense policy that still looks designed: procedures and exceptions without losing the hierarchy
+
 ## Purpose
 
 Teach agents to blueprint **policy documents** before layout: scannable rule architecture, plain-language layers for employees, and formal hierarchy—without inventing benefits, legal obligations, jurisdictions, or approval paths the user or HR/legal did not supply.

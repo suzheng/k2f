@@ -5,6 +5,11 @@ description: Blueprint job, program, or membership application forms with clear 
 
 # K2F Application Form — AI-Native Aesthetic Design
 
+Build an application form for a job, a program, or a membership: a clear set of fields, space sized to the answer, and a professional page people can fill. Packets with attachments and role-specific questions stay elegant instead of looking like a pasted resume. Required fields, longer answers, and attachments read as one professional packet. K2F handles layout and typography.
+
+- Applicants know what to write where, including longer answers and required attachments
+- A form that looks like the organization: hierarchy and spacing, not a generic questionnaire
+
 ## Purpose
 
 Teach agents to blueprint **application forms** in `content_and_design.md`: which questions belong on the form versus attachments, how to group and sequence fields, and aesthetic intent (tone, hierarchy, fillable density)—without inventing employers, programs, legal clauses, or eligibility rules the user did not supply.

@@ -5,6 +5,11 @@ description: Turn notes, specs, or release details into a single-page brief that
 
 # K2F One Pager — AI-Native Aesthetic Design
 
+Turn notes, a spec, or release details into a single page that aligns people on one story: the problem, the solution, the proof, the scope, or a changelog. The page stays elegant when the decision is nuanced—built for an executive scan, not a slide deck, a flyer, or a multi-page brief. Stakeholders can align before anyone opens a longer document. K2F handles layout and typography.
+
+- One story, one page: what it is, why it matters, and what you need decided
+- Hierarchy for a skim: the headline and the proof first, detail only where it earns the space
+
 ## Purpose
 
 Teach agents to author `content_and_design.md` for **single-page decision and narrative documents**: what belongs on one page, how to tier information for executive scan, and aesthetic intent (tone, hierarchy, density)—not K2F packaging or export.

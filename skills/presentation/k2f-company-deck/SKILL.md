@@ -5,6 +5,11 @@ description: Turn company facts, brand inputs, and stakeholder goals into a poli
 
 # K2F Company Deck — AI-Native Aesthetic Design
 
+Turn company facts, brand inputs, and stakeholder goals into a company overview deck with clear positioning, proof, and a close that makes the next conversation easy. The deck stays elegant when the story spans products, people, and credibility—polished enough to hand to a partner, a recruit, or a board. Positioning, proof, and a way to follow up share one polished deck. K2F handles layout and typography.
+
+- Positioning someone can repeat: what the company is, who it is for, and why it is credible
+- A designed close with contact and a next step, not a fundraising pitch or a sales proposal
+
 ## Purpose
 
 Teach agents to blueprint **company decks** before layout: a stakeholder-ready story that explains who the company is, what it delivers, and why it matters—without inventing funding, customers, metrics, or leadership the user did not supply.

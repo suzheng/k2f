@@ -5,6 +5,11 @@ description: Draft commercial agreements (NDA, MSA, SOW, SaaS, vendor) from user
 
 # K2F Contract — AI-Native Aesthetic Design
 
+Draft a commercial agreement from the terms and the deal you already have: an NDA, an MSA, a statement of work, a SaaS contract, or a vendor agreement. The document is structured for signature and stays elegant when the clause set is long. Counsel still reviews the law; nothing is invented. Parties, scope, money, and signature blocks stay findable in a long agreement. K2F handles layout and typography.
+
+- Deal terms you can find: parties, scope, money, and signatures in a clear hierarchy
+- Complex agreements that still read: sections and defined terms without a wall of undifferentiated text
+
 ## Purpose
 
 Teach agents to blueprint **contracts** before layout: agreement frame, party roles, consistent clause stack, and formal hierarchy for navigation and signing—without fabricating parties, amounts, governing law, or positions the user did not supply.

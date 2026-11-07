@@ -5,6 +5,11 @@ description: Create polished, general-purpose Microsoft Word documents with clea
 
 # K2F Aesthetic MS Word — AI-Native Aesthetic Design
 
+Create a polished Microsoft Word document for any brief: clear structure, distinct blocks of content, and a strong visual hierarchy. The page stays elegant when the document is long or mixed—reports, letters, and handoffs that still look designed once they are open in Word. Headings, tables, and body text keep distinct roles instead of one default style. K2F handles layout and typography.
+
+- A Word file people can keep editing: hierarchy and type roles, not a plain file with default styles
+- Complex briefs that stay designed: sections, tables, and emphasis without looking like a stock template
+
 ## Purpose
 
 Teach agents to create highly aesthetic, general-purpose Word documents—any topic, any audience—that open and stay editable in Microsoft Word. Work through explicit copy, section-level reading beats, typographic roles, and art direction in `content_and_design.md`, then build with **k2f**—not slide-deck bullets, manual bold-and-spacing hacks, tab-aligned pseudo tables, or “design as one screenshot.”

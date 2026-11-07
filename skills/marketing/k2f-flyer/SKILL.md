@@ -5,6 +5,11 @@ description: Turn event details, offers, or brand notes into a single-page flyer
 
 # K2F Flyer — AI-Native Aesthetic Design
 
+Turn event details, an offer, or brand notes into a single-page flyer: a headline that stops someone in a few seconds, a clear when and where, and one primary call to action. The page stays elegant for events, retail, restaurants, fitness, real estate, hiring, or community campaigns—including image-heavy or tightly labeled layouts that still read at a glance. K2F handles layout and typography.
+
+- Occasion-matched design: tone, hierarchy, and density follow the venue or brand instead of a generic template
+- Built for a three-second stop: one offer, scannable facts, and a single action, even when the brief is crowded
+
 ## Purpose
 
 Teach agents to author `content_and_design.md` for **single-page promotion**: what belongs on a flyer, how to prioritize for a three-second stop, and how to express aesthetic intent (tone, hierarchy, density)—not how to build or export K2F packages.

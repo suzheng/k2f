@@ -5,6 +5,11 @@ description: Create issuance-ready purchase orders from requisitions, quotes, or
 
 # K2F Purchase Order — AI-Native Aesthetic Design
 
+Create a purchase order a vendor can fulfill, ship, and invoice against: parties, line items, delivery, and terms taken from the requisition or quote you already have. A long order stays elegant and unambiguous on the page, ready to send to a supplier. Item, quantity, price, and ship-to stay aligned even when the order runs long. K2F handles layout and typography.
+
+- Enough to fulfill without a clarification loop: item, quantity, price, and where it ships
+- Dense procurement that still looks designed: a clear header, readable lines, and totals that match
+
 ## Purpose
 
 Teach agents to blueprint purchase orders before layout: unambiguous buyer–vendor identity, ship and bill routing, a reconciled line-item commitment, and visual hierarchy that surfaces **what is ordered, for where, by when, and under which terms**—without inventing SKUs, prices, or authorization the user did not supply.

@@ -5,6 +5,11 @@ description: Turn venue notes, dish lists, and brand cues into a scannable food 
 
 # K2F Menu — AI-Native Aesthetic Design
 
+Turn venue notes, a dish list, and brand cues into a food or beverage menu guests can order from: clear categories, a consistent way to read each item, and a mood that matches the room. A long list—dinner, wine, catering, or a tasting—can still look elegant on the page, in print or as a PDF. K2F handles layout and typography.
+
+- Items in one rhythm: name, description, and price line up the same way in every category
+- Hospitality design, not a promo flyer: density and type follow the venue, from a café card to a tasting menu
+
 ## Purpose
 
 Teach agents to author `content_and_design.md` for **hospitality menus**: category and item structure, inclusion cuts, and aesthetic intent (tone, hierarchy, density)—not K2F packaging or export.

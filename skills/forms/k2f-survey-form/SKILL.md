@@ -5,6 +5,11 @@ description: Blueprint feedback, research, and pulse survey forms with bounded s
 
 # K2F Survey Form — AI-Native Aesthetic Design
 
+Build a survey people will finish: feedback, research, or a short pulse, with a bounded scope and scales that mean the same thing throughout. A longer instrument stays elegant and credible, not an unfocused list of questions pasted from a web form. Related questions sit together, and the form stops while people still have attention. K2F handles layout and typography.
+
+- Questions that belong together, with consistent scales and a length people can complete
+- A designed form: sections, labels, and response space instead of a pasted question list
+
 ## Purpose
 
 Teach agents to blueprint **survey forms** in `content_and_design.md`: what to measure, how to scope and sequence questions, and aesthetic intent (neutral credibility, scale rhythm, hierarchy)—without inventing study hypotheses, sampling plans, or consent language the user did not supply.

@@ -5,6 +5,11 @@ description: Turn a job posting, resume, and candidate notes into a tailored one
 
 # K2F Cover Letter — AI-Native Aesthetic Design
 
+Turn a job posting, a resume, and your notes into a one-page cover letter: a sharp opening, proof that matches the role, and a reason it is this company. The letter stays elegant and specific—including a career change or a first role—not a recap of the resume or a generic template. Spacing and type make it correspondence, not a resume squeezed into paragraphs. K2F handles layout and typography.
+
+- A page a hiring manager can read once: the hook, the evidence, and the fit
+- Designed as correspondence: spacing and hierarchy that look like a letter, even when the story is tight
+
 ## Purpose
 
 Teach agents to blueprint **cover letters** in `content_and_design.md` before layout: what belongs in the letter versus the resume, how to sequence persuasion (hook → proof → fit → close), and aesthetic intent (tone, hierarchy, letter density)—without inventing employers, referrals, metrics, or company facts the user did not supply.

@@ -5,6 +5,11 @@ description: Turn founder notes and metrics into investor-ready pitch decks with
 
 # K2F Pitch Deck — AI-Native Aesthetic Design
 
+Turn founder notes and metrics into an investor-ready pitch deck: a tight storyline, one idea per slide, and charts that carry the evidence. The deck stays elegant when the narrative, market, and financials are complex—clear enough to skim in a few minutes, not a wall of bullets pasted from a memo. K2F handles layout and typography.
+
+- One memorable claim per slide, with honest gaps instead of invented traction or market size
+- Chart-first evidence and a designed story arc, from seed vision to growth economics
+
 ## Purpose
 
 Teach agents to blueprint **pitch decks** before layout: a narrated slide sequence investors can skim in three minutes, with one memorable claim per slide and honest gaps marked—without inventing traction, market size, or team credentials the user did not supply.

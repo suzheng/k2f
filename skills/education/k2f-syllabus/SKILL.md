@@ -5,6 +5,11 @@ description: Draft instructor-ready course syllabi with aligned outcomes, a scan
 
 # K2F Syllabus — AI-Native Aesthetic Design
 
+Draft a course syllabus students and you can use on day one: outcomes, a schedule you can scan, how grading works, and the policies that matter. A full term stays elegant on the page—aligned and readable, not a legacy syllabus left as one block of text. Policies, materials, and the weekly spine stay in a hierarchy students can scan. K2F handles layout and typography.
+
+- What the course is for, when you meet, and how the grade is built
+- A long term that still scans: weeks, policies, and materials in a clear hierarchy
+
 ## Purpose
 
 Teach agents to blueprint a **course syllabus** before layout: day-one essentials, scannable layering, and aligned outcomes, meetings, and grades—without policy dumps, orphaned readings, or schedules that hide assessment logic.

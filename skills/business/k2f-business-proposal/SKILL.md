@@ -5,6 +5,11 @@ description: Turn briefs and discovery notes into persuasive business proposals 
 
 # K2F Business Proposal — AI-Native Aesthetic Design
 
+Turn a brief and discovery notes into a business proposal an executive can skim and still decide: the client’s situation, a phased solution, and a clear investment. The document stays elegant when scope, options, and pricing are complex—persuasive, and not a full legal statement of work. Options and pricing stay visually distinct, so a yes does not require a second document. K2F handles layout and typography.
+
+- A decision-ready narrative: why this, why now, and what it costs
+- Designed for a first skim: headlines and proof before the detail
+
 ## Purpose
 
 Teach agents to blueprint **business proposals** before layout: a self-contained story that earns trust, scopes deliverables, and surfaces price clearly—without inventing budgets, rates, case studies, or terms the user did not supply.

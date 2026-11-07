@@ -5,6 +5,11 @@ description: Turn research ideas, preliminary data, and agency solicitations int
 
 # K2F Grant Proposal — AI-Native Aesthetic Design
 
+Turn a research idea, early data, and the solicitation into a grant proposal a reviewer can score: a fundable hypothesis, aims that stand on their own, and significance that matches the agency. Dense scientific argument stays elegant on the page, from an NIH or NSF narrative to a foundation request. Aims, significance, and the data a panel must see stay easy to find. K2F handles layout and typography.
+
+- Reviewer-ready structure: hypothesis, aims, and innovation a panel can find quickly
+- Complex science on clear pages: data and caveats designed into the narrative, not buried in prose
+
 ## Purpose
 
 Teach agents to blueprint fundable grant narratives before layout: a falsifiable hypothesis, explicit gaps, independent aims, reviewer-scannable hierarchy, and honest feasibility—without inventing data or drowning reviewers in prose.

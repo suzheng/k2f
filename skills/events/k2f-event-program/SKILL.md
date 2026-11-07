@@ -5,6 +5,11 @@ description: Turn confirmed schedules, social slate decisions, and sponsor lists
 
 # K2F Event Program — AI-Native Aesthetic Design
 
+Turn a confirmed schedule, a social slate, and a sponsor list into a program attendees can use: a conference booklet, festival guide, gala run-of-show, playbill, or multi-day agenda. Time comes first, and a long day of sessions still looks elegant on the page. Rooms, breaks, and sponsors stay in the design instead of crowding the times. K2F handles layout and typography.
+
+- Wayfinding by time: sessions, rooms, and breaks a badgeholder can scan in a lobby
+- Dense programs that stay designed: sponsors and social notes without burying the schedule
+
 ## Purpose
 
 Teach agents to author `content_and_design.md` for **published attendee programs**: content selection, wayfinding layers, and aesthetic intent (register, hierarchy, density, tracks)—not K2F packaging.

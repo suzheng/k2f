@@ -5,6 +5,11 @@ description: Compile a complete academic or senior professional curriculum vitae
 
 # K2F Cv — AI-Native Aesthetic Design
 
+Compile an academic or senior curriculum vitae from notes, publications, and appointments: the section order committees expect, honest bibliographic detail, and a long record that still reads. A multi-page vita stays elegant—hierarchy for long lists, not a one-page job resume stretched taller. Long publication lists keep a consistent entry style a committee can scan quickly. K2F handles layout and typography.
+
+- Sections a committee can check: appointments, publications, and the rest of the record in a familiar order
+- Long lists that stay designed: consistent entries and clear headings across a full career
+
 ## Purpose
 
 Teach agents to blueprint **CVs** in `content_and_design.md`: scholarly sections, tiered long lists, citation-ready entries, and design intent—without inventing degrees, papers, grants, or metrics.

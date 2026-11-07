@@ -5,6 +5,11 @@ description: Design formal exam papers—midterms, finals, unit tests, or take-h
 
 # K2F Exam Paper — AI-Native Aesthetic Design
 
+Design an exam students can sit: a midterm, a final, a unit test, or a take-home, with coverage that matches the course, questions that say what to do, and space to answer. A full paper stays elegant and fair when the mix of items is complex and ready to print. Point values, sections, and answer space stay fair and readable in print. K2F handles layout and typography.
+
+- Points and prompts a student can follow without guessing the task
+- Answer space and section design that survive print, including mixed question types
+
 ## Purpose
 
 Teach agents to blueprint an **exam paper** before layout: syllabus-faithful scope, stable format fingerprints, fair point weighting, and prompts students can parse under clock pressure—not study sheets, predicted questions, or item banks pasted without editorial structure.

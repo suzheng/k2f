@@ -5,6 +5,11 @@ description: Create portfolio- or client-ready case studies from project notes, 
 
 # K2F Case Study — AI-Native Aesthetic Design
 
+Turn project notes, resume bullets, or outcome data into a case study a client or a portfolio can stand behind: a credible arc, evidence of the process, and impact you can point to. The piece stays elegant when the work itself was complicated, whether it is a client story or a portfolio piece. The outcome is visible first, and the process is there when someone needs to believe it. K2F handles layout and typography.
+
+- A story with proof: the problem, what you did, and a result that is quantified when you have the numbers
+- Hierarchy for a skim: the outcome first, the process where it earns belief
+
 ## Purpose
 
 Teach agents to blueprint case studies before layout: show *how* and *why* work happened—not a resume repeat—with honest scope, evidence-backed results, and hierarchy that hooks skimmers and rewards deep readers.

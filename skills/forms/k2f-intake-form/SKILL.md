@@ -5,6 +5,11 @@ description: Blueprint client, patient, or project intake forms with clear secti
 
 # K2F Intake Form — AI-Native Aesthetic Design
 
+Build an intake form a new client, patient, or project can complete: sections in a sensible order, the right number of fields, and a layout people trust. A long onboarding or registration packet stays elegant and ready to fill in, on screen or on paper. A new client or patient can move through the sections without guessing which field comes next. K2F handles layout and typography.
+
+- Questions in the order someone can answer them, with room where a sentence is needed
+- A calm first impression: dense paperwork that still looks professional
+
 ## Purpose
 
 Teach agents to blueprint **intake forms** in `content_and_design.md`: what to collect before a relationship or case begins, how to sequence and group questions, and aesthetic intent (tone, hierarchy, fillable density)—without inventing clinical protocols, legal consent text, or eligibility rules the user did not supply.

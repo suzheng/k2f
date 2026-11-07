@@ -5,6 +5,11 @@ description: Turn verified company, product, and leadership inputs into a journa
 
 # K2F Media Kit — AI-Native Aesthetic Design
 
+Turn verified company, product, and leadership facts into a media kit a journalist can use: scannable facts, ready boilerplate, and clear guidance for logos and images. The kit stays elegant when the background is detailed—press-ready reference, not a pitch deck or a sales one-pager. Reporters get facts they can quote, and the pages still look like the brand. K2F handles layout and typography.
+
+- Facts a reporter can lift: boilerplate, leadership, and product truth in a clear order
+- Dense reference that still looks like the brand, with room for assets instead of a data dump
+
 ## Purpose
 
 Teach agents to author `content_and_design.md` for **press- and partner-facing media kits**: what belongs in the kit, how to tier information for grab-and-quote use, and aesthetic intent (tone, hierarchy, density)—not K2F packaging or export.

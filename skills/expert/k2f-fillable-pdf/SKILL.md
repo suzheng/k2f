@@ -5,6 +5,11 @@ description: Blueprint professional fillable PDF forms—applications, registrat
 
 # K2F Fillable Pdf — AI-Native Aesthetic Design
 
+Build a professional fillable PDF people can complete on screen or on paper: an application, a registration, an intake packet, or a compliance worksheet. Fields, sections, and instructions stay clear, including packets with many inputs that still look elegant. People can see what to complete and in what order, including forms that must also print cleanly. K2F handles layout and typography.
+
+- A complete field plan: what to fill, in what order, with room to write
+- Print-friendly hierarchy: long forms that stay readable instead of a cramped web-form paste
+
 ## Purpose
 
 Teach agents to author `content_and_design.md` for forms people actually complete: explicit static copy, a complete field inventory with types and constraints, logical section flow, and aesthetic intent tuned for scanning and typing—not a generic questionnaire dump or a static PDF with boxes pasted on.

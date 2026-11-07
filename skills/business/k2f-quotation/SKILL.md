@@ -5,6 +5,11 @@ description: Create client-ready sales quotations from scope notes, line items, 
 
 # K2F Quotation — AI-Native Aesthetic Design
 
+Create a quotation a buyer can compare, accept, or turn into an invoice: scope, line items, rates, and terms from the notes you have. Options and pricing stay elegant when the offer is detailed, from a simple estimate to a full response to a request for quote. Alternatives and totals stay visually separate, so accepting one option is obvious. K2F handles layout and typography.
+
+- A price the buyer can check: what is included, what it costs, and how long the quote lasts
+- Options without confusion: alternatives and totals designed so acceptance does not need a rewrite
+
 ## Purpose
 
 Teach agents to blueprint **commercial quotations** before layout: a scannable offer story, reconciled pricing, explicit boundaries (what is in / out), and design intent that foregrounds **value, total, and validity**—without inventing rates, deliverables, or legal terms the user did not supply.

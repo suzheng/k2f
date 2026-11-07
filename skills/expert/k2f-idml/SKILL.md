@@ -5,6 +5,11 @@ description: Blueprint multi-page print publications—brochures, magazines, cat
 
 # K2F Idml — AI-Native Aesthetic Design
 
+Plan a multi-page print piece a designer can open in InDesign: a brochure, magazine, catalog, annual report, or lookbook. Story flow, editorial blocks, and art direction stay explicit, so a complex publication still looks elegant before anyone adjusts a frame. Spreads, features, and running elements stay fully art-directed before a production designer opens the file. K2F handles layout and typography.
+
+- Spread-aware structure: sections, features, and running elements a production designer can follow
+- Art direction up front: type roles and visual intent for dense editorial work, not a flat text dump
+
 ## Purpose
 
 Teach agents to author `content_and_design.md` for publications meant to open in InDesign: explicit copy and assets, spread-level story beats, typographic roles, and art direction—not a slide deck pasted into pages or a wall of undifferentiated body text.

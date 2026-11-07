@@ -5,6 +5,11 @@ description: Blueprint operational, launch, diligence, or readiness checklists w
 
 # K2F Checklist — AI-Native Aesthetic Design
 
+Build a checklist a team can run: launch, diligence, readiness, onboarding, or an audit, with phases and items someone can confirm. A long list stays elegant—scannable phases, not a flat dump of bullets or a generic productivity template. Each phase shows what is done, who owns it, and what evidence is enough to move on. K2F handles layout and typography.
+
+- Items you can check: an owner, the evidence, and done, grouped by phase
+- Operational density that still reads: many gates in a hierarchy you can work through
+
 ## Purpose
 
 Teach agents to blueprint **checklists** in `content_and_design.md`: what must be verified, how to group and sequence items, and aesthetic intent (scanability, checkbox rhythm, operational tone)—without inventing org policy, compliance gates, or thresholds the user did not supply.

@@ -5,6 +5,11 @@ description: Draft formal legal notices—litigation holds (issue, refresh, rele
 
 # K2F Legal Notice — AI-Native Aesthetic Design
 
+Draft a formal legal notice from the matter you already have: a litigation hold to issue, refresh, or release, a preservation letter, or a custodian note counsel directs. The notice stays formal and elegant when the instructions, the scope, and the deadlines are detailed. Scope, deadlines, and the person to contact stay visible on a long formal notice. K2F handles layout and typography.
+
+- Recipients see the action: what to preserve, until when, and who to contact
+- Formal without clutter: scope, duties, and deadlines stay readable on a long notice
+
 ## Purpose
 
 Teach agents to blueprint **legal notices** before layout: notice type, recipient-facing obligations, scannable scope and systems blocks, and formal hierarchy—without inventing jurisdiction, custodians, scope, or privilege markings the user or counsel did not supply.

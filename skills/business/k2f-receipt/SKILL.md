@@ -5,6 +5,11 @@ description: Blueprint transaction proofs and period impact receipts from user-s
 
 # K2F Receipt — AI-Native Aesthetic Design
 
+Create a receipt or a proof of what was delivered: payment details or a period summary a customer, a finance team, or a manager can scan. Totals, references, and what they paid for stay honest and elegant, even on a detailed slip or an impact summary. Amount, date, and what it was for are visible, and the detail still adds up. K2F handles layout and typography.
+
+- Proof at a glance: amount, date, reference, and what it was for
+- Detailed transactions that still read: line items and attribution without looking like a raw dump
+
 ## Purpose
 
 Teach agents to blueprint **receipts** before layout: a closed transaction or a bounded period summary where the reader instantly sees **who, when, what was paid or delivered, and how to verify it**—without inventing card numbers, tax IDs, savings multipliers, or precision the source data does not support.

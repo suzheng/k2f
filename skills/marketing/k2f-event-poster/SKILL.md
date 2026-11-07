@@ -5,6 +5,11 @@ description: Turn event briefs into wall- or screen-ready posters with headline 
 
 # K2F Event Poster — AI-Native Aesthetic Design
 
+Turn an event brief into a poster for a wall or a screen: a headline zone, a hero visual, and logistics you can read from a few steps away. It stays elegant for a concert, festival, exhibition, or meetup—including bold, image-led layouts that still carry the date and the place. Headline, hero image, and logistics keep their own zones on a wall or a screen. K2F handles layout and typography.
+
+- A poster, not a flyer essay: one visual idea and a headline that works at a distance
+- Logistics that survive the design: date, venue, and one next step, still readable on a large format
+
 ## Purpose
 
 Teach agents to author `content_and_design.md` for **large-format event promotion**: content selection, distance-viewing layers, and aesthetic intent (tone, hierarchy, density, composition zones)—not K2F packaging.

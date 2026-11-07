@@ -5,6 +5,11 @@ description: Turn discovery notes, proposals, and product proof into buyer-ready
 
 # K2F Sales Deck — AI-Native Aesthetic Design
 
+Turn discovery notes, a proposal, and product proof into a buyer-ready sales deck: one objective for the meeting, a story centered on the prospect, and slides backed by evidence. The deck stays elegant when the deal, the objections, and the proof are complicated—made for that conversation, not a generic company overview or a fundraising pitch. K2F handles layout and typography.
+
+- One meeting, one outcome: every slide earns the next step instead of restating the product
+- Evidence a buyer can scan: proof on the slide, not a feature list pasted into boxes
+
 ## Purpose
 
 Teach agents to blueprint **sales decks** before layout: one meeting, one deal step—with the prospect as hero, pain in their words, proof tied to outcomes—without inventing ROI, logos, or results the user did not supply.

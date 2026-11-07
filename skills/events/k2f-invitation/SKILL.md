@@ -5,6 +5,11 @@ description: Turn event facts and tone notes into print or digital invitations w
 
 # K2F Invitation — AI-Native Aesthetic Design
 
+Turn event facts and a tone note into a print or digital invitation: ceremonial wording, logistics in layers, and a look that matches the rest of the suite. The card stays elegant for a wedding, a party, a gala, a save-the-date, or an RSVP—formal or festive, never a poster or a slide. Ceremony and the practical details share one suite, in print or on a phone. K2F handles layout and typography.
+
+- The occasion sets the design: type, density, and color follow the event instead of a generic invite
+- Date, place, and how to reply stay findable without breaking the ceremony of the card
+
 ## Purpose
 
 Teach agents to author `content_and_design.md` for **ceremonial event invitations**: what to include, how to tier information for guests, and how to express aesthetic intent (formality, hierarchy, density, motif)—not K2F packaging.

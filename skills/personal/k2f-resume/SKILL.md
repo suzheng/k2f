@@ -5,6 +5,11 @@ description: Turn career history, notes, or an existing CV into a tailored, achi
 
 # K2F Resume — AI-Native Aesthetic Design
 
+Turn career history, notes, or an existing CV into a resume aimed at a role: achievements a reader can scan, a clear hierarchy, and proof instead of a list of duties. The page stays elegant when the career is dense—serious one- or two-page design, not a keyword-stuffed template. Roles, impact, and dates keep one rhythm, including a dense two-page career. K2F handles layout and typography.
+
+- Tailored to the job: the strongest evidence up high
+- Built for a quick skim: role, impact, and dates in a consistent rhythm
+
 ## Purpose
 
 Teach agents to blueprint **resumes** in `content_and_design.md` before layout: what to include and cut, how to tier information for recruiter scan, achievement bullets with honest metrics, and aesthetic intent (tone, hierarchy, density)—without inventing roles, dates, or results the user did not supply.

@@ -5,6 +5,11 @@ description: Create executive-ready business reports from KPIs, sales or operati
 
 # K2F Business Report — AI-Native Aesthetic Design
 
+Turn KPIs, operational data, and stakeholder notes into an executive business report: prioritized findings, context for the trend, and recommendations someone can act on. A data-heavy review stays elegant—analysis a leader can read, not a spreadsheet pasted into paragraphs. Charts and comparisons carry the trend, so a data-heavy quarter still has a point of view. K2F handles layout and typography.
+
+- What matters first: findings and actions before the full trail of metrics
+- Complex performance on clear pages: trends and comparisons designed so the point is visible
+
 ## Purpose
 
 Teach agents to blueprint business reports before layout: a decision-oriented story from evidence to action, honest about data gaps, and hierarchy that lets executives grasp performance in minutes—not generic prose or chart dumps without interpretation.

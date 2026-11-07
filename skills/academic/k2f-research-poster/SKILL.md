@@ -5,6 +5,11 @@ description: Transform research papers, manuscripts, and findings into conferenc
 
 # K2F Research Poster — AI-Native Aesthetic Design
 
+Turn a paper or a set of findings into a conference poster you can read from a few steps away: balanced columns, type sized for a hall, and high visual density that still looks elegant. Built for an academic or scientific poster, including large formats where the study itself is dense. A passerby can read the contribution before stepping in for the figures. K2F handles layout and typography.
+
+- One contribution at viewing distance, then methods and figures along a clear path
+- A dense study that stays designed: figures and honest numbers instead of a pasted manuscript
+
 ## Purpose
 
 Convert scientific manuscripts, experiment data, and academic notes into print-ready conference posters. Posters fail when treated as oversized papers; attendees scan from 1.5–2 meters away and spend under 90 seconds. This skill enforces scientific distillation, viewing-distance hierarchy, strict 1-page geometry, and high visual density while eliminating multi-page overflow and blank lower thirds.

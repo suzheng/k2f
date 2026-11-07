@@ -5,6 +5,11 @@ description: Blueprint degree theses from scattered drafts, data, and institutio
 
 # K2F Thesis — AI-Native Aesthetic Design
 
+Turn scattered drafts, data, and institutional rules into a degree thesis: a chapter arc, literature that is synthesized, and an evidence map you can defend. A book-length argument stays elegant—readable hierarchy across many chapters, not a stack of unchanged files. Committee readers can move from the central claim to the evidence without losing the thread. K2F handles layout and typography.
+
+- One claim a committee can follow, with chapters that earn it
+- Long, complex manuscripts that still read: headings, evidence, and citations in one consistent design
+
 ## Purpose
 
 Teach agents to blueprint a book-length thesis before layout: one defensible central claim, institution-aligned chapter architecture, merged and attributed source material, and design intent that reads like a serious degree submission—not a stack of papers or a generic essay.

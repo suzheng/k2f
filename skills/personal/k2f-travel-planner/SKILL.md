@@ -5,6 +5,11 @@ description: Blueprint a printable, trip-ready travel planner from destination, 
 
 # K2F Travel Planner — AI-Native Aesthetic Design
 
+Turn a destination, dates, a budget, and a list of must-dos into a travel planner you can print or share: day-by-day flow, a budget roll-up, packing, and a timeline for what to do before you leave. A multi-day trip stays elegant and scannable, including a full itinerary with the logistics. Each day shows time, place, and what not to miss, with budget and prep in the same design. K2F handles layout and typography.
+
+- A day you can follow: time, place, and what not to miss
+- Practical pages in the same design: budget, packing, and prep beside the itinerary
+
 ## Purpose
 
 Teach agents to author **travel planners** in `content_and_design.md`: trip content, information layering, and design intent so the result reads like a field guide—not a chat log or destination encyclopedia.

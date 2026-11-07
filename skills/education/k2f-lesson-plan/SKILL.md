@@ -5,6 +5,11 @@ description: Build classroom-ready lesson plans with standards-aligned arcs, stu
 
 # K2F Lesson Plan — AI-Native Aesthetic Design
 
+Build a lesson plan you can teach from: a standards-aligned arc, what students do, and what an observer should see, from your notes or a topic. A full period stays elegant on the page—timed and concrete, not an essay about the subject. The period has an opening, student work, and a close, with times that fit the class. K2F handles layout and typography.
+
+- A sequence you can teach: opening, student work, and close, with times that fit the period
+- Materials and look-fors a colleague can follow, including a lesson with several student tasks
+
 ## Purpose
 
 Teach agents to blueprint a teachable lesson *before* layout: anchored standards, a timed instructional arc, concrete student tasks, and synchronized teacher/student/observation artifacts—without generic filler, curriculum plagiarism, or documents that drift apart.
